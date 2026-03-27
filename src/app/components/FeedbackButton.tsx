@@ -40,7 +40,7 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
 
   // Build embed URL only if we have a real form ID
   const embedUrl = hasRealForm
-    ? `https://tally.so/embed/${tallyFormId}?alignLeft=1&hideTitle=1&transparentBackground=1`
+    ? `https://tally.so/embed/${tallyFormId}?alignLeft=1&hideTitle=1&transparentBackground=0`
     : null
 
   function handleOpen() {
@@ -109,7 +109,7 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
             width: '100%',
             maxWidth: 430,
             zIndex: 201,
-            background: BG3,
+            background: '#ffffff',
             borderRadius: '22px 22px 0 0',
             boxShadow: '0 -8px 40px rgba(0,0,0,0.6)',
             display: 'flex',
@@ -120,30 +120,30 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
             {/* Handle + header */}
             <div style={{
               padding: '1rem 1.25rem 0.75rem',
-              borderBottom: `1px solid ${BORDER}`,
+              borderBottom: '1px solid rgba(10,28,46,0.10)',
               flexShrink: 0,
             }}>
               <div style={{
                 width: 36, height: 4, borderRadius: 2,
-                background: 'rgba(147,186,212,0.25)',
+                background: 'rgba(10,28,46,0.15)',
                 margin: '0 auto 0.85rem',
               }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: TEXT }}>Beta Feedback</div>
-                  <div style={{ fontSize: '0.7rem', color: TEXT2, marginTop: '0.1rem' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0A1C2E' }}>Beta Feedback</div>
+                  <div style={{ fontSize: '0.7rem', color: '#417CA4', marginTop: '0.1rem' }}>
                     2 min · helps us improve stAIrcode
                   </div>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
                   style={{
-                    background: 'rgba(147,186,212,0.12)',
-                    border: `1px solid ${BORDER}`,
+                    background: 'rgba(10,28,46,0.06)',
+                    border: '1px solid rgba(10,28,46,0.12)',
                     borderRadius: 10,
                     width: 32, height: 32,
                     cursor: 'pointer',
-                    color: TEXT3,
+                    color: '#5E7D9B',
                     fontSize: '1rem',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
@@ -154,7 +154,7 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
             </div>
 
             {/* Tally iframe */}
-            <div style={{ flex: 1, overflow: 'hidden', minHeight: 420 }}>
+            <div style={{ flex: 1, overflow: 'hidden', minHeight: 420, background: '#ffffff' }}>
               <iframe
                 src={embedUrl}
                 title="Beta Feedback"
@@ -163,7 +163,8 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
                   height: '100%',
                   minHeight: 420,
                   border: 'none',
-                  background: 'transparent',
+                  background: '#ffffff',
+                  borderRadius: '0 0 8px 8px',
                 }}
               />
             </div>
@@ -171,13 +172,13 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
             {/* Footer */}
             <div style={{
               padding: '0.6rem 1.25rem 1.5rem',
-              borderTop: `1px solid ${BORDER}`,
+              borderTop: '1px solid rgba(10,28,46,0.08)',
               flexShrink: 0,
             }}>
               <p style={{
                 margin: 0,
                 fontSize: '0.6rem',
-                color: TEXT3,
+                color: '#5E7D9B',
                 textAlign: 'center',
                 lineHeight: 1.6,
               }}>
