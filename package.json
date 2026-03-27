@@ -1,0 +1,42 @@
+{
+  "name": "staircode-beta",
+  "version": "1.0.0-beta.1",
+  "description": "Staircode Beta — AI stair compliance inspector",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "twa:init": "bubblewrap init --manifest=https://staircode.app/manifest.json",
+    "twa:build": "bubblewrap build",
+    "twa:update": "bubblewrap update",
+    "ios:add": "cap add ios",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "cap open ios",
+    "ios:build": "npm run build && cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "next": "^14.2.0",
+    "posthog-js": "^1.170.0",
+    "posthog-node": "^5.28.6",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "stripe": "^16.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@netlify/plugin-nextjs": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.0.0"
+  }
+}

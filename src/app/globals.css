@@ -1,0 +1,384 @@
+/**
+ * globals.css — stAIrcode Brand System
+ *
+ * Brand deck reference:
+ *   #F29337  Orange  — alerts, active states, CTAs, field visibility
+ *   #417CA4  Blue    — trust, data, navigation, structure
+ *   #A1B2C2  Gray-blue — calm surfaces, secondary UI
+ *
+ * Visual language:
+ *   - Diagonal safety-stripe signature graphic (orange + dark blue)
+ *   - Blueprint grid on dark surfaces
+ *   - Chunky, gloved-hand-friendly buttons
+ *   - Large, unambiguous status chips
+ *   - Construction-native typography — bold, decisive, short phrases
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ── Brand tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Primary palette */
+  --orange:       #F29337;
+  --orange-dk:    #C4721E;
+  --orange-dim:   rgba(242,147,55,0.12);
+  --orange-bdr:   rgba(242,147,55,0.35);
+  --blue:         #417CA4;
+  --blue-dk:      #2C5A7A;
+  --blue-lt:      #6AA3C8;
+  --blue-dim:     rgba(65,124,164,0.12);
+  --blue-bdr:     rgba(65,124,164,0.30);
+  --gray-blue:    #A1B2C2;
+  --gray-dim:     rgba(161,178,194,0.12);
+
+  /* Dark UI (blueprint ground) */
+  --bg:           #0A1C2E;   /* deep blueprint blue */
+  --bg2:          #0F2438;
+  --bg3:          #152D46;
+  --bg4:          #1A3554;   /* hover */
+
+  /* Text on dark */
+  --text:         #E8F4FF;
+  --text2:        #93BAD4;
+  --text3:        #4E7A9B;
+
+  /* Light surfaces (paper side — auth, help, settings) */
+  --paper:        #F0F5FA;
+  --paper2:       #E2EAF4;
+  --ink:          #0D1E2E;
+  --ink2:         #2C4A68;
+  --ink3:         #5E7D9B;
+  --border-light: rgba(65,124,164,0.18);
+
+  /* Status */
+  --pass:         #27A96B;
+  --pass-dim:     rgba(39,169,107,0.12);
+  --fail:         #E84545;
+  --fail-dim:     rgba(232,69,69,0.10);
+  --warn:         #F29337;
+  --warn-dim:     rgba(242,147,55,0.12);
+
+  /* Blueprint grid on dark */
+  --grid-dark: repeating-linear-gradient(
+      0deg, transparent, transparent 27px,
+      rgba(65,124,164,0.07) 27px, rgba(65,124,164,0.07) 28px
+    ),
+    repeating-linear-gradient(
+      90deg, transparent, transparent 27px,
+      rgba(65,124,164,0.07) 27px, rgba(65,124,164,0.07) 28px
+    );
+
+  /* Blueprint grid on light paper */
+  --grid-light: repeating-linear-gradient(
+      0deg, transparent, transparent 27px,
+      rgba(65,124,164,0.04) 27px, rgba(65,124,164,0.04) 28px
+    ),
+    repeating-linear-gradient(
+      90deg, transparent, transparent 27px,
+      rgba(65,124,164,0.04) 27px, rgba(65,124,164,0.04) 28px
+    );
+
+  /* Diagonal safety stripe — signature graphic cue */
+  --safety-stripe: repeating-linear-gradient(
+    -45deg,
+    #F29337 0px, #F29337 6px,
+    #0A1C2E 6px, #0A1C2E 14px
+  );
+
+  /* Typography */
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Radii */
+  --r-sm:  8px;
+  --r:     12px;
+  --r-lg:  18px;
+  --r-xl:  24px;
+  --r-pill:999px;
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--text);
+  background-image: var(--grid-dark);
+  background-attachment: fixed;
+}
+
+/* ── Safety stripe decorative element ────────────────────────────────────── */
+.safety-stripe {
+  height: 6px;
+  background: var(--safety-stripe);
+  background-size: 20px 20px;
+}
+
+.safety-stripe-lg {
+  height: 10px;
+  background: var(--safety-stripe);
+  background-size: 28px 28px;
+}
+
+/* ── Status chips — large and unambiguous ────────────────────────────────── */
+.chip-pass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--pass-dim);
+  border: 1.5px solid var(--pass);
+  color: var(--pass);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--r-pill);
+  text-transform: uppercase;
+}
+
+.chip-fail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--fail-dim);
+  border: 1.5px solid var(--fail);
+  color: var(--fail);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--r-pill);
+  text-transform: uppercase;
+}
+
+.chip-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--warn-dim);
+  border: 1.5px solid var(--warn);
+  color: var(--warn);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--r-pill);
+  text-transform: uppercase;
+}
+
+/* ── Chunky buttons — gloved-hand friendly ───────────────────────────────── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1.05rem 1.5rem;
+  background: var(--orange);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border: none;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 4px 20px rgba(242,147,55,0.40);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #D97E28;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(242,147,55,0.50);
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 4px 16px rgba(65,124,164,0.35);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--blue-dk);
+  transform: translateY(-1px);
+}
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(147,186,212,0.20);
+  color: var(--text2);
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--r-lg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sans);
+}
+.btn-ghost:hover { border-color: rgba(147,186,212,0.40); color: var(--text); }
+
+/* ── Card surfaces ────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg2);
+  border: 1px solid rgba(147,186,212,0.14);
+  border-radius: var(--r-xl);
+  padding: 1.25rem;
+}
+
+.card-light {
+  background: #fff;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--r-xl);
+  padding: 1.25rem;
+  box-shadow: 0 2px 12px rgba(65,124,164,0.08);
+}
+
+/* ── Section label (monospace uppercase) ─────────────────────────────────── */
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+/* ── Blueprint paper background (light screens) ──────────────────────────── */
+.paper-screen {
+  background-color: var(--paper);
+  background-image: var(--grid-light);
+  min-height: 100dvh;
+  color: var(--ink);
+}
+
+/* ── Dark blueprint screen (camera, scan) ────────────────────────────────── */
+.blueprint-screen {
+  background-color: var(--bg);
+  background-image: var(--grid-dark);
+  min-height: 100dvh;
+  color: var(--text);
+}
+
+/* ── Beta pill ───────────────────────────────────────────────────────────── */
+.beta-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--orange);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.42rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--r-pill);
+  vertical-align: middle;
+  margin-left: 0.4rem;
+  box-shadow: 0 1px 6px rgba(242,147,55,0.45);
+}
+
+/* ── Wordmark ─────────────────────────────────────────────────────────────── */
+.wordmark {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.34em;
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Measurement value display ───────────────────────────────────────────── */
+.meas-value {
+  font-family: var(--mono);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.meas-unit {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text2);
+  margin-left: 0.25rem;
+}
+
+/* ── Bottom nav ───────────────────────────────────────────────────────────── */
+.bottom-nav {
+  display: flex;
+  background: var(--bg2);
+  border-top: 1px solid rgba(147,186,212,0.14);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.65rem 0 0.55rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  gap: 0.2rem;
+  transition: color 0.15s;
+  color: var(--text3);
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav-item.active { color: var(--orange); }
+.bottom-nav-item.active .nav-icon { color: var(--orange); }
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes spin       { to { transform: rotate(360deg); } }
+@keyframes fadeUp     { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn     { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse      { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes slideUp    { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes fadeInOut  { 0%{opacity:0} 12%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+
+.animate-in   { animation: fadeUp 0.25s ease forwards; }
+.animate-fade { animation: fadeIn 0.2s ease forwards; }
+.pulsing      { animation: pulse 1.5s ease infinite; }
+
+/* ── Print ────────────────────────────────────────────────────────────────── */
+.print-header { display: none; }
+@media print {
+  body { background: #fff !important; color: #000 !important; background-image: none !important; }
+  .no-print { display: none !important; }
+  .print-header { display: block !important; border-bottom: 2px solid var(--blue); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+}

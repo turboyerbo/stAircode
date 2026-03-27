@@ -1,0 +1,93 @@
+/** @type {import('next').NextConfig} */
+const { execSync } = require('child_process')
+
+// Generate a unique build ID from git commit hash + timestamp
+// This is injected into the service worker so every deploy busts the cache
+function getBuildVersion() {
+  try {
+    const hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+    return `${hash}-${Date.now()}`
+  } catch {
+    return `build-${Date.now()}`
+  }
+}
+
+const BUILD_VERSION = getBuildVersion()
+console.log('[next.config] Cache version:', BUILD_VERSION)
+
+const nextConfig = {
+  // Production domain — used by Next.js for absolute URL generation
+  // Set NEXT_PUBLIC_APP_URL=https://staircode.app in Vercel env vars
+  env: {
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://staircode.app',
+  },
+
+  trailingSlash: false,
+
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type',           value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control',          value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [
+          { key: 'Content-Type',                value: 'application/json' },
+          { key: 'Cache-Control',               value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+      {
+        source: '/.well-known/apple-app-site-association',
+        headers: [
+          { key: 'Content-Type',  value: 'application/json' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
+      {
+        source: '/manifest.json',
+        headers: [
+          { key: 'Content-Type',  value: 'application/manifest+json' },
+          { key: 'Cache-Control', value: 'public, max-age=3600' },
+        ],
+      },
+      {
+        source: '/icons/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options',    value: 'nosniff' },
+          { key: 'X-Frame-Options',           value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy',           value: 'strict-origin-when-cross-origin' },
+          { key: 'X-XSS-Protection',          value: '1; mode=block' },
+          { key: 'X-DNS-Prefetch-Control',    value: 'off' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=self, geolocation=self, xr-spatial-tracking=self, microphone=(), payment=(), usb=()',
+          },
+        ],
+      },
+    ]
+  },
+}
+
+// Stamp each build with a unique version so sw.js busts the cache on every deploy
+const _origWebpack = nextConfig.webpack
+nextConfig.webpack = (config, opts) => {
+  const { DefinePlugin } = require('webpack')
+  const buildId = process.env.NEXT_BUILD_ID || String(Date.now())
+  config.plugins.push(new DefinePlugin({ 'self.__CACHE_VERSION__': JSON.stringify(buildId) }))
+  return _origWebpack ? _origWebpack(config, opts) : config
+}
+
+module.exports = nextConfig

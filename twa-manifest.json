@@ -1,0 +1,61 @@
+{
+  "packageId": "app.staircode.twa",
+  "host": "staircode.app",
+  "name": "Staircode",
+  "launcherName": "Staircode",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0D2B45",
+  "navigationColor": "#0D2B45",
+  "navigationColorDark": "#0A1F33",
+  "navigationDividerColor": "#0D2B45",
+  "navigationDividerColorDark": "#0A1F33",
+  "backgroundColor": "#EEF3F9",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://staircode.app/icons/icon-512.png",
+  "maskableIconUrl": "https://staircode.app/icons/icon-maskable-512.png",
+  "monochromeIconUrl": "https://staircode.app/icons/icon-512.png",
+  "shortcuts": [
+    {
+      "name": "New Inspection",
+      "short_name": "Inspect",
+      "url": "/",
+      "icons": [
+        {
+          "src": "https://staircode.app/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "appVersion": "1",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "./staircode-release-key.jks",
+    "alias": "staircode"
+  },
+  "splashScreenFadeOutDuration": 300,
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://staircode.app/",
+  "minSdkVersion": 19,
+  "targetSdkVersion": 34,
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://staircode.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "additionalTrustAnchors": [],
+  "screenOrientation": "portrait"
+}

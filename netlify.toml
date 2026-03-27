@@ -1,0 +1,40 @@
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION  = "9"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Ensure .well-known is served correctly for Android TWA verification
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type  = "application/json"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Content-Type          = "application/javascript"
+    Cache-Control         = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type  = "application/manifest+json"
+    Cache-Control = "public, max-age=3600"
+
+[functions]
+  # Allow up to 60 seconds for report generation
+  included_files = ["src/**"]
+
+[[functions]]
+  path = "/api/report/generate"
+  [functions.external_node_modules]
+    timeout = 60
