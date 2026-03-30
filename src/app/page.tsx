@@ -2,13 +2,15 @@
 /**
  * page.tsx — StairCode authenticated app shell
  */
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import Logo, { BetaLogo } from './components/Logo'
 import AuthScreen,      { AppUser, UserRole } from './components/AuthScreen'
-import RoleSelectScreen                        from './components/RoleSelectScreen'
 import { initAnalytics, identifyUser, resetUser, Analytics } from '@/lib/analytics'
 import HelpScreen                            from './components/HelpScreen'
 import SettingsScreen                        from './components/SettingsScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
+import ScanModeSelect                        from './components/ScanModeSelect'
+import type { ScanMode }                     from './components/ScanModeSelect'
 import StairDetect,     { DetectResult }     from './components/StairDetect'
 import MeasureWalk,     { StairMeasurements }from './components/MeasureWalk'
 import ReportScreen                          from './components/ReportScreen'
@@ -73,6 +75,11 @@ function check(m:StairMeasurements,code:Code){
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
+  // Legal disclaimer agreement — must be declared here (before any early returns)
+  const [legalAgreed, setLegalAgreed] = useState<boolean>(()=>{
+    try{ return typeof window !== 'undefined' && localStorage.getItem('sc_legal_agreed') === '1' }
+    catch{ return false }
+  })
   useEffect(()=>{
     // Init PostHog analytics
     initAnalytics()
@@ -148,20 +155,87 @@ export default function Home(){
   }
   function handleUpdateUser(u:AppUser){setUser(u);try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}}
   if(!user)return <AuthScreen onAuth={handleAuth}/>
-  if(!user.role)return (
-    <RoleSelectScreen onSelect={(role:UserRole)=>{
-      Analytics.roleSelected(role)
-      const updated={...user,role}
-      handleUpdateUser(updated)
-    }}/>
-  )
+  // Auto-assign default role if not set — role screen removed, user picks Individual/Professional instead
+  if(!user.role){
+    const defaulted={...user,role:'diy' as UserRole}
+    handleUpdateUser(defaulted)
+  }
+  // Show legal disclaimer if user hasn't agreed yet
+  const legalKey = 'sc_legal_agreed'
+  if(!legalAgreed)return <LegalDisclaimerScreen onAgree={()=>{
+    try{localStorage.setItem(legalKey,'1')}catch{}
+    setLegalAgreed(true)
+  }}/>
   return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser}/>
+}
+
+// ── Legal Disclaimer Screen ───────────────────────────────────────────────────
+function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
+  const [checked,setChecked]=useState(false)
+  return(
+    <div style={{minHeight:'100dvh',background:'#0A1C2E',backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'2rem 1.25rem',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+      <div style={{display:'flex',justifyContent:'center',marginBottom:'1.25rem'}}><Logo size="md" onDark /></div>
+      <div style={{width:'100%',maxWidth:420,background:'#0F2438',border:'1px solid rgba(65,124,164,0.20)',borderRadius:20,overflow:'hidden'}}>
+        {/* Header */}
+        <div style={{background:'#F29337',padding:'1rem 1.25rem',display:'flex',alignItems:'center',gap:'0.6rem'}}>
+          <span style={{fontSize:'1.2rem'}}>⚖️</span>
+          <div>
+            <div style={{fontSize:'0.95rem',fontWeight:900,color:'#fff',letterSpacing:'-0.01em'}}>Terms of Use & Disclaimer</div>
+            <div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.8)',marginTop:'0.1rem'}}>Please read before continuing</div>
+          </div>
+        </div>
+        {/* Body */}
+        <div style={{padding:'1.25rem',maxHeight:'55dvh',overflowY:'auto'}}>
+          <p style={{fontSize:'0.75rem',color:'#E8F4FF',lineHeight:1.75,margin:'0 0 0.85rem'}}>
+            <strong style={{color:'#F29337'}}>stAIrcode is a visual aid only</strong> — it is not a building inspection tool and does not determine whether any staircase is legally compliant with any building code.
+          </p>
+          <p style={{fontSize:'0.75rem',color:'#93BAD4',lineHeight:1.75,margin:'0 0 0.85rem'}}>
+            All measurements are AI estimates from camera images. Accuracy is limited by lighting, angle, and image quality — typical error is <strong style={{color:'#E8F4FF'}}>±10–25mm or greater</strong>. Results must not be used for construction, permit applications, safety certification, or legal proceedings.
+          </p>
+          <p style={{fontSize:'0.75rem',color:'#93BAD4',lineHeight:1.75,margin:'0 0 0.85rem'}}>
+            Only a <strong style={{color:'#E8F4FF'}}>licensed building inspector, professional engineer, or registered architect</strong> using calibrated equipment can produce legally valid measurements. Always consult a qualified professional before making compliance decisions.
+          </p>
+          <p style={{fontSize:'0.75rem',color:'#93BAD4',lineHeight:1.75,margin:'0 0 0.85rem'}}>
+            Building codes referenced are indicative only. Consult the applicable Authority Having Jurisdiction (AHJ) for binding requirements.
+          </p>
+          <p style={{fontSize:'0.7rem',color:'#4E7A9B',lineHeight:1.6,margin:0}}>
+            <strong style={{color:'#93BAD4'}}>Limitation of Liability:</strong> Just Open Technologies Inc., its officers, directors, and employees accept no liability for any loss, damage, injury, or consequence arising from use of this application. Use is entirely at your own risk.
+          </p>
+        </div>
+        {/* Agree checkbox */}
+        <div style={{padding:'1rem 1.25rem',borderTop:'1px solid rgba(65,124,164,0.15)',display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer'}} onClick={()=>setChecked(v=>!v)}>
+          <div style={{width:20,height:20,borderRadius:6,border:`2px solid ${checked?'#27A96B':'rgba(147,186,212,0.4)'}`,background:checked?'#27A96B':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:2,transition:'all 0.15s'}}>
+            {checked&&<span style={{color:'#fff',fontSize:'0.75rem',lineHeight:1}}>✓</span>}
+          </div>
+          <span style={{fontSize:'0.76rem',color:'#E8F4FF',lineHeight:1.55}}>
+            I understand that stAIrcode is a visual aid only and not a professional compliance tool. I agree to the{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{color:'#F29337',fontWeight:600}}>Terms of Service</a>.
+          </span>
+        </div>
+        {/* CTA */}
+        <div style={{padding:'0 1.25rem 1.25rem'}}>
+          <button
+            onClick={()=>{ if(checked)onAgree() }}
+            disabled={!checked}
+            style={{width:'100%',padding:'1rem',background:checked?'linear-gradient(135deg,#27A96B,#1A7A50)':'rgba(255,255,255,0.06)',border:'none',borderRadius:14,color:checked?'#fff':'#4E7A9B',fontSize:'0.95rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.06em',cursor:checked?'pointer':'not-allowed',boxShadow:checked?'0 4px 20px rgba(39,169,107,0.4)':'none',transition:'all 0.2s'}}
+          >
+            {checked?'✓ I Agree — Continue →':'Check the box above to continue'}
+          </button>
+        </div>
+        <div style={{padding:'0 1.25rem 1rem',textAlign:'center'}}>
+          <span style={{fontSize:'0.6rem',color:'#4E7A9B'}}>stAIrcode — Just Open Technologies Inc. · info@staircode.app</span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
 function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>('home')
+  const [scanMode,setScanMode]=useState<ScanMode>('accuracy')
+  const [showModeSelect,setShowModeSelect]=useState(false)
   const [loc,setLoc]=useState<Loc|null>(null)
   const [locLoading,setLocLoading]=useState(true)
   const [code,setCode]=useState<Code|null>(null)
@@ -220,8 +294,13 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   const handleRetake=useCallback(()=>{setMeasurements(null);setDetectResult(null);setScreen('scan_ready')},[])
 
   // Full-screen flows (no bottom nav)
-  if(screen==='scan_ready'){Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined})}
-  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('home')}/>
+  if(showModeSelect)return <ScanModeSelect onSelect={(mode)=>{
+    setScanMode(mode)
+    setShowModeSelect(false)
+    setScreen('scan_ready')
+    Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mode})
+  }}/>
+  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} scanMode={scanMode} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>{setScreen('home');setShowModeSelect(false)}}/>
   if(screen==='detect')return <StairDetect onComplete={handleDetectComplete} onBack={()=>setScreen('scan_ready')} knownWidth={measurements?.width??null}/>
   if(screen==='capture')return <MeasureWalk onComplete={handleCaptureComplete} onBack={()=>setScreen('home')} codeLabel={code?.label??'Building Code'} jurisdiction={code?.code??'NBC'}/>
   if(screen==='report'&&measurements&&code)return <ReportScreen measurements={measurements} fields={check(measurements,code)} codeLabel={code.label} codeRef={code.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetake} onStartOver={handleStartOver}/>
@@ -229,7 +308,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   return(
     <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
       <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
-        {tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');setScreen('scan_ready')}} onLogout={onLogout}/>}
+        {tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');setShowModeSelect(true)}} onLogout={onLogout}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
@@ -246,9 +325,9 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
     <div style={{flex:1,display:'flex',flexDirection:'column'}}>
       {/* Hero */}
       <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.8rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.5rem',borderBottom:`1px solid ${C.border}`}}>
-        <div style={{fontSize:'0.52rem',fontFamily:'monospace',letterSpacing:'0.32em',color:C.orange, display:'flex', alignItems:'center', gap:'0.3rem'}}>▲ STAIRCODE <span style={{display:'inline-flex',alignItems:'center',background:'#F29337',color:'#fff',fontSize:'0.42rem',fontWeight:800,letterSpacing:'0.12em',padding:'0.15rem 0.5rem',borderRadius:20,marginLeft:'0.45rem',verticalAlign:'middle',fontFamily:'monospace',boxShadow:'0 1px 6px rgba(242,147,55,0.45)'}}>BETA</span></div>
+        <div style={{display:'flex',justifyContent:'center'}}><BetaLogo size="md" onDark /></div>
         <h1 style={{fontSize:'1.65rem',fontWeight:800,lineHeight:1.1,textAlign:'center',margin:0,letterSpacing:'-0.02em'}}>
-          Stair Code <span style={{color:'#ffffff',textShadow:`0 0 28px ${C.orange}88`}}>Compliance</span>
+          Stair <span style={{color:'#ffffff',textShadow:`0 0 28px ${C.orange}88`}}>Pre-Assessment</span>
         </h1>
         <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.55)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
       </div>
@@ -258,11 +337,16 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'0.9rem 1rem',display:'flex',flexDirection:'column',gap:'0.45rem'}}>
           <div style={{display:'flex',alignItems:'center',gap:'0.6rem'}}>
             <div style={{width:8,height:8,borderRadius:'50%',background:locLoading?'#F29337':confirmed?C.pass:'rgba(167,177,194,0.4)',boxShadow:locLoading?'0 0 0 3px rgba(242,147,55,0.2)':confirmed?'0 0 0 3px rgba(74,144,226,0.2)':'none'}}/>
-            <span style={{fontSize:'0.8rem',color:'#0A1C2E',fontWeight:600}}>{locLoading?'Detecting location…':confirmed?locStr:'Outside Ontario'}</span>
+            <span style={{fontSize:'0.8rem',color:'#0A1C2E',fontWeight:600}}>{locLoading?'Detecting location…':locStr}</span>
           </div>
           {!locLoading&&code&&(
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontFamily:'monospace',fontWeight:500}}>{code.ref}</span>
+              <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
+                {code.code==='OBC' && <>Stair reqs: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
+                {code.code==='NBC' && <>Stair reqs: <a href="https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>NBC 2020</a></>}
+                {code.code==='IBC' && <>Stair reqs: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
+                {code.code!=='OBC'&&code.code!=='NBC'&&code.code!=='IBC' && <span>{code.ref}</span>}
+              </span>
               <span style={{fontSize:'0.65rem',fontFamily:'monospace',fontWeight:600,letterSpacing:'0.08em',color:confirmed?'#0D7A5F':'#2C5A7A',background:confirmed?'#E6F5F1':'#EBF2FF',padding:'0.22rem 0.65rem',borderRadius:8,border:`1px solid ${confirmed?'rgba(13,122,95,0.3)':'rgba(44,90,122,0.25)'}`}}>{code.label}</span>
             </div>
           )}
@@ -293,10 +377,10 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
           {locLoading?'Loading…':'● Start Scan'}
         </button>
 
-        <p style={{textAlign:'center',fontSize:'0.6rem',color:'rgba(44,74,110,0.38)',lineHeight:1.5,fontFamily:'monospace',margin:0}}>
+        <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>
           Pre-analysis only · Not a substitute for professional inspection
         </p>
-        <button onClick={onLogout} style={{display:'block',margin:'0.75rem auto 0',background:'none',border:'none',color:'rgba(65,124,164,0.4)',fontSize:'0.65rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 0.75rem'}}>
+        <button onClick={onLogout} style={{display:'block',margin:'0.75rem auto 0',background:'rgba(65,124,164,0.10)',border:'1px solid rgba(65,124,164,0.25)',color:'#2C5A7A',fontSize:'0.65rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 1rem',borderRadius:20,fontWeight:600}}>
           ↩ Sign out
         </button>
       </div>
@@ -306,12 +390,16 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
 
 // ── Bottom Nav ────────────────────────────────────────────────────────────────
 function BottomNav({active,onChange}:{active:Tab;onChange:(t:Tab)=>void}){
-  const tabs=[{id:'home' as Tab,icon:'🏠',label:'Welcome'},{id:'help' as Tab,icon:'🤖',label:'AI Guide'},{id:'settings' as Tab,icon:'⚙️',label:'Settings'}]
+  const tabs=[{id:'home' as Tab,icon:'logo',label:'Welcome'},{id:'help' as Tab,icon:'⚡',label:'AI Guide'},{id:'settings' as Tab,icon:'⚙️',label:'Settings'}]
   return(
     <div style={{borderTop:'1.5px solid rgba(147,186,212,0.18)',background:'#FFFFFF',paddingBottom:'env(safe-area-inset-bottom,0px)',display:'flex'}}>
       {tabs.map(t=>(
         <button key={t.id} onClick={()=>onChange(t.id)} style={{flex:1,padding:'0.7rem 0.4rem',background:'none',border:'none',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.2rem'}}>
-          <span style={{fontSize:'1.25rem',opacity:active===t.id?1:0.38,filter:active===t.id?'none':'grayscale(1)',transition:'all 0.15s'}}>{t.icon}</span>
+          <span style={{fontSize:'1.25rem',opacity:active===t.id?1:0.38,transition:'all 0.15s',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            {t.icon==='logo'
+              ? <Logo iconOnly size="xs" style={{opacity: active==='home' ? 1 : 0.35}} />
+              : t.icon}
+          </span>
           <span style={{fontSize:'0.62rem',fontFamily:'monospace',fontWeight:active===t.id?700:400,color:active===t.id?'#2C5A7A':'rgba(44,74,110,0.5)',letterSpacing:'0.06em'}}>{t.label}</span>
           {active===t.id&&<div style={{width:4,height:4,borderRadius:'50%',background:C.blue,boxShadow:`0 0 6px ${C.blue}`}}/>}
         </button>

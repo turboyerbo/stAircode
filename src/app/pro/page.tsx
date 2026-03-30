@@ -14,7 +14,7 @@ export default function ProPage() {
 
       {/* Nav */}
       <nav style={{ padding: '1.2rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <a href="/" style={{ fontSize: '0.55rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: C.orange, textDecoration: 'none' }}>▲ STAIRCODE</a>
+        <a href="/" style={{ fontSize: '0.55rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: C.orange, textDecoration: 'none' }}><img src="/logo_orange_transparent.png" alt="stAIrcode" style={{height:22,objectFit:'contain'}} /></a>
         <a href="/" style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none' }}>← Back to app</a>
       </nav>
 

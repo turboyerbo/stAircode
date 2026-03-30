@@ -11,7 +11,7 @@ export default function NotFound() {
       justifyContent: 'center', gap: '1rem', padding: '2rem',
       fontFamily: "system-ui, -apple-system, sans-serif", textAlign: 'center',
     }}>
-      <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', letterSpacing: '0.32em', color: '#FF7F00' }}>▲ STAIRCODE</div>
+      <img src="/logo_orange_transparent.png" alt="stAIrcode" style={{ height: 28, objectFit: 'contain', marginBottom: '0.5rem' }} />
       <h1 style={{ fontSize: '4rem', fontWeight: 900, margin: 0, opacity: 0.15 }}>404</h1>
       <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', margin: 0 }}>Page not found</p>
       <a href="/" style={{

@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   <!-- Header -->
   <div style="background:#0A1C2E;border-radius:16px 16px 0 0;padding:1.75rem 2rem;text-align:center;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px);">
-    <div style="font-size:0.55rem;letter-spacing:0.32em;color:#F29337;font-family:monospace;margin-bottom:0.4rem;">▲ STAIRCODE</div>
+    <img src="https://staircode.app/logo_orange_transparent.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 0.5rem;" />
     <h1 style="font-size:1.4rem;font-weight:900;color:#E8F4FF;margin:0 0 0.3rem;letter-spacing:-0.02em;">Stair Compliance Report</h1>
     <p style="font-size:0.78rem;color:#93BAD4;margin:0;">${codeLabel}${location ? ' · ' + location : ''} · ${dateStr}</p>
   </div>

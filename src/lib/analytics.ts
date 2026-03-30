@@ -106,10 +106,11 @@ export const Analytics = {
   // ── Scan ────────────────────────────────────────────────────────────────────
 
   /** User taps Start Scan — beginning of core funnel */
-  scanStarted: (props?: { role?: string; codeLabel?: string; location?: string }) =>
+  scanStarted: (props?: { role?: string; codeLabel?: string; location?: string; scanMode?: string }) =>
     track('scan_started', props),
 
   /** A single measurement locked in (riser, tread, width, handrail) */
+  /** A single measurement locked in — measurement can be 'guard_manual' for manually entered handrail */
   measurementLocked: (measurement: string, valueMm: number, confidence: number) =>
     track('measurement_locked', { measurement, value_mm: valueMm, confidence }),
 

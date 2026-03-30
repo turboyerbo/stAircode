@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import './globals.css'
 
 // ── PWA + SEO Metadata ─────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Staircode — Stair Compliance Inspector',
+  title: 'stAIrcode — Stair Compliance',
   description: 'Check your staircase against local building codes. Camera-based measurements, auto-detected jurisdiction (OBC, NBC, QBC, Bbl, RCNYS and more).',
-  applicationName: 'Staircode',
+  applicationName: 'stAIrcode',
   keywords: ['stair compliance', 'building code', 'OBC', 'staircase inspection', 'riser height', 'tread depth'],
   authors: [{ name: 'Staircode Inc.' }],
   creator: 'Staircode Inc.',
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://staircode.app'),
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Staircode — Stair Compliance Inspector',
+    title: 'stAIrcode — Stair Compliance',
     description: 'Measure and check your staircase against local building codes using your phone camera.',
     url: 'https://staircode.app',
     siteName: 'Staircode',
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Staircode — Stair Compliance Inspector',
+    title: 'stAIrcode — Stair Compliance',
     description: 'AR stair measurements checked against OBC, NBC, IRC, IBC and more.',
     images: ['/screenshots/feature-graphic.png'],
   },
@@ -54,8 +55,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Staircode" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-title" content="stAIrcode" />
+        <link rel="apple-touch-icon" href="/logo_icon_blue.png" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/icon-192.png" type="image/png" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -91,7 +92,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+
+        {/* ── Google Analytics 4 ── */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-SJSZV0KBFE"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SJSZV0KBFE', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
+      </body>
     </html>
   )
 }

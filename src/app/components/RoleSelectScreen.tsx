@@ -4,6 +4,7 @@
  * No preview cards — just a clean choice. The app adapts silently.
  */
 import { useState } from 'react'
+import { BetaLogo } from '@/app/components/Logo'
 import type { UserRole } from './AuthScreen'
 
 interface Props { onSelect: (role: UserRole) => void }
@@ -27,14 +28,19 @@ export default function RoleSelectScreen({ onSelect }: Props) {
   return (
     <div style={{ minHeight:'100dvh', background:'#0A1C2E',backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem 1.25rem', fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
-      <div style={{ fontSize:'0.52rem', fontFamily:'monospace', letterSpacing:'0.34em', color:'#F29337', marginBottom:'2rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>▲ STAIRCODE <span style={{display:'inline-flex',alignItems:'center',background:'#F29337',color:'#fff',fontSize:'0.42rem',fontWeight:800,letterSpacing:'0.12em',padding:'0.15rem 0.5rem',borderRadius:20,marginLeft:'0.45rem',verticalAlign:'middle',fontFamily:'monospace',boxShadow:'0 1px 6px rgba(242,147,55,0.45)'}}>BETA</span></div>
+      <div style={{ marginBottom:'1.75rem', display:'flex', justifyContent:'center' }}><BetaLogo size="md" onDark /></div>
 
       {/* Safety stripe */}
       <div style={{ width:'100%', maxWidth:420, height:5, borderRadius:3, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px', marginBottom:'1.5rem' }} />
 
       <div style={{ textAlign:'center', marginBottom:'2rem', maxWidth:340 }}>
         <h1 style={{ fontSize:'1.5rem', fontWeight:900, color:'#E8F4FF', margin:0, letterSpacing:'-0.02em', lineHeight:1.2 }}>What best describes you?</h1>
-        <p style={{ fontSize:'0.78rem', color:'#4E7A9B', margin:'0.5rem 0 0', lineHeight:1.55 }}>Staircode adjusts its language to match your background.</p>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:'0.5rem', background:'rgba(65,124,164,0.12)', border:'1px solid rgba(65,124,164,0.25)', borderRadius:16, borderTopLeftRadius:4, padding:'0.6rem 0.85rem', marginTop:'0.6rem', maxWidth:340 }}>
+          <span style={{ fontSize:'0.9rem', flexShrink:0, lineHeight:1 }}>&#x1F4AC;</span>
+          <span style={{ fontSize:'0.75rem', color:'#E8F4FF', lineHeight:1.55 }}>
+            <span style={{ color:'#93BAD4' }}>&#x2026;</span> stAIrcode adjusts its language to match your background.
+          </span>
+        </div>
       </div>
 
       <div style={{ width:'100%', maxWidth:400, display:'flex', flexDirection:'column', gap:'0.55rem' }}>
@@ -53,7 +59,7 @@ export default function RoleSelectScreen({ onSelect }: Props) {
               </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:'0.92rem', fontWeight:700, color:'#E8F4FF', lineHeight:1.2 }}>{r.label}</div>
-                <div style={{ fontSize:'0.68rem', color:'#4E7A9B', marginTop:'0.15rem', lineHeight:1.3 }}>{r.sub}</div>
+                <div style={{ fontSize:'0.68rem', color:'#93BAD4', marginTop:'0.15rem', lineHeight:1.3 }}>{r.sub}</div>
               </div>
               <div style={{ color: isActive ? r.accent : '#2A4060', fontSize:'1.1rem', flexShrink:0, transition:'color 0.15s' }}>
                 {isActive ? '✓' : '›'}
@@ -63,8 +69,8 @@ export default function RoleSelectScreen({ onSelect }: Props) {
         })}
       </div>
 
-      <p style={{ fontSize:'0.62rem', color:'#4E7A9B', textAlign:'center', marginTop:'1.5rem', lineHeight:1.6, maxWidth:280 }}>
-        Not sure? Choose DIY Renovator.<br/>You can change this anytime in Settings.
+      <p style={{ fontSize:'0.62rem', color:'#4E7A9B', textAlign:'center', marginTop:'1.5rem', lineHeight:1.6, maxWidth:280, fontWeight:500 }}>
+        <span style={{color:'#FFE066'}}>Not sure? Choose DIY Renovator.</span><br/><span style={{color:'#93BAD4',fontWeight:400,fontSize:'0.62rem'}}>You can change this anytime in Settings.</span>
       </p>
     </div>
   )

@@ -67,7 +67,7 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
     ? `
       <div style="font-family:Georgia,serif;max-width:680px;margin:0 auto;padding:2rem;color:#1a2b3c">
         <div style="text-align:center;border-bottom:2px solid #1565C0;padding-bottom:1rem;margin-bottom:2rem">
-          <div style="font-size:1.1rem;font-weight:700;letter-spacing:0.1em;color:#1565C0">▲ STAIRCODE</div>
+          <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto;" />
           <div style="font-size:1.3rem;font-weight:600;margin-top:0.3rem">Stair Compliance Pre-Inspection Report</div>
           <div style="font-size:0.85rem;color:#666;margin-top:0.2rem">${new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
@@ -80,7 +80,7 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
     `
     : `
       <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:2rem;color:#1a2b3c">
-        <div style="font-size:1.1rem;font-weight:700;letter-spacing:0.1em;color:#1565C0;margin-bottom:1rem">▲ STAIRCODE</div>
+        <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 1rem;" />
         <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro 🎉</h1>
         <p style="color:#555;line-height:1.6">Your Pro subscription is now active. You have unlimited scans, full compliance reports, and access to all supported building codes.</p>
         <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#1565C0;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Open Staircode →</a>

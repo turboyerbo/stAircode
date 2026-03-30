@@ -21,6 +21,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { Analytics } from '@/lib/analytics'
+import { BetaLogo } from '@/app/components/Logo'
 import { getProfile } from '@/lib/profiles'
 import type { UserRole } from './AuthScreen'
 import type { StairMeasurements } from './MeasureWalk'
@@ -367,7 +368,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
       {reportText && (
         <div id="full-report-print" style={{ display: 'none' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem', borderBottom: '2px solid #333', paddingBottom: '1rem' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: '0.1em' }}>STAIRCODE</div>
+            <img src='/logo_orange_transparent.png' alt='stAIrcode' style={{ height: 36, objectFit: 'contain' }} />
             <div style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '0.3rem' }}>Stair Compliance Pre-Inspection Report</div>
             <div style={{ fontSize: '0.85rem', color: '#555', marginTop: '0.3rem' }}>
               {codeLabel} · {location} · {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -384,7 +385,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
       {/* ── PRINT HEADER (screen-hidden) ── */}
       <div className="print-header" style={{ padding: '1rem 1.25rem 0.5rem' }}>
-        <strong style={{ fontSize: '0.95rem', letterSpacing: '0.08em', color: profile.text }}>STAIRCODE — Pre-Analysis Report</strong>
+        <img src='/logo_orange_transparent.png' alt='stAIrcode' style={{ height: 28, objectFit: 'contain' }} />
         <div style={{ fontSize: '0.65rem', color: profile.text2 }}>
           {codeLabel} · {codeRef} · {location} · {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
@@ -392,7 +393,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
       {/* ── TOP BAR ── */}
       <div style={{ padding: '0.75rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: ORANGE, display:'flex', alignItems:'center', gap:'0.3rem' }}>▲ STAIRCODE <span style={{display:'inline-flex',alignItems:'center',background:'#F29337',color:'#fff',fontSize:'0.42rem',fontWeight:800,letterSpacing:'0.12em',padding:'0.15rem 0.5rem',borderRadius:20,marginLeft:'0.45rem',verticalAlign:'middle',fontFamily:'monospace',boxShadow:'0 1px 6px rgba(242,147,55,0.45)'}}>BETA</span></div>
+        <BetaLogo size="xs" onDark />
         <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: profile.text3 }}>{codeLabel} · {location || 'Unknown'}</div>
       </div>
 

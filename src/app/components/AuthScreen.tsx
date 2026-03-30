@@ -52,6 +52,7 @@ type Screen = 'entry' | 'otp'
 // Env vars: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 import { createClient } from '@supabase/supabase-js'
 import { Analytics, identifyUser } from '@/lib/analytics'
+import { BetaLogo } from '@/app/components/Logo'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
@@ -354,8 +355,7 @@ export default function AuthScreen({ onAuth }: Props) {
   const logo = (
     <div style={{ textAlign: 'center', marginBottom: '1.4rem' }}>
       <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', letterSpacing: '0.34em', color: '#F29337', marginBottom: '0.3rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem' }}>
-        ▲ STAIRCODE
-        <span style={{display:'inline-flex',alignItems:'center',background:'#F29337',color:'#fff',fontSize:'0.42rem',fontWeight:800,letterSpacing:'0.12em',padding:'0.15rem 0.5rem',borderRadius:20,marginLeft:'0.45rem',verticalAlign:'middle',fontFamily:'monospace',boxShadow:'0 1px 6px rgba(242,147,55,0.45)'}}>BETA</span>
+<span style={{display:'inline-flex',alignItems:'center',background:'#F29337',color:'#fff',fontSize:'0.42rem',fontWeight:800,letterSpacing:'0.12em',padding:'0.15rem 0.5rem',borderRadius:20,marginLeft:'0.45rem',verticalAlign:'middle',fontFamily:'monospace',boxShadow:'0 1px 6px rgba(242,147,55,0.45)'}}>BETA</span>
       </div>
     </div>
   )
@@ -450,7 +450,7 @@ export default function AuthScreen({ onAuth }: Props) {
       <div style={{ marginTop: '1.6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <div style={{ height: 1, width: 40, background: 'rgba(44,90,122,0.09)' }} />
-          <span style={{ fontSize: '0.6rem', color: 'rgba(44,90,122,0.3)', letterSpacing: '0.12em', fontFamily: 'monospace' }}>BETA TESTING</span>
+          <span style={{ fontSize: '0.65rem', color: '#F29337', letterSpacing: '0.14em', fontFamily: 'monospace', fontWeight: 700 }}>🚧 BETA TESTING</span>
           <div style={{ height: 1, width: 40, background: 'rgba(44,90,122,0.09)' }} />
         </div>
         <button
@@ -488,7 +488,7 @@ export default function AuthScreen({ onAuth }: Props) {
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0A1C2E', lineHeight: 1.2 }}>Google Play</div>
               </div>
             </div>
-            <div style={{ fontSize: '0.56rem', fontFamily: 'monospace', color: 'rgba(44,90,122,0.5)', background: 'rgba(44,90,122,0.07)', borderRadius: 6, padding: '0.18rem 0.5rem', letterSpacing: '0.06em' }}>LAUNCHING APR 1</div>
+            <div style={{ fontSize: '0.56rem', fontFamily: 'monospace', color: 'rgba(44,90,122,0.5)', background: 'rgba(44,90,122,0.07)', borderRadius: 6, padding: '0.18rem 0.5rem', letterSpacing: '0.06em' }}>LAUNCHING APRIL</div>
           </div>
           {/* App Store */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', background: 'rgba(44,90,122,0.05)', border: '1px solid rgba(44,90,122,0.12)', borderRadius: 14, padding: '0.75rem 0.6rem' }}>
@@ -499,16 +499,19 @@ export default function AuthScreen({ onAuth }: Props) {
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0A1C2E', lineHeight: 1.2 }}>App Store</div>
               </div>
             </div>
-            <div style={{ fontSize: '0.56rem', fontFamily: 'monospace', color: 'rgba(44,90,122,0.5)', background: 'rgba(44,90,122,0.07)', borderRadius: 6, padding: '0.18rem 0.5rem', letterSpacing: '0.06em' }}>LAUNCHING MAY 1</div>
+            <div style={{ fontSize: '0.56rem', fontFamily: 'monospace', color: 'rgba(44,90,122,0.5)', background: 'rgba(44,90,122,0.07)', borderRadius: 6, padding: '0.18rem 0.5rem', letterSpacing: '0.06em' }}>LAUNCHING MAY</div>
           </div>
         </div>
-        <p style={{ fontSize: '0.6rem', color: 'rgba(44,90,122,0.25)', textAlign: 'center', lineHeight: 1.6, margin: 0 }}>
+        <p style={{ fontSize: '0.62rem', color: '#2C5A7A', textAlign: 'center', lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
           Currently in beta · Web version available now
         </p>
       </div>
 
-      <p style={{ fontSize: '0.6rem', color: 'rgba(44,90,122,0.2)', textAlign: 'center', marginTop: '0.75rem', lineHeight: 1.6, maxWidth: 300 }}>
-        By continuing you agree to our Terms of Service and Privacy Policy.
+      <p style={{ fontSize: '0.62rem', color: '#2C4A68', textAlign: 'center', marginTop: '0.75rem', lineHeight: 1.7, maxWidth: 300 }}>
+        By continuing you agree to our{' '}
+        <a href="/terms" style={{ color: '#F29337', fontWeight: 600, textDecoration: 'underline' }}>Terms of Service</a>
+        {' '}and{' '}
+        <a href="/privacy" style={{ color: '#F29337', fontWeight: 600, textDecoration: 'underline' }}>Privacy Policy</a>.
       </p>
     </div>
   )
@@ -618,7 +621,7 @@ export default function AuthScreen({ onAuth }: Props) {
 
         {/* Hint */}
         <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(28,64,88,0.4)', textAlign: 'center', lineHeight: 1.6 }}>
-          {'Check your spam folder if you don\'t see it within 60 seconds.'}
+          <span style={{ color: '#1A3A5C', fontWeight: 600 }}>Check your spam folder</span><span style={{ color: 'rgba(44,74,100,0.5)' }}> if you don't see it within 60 seconds.</span>
         </p>
       </div>
     </div>

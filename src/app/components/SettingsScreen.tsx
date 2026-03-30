@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { BetaLogo } from '@/app/components/Logo'
 import React from 'react'
 import type { AppUser, UserRole } from './AuthScreen'
 import { getProfile, getProfileLabel } from '@/lib/profiles'
@@ -79,7 +80,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
 
       {/* Header */}
       <div style={{ padding: '1.6rem 1.25rem 0.5rem', borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: T.orange, marginBottom: '0.4rem' }}>▲ STAIRCODE</div>
+        <div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: T.text, letterSpacing: '-0.02em' }}>Settings</h1>
       </div>
 
@@ -117,7 +118,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       {/* ── ACCOUNT ── */}
       {/* Header */}
       <div style={{ background:'#0A1C2E', backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', padding:'1.5rem 1.25rem 1.25rem' }}>
-        <div style={{ fontSize:'0.52rem', fontFamily:'monospace', letterSpacing:'0.3em', color:'#F29337', marginBottom:'0.4rem' }}>▲ STAIRCODE</div>
+        <div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
         <div style={{ fontSize:'1.3rem', fontWeight:900, color:'#E8F4FF', letterSpacing:'-0.02em' }}>Settings</div>
       </div>
       <div style={{ height:5, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px', marginBottom:'0.25rem' }} />
@@ -212,15 +213,36 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
 
       <SettingsRow icon="⚖️" label="Legal Information" onTap={() => setShowLegal(v => !v)} />
       {showLegal && (
-        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '1rem' }}>
-          <p style={{ fontSize: '0.75rem', color: T.text2, lineHeight: 1.7, margin: 0 }}>
-            <strong style={{ color: T.text }}>StairCode</strong> provides preliminary stair compliance assessments
-            for informational purposes only. Results are not a substitute for inspection by a qualified professional.
-            StairCode accepts no liability for decisions made on the basis of in-app measurements.
-            All building code references are indicative — consult the applicable authority having jurisdiction (AHJ)
-            for binding requirements.
+        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '1.1rem' }}>
+          <p style={{ fontSize: '0.74rem', color: T.text2, lineHeight: 1.75, margin: 0 }}>
+            <strong style={{ color: T.text }}>stAIrcode</strong> is a visual aid tool developed by{' '}
+            <strong style={{ color: T.text }}>Just Open Technologies Inc.</strong> (federally incorporated in Canada;
+            extra-provincial registration in Ontario). stAIrcode is <strong style={{ color: T.text }}>not a compliance
+            checker</strong> and does not constitute a building inspection or professional assessment of any kind.
             <br /><br />
-            © {new Date().getFullYear()} StairCode Inc. All rights reserved.{' '}
+            <strong style={{ color: T.text }}>IMPORTANT LIMITATIONS:</strong> All measurements produced by this
+            application are AI-generated estimates from camera images only. Accuracy is limited by image quality,
+            camera angle, lighting, and perspective distortion — typical error range is ±10–25mm or greater.
+            These measurements are <strong>not suitable</strong> for submission to any authority having jurisdiction
+            (AHJ), building permit application, legal proceeding, or professional certification.
+            <br /><br />
+            Only a licensed professional engineer, registered architect, or certified building inspector using
+            calibrated equipment can produce legally valid stair measurements. stAIrcode results must not be
+            relied upon for construction decisions, safety determinations, or code compliance verification.
+            <br /><br />
+            <strong style={{ color: T.text }}>LIMITATION OF LIABILITY:</strong> Just Open Technologies Inc.,
+            its officers, directors, employees, and agents accept no liability whatsoever for any loss, damage,
+            injury, or consequence arising from the use or misuse of this application or its outputs.
+            Use of this application is entirely at the user's own risk.
+            <br /><br />
+            All building code references are indicative only. Consult the applicable authority having jurisdiction
+            (AHJ) for binding requirements. Building codes change — always verify against the current edition.
+            <br /><br />
+            © {new Date().getFullYear()} stAIrcode — a product of Just Open Technologies Inc. All rights reserved.{' '}
+            <a href="/terms" style={{ color: T.blue }}>Terms of Service</a>
+            {' · '}
+            <a href="/privacy" style={{ color: T.blue }}>Privacy Policy</a>
+            {' · '}
             <a href="mailto:info@staircode.app" style={{ color: T.blue }}>info@staircode.app</a>
           </p>
         </div>

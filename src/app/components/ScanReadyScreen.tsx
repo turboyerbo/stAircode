@@ -36,7 +36,9 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { checkXRSupport } from '@/lib/xr-measure'
 import type { UserRole } from './AuthScreen'
 import { Analytics } from '@/lib/analytics'
+import { BetaLogo } from '@/app/components/Logo'
 import { getProfile } from '@/lib/profiles'
+import type { ScanMode } from '@/app/components/ScanModeSelect'
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const NAVY   = '#0A1C2E'
@@ -102,25 +104,38 @@ Real stair widths: 800–1400mm residential, up to 2000mm commercial.`,
   },
   {
     id: 'guard', label: 'Handrail Height', unit: 'mm', color: PURPLE,
-    rangeMin: 700, rangeMax: 1200, typical: 950, silent: false,
+    rangeMin: 600, rangeMax: 1300, typical: 900, silent: false,
     lineType: 'vertical',
-    intro: "Almost done — face the handrail and point the camera at it. I need to see from the tread surface all the way up to the top of the rail.",
-    aiContext: `TARGET: HANDRAIL HEIGHT — vertical distance from top of tread to top of handrail/guard rail.
-GOOD FRAME: handrail visible face-on, tread surface at bottom of frame, top of rail at top, phone upright.
-BAD FRAME: looking along the rail, top or bottom cut off, no tread visible as reference.
-MEASUREMENT: pixel height from tread level to rail top, calibrate with riser height if visible.
-Real handrail heights: 865–1070mm residential.`,
+    intro: "Last measurement — handrail height. Stand BESIDE the stair, not on it. Hold your phone upright and frame the rail from the tread at the bottom to the top of the handrail. The full rail height needs to be in frame.",
+    aiContext: `TARGET: HANDRAIL HEIGHT — vertical distance from tread nosing to top of handrail/guard rail.
+
+CRITICAL: Attempt a measurement from ANY frame showing a stair handrail. Never refuse.
+
+ESTIMATION STRATEGY (use in order):
+1. Full rail visible side-on with tread at bottom — measure directly
+2. Partial rail — extrapolate using visible portion and typical proportions
+3. Use known riser height (175-200mm) as pixel scale, multiply up to rail height
+4. Rail partially visible — estimate based on risers visible x riser height x typical ratio
+5. LAST RESORT: If any handrail visible, return 915mm at confidence 0.65
+
+RULES:
+- NEVER return phase searching more than twice in a row — always attempt a lock
+- Lock at confidence 0.62 or higher — be lenient, handrail is hardest to frame
+- Residential range 865-1070mm. Default: 900-965mm
+- If no handrail at all visible, return estimatedMm: 915, confidence: 0.60`,
   },
   // Silent background measurements
   {
     id: 'nosing', label: 'Nosing Projection', unit: 'mm', color: SLATE,
-    rangeMin: 0, rangeMax: 50, typical: 20, silent: true,
+    rangeMin: 0, rangeMax: 50, typical: 0, silent: true,
     lineType: 'tick',
     intro: '',
     aiContext: `TARGET: NOSING PROJECTION — how far the front edge of the tread overhangs the riser below.
-Look at the riser frame already captured. Estimate horizontal overhang of the tread lip beyond the riser face.
-If the tread edge is flush with the riser (no overhang), return estimatedMm: 0 and note "no nosing detected".
-Typical nosing: 15–35mm. If no nosing at all, set estimatedMm: 0.`,
+
+CRITICAL INSTRUCTION: The DEFAULT assumption is NO NOSING (noNosing: true, estimatedMm: 0).
+Only set noNosing: false if you can clearly and unambiguously see a physical lip protruding MORE THAN 30mm beyond the riser face.
+Shadows, image compression, and carpet edges are NOT nosing. When in doubt, report NO NOSING.
+Most residential stairs do NOT have a nosing, especially newer construction.`,
   },
   {
     id: 'headroom', label: 'Headroom', unit: 'mm', color: SLATE,
@@ -156,6 +171,7 @@ interface AnimLine {
 
 interface Props {
   userRole?: UserRole
+  scanMode?: ScanMode
   onSuccess: (measurements: Record<string, number | string>) => void
   onBack:    () => void
 }
@@ -187,7 +203,7 @@ function parseJSON(s: string): any {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }: Props) {
+export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy', onSuccess, onBack }: Props) {
   const videoRef   = useRef<HTMLVideoElement>(null)
   const canvasRef  = useRef<HTMLCanvasElement>(null)
   const streamRef  = useRef<MediaStream | null>(null)
@@ -218,6 +234,25 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
   const [showStuck,    setShowStuck]      = useState(false)
   // Nosing not detected overlay
   const [showNoNosing, setShowNoNosing]   = useState(false)
+  // Speed mode: auto-fill timer ref — fires after 8s per step if no lock
+  const speedAutoFillRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Handrail manual entry fallback — shown after 15s if guard not locked
+  const [showHandrailFallback, setShowHandrailFallback] = useState(false)
+  const [manualHandrail,       setManualHandrail]       = useState(950)  // typical default
+  const handrailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Step count — first thing AI delivers
+  const [stepCount,    setStepCount]      = useState<number | null>(null)
+  const [showStepCount,setShowStepCount]  = useState(false)
+  const [textGone,     setTextGone]       = useState(false)   // text fades 2-3s after image
+  // Conditions warning — shown when AI can't get a count
+  const [showConditionsWarning, setShowConditionsWarning] = useState(false)
+  // Handrail failsafe — count failed attempts, show manual entry after 3
+  const [guardAttempts,  setGuardAttempts]  = useState(0)
+  const [showGuardHelp,  setShowGuardHelp]  = useState(false)
+  const [manualGuardMm,  setManualGuardMm]  = useState(900)
+  const stepCountAttemptedRef = useRef(false)
   const stuckTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stuckShownRef  = useRef(false)
 
@@ -438,9 +473,13 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
         if (opacity > 0) { requestAnimationFrame(tick) }
         else {
           setIntroGone(true)
-          // AI starts only now — intro fully cleared
+          // Text fades out 2.5 seconds after image gone
+          setTimeout(() => setTextGone(true), 2500)
+          // AI starts — first task is to count the steps
           historyRef.current = []
           addMsg(getProfile(userRole).copy.scanIntro, 'searching')
+          // Run step count immediately as the very first AI call
+          countStepsFirst()
           scheduleAnalysis(800)
         }
       }
@@ -448,6 +487,69 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
     }, 2000)
     return () => clearTimeout(holdTimer)
   }, [camReady]) // eslint-disable-line
+
+  // ── Count steps — very first AI call, fires as intro fades ─────────────────
+  async function countStepsFirst() {
+    if (stepCountAttemptedRef.current) return
+    stepCountAttemptedRef.current = true
+
+    // Wait a moment for the camera to stabilise post-intro
+    await new Promise(r => setTimeout(r, 1200))
+
+    const b64 = captureB64(0.5)
+    if (!b64) {
+      setShowConditionsWarning(true)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageB64: b64,
+          prompt: `You are analysing a staircase image to count the number of steps visible.
+
+Look at this image carefully.
+
+1. Count the number of individual steps (treads) you can see.
+2. If you can see a partial staircase, estimate the total based on what's visible.
+3. Only attempt counting if: the staircase is straight (not spiral), residential-scale, and clearly visible.
+
+Respond ONLY with valid JSON, no other text:
+{"stepCount": <number or null>, "confident": <true or false>, "reason": "<brief reason if null>"}
+
+If you cannot confidently count steps because: spiral stair, industrial, no staircase visible, very poor lighting, or image unclear — set stepCount to null and explain in reason.`
+        }),
+      })
+
+      if (!res.ok) { setShowConditionsWarning(true); return }
+      const data = await res.json()
+
+      // Try parsing the JSON from Claude's response
+      try {
+        const raw = data.text ?? ''
+        const match = raw.match(/\{[\s\S]*\}/)
+        if (!match) { setShowConditionsWarning(true); return }
+        const parsed = JSON.parse(match[0])
+
+        if (parsed.stepCount && parsed.stepCount > 0 && parsed.confident) {
+          setStepCount(parsed.stepCount)
+          setShowStepCount(true)
+          // Auto-hide step count after 4 seconds
+          setTimeout(() => setShowStepCount(false), 4000)
+        } else {
+          // Couldn't count — show conditions warning
+          setShowConditionsWarning(true)
+        }
+      } catch {
+        setShowConditionsWarning(true)
+      }
+    } catch {
+      // Network error
+      setShowConditionsWarning(true)
+    }
+  }
 
   // ── Stuck detection — show hint image if no lock after 25s ───────────────
   useEffect(() => {
@@ -463,7 +565,7 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
         // Auto-dismiss after 4s
         setTimeout(() => setShowStuck(false), 4000)
       }
-    }, 25000)
+    }, isSpeed ? 10000 : 25000)
     return () => { if (stuckTimerRef.current) clearTimeout(stuckTimerRef.current) }
   }, [stepIdx, introGone, lockedMm, showReview])
 
@@ -478,8 +580,27 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
     busyRef.current = false
     clearLines()
     setApiError(null)
-    scheduleAnalysis(2000)
+    setGuardAttempts(0)
+    setShowGuardHelp(false)
+    scheduleAnalysis(isSpeed ? 1200 : 2000)
+
+    // Speed mode: auto-fill with typical value after 8s
+    if (isSpeed) {
+      if (speedAutoFillRef.current) clearTimeout(speedAutoFillRef.current)
+      speedAutoFillRef.current = setTimeout(() => {
+        // If still no lock on this step, use the typical value and move on
+        const cur = primarySteps[stepIdxRef.current]
+        if (!cur || lockedMm !== null) return
+        const autoVal = cur.typical
+        showMeasurementLine(cur, autoVal)
+        setLockedMm(autoVal)
+        Analytics.measurementLocked(`${cur.id}_autofill`, autoVal, 0.3)
+      }, 8000)
+    }
   }, [stepIdx]) // eslint-disable-line
+
+  // Speed mode uses faster intervals and lower thresholds
+  const isSpeed = scanMode === 'speed'
 
   function scheduleAnalysis(ms = 3000) {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -509,28 +630,40 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
 
       if (!raw) {
         // Silent retry — network blip or timeout, don't alarm the user
-        scheduleAnalysis(5000)
+        scheduleAnalysis(isSpeed ? 2000 : 5000)
         return
       }
 
       const r: CoachResponse | null = parseJSON(raw)
       if (!r) {
         // Bad JSON — retry silently
-        scheduleAnalysis(4000)
+        scheduleAnalysis(isSpeed ? 1500 : 4000)
         return
       }
 
       setApiError(null)
       addMsg(r.message, r.phase)
 
-      if (r.phase === 'locked' && r.estimatedMm !== null && r.confidence >= 0.70) {
+      // Handrail gets a lower confidence threshold — it's harder to frame perfectly
+      // Speed mode: lower threshold — accept reasonable guesses
+      const lockThreshold = isSpeed
+        ? (currentStep.id === 'guard' ? 0.45 : 0.50)
+        : (currentStep.id === 'guard' ? 0.60 : 0.70)
+      if (r.phase === 'locked' && r.estimatedMm !== null && r.confidence >= lockThreshold) {
         const mm = clamp(r.estimatedMm, currentStep.rangeMin, currentStep.rangeMax)
         showMeasurementLine(currentStep, mm)
         setLockedMm(mm)
+        // Clear handrail fallback if it was showing
+        if (currentStep.id === 'guard') {
+          setShowHandrailFallback(false)
+          if (handrailTimerRef.current) clearTimeout(handrailTimerRef.current)
+        }
+        // Clear speed auto-fill timer on any successful lock
+        if (speedAutoFillRef.current) clearTimeout(speedAutoFillRef.current)
         if (r.secondaryMm) setPendingSec(clamp(r.secondaryMm, 600, 2000))
         runSilentChecks(b64)
       } else {
-        scheduleAnalysis(r.phase === 'searching' ? 3500 : 2800)
+        scheduleAnalysis(isSpeed ? (r.phase === 'searching' ? 1800 : 1500) : (r.phase === 'searching' ? 3500 : 2800))
       }
     }
   })  // runs every render — always captures latest state
@@ -544,9 +677,13 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
       const r = parseJSON(raw)
       if (!r) continue
       if (silentDef.id === 'nosing') {
-        setResults(prev => ({ ...prev, nosing: r.noNosing ? 'none' : (r.estimatedMm ?? 0) }))
-        if (r.noNosing) {
-          // Show the nosing-not-detected illustration briefly
+        // POLICY: always default to 'none' — AI consistently over-reports nosing
+        // from shadows and image artefacts. User can override on the review screen.
+        setResults(prev => ({ ...prev, nosing: 'none' }))
+        // Only show "detected" overlay if AI is very confident AND estimated > 30mm
+        // (near-impossible to false-positive at that magnitude)
+        const hasConfidentNosing = !r.noNosing && r.estimatedMm && r.estimatedMm > 30 && r.confidence > 0.85
+        if (!hasConfidentNosing) {
           setShowNoNosing(true)
           Analytics.nosingNotDetected()
           setTimeout(() => setShowNoNosing(false), 5000)
@@ -562,11 +699,16 @@ export default function ScanReadyScreen({ userRole = 'diy', onSuccess, onBack }:
     return getProfile(userRole).aiPersona
   }
 
+  function buildSpeedPrefix(): string {
+    return 'SPEED MODE ACTIVE: You must return phase "locked" on this single frame — do NOT return "searching". Commit to your best estimate even if conditions are imperfect. Confidence of 0.50 or above is acceptable. If truly nothing visible, use the residential typical: rise=175mm, tread=250mm, width=900mm, guard=915mm at confidence=0.50.\n\n'
+  }
+
   function buildPrompt(def: MeasDef, recentHistory: string): string {
     const persona = getRolePersona()
+    const speedNote = isSpeed ? buildSpeedPrefix() : ''
     return `You are a measurement coach helping someone scan their staircase. You adapt your language to your audience.
 
-${persona}
+${speedNote}${persona}
 
 ${def.aiContext}
 
@@ -611,6 +753,34 @@ Do not include any other text.`
   }
 
   // ── Confirm measurement ──────────────────────────────────────────────────────
+  // Used by the handrail manual entry — bypasses AI lock
+  function confirmMeasurementWith(mm: number) {
+    const step = primarySteps[stepIdxRef.current]
+    if (!step) return
+    const newResults: Record<string, number | string> = {
+      ...results,
+      [step.id]: mm,
+    }
+    setResults(newResults)
+    setLockedMm(null); clearLines()
+
+    let next = stepIdx + 1
+    if (next < primarySteps.length && primarySteps[next].id === 'width' && newResults.width) next++
+
+    if (next >= primarySteps.length) {
+      const reviewDefaults = { ...newResults, nosing: newResults.nosing ?? 'none' }
+      const aiNosing = newResults.nosing
+      if (typeof aiNosing === 'number' && aiNosing <= 30) reviewDefaults.nosing = 'none'
+      setReviewVals(reviewDefaults)
+      setShowReview(true)
+    } else {
+      const nextDef = primarySteps[next]
+      const transition = getTransition(step.id, nextDef.id, mm)
+      setStepIdx(next)
+      addMsg(transition, 'guiding')
+    }
+  }
+
   function confirmMeasurement() {
     if (lockedMm === null || !step) return
     const newResults: Record<string, number | string> = {
@@ -627,13 +797,30 @@ Do not include any other text.`
 
     if (next >= primarySteps.length) {
       // All primary measurements done — show review
-      setReviewVals(newResults)
+      // Always default nosing to 'none' — user can change on review screen
+      const reviewDefaults = { ...newResults, nosing: newResults.nosing ?? 'none' }
+      // If AI reported a nosing value, still override to 'none' unless very large
+      const aiNosing = newResults.nosing
+      if (typeof aiNosing === 'number' && aiNosing <= 30) {
+        reviewDefaults.nosing = 'none'
+      }
+      setReviewVals(reviewDefaults)
       setShowReview(true)
     } else {
       const nextDef = primarySteps[next]
       const transition = getTransition(step.id, nextDef.id, lockedMm)
       setStepIdx(next)
       addMsg(transition, 'guiding')
+
+    // Start handrail fallback timer when entering guard step
+    if (nextDef.id === 'guard') {
+      if (handrailTimerRef.current) clearTimeout(handrailTimerRef.current)
+      setShowHandrailFallback(false)
+      handrailTimerRef.current = setTimeout(() => {
+        // Only show fallback if still on guard and not locked
+        setShowHandrailFallback(prev => true)
+      }, 8000)
+    }
     }
   }
 
@@ -643,8 +830,8 @@ Do not include any other text.`
       'rise→width': `Got the riser at ${mm}mm. Step back now so I can see both sides of the staircase for the width.`,
       'rise→guard': `Riser at ${mm}mm. Now face the handrail — I need to see from the tread up to the top of the rail.`,
       'run→width':  `Tread depth: ${mm}mm. Now step back so both stair edges are in frame.`,
-      'run→guard':  `${mm}mm tread — great. Now face the handrail for the final measurement.`,
-      'width→guard':`${mm}mm wide. Last one — face the handrail, tread at the bottom and rail top at the top.`,
+      'run→guard':  `${mm}mm tread. Last one — angle the phone at the handrail so I can see from the tread up to the top of the rail.`,
+      'width→guard':`${mm}mm wide. Last step — point at the handrail from any side angle. I\'ll estimate the height from what I can see.`,
     }
     const key = `${from}→${to}`
     return map[key] ?? `${mm}mm — got it. Now let's get the ${MEASUREMENTS.find(m=>m.id===to)?.label.toLowerCase()}.`
@@ -736,35 +923,405 @@ Do not include any other text.`
         <div style={{
           position: 'absolute', inset: 0, zIndex: 60,
           display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'flex-end',
+          alignItems: 'flex-start', justifyContent: 'flex-start',
           pointerEvents: introOpacity < 0.05 ? 'none' : 'auto',
           opacity: introOpacity,
           transition: 'none',
         }}>
-          {/* Dark vignette behind text */}
-          <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)' }} />
-          {/* Girl measuring illustration */}
+          {/* Text block at TOP — above the image, fully readable */}
+          <div style={{
+            position: 'relative', zIndex: 2,
+            width: '100%',
+            padding: 'max(env(safe-area-inset-top,0px),2.5rem) 1.5rem 1.25rem',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.0) 100%)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize:'1.25rem', fontWeight:900, color:'#fff', lineHeight:1.3, marginBottom:'0.5rem', letterSpacing:'-0.01em' }}>
+              Stand in front of your staircase
+            </div>
+            <div style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.85)', lineHeight:1.65 }}>
+              Hold your phone upright, pointing at the steps.
+            </div>
+            <div style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.85)', lineHeight:1.65 }}>
+              Step back so 2–3 steps are visible in frame.
+            </div>
+          </div>
+
+          {/* Girl measuring illustration — fills the rest of the screen */}
           <img
             src="/Girl_measuring.png"
             alt="Position yourself in front of the staircase"
             style={{
-              position: 'absolute', bottom: 0, left: '50%',
-              transform: 'translateX(-50%)',
-              width: '100%', maxWidth: 500,
-              objectFit: 'contain', objectPosition: 'bottom',
-              opacity: 0.92,
+              position: 'absolute', top: 0, left: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: 'center bottom',
+              opacity: 0.88,
+              zIndex: 0,
             }}
           />
-          {/* Instruction text */}
-          <div style={{ position:'relative', zIndex:2, padding:'0 1.5rem 5rem', textAlign:'center' }}>
-            <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#fff', lineHeight:1.3, marginBottom:'0.5rem', textShadow:'0 2px 12px rgba(0,0,0,0.8)' }}>
-              Stand in front of your staircase
-            </div>
-            <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.75)', lineHeight:1.6, textShadow:'0 1px 8px rgba(0,0,0,0.8)' }}>
-              Hold your phone upright, pointing at the steps.<br/>Step back so 2–3 steps are visible in frame.
-            </div>
+        </div>
+      )}
+
+      {/* ── TEXT FADE AFTER IMAGE — lingers 2-3s then fades ── */}
+      {introGone && !textGone && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 58,
+          padding: 'max(env(safe-area-inset-top,0px),2.5rem) 1.5rem 1.25rem',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%)',
+          textAlign: 'center',
+          animation: 'fadeIn 0.3s ease forwards',
+          transition: 'opacity 1s ease',
+          opacity: textGone ? 0 : 1,
+          pointerEvents: 'none',
+        }}>
+          <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#fff', lineHeight:1.3, marginBottom:'0.3rem' }}>
+            Stand in front of your staircase
+          </div>
+          <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.75)', lineHeight:1.6 }}>
+            Step back so 2–3 steps are in frame
           </div>
         </div>
+      )}
+
+      {/* ── STEP COUNT BANNER — first thing AI delivers ── */}
+      {showStepCount && stepCount !== null && (
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 65,
+          background: 'rgba(10,28,46,0.95)',
+          border: '2px solid #27A96B',
+          borderRadius: 20,
+          padding: '1.5rem 2rem',
+          textAlign: 'center',
+          animation: 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(39,169,107,0.3)',
+          minWidth: 220,
+        }}>
+          <div style={{ fontSize:'0.65rem', fontFamily:'monospace', color:'#27A96B', letterSpacing:'0.16em', marginBottom:'0.5rem', fontWeight:700 }}>
+            ✓ STAIRCASE DETECTED
+          </div>
+          <div style={{ fontSize:'3.5rem', fontWeight:900, color:'#E8F4FF', lineHeight:1, marginBottom:'0.3rem' }}>
+            {stepCount}
+          </div>
+          <div style={{ fontSize:'0.85rem', color:'#93BAD4', fontWeight:600 }}>
+            {stepCount === 1 ? 'step detected' : 'steps detected'}
+          </div>
+          <div style={{ fontSize:'0.68rem', color:'#4E7A9B', marginTop:'0.6rem', lineHeight:1.5 }}>
+            Starting measurement scan…
+          </div>
+        </div>
+      )}
+
+      {/* ── HANDRAIL MANUAL FALLBACK — shown after 15s if guard not locked ── */}
+      {showHandrailFallback && !lockedMm && !showReview && primarySteps[stepIdx]?.id === 'guard' && (
+        <>
+          {/* Semi-transparent backdrop */}
+          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.60)', zIndex:67, pointerEvents:'none' }} />
+
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:68 }}>
+            <div style={{ background:'#0A1C2E', borderRadius:'22px 22px 0 0', padding:'1.1rem 1.25rem 2rem', boxShadow:'0 -8px 40px rgba(0,0,0,0.7)' }}>
+
+              {/* Handle */}
+              <div style={{ width:36, height:4, borderRadius:2, background:'rgba(147,186,212,0.25)', margin:'0 auto 1rem' }} />
+
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.75rem' }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:'rgba(250,116,31,0.15)', border:'1.5px solid rgba(250,116,31,0.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem', flexShrink:0 }}>📏</div>
+                <div>
+                  <div style={{ fontSize:'0.92rem', fontWeight:900, color:'#E8F4FF', letterSpacing:'-0.01em' }}>Handrail is tricky — here's how</div>
+                  <div style={{ fontSize:'0.62rem', color:'#FA741F', fontFamily:'monospace', fontWeight:700 }}>Or enter it manually below</div>
+                </div>
+              </div>
+
+              {/* Visual diagram — SVG showing correct phone position */}
+              <div style={{ background:'rgba(65,124,164,0.08)', border:'1px solid rgba(65,124,164,0.20)', borderRadius:14, padding:'0.75rem', marginBottom:'0.85rem' }}>
+                <svg viewBox="0 0 320 130" width="100%" style={{ display:'block' }}>
+                  {/* Stair steps */}
+                  <rect x="120" y="80" width="50" height="40" fill="#1A3A5C" stroke="#417CA4" strokeWidth="1"/>
+                  <rect x="150" y="60" width="50" height="60" fill="#1A3A5C" stroke="#417CA4" strokeWidth="1"/>
+                  <rect x="180" y="40" width="50" height="80" fill="#1A3A5C" stroke="#417CA4" strokeWidth="1"/>
+                  <rect x="210" y="20" width="50" height="100" fill="#1A3A5C" stroke="#417CA4" strokeWidth="1"/>
+
+                  {/* Handrail */}
+                  <line x1="148" y1="50" x2="248" y2="10" stroke="#FA741F" strokeWidth="4" strokeLinecap="round"/>
+                  {/* Rail posts */}
+                  <line x1="160" y1="60" x2="155" y2="48" stroke="#FA741F" strokeWidth="2"/>
+                  <line x1="190" y1="40" x2="185" y2="28" stroke="#FA741F" strokeWidth="2"/>
+                  <line x1="220" y1="20" x2="215" y2="9" stroke="#FA741F" strokeWidth="2"/>
+
+                  {/* Height measurement arrow */}
+                  <line x1="110" y1="80" x2="110" y2="50" stroke="#27A96B" strokeWidth="2"/>
+                  <polygon points="110,46 107,54 113,54" fill="#27A96B"/>
+                  <polygon points="110,84 107,76 113,76" fill="#27A96B"/>
+                  <text x="86" y="68" fill="#27A96B" fontSize="9" fontFamily="monospace">900mm</text>
+
+                  {/* Person standing beside stair */}
+                  {/* Body */}
+                  <ellipse cx="60" cy="30" rx="10" ry="10" fill="#93BAD4"/>
+                  <rect x="54" y="40" width="12" height="35" rx="4" fill="#93BAD4"/>
+                  {/* Arms — one holding phone */}
+                  <line x1="66" y1="50" x2="90" y2="58" stroke="#93BAD4" strokeWidth="4" strokeLinecap="round"/>
+                  {/* Legs */}
+                  <line x1="57" y1="75" x2="52" y2="100" stroke="#93BAD4" strokeWidth="4" strokeLinecap="round"/>
+                  <line x1="67" y1="75" x2="72" y2="100" stroke="#93BAD4" strokeWidth="4" strokeLinecap="round"/>
+                  {/* Phone */}
+                  <rect x="88" y="52" width="14" height="22" rx="3" fill="#E8F4FF" stroke="#417CA4" strokeWidth="1.5"/>
+                  <rect x="90" y="54" width="10" height="14" rx="1" fill="#0A1C2E"/>
+
+                  {/* Arrow from phone to rail */}
+                  <line x1="102" y1="60" x2="142" y2="55" stroke="#FA741F" strokeWidth="1.5" strokeDasharray="4,3"/>
+                  <polygon points="145,55 138,51 138,59" fill="#FA741F"/>
+
+                  {/* Labels */}
+                  <text x="28" y="115" fill="#E8F4FF" fontSize="9" fontFamily="sans-serif">Stand BESIDE</text>
+                  <text x="28" y="126" fill="#93BAD4" fontSize="8" fontFamily="sans-serif">not on stair</text>
+                  <text x="148" y="120" fill="#FA741F" fontSize="9" fontFamily="sans-serif">Frame full rail</text>
+                  <text x="148" y="130" fill="#93BAD4" fontSize="8" fontFamily="sans-serif">tread → top</text>
+                </svg>
+              </div>
+
+              {/* 3 quick tips */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.4rem', marginBottom:'0.85rem' }}>
+                {[
+                  { icon:'🧍', tip:'Stand BESIDE the stair' },
+                  { icon:'📱', tip:'Hold phone upright' },
+                  { icon:'↕️', tip:'Show tread to rail top' },
+                ].map((item, i) => (
+                  <div key={i} style={{ background:'rgba(65,124,164,0.10)', border:'1px solid rgba(65,124,164,0.2)', borderRadius:10, padding:'0.5rem', textAlign:'center' }}>
+                    <div style={{ fontSize:'1.2rem', marginBottom:'0.25rem' }}>{item.icon}</div>
+                    <div style={{ fontSize:'0.6rem', color:'#93BAD4', lineHeight:1.4 }}>{item.tip}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.85rem' }}>
+                <div style={{ flex:1, height:1, background:'rgba(147,186,212,0.15)' }} />
+                <span style={{ fontSize:'0.62rem', color:'#4E7A9B', fontFamily:'monospace' }}>OR ENTER MANUALLY</span>
+                <div style={{ flex:1, height:1, background:'rgba(147,186,212,0.15)' }} />
+              </div>
+
+              {/* Manual mm adjuster */}
+              <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.7rem' }}>
+                <button onClick={() => setManualHandrail(v => Math.max(700, v - 5))} style={{ width:44, height:44, borderRadius:'50%', background:'rgba(147,186,212,0.15)', border:'1px solid rgba(147,186,212,0.3)', color:'#E8F4FF', fontSize:'1.4rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>−</button>
+                <div style={{ flex:1, textAlign:'center' }}>
+                  <div style={{ fontSize:'2.8rem', fontWeight:900, color:'#E8F4FF', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>{manualHandrail}</div>
+                  <div style={{ fontSize:'0.68rem', color:'#93BAD4', fontFamily:'monospace' }}>mm</div>
+                  <div style={{ fontSize:'0.58rem', color:'#4E7A9B', marginTop:'0.15rem' }}>OBC min 900mm · typical 900–965mm</div>
+                </div>
+                <button onClick={() => setManualHandrail(v => Math.min(1200, v + 5))} style={{ width:44, height:44, borderRadius:'50%', background:'rgba(147,186,212,0.15)', border:'1px solid rgba(147,186,212,0.3)', color:'#E8F4FF', fontSize:'1.4rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>+</button>
+              </div>
+
+              {/* Quick-select */}
+              <div style={{ display:'flex', gap:'0.35rem', marginBottom:'0.85rem' }}>
+                {[865, 900, 915, 950, 965, 1000].map(h => (
+                  <button key={h} onClick={() => setManualHandrail(h)} style={{
+                    flex:1, padding:'0.4rem 0.1rem',
+                    background: manualHandrail === h ? 'rgba(250,116,31,0.25)' : 'rgba(147,186,212,0.07)',
+                    border: `1px solid ${manualHandrail === h ? '#FA741F' : 'rgba(147,186,212,0.18)'}`,
+                    borderRadius:7, color: manualHandrail === h ? '#FA741F' : '#93BAD4',
+                    fontSize:'0.6rem', fontFamily:'monospace', fontWeight:700, cursor:'pointer',
+                  }}>{h}</button>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display:'flex', gap:'0.5rem' }}>
+                <button
+                  onClick={() => { setShowHandrailFallback(false) }}
+                  style={{ flex:1, padding:'0.8rem', background:'rgba(65,124,164,0.15)', border:'1px solid rgba(65,124,164,0.3)', borderRadius:12, color:'#93BAD4', fontSize:'0.75rem', fontFamily:'monospace', cursor:'pointer', fontWeight:600 }}
+                >↺ Try again</button>
+                <button
+                  onClick={() => {
+                    const step = primarySteps[stepIdx]
+                    showMeasurementLine(step, manualHandrail)
+                    setLockedMm(manualHandrail)
+                    setShowHandrailFallback(false)
+                    if (handrailTimerRef.current) clearTimeout(handrailTimerRef.current)
+                    Analytics.measurementLocked('guard_manual', manualHandrail, 1.0)
+                  }}
+                  style={{ flex:2, padding:'0.8rem', background:'linear-gradient(135deg,#FA741F,#C4721E)', border:'none', borderRadius:12, color:'#fff', fontSize:'0.88rem', fontFamily:'monospace', cursor:'pointer', fontWeight:800, letterSpacing:'0.05em', boxShadow:'0 4px 16px rgba(250,116,31,0.4)' }}
+                >✓ Use {manualHandrail}mm →</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── HANDRAIL HELP PANEL — appears after 3 failed attempts ── */}
+      {showGuardHelp && !showReview && primarySteps[stepIdx]?.id === 'guard' && (
+        <>
+          <div
+            onClick={() => setShowGuardHelp(false)}
+            style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.72)', zIndex:70 }}
+          />
+          <div style={{
+            position:'absolute', bottom:0, left:0, right:0, zIndex:71,
+            background:'#0F2438',
+            borderRadius:'22px 22px 0 0',
+            padding:'1.25rem 1.25rem 2.5rem',
+            boxShadow:'0 -8px 40px rgba(0,0,0,0.6)',
+          }}>
+            {/* Handle */}
+            <div style={{ width:36, height:4, borderRadius:2, background:'rgba(147,186,212,0.25)', margin:'0 auto 1rem' }} />
+
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', gap:'0.65rem', marginBottom:'1rem' }}>
+              <div style={{ width:40, height:40, borderRadius:12, background:'rgba(242,147,55,0.15)', border:'1.5px solid rgba(242,147,55,0.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.3rem', flexShrink:0 }}>📏</div>
+              <div>
+                <div style={{ fontSize:'0.95rem', fontWeight:900, color:'#E8F4FF' }}>Handrail tips</div>
+                <div style={{ fontSize:'0.68rem', color:'#F29337', fontFamily:'monospace', fontWeight:700 }}>3 ways to capture it</div>
+              </div>
+            </div>
+
+            {/* Visual diagram — 3 positions */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.5rem', marginBottom:'1rem' }}>
+              {[
+                { emoji:'↕️', title:'Side-on', desc:'Stand beside the stair. Point phone at the side of the railing. Tread at bottom, top of rail at top.' },
+                { emoji:'📱', title:'Face-on', desc:'Face the rail from the front. Full handrail visible, phone upright.' },
+                { emoji:'🔢', title:'Count it', desc:'Count the number of risers the rail rises over. Multiply by riser height.' },
+              ].map((tip, i) => (
+                <div key={i} style={{ background:'rgba(65,124,164,0.12)', border:'1px solid rgba(65,124,164,0.2)', borderRadius:12, padding:'0.65rem 0.5rem', textAlign:'center' }}>
+                  <div style={{ fontSize:'1.4rem', marginBottom:'0.25rem' }}>{tip.emoji}</div>
+                  <div style={{ fontSize:'0.68rem', fontWeight:700, color:'#E8F4FF', marginBottom:'0.2rem' }}>{tip.title}</div>
+                  <div style={{ fontSize:'0.6rem', color:'#93BAD4', lineHeight:1.45 }}>{tip.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div style={{ textAlign:'center', fontSize:'0.62rem', color:'#4E7A9B', marginBottom:'0.75rem' }}>— or enter manually —</div>
+
+            {/* Manual entry */}
+            <div style={{ background:'rgba(147,186,212,0.07)', border:'1px solid rgba(147,186,212,0.15)', borderRadius:14, padding:'0.85rem 1rem', marginBottom:'0.75rem' }}>
+              <div style={{ fontSize:'0.65rem', color:'#93BAD4', fontFamily:'monospace', marginBottom:'0.5rem' }}>HANDRAIL HEIGHT (mm)</div>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.7rem' }}>
+                <button
+                  onClick={() => setManualGuardMm(v => Math.max(700, v - 10))}
+                  style={{ width:40, height:40, borderRadius:'50%', background:'rgba(147,186,212,0.15)', border:'1px solid rgba(255,255,255,0.12)', color:'#E8F4FF', fontSize:'1.2rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>−</button>
+                <div style={{ flex:1, textAlign:'center' }}>
+                  <span style={{ fontSize:'2.4rem', fontWeight:900, color:'#E8F4FF', fontVariantNumeric:'tabular-nums' }}>{manualGuardMm}</span>
+                  <span style={{ fontSize:'0.78rem', color:'#93BAD4', marginLeft:'0.25rem', fontFamily:'monospace' }}>mm</span>
+                </div>
+                <button
+                  onClick={() => setManualGuardMm(v => Math.min(1300, v + 10))}
+                  style={{ width:40, height:40, borderRadius:'50%', background:'rgba(147,186,212,0.15)', border:'1px solid rgba(255,255,255,0.12)', color:'#E8F4FF', fontSize:'1.2rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>+</button>
+              </div>
+              <div style={{ display:'flex', justifyContent:'center', gap:'0.5rem', marginTop:'0.5rem' }}>
+                {[865, 900, 965, 1000, 1070].map(v => (
+                  <button key={v} onClick={() => setManualGuardMm(v)} style={{ padding:'0.2rem 0.5rem', background: manualGuardMm === v ? 'rgba(242,147,55,0.25)' : 'rgba(255,255,255,0.05)', border:`1px solid ${manualGuardMm === v ? '#F29337' : 'rgba(255,255,255,0.1)'}`, borderRadius:8, color: manualGuardMm === v ? '#F29337' : '#4E7A9B', fontSize:'0.6rem', fontFamily:'monospace', cursor:'pointer' }}>{v}</button>
+                ))}
+              </div>
+              <div style={{ fontSize:'0.58rem', color:'#4E7A9B', textAlign:'center', marginTop:'0.35rem' }}>Residential code: 865–1070mm · Most common: ~900mm</div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+              {/* Use the manually entered value */}
+              <button
+                onClick={() => {
+                  setLockedMm(manualGuardMm)
+                  setShowGuardHelp(false)
+                  confirmMeasurementWith(manualGuardMm)
+                }}
+                style={{ width:'100%', padding:'0.95rem', background:'linear-gradient(135deg,#F29337,#C4721E)', border:'none', borderRadius:14, color:'#fff', fontSize:'0.88rem', fontFamily:'monospace', cursor:'pointer', fontWeight:800, letterSpacing:'0.06em', boxShadow:'0 4px 16px rgba(242,147,55,0.4)' }}
+              >
+                ✓ Use {manualGuardMm}mm →
+              </button>
+              {/* Keep trying with AI */}
+              <button
+                onClick={() => { setShowGuardHelp(false); setGuardAttempts(0); scheduleAnalysis(500) }}
+                style={{ width:'100%', padding:'0.8rem', background:'rgba(65,124,164,0.12)', border:'1px solid rgba(65,124,164,0.3)', borderRadius:14, color:'#93BAD4', fontSize:'0.82rem', fontFamily:'monospace', cursor:'pointer', fontWeight:600 }}
+              >
+                ↺ Keep trying with camera
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── CONDITIONS WARNING — when AI can't count steps ── */}
+      {showConditionsWarning && !showReview && (
+        <>
+          <div
+            onClick={() => setShowConditionsWarning(false)}
+            style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.78)', zIndex:70 }}
+          />
+          <div style={{
+            position: 'absolute',
+            bottom: 0, left: 0, right: 0,
+            zIndex: 71,
+            background: '#0F2438',
+            borderRadius: '22px 22px 0 0',
+            padding: '1.5rem 1.5rem 2.5rem',
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.6)',
+            animation: 'slideUp 0.35s ease forwards',
+          }}>
+            {/* Handle */}
+            <div style={{ width:36, height:4, borderRadius:2, background:'rgba(147,186,212,0.25)', margin:'0 auto 1.25rem' }} />
+
+            {/* Icon + heading */}
+            <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
+              <div style={{ width:44, height:44, borderRadius:12, background:'rgba(242,147,55,0.15)', border:'1.5px solid rgba(242,147,55,0.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem', flexShrink:0 }}>
+                🚧
+              </div>
+              <div>
+                <div style={{ fontSize:'0.95rem', fontWeight:900, color:'#E8F4FF', letterSpacing:'-0.01em' }}>
+                  stAIrcode is under development
+                </div>
+                <div style={{ fontSize:'0.68rem', color:'#F29337', fontFamily:'monospace', fontWeight:700, marginTop:'0.1rem' }}>
+                  BETA — Limited conditions
+                </div>
+              </div>
+            </div>
+
+            {/* Message */}
+            <div style={{ fontSize:'0.8rem', color:'#93BAD4', lineHeight:1.75, marginBottom:'1.25rem' }}>
+              stAIrcode is designed for{' '}
+              <span style={{ color:'#E8F4FF', fontWeight:600 }}>residential indoor straight stairs</span>{' '}
+              under good conditions only. For the best results:
+            </div>
+
+            {/* Conditions list */}
+            {[
+              { icon:'✓', text:'Straight stairs only — no spiral or curved', ok:true },
+              { icon:'✓', text:'Residential scale — not industrial or commercial', ok:true },
+              { icon:'✓', text:'Good indoor lighting — no harsh shadows', ok:true },
+              { icon:'✓', text:'Strong internet connection', ok:true },
+              { icon:'✗', text:'Spiral or winder stairs — not supported', ok:false },
+              { icon:'✗', text:'Outdoor, industrial, or commercial stairs', ok:false },
+              { icon:'✗', text:'Poor lighting or extreme angles', ok:false },
+            ].map((item, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:'0.6rem', padding:'0.35rem 0', borderBottom: i < 6 ? '1px solid rgba(65,124,164,0.10)' : 'none' }}>
+                <span style={{ fontSize:'0.8rem', color: item.ok ? '#27A96B' : '#E84545', fontWeight:800, width:16, flexShrink:0 }}>{item.icon}</span>
+                <span style={{ fontSize:'0.75rem', color: item.ok ? '#93BAD4' : '#4E7A9B' }}>{item.text}</span>
+              </div>
+            ))}
+
+            <div style={{ marginTop:'1rem', padding:'0.75rem 1rem', background:'rgba(242,147,55,0.10)', border:'1px solid rgba(242,147,55,0.25)', borderRadius:12 }}>
+              <div style={{ fontSize:'0.72rem', color:'#F29337', lineHeight:1.65 }}>
+                We are working hard to improve accuracy and expand supported stair types. For beta testing, please use basic indoor residential stairs to validate the core functionality.
+              </div>
+            </div>
+
+            {/* Dismiss + retry */}
+            <div style={{ display:'flex', gap:'0.6rem', marginTop:'1.25rem' }}>
+              <button
+                onClick={() => { setShowConditionsWarning(false); stepCountAttemptedRef.current = false; countStepsFirst() }}
+                style={{ flex:1, padding:'0.85rem', background:'rgba(65,124,164,0.15)', border:'1px solid rgba(65,124,164,0.3)', borderRadius:14, color:'#93BAD4', fontSize:'0.82rem', fontFamily:'monospace', cursor:'pointer', fontWeight:600 }}
+              >
+                ↺ Try Again
+              </button>
+              <button
+                onClick={() => setShowConditionsWarning(false)}
+                style={{ flex:2, padding:'0.85rem', background:'linear-gradient(135deg,#F29337,#C4721E)', border:'none', borderRadius:14, color:'#fff', fontSize:'0.88rem', fontFamily:'monospace', cursor:'pointer', fontWeight:800, letterSpacing:'0.06em' }}
+              >
+                Continue Anyway →
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── STUCK HINT OVERLAY ── */}
@@ -904,7 +1461,7 @@ Do not include any other text.`
               )}
               {results.nosing !== undefined && (
                 <div style={{ fontSize:'0.68rem', color:SLATE, fontFamily:'monospace', marginTop:'0.2rem' }}>
-                  {results.nosing === 'none' || results.nosing === 0 ? '⚠ No nosing detected on these steps' : `Nosing: ~${results.nosing}mm`}
+                  {results.nosing === 'none' || results.nosing === 0 || results.nosing === undefined ? '○ No nosing (default — verify on review screen)' : `Nosing: ~${results.nosing}mm`}
                 </div>
               )}
               <div style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.18)', fontFamily:'monospace', marginTop:'0.15rem' }}>Adjust with − / + if needed</div>
@@ -942,7 +1499,7 @@ Do not include any other text.`
           <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column' }}>
             {/* Header */}
             <div style={{ padding:'max(env(safe-area-inset-top,0px),2.2rem) 1.25rem 1rem', background:'rgba(13,27,42,0.95)', borderBottom:'1px solid rgba(147,186,212,0.12)' }}>
-              <div style={{ fontSize:'0.52rem', fontFamily:'monospace', letterSpacing:'0.3em', color:'#F29337', marginBottom:'0.4rem', display:'flex', alignItems:'center', gap:'0.3rem' }}>▲ STAIRCODE <span style={{display:'inline-flex',alignItems:'center',background:'#F29337',color:'#fff',fontSize:'0.42rem',fontWeight:800,letterSpacing:'0.12em',padding:'0.15rem 0.5rem',borderRadius:20,marginLeft:'0.45rem',verticalAlign:'middle',fontFamily:'monospace',boxShadow:'0 1px 6px rgba(242,147,55,0.45)'}}>BETA</span></div>
+              <BetaLogo size="xs" onDark />
               <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:WHITE, margin:0, letterSpacing:'-0.02em' }}>Review Measurements</h2>
               <p style={{ fontSize:'0.75rem', color:SLATE, margin:'0.3rem 0 0', lineHeight:1.5 }}>Adjust any value with − / +, then tap Generate Report.</p>
             </div>
@@ -980,8 +1537,54 @@ Do not include any other text.`
                         </span>
                       </div>
                     )}
-                    {def.id === 'nosing' && typeof val === 'number' && val === 0 && (
-                      <div style={{ fontSize:'0.68rem', color:AMBER, marginTop:'0.35rem', lineHeight:1.5 }}>⚠ No nosing projection detected on these steps.</div>
+                    {def.id === 'nosing' && (
+                      <div style={{ marginTop: isNumber ? '0.5rem' : '0.4rem' }}>
+                        {/* Nosing toggle — default is NO NOSING, user can override */}
+                        <div style={{ fontSize:'0.6rem', color:AMBER, fontFamily:'monospace', marginBottom:'0.5rem', lineHeight:1.5 }}>
+                          ⚠ Default: NO NOSING — change below if nosing is visible
+                        </div>
+                        <div style={{ display:'flex', gap:'0.4rem' }}>
+                          {/* No nosing option */}
+                          <button
+                            onClick={() => setReviewVals(prev => ({ ...prev, nosing: 'none' }))}
+                            style={{
+                              flex:1, padding:'0.55rem 0.4rem',
+                              background: (val === 'none' || val === 0) ? 'rgba(242,147,55,0.20)' : 'rgba(255,255,255,0.04)',
+                              border: `1.5px solid ${(val === 'none' || val === 0) ? '#F29337' : 'rgba(255,255,255,0.1)'}`,
+                              borderRadius:10, cursor:'pointer',
+                              color: (val === 'none' || val === 0) ? '#F29337' : SLATE,
+                              fontSize:'0.68rem', fontFamily:'monospace', fontWeight:700,
+                            }}
+                          >
+                            ✗ No Nosing
+                          </button>
+                          {/* Has nosing — show mm adjuster */}
+                          <button
+                            onClick={() => setReviewVals(prev => ({ ...prev, nosing: 20 }))}
+                            style={{
+                              flex:1, padding:'0.55rem 0.4rem',
+                              background: (typeof val === 'number' && val > 0) ? 'rgba(147,186,212,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: `1.5px solid ${(typeof val === 'number' && val > 0) ? 'rgba(147,186,212,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                              borderRadius:10, cursor:'pointer',
+                              color: (typeof val === 'number' && val > 0) ? WHITE : SLATE,
+                              fontSize:'0.68rem', fontFamily:'monospace', fontWeight:700,
+                            }}
+                          >
+                            ✓ Has Nosing
+                          </button>
+                        </div>
+                        {/* Show mm adjuster if nosing selected */}
+                        {typeof val === 'number' && val > 0 && (
+                          <div style={{ display:'flex', alignItems:'center', gap:'0.7rem', marginTop:'0.5rem' }}>
+                            <button onClick={() => adjustValue('nosing', -1)} style={{ width:36, height:36, borderRadius:'50%', background:'rgba(147,186,212,0.12)', border:'1px solid rgba(255,255,255,0.1)', color:WHITE, fontSize:'1.1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+                            <div style={{ flex:1, textAlign:'center' }}>
+                              <span style={{ fontSize:'1.8rem', fontWeight:900, color:WHITE }}>{val}</span>
+                              <span style={{ fontSize:'0.72rem', color:SLATE, marginLeft:'0.25rem', fontFamily:'monospace' }}>mm</span>
+                            </div>
+                            <button onClick={() => adjustValue('nosing', +1)} style={{ width:36, height:36, borderRadius:'50%', background:'rgba(147,186,212,0.12)', border:'1px solid rgba(255,255,255,0.1)', color:WHITE, fontSize:'1.1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )
@@ -992,8 +1595,8 @@ Do not include any other text.`
                 <div style={{ fontSize:'0.62rem', fontFamily:'monospace', letterSpacing:'0.1em', color:BLUE, marginBottom:'0.4rem', fontWeight:700 }}>AI VISUAL OBSERVATIONS</div>
                 <div style={{ fontSize:'0.75rem', color:SLATE, lineHeight:1.65 }}>
                   {reviewVals.nosing === 'none' || reviewVals.nosing === 0
-                    ? '• No nosing overhang detected — check local code for open-riser requirements.\n'
-                    : `• Nosing projection ~${reviewVals.nosing}mm.\n`}
+                    ? '• No nosing — stairs classified as open-riser or flush-edge. Some codes require nosing or limit open-riser dimensions.'
+                    : `• Nosing projection ~${reviewVals.nosing}mm — verify this is correct; default is no nosing.`}
                   {reviewVals.headroom === 'clear'
                     ? '• Headroom appears open/unobstructed above the stair.'
                     : `• Estimated headroom ~${reviewVals.headroom}mm — verify manually.`}

@@ -116,7 +116,7 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
 
   <div style="background:#0A1C2E;border-radius:16px 16px 0 0;padding:1.5rem 2rem;text-align:center;background-image:repeating-linear-gradient(-45deg,#F29337 0px,#F29337 3px,transparent 3px,transparent 14px);background-size:20px 20px;">
     <div style="background:#0A1C2E;padding:1.25rem;border-radius:10px;">
-      <div style="font-size:0.55rem;letter-spacing:0.32em;color:#F29337;font-family:monospace;margin-bottom:0.4rem;">▲ stAIrcode</div>
+      <img src="https://staircode.app/logo_orange_transparent.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 0.5rem;" />
       <h1 style="font-size:1.3rem;font-weight:900;color:#E8F4FF;margin:0 0 0.3rem;letter-spacing:-0.02em;">Stair Compliance Report</h1>
       <p style="font-size:0.78rem;color:#93BAD4;margin:0;">${codeLabel}${location ? ' · ' + location : ''} · ${date}</p>
     </div>

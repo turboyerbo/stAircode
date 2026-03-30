@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { BetaLogo } from '@/app/components/Logo'
 import FeedbackButton from './FeedbackButton'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -119,13 +120,14 @@ export default function HelpScreen() {
     <div style={{ flex: 1, overflowY: 'auto', background: '#F0F5FA', backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.04) 27px,rgba(65,124,164,0.04) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.04) 27px,rgba(65,124,164,0.04) 28px)', color: '#0D1E2E', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", paddingBottom: '2rem' }}>
 
       {/* ── HEADER ── */}
-      <div style={{ padding: '1.6rem 1.25rem 0.5rem', borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: ORANGE, marginBottom: '0.4rem' }}>▲ STAIRCODE</div>
-        <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#0D1E2E', letterSpacing: '-0.02em' }}>Help & How-To</h1>
-        <p style={{ fontSize: '0.78rem', color: '#2C4A68', margin: '0.35rem 0 0', lineHeight: 1.55 }}>
-          Follow the on-screen AI guidance and move around the stair to capture each measurement.
+      <div style={{ background: BG, backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', padding: '1.4rem 1.25rem 1.1rem' }}>
+        <div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: TEXT, letterSpacing: '-0.02em', margin: 0 }}>⚡ AI Guide</h1>
+        <p style={{ fontSize: '0.78rem', color: TEXT2, margin: '0.4rem 0 0', lineHeight: 1.55 }}>
+          Follow the on-screen guidance and move around the stair to capture each measurement.
         </p>
       </div>
+      <div style={{ height: 5, background: 'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize: '20px 20px' }} />
 
       {/* ── HOW TO SCAN ── */}
       <SectionHeader label="How to Scan Your Stairs" />
@@ -268,7 +270,7 @@ export default function HelpScreen() {
           <div style={{ flex: 1, height: 1, background: BORDER }} />
         </div>
         <a
-          href="mailto:info@staircode.app?subject=StairCode%20Support%20Request"
+          href="mailto:info@staircode.app?subject=stAIrcode%20Support"
           style={{ display: 'block', width: '100%', padding: '0.95rem', background: `linear-gradient(135deg, ${BLUE}, ${ORANGE})`, border: 'none', borderRadius: 12, color: '#fff', fontSize: '0.88rem', fontWeight: 700, textAlign: 'center', textDecoration: 'none', boxShadow: `0 4px 20px rgba(65,124,164,0.3)`, letterSpacing: '0.06em', boxSizing: 'border-box' } as any}
         >
           ✉️ &nbsp;Email info@staircode.app

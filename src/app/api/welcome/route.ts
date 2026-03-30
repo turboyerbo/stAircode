@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     <!-- Header -->
     <div style="background: #0A1C2E; border-radius: 16px 16px 0 0; padding: 2rem 2rem 1.5rem; text-align:center; background-image: repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px), repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px);">
-      <div style="font-size:0.6rem; letter-spacing:0.32em; color:#F29337; font-family:monospace; margin-bottom:0.5rem;">▲ STAIRCODE</div>
+      <div style="font-size:0.6rem; letter-spacing:0.32em; color:#F29337; font-family:monospace; margin-bottom:0.5rem;"><img src="https://staircode.app/logo_orange_transparent.png" alt="stAIrcode" style="height:40px;object-fit:contain;display:block;margin:0 auto;" /></div>
       <h1 style="font-size:1.6rem; font-weight:900; color:#E8F4FF; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.5rem;">
         Welcome to Staircode
       </h1>
