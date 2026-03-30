@@ -477,7 +477,8 @@ export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy
           setTimeout(() => setTextGone(true), 2500)
           // AI starts — first task is to count the steps
           historyRef.current = []
-          addMsg(getProfile(userRole).copy.scanIntro, 'searching')
+          // Show intro to user but don't pollute AI history with it
+          setMessages([{ id: 0, text: getProfile(userRole).copy.scanIntro, phase: 'searching' as const }])
           // Run step count immediately as the very first AI call
           countStepsFirst()
           scheduleAnalysis(800)
@@ -648,7 +649,7 @@ If you cannot confidently count steps because: spiral stair, industrial, no stai
       // Speed mode: lower threshold — accept reasonable guesses
       const lockThreshold = isSpeed
         ? (currentStep.id === 'guard' ? 0.45 : 0.50)
-        : (currentStep.id === 'guard' ? 0.60 : 0.70)
+        : (currentStep.id === 'guard' ? 0.55 : 0.62)
       if (r.phase === 'locked' && r.estimatedMm !== null && r.confidence >= lockThreshold) {
         const mm = clamp(r.estimatedMm, currentStep.rangeMin, currentStep.rangeMax)
         showMeasurementLine(currentStep, mm)
@@ -704,41 +705,25 @@ If you cannot confidently count steps because: spiral stair, industrial, no stai
   }
 
   function buildPrompt(def: MeasDef, recentHistory: string): string {
-    const persona = getRolePersona()
     const speedNote = isSpeed ? buildSpeedPrefix() : ''
-    return `You are a measurement coach helping someone scan their staircase. You adapt your language to your audience.
+    return `You are an AI measuring a staircase from a phone camera image.
 
-${speedNote}${persona}
-
+${speedNote}
 ${def.aiContext}
 
-RECENT THINGS YOU'VE ALREADY SAID (do NOT repeat these):
-${recentHistory || '(nothing yet)'}
+RULES:
+- Be AGGRESSIVE about locking — if stairs are clearly visible, lock immediately
+- Do NOT return "searching" more than twice — attempt a measurement even if imperfect
+- Keep message SHORT — 1 sentence max
+- Do NOT repeat what you said before: ${recentHistory ? recentHistory.slice(-1)[0] || 'nothing' : 'nothing'}
 
-YOUR TASK:
-1. Look at the image. Describe specifically what you see.
-2. Is this frame ready to measure ${def.label}?
-3. Reply with a short, natural, varied message. 1-2 sentences max.
-
-TONE — CRITICAL:
-- Reference what you actually see: "I can see the wooden risers but..." not just "Move back"
-- Be warm and specific: "Oh nice frame!" / "Hmm, I can only see part of one step from here"
-- Never give the same advice twice — check RECENT above and say something different
-- When measuring is going well: "Measuring now..." / "Getting a good reading..." / "Locked it in!"
-- If no stair visible at all: describe what you do see and gently redirect
-
-MEASUREMENT:
-- Only mark phase "locked" if confidence >= 0.70 AND estimatedMm within realistic range
-- Do not return round numbers (use 173 not 175, 228 not 230)
-${def.id === 'run' ? '- Include secondaryMm for stair width if both edges are visible' : ''}
-
-Return ONLY this JSON:
+Return ONLY valid JSON, no other text:
 {
   "phase": "searching" | "guiding" | "measuring" | "locked",
-  "message": "your natural message here",
+  "message": "one short sentence",
   "estimatedMm": null or number,
   "secondaryMm": null or number,
-  "confidence": 0.0 to 1.0
+  "confidence": 0.0 to 1.0${def.id === "nosing" ? ",\n  \"noNosing\": true or false" : ""}${def.id === "headroom" ? ",\n  \"openAbove\": true or false" : ""}
 }`
   }
 
