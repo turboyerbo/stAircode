@@ -74,7 +74,7 @@ export default function EnterprisePage() {
           Book a 30-min Call →
         </a>
         <p style={{ marginTop: '1rem', fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>
-          © {new Date().getFullYear()} Staircode Inc. ·{' '}
+          © {new Date().getFullYear()} Just Open Technologies Inc. ·{' '}
           <a href="/privacy" style={{ color: 'rgba(255,255,255,0.3)' }}>Privacy</a> ·{' '}
           <a href="/terms" style={{ color: 'rgba(255,255,255,0.3)' }}>Terms</a>
         </p>

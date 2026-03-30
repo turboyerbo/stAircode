@@ -35,7 +35,7 @@ export default function Disclaimer() {
         as a substitute for advice from a licensed professional.
       </p>
       <p style={{ marginTop: '0.4rem' }}>
-        Staircode Inc. makes no representations or warranties regarding the accuracy,
+        Just Open Technologies Inc. makes no representations or warranties regarding the accuracy,
         completeness, or fitness for purpose of these results. Measurements entered
         by the user have not been independently verified. Local amendments,
         occupancy classifications, and site-specific conditions may affect applicable
@@ -43,12 +43,12 @@ export default function Disclaimer() {
       </p>
       <p style={{ marginTop: '0.4rem' }}>
         <strong>Always consult a licensed architect, engineer, or building official
-        before making any structural or compliance decisions.</strong> Staircode Inc.
+        before making any structural or compliance decisions.</strong> Just Open Technologies Inc.
         accepts no liability for any loss, injury, or damage arising from reliance
         on this report.
       </p>
       <p style={{ marginTop: '0.5rem', fontSize: '0.6rem', color: '#8a6a00' }}>
-        © {new Date().getFullYear()} Staircode Inc. · By using this app you agree to
+        © {new Date().getFullYear()} Just Open Technologies Inc. · By using this app you agree to
         our{' '}
         <a href="/terms" style={{ color: '#8a6a00', textDecoration: 'underline' }}>Terms of Service</a>
         {' '}and{' '}

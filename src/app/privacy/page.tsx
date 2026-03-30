@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '2.5rem' }}>Last updated: {updated}</p>
 
       <Section title="1. Who we are">
-        Staircode Inc. ("Staircode", "we", "our") operates the Staircode mobile app and website at staircode.app.
+        Just Open Technologies Inc. ("Just Open", "we", "our") operates the stAIrcode app and website at staircode.app.
         Contact us at <a href="mailto:info@staircode.app" style={{ color: '#1565C0' }}>info@staircode.app</a>.
       </Section>
 
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
       </Section>
 
       <p style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#9ca3af' }}>
-        © {new Date().getFullYear()} Staircode Inc. All rights reserved.
+        © {new Date().getFullYear()} Just Open Technologies Inc. All rights reserved.
       </p>
     </main>
   )

@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       It does not constitute a certified inspection and should not be used as evidence of building code compliance.
     </p>
     <p style="font-size:0.65rem;color:#2C4A66;margin:0;">
-      Staircode · <a href="${APP_URL}" style="color:#417CA4;">staircode.app</a> · © ${new Date().getFullYear()} Staircode Inc.
+      Staircode · <a href="${APP_URL}" style="color:#417CA4;">staircode.app</a> · © ${new Date().getFullYear()} Just Open Technologies Inc.
     </p>
   </div>
 

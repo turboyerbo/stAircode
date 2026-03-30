@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         <a href="mailto:info@staircode.app" style="color:#93BAD4;">info@staircode.app</a>
       </p>
       <p style="font-size:0.65rem; color:#2C4A66; margin-top:0.5rem;">
-        Staircode Inc. · staircode.app · © ${new Date().getFullYear()}<br>
+        Just Open Technologies Inc. · staircode.app · © ${new Date().getFullYear()}<br>
         You received this because you signed up at staircode.app.
       </p>
     </div>

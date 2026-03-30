@@ -63,7 +63,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="8. Intellectual property">
-        All content, code, trademarks, and compliance logic in the Service are owned by Staircode Inc.
+        All content, code, trademarks, and compliance logic in the Service are owned by Just Open Technologies Inc. (federally incorporated in Canada; extra-provincial registration in Ontario).
         and protected by applicable intellectual property laws. The building code limit values and
         compliance engine are proprietary and must not be extracted or reproduced.
       </Section>
@@ -83,7 +83,7 @@ export default function TermsPage() {
       </Section>
 
       <p style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#9ca3af' }}>
-        © {new Date().getFullYear()} Staircode Inc. All rights reserved.
+        © {new Date().getFullYear()} Just Open Technologies Inc. All rights reserved.
       </p>
     </main>
   )

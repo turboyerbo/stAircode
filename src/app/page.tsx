@@ -72,9 +72,76 @@ function check(m:StairMeasurements,code:Code){
   ]
 }
 
+// ── Splash Screen ─────────────────────────────────────────────────────────────
+function SplashScreen({ onDone }: { onDone: () => void }) {
+  const [phase, setPhase] = useState<'image' | 'fading'>('image')
+
+  useEffect(() => {
+    // Hold image for 2.2s then fade over 1.2s into auth
+    const hold = setTimeout(() => {
+      setPhase('fading')
+      const fade = setTimeout(() => onDone(), 1200)
+      return () => clearTimeout(fade)
+    }, 2200)
+    return () => clearTimeout(hold)
+  }, [onDone])
+
+  return (
+    <div
+      onClick={() => { setPhase('fading'); setTimeout(onDone, 600) }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: '#0A1C2E',
+        cursor: 'pointer',
+        opacity: phase === 'fading' ? 0 : 1,
+        transition: phase === 'fading' ? 'opacity 1.2s ease' : 'none',
+      }}
+    >
+      {/* AR hero image — fills full screen */}
+      <img
+        src="/AR_guided_inspection.png"
+        alt="stAIrcode — AR-guided stair inspection"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center top',
+          display: 'block',
+        }}
+      />
+      {/* Bottom gradient + tap hint */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        padding: 'env(safe-area-inset-bottom, 0px)',
+        background: 'linear-gradient(to top, rgba(10,28,46,0.95) 0%, rgba(10,28,46,0.4) 60%, transparent 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        paddingBottom: 'max(env(safe-area-inset-bottom,0px), 2.5rem)',
+        paddingTop: '3rem',
+      }}>
+        <div style={{
+          fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)',
+          fontFamily: 'monospace', letterSpacing: '0.2em',
+          animation: 'pulse 2s ease-in-out infinite',
+        }}>
+          TAP TO CONTINUE
+        </div>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50%       { opacity: 0.9; }
+          }
+        `}</style>
+      </div>
+    </div>
+  )
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
+  // Splash screen — shows the AR image on first load, fades into auth
+  const [splashDone, setSplashDone] = useState(false)
+  const [splashFading, setSplashFading] = useState(false)
   // Legal disclaimer agreement — must be declared here (before any early returns)
   const [legalAgreed, setLegalAgreed] = useState<boolean>(()=>{
     try{ return typeof window !== 'undefined' && localStorage.getItem('sc_legal_agreed') === '1' }
@@ -154,6 +221,10 @@ export default function Home(){
     try{localStorage.removeItem('sc_user')}catch{}
   }
   function handleUpdateUser(u:AppUser){setUser(u);try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}}
+  // Show splash on first visit, then fade into auth
+  if(!user && !splashDone) return (
+    <SplashScreen onDone={() => setSplashDone(true)} />
+  )
   if(!user)return <AuthScreen onAuth={handleAuth}/>
   // Auto-assign default role if not set — role screen removed, user picks Individual/Professional instead
   if(!user.role){

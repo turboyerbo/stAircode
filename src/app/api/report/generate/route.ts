@@ -28,6 +28,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 import { trackServer }               from '@/lib/analytics-server'
+import { PostHog }                    from 'posthog-node'
 
 // Tell Next.js / Netlify to allow up to 60s for this function
 export const maxDuration = 60
@@ -35,6 +36,15 @@ export const maxDuration = 60
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
 const MODEL         = 'claude-sonnet-4-5'
 const APP_URL       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
+
+// ── PostHog server client factory ─────────────────────────────────────────────
+function makePostHog(): PostHog | null {
+  const key  = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
+              ?? process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com'
+  if (!key) return null
+  return new PostHog(key, { host })
+}
 // Default survey link — override via request body or env var
 const SURVEY_URL    = process.env.NEXT_PUBLIC_SURVEY_URL ?? 'https://tally.so/r/1AMRbW'
 
@@ -139,7 +149,7 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
   <div style="background:#0A1C2E;border-radius:0 0 16px 16px;padding:1rem 2rem;text-align:center;">
     <p style="font-size:0.65rem;color:#4E7A9B;margin:0;line-height:1.7;">
       Pre-inspection AI analysis only — not a certified inspection.<br>
-      <a href="${APP_URL}" style="color:#417CA4;">staircode.app</a> · © ${new Date().getFullYear()} stAIrcode Inc.
+      <a href="${APP_URL}" style="color:#417CA4;">staircode.app</a> · © ${new Date().getFullYear()} Just Open Technologies Inc.
     </p>
   </div>
 
@@ -155,9 +165,10 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
 
   if (!res.ok) {
     console.error('[report/generate] Resend error:', await res.text())
-    return false
+    return null
   }
-  return true
+  const json = await res.json()
+  return json.id ?? null  // Resend returns { id: "re_xxxxx" }
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -173,6 +184,30 @@ export async function POST(req: NextRequest) {
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
 
   const { email, fields, codeLabel, codeRef, location, isOntario, surveyUrl } = body
+
+  // ── Experiment: print-report ──────────────────────────────────────────────
+  // Evaluate server-side so ad-blockers can't interfere with the measurement.
+  // The client also evaluates this flag; server is the source of truth.
+  const ph = makePostHog()
+  let experimentVariant = 'control'
+  if (ph && email) {
+    try {
+      const flag = await ph.getFeatureFlag('print-report', email)
+      experimentVariant = (typeof flag === 'string' ? flag : (flag ? 'test' : 'control')) ?? 'control'
+      // Send $feature_flag_called so PostHog registers the exposure server-side
+      ph.capture({
+        distinctId: email,
+        event:      '$feature_flag_called',
+        properties: {
+          '$feature_flag':       'print-report',
+          '$feature_flag_response': experimentVariant,
+        },
+      })
+    } catch (err) {
+      console.warn('[report/generate] PostHog flag eval failed:', err)
+      // Safe default — control variant always works
+    }
+  }
   if (!email || !fields) return NextResponse.json({ error: 'Missing email or fields' }, { status: 400 })
 
   const prompt = buildPrompt(fields, codeLabel || 'Building Code', codeRef || '', location || '', isOntario || false)
@@ -217,7 +252,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Email it ─────────────────────────────────────────────────────────────────
-  const emailOk = await sendEmail(
+  const emailId = await sendEmail(
     email,
     reportText,
     codeLabel || 'Building Code',
@@ -226,16 +261,36 @@ export async function POST(req: NextRequest) {
   )
 
   // Track server-side — captures even if the browser closes before client fires
+  // Includes experiment variant so PostHog can calculate conversion per arm
+  if (ph) {
+    ph.capture({
+      distinctId: email || 'anonymous',
+      event:      'report_generated_experiment',
+      properties: {
+        experiment_name:  'print-report',
+        variant:          experimentVariant,
+        emailed:          !!emailId,
+        code_label:       codeLabel,
+        location:         location || '',
+        is_ontario:       isOntario || false,
+        beta:             true,
+      },
+    })
+    await ph.shutdown()  // flush queue before serverless fn exits
+  }
+
   await trackServer(email, 'report_generated_server', {
-    emailed:    emailOk,
-    code_label: codeLabel,
-    location:   location || '',
-    is_ontario: isOntario || false,
+    emailed:          !!emailId,
+    code_label:       codeLabel,
+    location:         location || '',
+    is_ontario:       isOntario || false,
+    experiment_variant: experimentVariant,
   })
 
   return NextResponse.json({
     ok:        true,
-    emailed:   emailOk,
-    reportText,   // also return text so app can show it inline
+    emailed:   !!emailId,
+    emailId,          // Resend email ID — for tracking delivery via webhook
+    reportText,       // also return text so app can show it inline
   })
 }

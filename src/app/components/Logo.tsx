@@ -24,28 +24,24 @@ const ORANGE    = '#FA741F'
 const DARK_BLUE = '#0D2B52'
 const WHITE     = '#FFFFFF'
 
-function CloudIcon({ h, id }: { h: number; id: string }) {
-  const w = Math.round(h * 1.18)
+function CloudIcon({ h, onDark = false }: { h: number; onDark?: boolean; id?: string }) {
+  // CSS filter converts black SVG fill to the right colour:
+  //   onDark  → white  (invert to white)
+  //   default → orange (#FA741F) via hue-rotate + saturate
+  // The SVG uses fill="currentColor" but <img> can't inherit CSS color,
+  // so we use filter instead for reliable colour control.
+  const filter = onDark
+    ? 'brightness(0) invert(1)'  // black → white
+    : 'brightness(0) saturate(100%) invert(52%) sepia(90%) saturate(600%) hue-rotate(1deg) brightness(103%)'  // black → #FA741F orange
   return (
-    <svg width={w} height={h} viewBox="0 0 94 80" xmlns="http://www.w3.org/2000/svg" style={{ display:'block', flexShrink:0 }}>
-      <defs>
-        <linearGradient id={id} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FF9030" />
-          <stop offset="100%" stopColor={ORANGE} />
-        </linearGradient>
-      </defs>
-      {/* Cloud body */}
-      <path d="M73,55 C80,55 86,49 86,42 C86,35 80,29 73,29 C72,22 66,18 58,18 C53,18 49,20 46,24 C43,19 37,16 30,16 C19,16 11,24 11,35 C11,36 11,38 12,39 C7,41 4,46 4,52 C4,59 10,64 18,64 L73,64 Z" fill={`url(#${id})`} />
-      {/* Crosshair/plus at top */}
-      <rect x="53" y="21" width="7" height="19" rx="2.5" fill={WHITE} />
-      <rect x="46" y="27" width="21" height="7" rx="2.5" fill={WHITE} />
-      <circle cx="56.5" cy="30.5" r="2.5" fill={`url(#${id})`} />
-      {/* Stair bars left to right, ascending */}
-      <rect x="12" y="46" width="14" height="15" rx="2" fill={WHITE} />
-      <rect x="29" y="40" width="12" height="21" rx="2" fill={WHITE} />
-      <rect x="44" y="45" width="10" height="16" rx="2" fill={WHITE} />
-      <rect x="57" y="49" width="9" height="12" rx="2" fill={WHITE} />
-    </svg>
+    <img
+      src="/logo_mark.svg"
+      alt=""
+      aria-hidden="true"
+      width={h}
+      height={h}
+      style={{ display:'block', flexShrink:0, objectFit:'contain', filter }}
+    />
   )
 }
 
@@ -68,11 +64,10 @@ function Wordmark({ h, onDark }: { h: number; onDark: boolean }) {
 
 export default function Logo({ size = 'md', onDark = false, iconOnly = false, style, className }: LogoProps) {
   const h = H[size]
-  const id = `cg${h}${onDark ? 'd' : 'l'}`
-  if (iconOnly) return <CloudIcon h={h} id={id} />
+  if (iconOnly) return <CloudIcon h={h} />
   return (
     <div className={className} style={{ display:'inline-flex', alignItems:'center', gap: Math.round(h * 0.22), ...style }}>
-      <CloudIcon h={h} id={id} />
+      <CloudIcon h={h} />
       <Wordmark h={h} onDark={onDark} />
     </div>
   )

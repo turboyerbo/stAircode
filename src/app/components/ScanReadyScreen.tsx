@@ -230,10 +230,11 @@ export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy
   // Intro overlay — fades out before AI begins
   const [introOpacity, setIntroOpacity]   = useState(1)
   const [introGone,    setIntroGone]      = useState(false)
+  const [countdown,    setCountdown]      = useState(5)       // 5-second countdown
+  const [stairDetected,setStairDetected]  = useState(false)   // gating flag
+  const [detecting,    setDetecting]      = useState(false)   // AI call in flight
   // Stuck hint — man-crouching image shown when user appears stuck
   const [showStuck,    setShowStuck]      = useState(false)
-  // Nosing not detected overlay
-  const [showNoNosing, setShowNoNosing]   = useState(false)
   // Speed mode: auto-fill timer ref — fires after 8s per step if no lock
   const speedAutoFillRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -459,35 +460,85 @@ export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy
   }
 
   // ── Intro image fade — starts when camera is ready ─────────────────────────
+  // ── Countdown + stair detection gate ──────────────────────────────────────
   useEffect(() => {
     if (!camReady) return
-    // Begin fade after 2s hold — user reads the positioning image
-    const holdTimer = setTimeout(() => {
-      // Fade over 1.4s
-      const start = Date.now()
-      const FADE  = 1400
-      const tick  = () => {
-        const elapsed = Date.now() - start
-        const opacity = Math.max(0, 1 - elapsed / FADE)
-        setIntroOpacity(opacity)
-        if (opacity > 0) { requestAnimationFrame(tick) }
-        else {
-          setIntroGone(true)
-          // Text fades out 2.5 seconds after image gone
-          setTimeout(() => setTextGone(true), 2500)
-          // AI starts — first task is to count the steps
-          historyRef.current = []
-          // Show intro to user but don't pollute AI history with it
-          setMessages([{ id: 0, text: getProfile(userRole).copy.scanIntro, phase: 'searching' as const }])
-          // Run step count immediately as the very first AI call
-          countStepsFirst()
-          scheduleAnalysis(800)
+
+    let tick = 5
+    setCountdown(5)
+    setStairDetected(false)
+
+    // Fire a quick stair-detection call immediately when camera is ready
+    const detectStair = async () => {
+      if (detecting) return
+      setDetecting(true)
+      const b64 = captureB64(0.45)
+      if (!b64) { setDetecting(false); return }
+      try {
+        const res = await fetch('/api/vision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageB64: b64,
+            prompt: `Look at this image. Is a staircase (steps/stairs) clearly visible?
+Answer ONLY with valid JSON, nothing else:
+{"stairVisible": true or false, "confidence": 0.0 to 1.0}
+If you see steps, stairs, risers, or treads — set stairVisible: true.`
+          }),
+        })
+        if (res.ok) {
+          const d = await res.json()
+          try {
+            const txt = (d.text ?? '').replace(/```json|```/g, '').trim()
+            const parsed = JSON.parse(txt.match(/\{[\s\S]*\}/)?.[0] ?? '{}')
+            if (parsed.stairVisible && parsed.confidence >= 0.55) {
+              setStairDetected(true)
+            }
+          } catch {}
         }
-      }
-      requestAnimationFrame(tick)
-    }, 2000)
-    return () => clearTimeout(holdTimer)
+      } catch {}
+      setDetecting(false)
+    }
+
+    // Start countdown — tick every second
+    const interval = setInterval(() => {
+      tick -= 1
+      setCountdown(tick)
+      // Re-attempt detection on each tick so we catch stairs as user positions
+      detectStair()
+      if (tick <= 0) clearInterval(interval)
+    }, 1000)
+
+    // First detection attempt immediately
+    detectStair()
+
+    return () => clearInterval(interval)
   }, [camReady]) // eslint-disable-line
+
+  // ── When stair detected OR countdown hits 0 — start the scan ───────────────
+  useEffect(() => {
+    if (!camReady) return
+    if (!stairDetected && countdown > 0) return  // still waiting
+
+    // Fade intro image over 0.8s then launch scan
+    const start = Date.now()
+    const FADE  = stairDetected ? 600 : 1000
+    const tick  = () => {
+      const elapsed = Date.now() - start
+      const opacity = Math.max(0, 1 - elapsed / FADE)
+      setIntroOpacity(opacity)
+      if (opacity > 0) { requestAnimationFrame(tick) }
+      else {
+        setIntroGone(true)
+        setTimeout(() => setTextGone(true), 1500)
+        historyRef.current = []
+        setMessages([{ id: 0, text: getProfile(userRole).copy.scanIntro, phase: 'searching' as const }])
+        if (stairDetected) countStepsFirst()
+        scheduleAnalysis(800)
+      }
+    }
+    requestAnimationFrame(tick)
+  }, [stairDetected, countdown]) // eslint-disable-line
 
   // ── Count steps — very first AI call, fires as intro fades ─────────────────
   async function countStepsFirst() {
@@ -685,9 +736,7 @@ If you cannot confidently count steps because: spiral stair, industrial, no stai
         // (near-impossible to false-positive at that magnitude)
         const hasConfidentNosing = !r.noNosing && r.estimatedMm && r.estimatedMm > 30 && r.confidence > 0.85
         if (!hasConfidentNosing) {
-          setShowNoNosing(true)
-          Analytics.nosingNotDetected()
-          setTimeout(() => setShowNoNosing(false), 5000)
+          Analytics.nosingNotDetected()  // still track silently for PostHog
         }
       } else if (silentDef.id === 'headroom') {
         setResults(prev => ({ ...prev, headroom: r.openAbove ? 'clear' : (r.estimatedMm ?? 2200) }))
@@ -907,63 +956,93 @@ Do not include any other text.`
       {!introGone && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 60,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'flex-start', justifyContent: 'flex-start',
           pointerEvents: introOpacity < 0.05 ? 'none' : 'auto',
           opacity: introOpacity,
           transition: 'none',
+          background: isSpeed ? '#1A1A1A' : '#F5F0EA',
         }}>
-          {/* Text block at TOP — above the image, fully readable */}
-          <div style={{
-            position: 'relative', zIndex: 2,
-            width: '100%',
-            padding: 'max(env(safe-area-inset-top,0px),2.5rem) 1.5rem 1.25rem',
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.0) 100%)',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize:'1.25rem', fontWeight:900, color:'#fff', lineHeight:1.3, marginBottom:'0.5rem', letterSpacing:'-0.01em' }}>
-              Stand in front of your staircase
-            </div>
-            <div style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.85)', lineHeight:1.65 }}>
-              Hold your phone upright, pointing at the steps.
-            </div>
-            <div style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.85)', lineHeight:1.65 }}>
-              Step back so 2–3 steps are visible in frame.
-            </div>
-          </div>
-
-          {/* Girl measuring illustration — fills the rest of the screen */}
+          {/* Illustration — full bleed, no crop */}
           <img
-            src="/Girl_measuring.png"
-            alt="Position yourself in front of the staircase"
+            src={isSpeed ? "/Woman_scanning_stairs.png" : "/Girl_measuring.png"}
+            alt={isSpeed ? "Point your phone at the stairs" : "Stand at the base and point your phone at the stairs"}
             style={{
-              position: 'absolute', top: 0, left: 0,
+              position: 'absolute', inset: 0,
               width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center bottom',
-              opacity: 0.88,
+              objectFit: isSpeed ? 'cover' : 'contain',
+              objectPosition: 'center center',
               zIndex: 0,
             }}
           />
-        </div>
-      )}
 
-      {/* ── TEXT FADE AFTER IMAGE — lingers 2-3s then fades ── */}
-      {introGone && !textGone && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 58,
-          padding: 'max(env(safe-area-inset-top,0px),2.5rem) 1.5rem 1.25rem',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%)',
-          textAlign: 'center',
-          animation: 'fadeIn 0.3s ease forwards',
-          transition: 'opacity 1s ease',
-          opacity: textGone ? 0 : 1,
-          pointerEvents: 'none',
-        }}>
-          <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#fff', lineHeight:1.3, marginBottom:'0.3rem' }}>
-            Stand in front of your staircase
+          {/* Instruction — top right, pill badge style */}
+          <div style={{
+            position: 'absolute',
+            top: 'max(env(safe-area-inset-top,0px), 1.5rem)',
+            right: '1rem',
+            zIndex: 2,
+            background: 'rgba(10,28,46,0.82)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: 14,
+            padding: '0.65rem 0.9rem',
+            maxWidth: 200,
+            textAlign: 'right',
+          }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.5 }}>
+              Stand at the base and point your phone at the stairs
+            </div>
           </div>
-          <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.75)', lineHeight:1.6 }}>
-            Step back so 2–3 steps are in frame
+
+          {/* Countdown — bottom centre */}
+          <div style={{
+            position: 'absolute',
+            bottom: 'max(env(safe-area-inset-bottom,0px), 3rem)',
+            left: 0, right: 0,
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}>
+            {/* Countdown ring */}
+            <div style={{ position: 'relative', width: 72, height: 72 }}>
+              <svg width="72" height="72" style={{ transform: 'rotate(-90deg)' }}>
+                {/* Background ring */}
+                <circle cx="36" cy="36" r="30" fill="none"
+                  stroke="rgba(255,255,255,0.2)" strokeWidth="5"/>
+                {/* Progress ring — depletes as countdown runs */}
+                <circle cx="36" cy="36" r="30" fill="none"
+                  stroke={stairDetected ? '#27A96B' : '#FA741F'} strokeWidth="5"
+                  strokeDasharray={`${2 * Math.PI * 30}`}
+                  strokeDashoffset={`${2 * Math.PI * 30 * (1 - countdown / 5)}`}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.3s ease' }}
+                />
+              </svg>
+              {/* Number in centre */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.5rem', fontWeight: 900,
+                color: stairDetected ? '#27A96B' : '#FFFFFF',
+                fontFamily: 'monospace',
+                transition: 'color 0.3s ease',
+              }}>
+                {stairDetected ? '✓' : countdown > 0 ? countdown : '…'}
+              </div>
+            </div>
+
+            {/* Status text */}
+            <div style={{
+              fontSize: '0.72rem',
+              color: stairDetected ? '#27A96B' : 'rgba(255,255,255,0.7)',
+              fontFamily: 'monospace',
+              letterSpacing: '0.1em',
+              fontWeight: stairDetected ? 700 : 400,
+              textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+              transition: 'color 0.3s ease',
+            }}>
+              {stairDetected ? 'STAIRCASE DETECTED' : 'DETECTING STAIRCASE…'}
+            </div>
           </div>
         </div>
       )}
@@ -1336,45 +1415,6 @@ Do not include any other text.`
             </div>
             <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.75)', lineHeight:1.6, textShadow:'0 1px 8px rgba(0,0,0,0.8)' }}>
               Crouch down and hold your phone steady.<br/>Keep the stair edge clearly visible in frame.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── NOSING NOT DETECTED OVERLAY ── */}
-      {showNoNosing && !showReview && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 56,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'flex-end',
-          animation: 'fadeInOut 5s ease forwards',
-          pointerEvents: 'none',
-        }}>
-          <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.05) 60%, transparent 100%)' }} />
-          <img
-            src="/nosing_not_detected.png"
-            alt="Nosing not detected"
-            style={{
-              position:'absolute', bottom:0, left:'50%',
-              transform:'translateX(-50%)',
-              width:'100%', maxWidth:500,
-              objectFit:'contain', objectPosition:'bottom',
-              opacity:0.95,
-            }}
-          />
-          <div style={{ position:'relative', zIndex:2, padding:'0 1.5rem 5rem', textAlign:'center' }}>
-            <div style={{
-              display:'inline-flex', alignItems:'center', gap:'0.5rem',
-              background:'rgba(242,147,55,0.92)', backdropFilter:'blur(8px)',
-              borderRadius:12, padding:'0.6rem 1.1rem', marginBottom:'0.5rem',
-            }}>
-              <span style={{ fontSize:'1rem' }}>⚠️</span>
-              <span style={{ fontSize:'0.82rem', fontWeight:800, color:'#fff', letterSpacing:'0.06em', fontFamily:'monospace' }}>
-                NOSING NOT DETECTED
-              </span>
-            </div>
-            <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.80)', lineHeight:1.6, textShadow:'0 1px 8px rgba(0,0,0,0.8)' }}>
-              No step lip visible on this staircase.<br/>This will be noted in your compliance report.
             </div>
           </div>
         </div>
