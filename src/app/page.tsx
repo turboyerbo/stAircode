@@ -315,24 +315,76 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   const [detectResult,setDetectResult]=useState<DetectResult|null>(null)
 
   useEffect(()=>{
-    if(!navigator.geolocation){
-      const fb={city:'Location unavailable',province:'',country:'',countryCode:'XX'}
-      setLoc(fb);setCode(detectCode(fb));setLocLoading(false);return
+    // ── IP-based location fallback — always runs, gives instant result ──────
+    async function getLocationByIP() {
+      try {
+        // Try ipapi first (no key needed, 1000 req/day free)
+        const r = await fetch('https://ipapi.co/json/')
+        if (r.ok) {
+          const d = await r.json()
+          if (d.city) {
+            const l:Loc = {
+              city: d.city ?? 'Unknown',
+              province: d.region ?? '',
+              country: d.country_name ?? '',
+              countryCode: (d.country_code ?? 'CA').toUpperCase(),
+            }
+            return l
+          }
+        }
+      } catch {}
+      try {
+        // Fallback: ip-api.com (no key needed, 45 req/min free)
+        const r2 = await fetch('http://ip-api.com/json/')
+        if (r2.ok) {
+          const d2 = await r2.json()
+          if (d2.city) {
+            return {
+              city: d2.city ?? 'Unknown',
+              province: d2.regionName ?? '',
+              country: d2.country ?? '',
+              countryCode: (d2.countryCode ?? 'CA').toUpperCase(),
+            } as Loc
+          }
+        }
+      } catch {}
+      return null
     }
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      setLatLng({lat:pos.coords.latitude,lng:pos.coords.longitude})
-      try{
-        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
-        const d=await r.json();const a=d.address??{}
-        const l:Loc={city:a.city??a.town??a.village??'Unknown',province:a.state??a.province??'',
-          country:a.country??'',countryCode:(a.country_code??'CA').toUpperCase()}
-        setLoc(l);setCode(detectCode(l))
-      }catch{const fb={city:'Unknown',province:'',country:'',countryCode:'XX'};setLoc(fb);setCode(detectCode(fb))}
-      setLocLoading(false)
-    },()=>{
-      const fb={city:'Location unavailable',province:'',country:'',countryCode:'XX'}
-      setLoc(fb);setCode(detectCode(fb));setLocLoading(false)
-    },{timeout:6000})
+
+    // Start IP lookup immediately — doesn't need permission
+    getLocationByIP().then(ipLoc => {
+      if (ipLoc) {
+        setLoc(prev => prev ?? ipLoc)   // only set if GPS hasn't already resolved
+        setCode(prev => prev ?? detectCode(ipLoc))
+        setLocLoading(false)
+      }
+    })
+
+    // Also try GPS — more accurate, but optional
+    if (!navigator.geolocation) { setLocLoading(false); return }
+
+    navigator.geolocation.getCurrentPosition(
+      async pos => {
+        setLatLng({lat:pos.coords.latitude,lng:pos.coords.longitude})
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`
+          )
+          const d = await r.json()
+          const a = d.address ?? {}
+          const l:Loc = {
+            city: a.city ?? a.town ?? a.village ?? 'Unknown',
+            province: a.state ?? a.province ?? '',
+            country: a.country ?? '',
+            countryCode: (a.country_code ?? 'CA').toUpperCase(),
+          }
+          setLoc(l); setCode(detectCode(l))   // GPS overrides IP result
+        } catch {}
+        setLocLoading(false)
+      },
+      () => { setLocLoading(false) },  // GPS denied/failed — IP result already showing
+      { timeout: 12000, maximumAge: 300000, enableHighAccuracy: false }
+    )
   },[])
 
   const handleScanSuccess=useCallback((raw: Record<string,number|string>)=>{
@@ -444,8 +496,8 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
         <div style={{flex:1}}/>
 
         {/* CTA */}
-        <button onClick={onStartScan} disabled={locLoading} style={{width:'100%',padding:'1.15rem',background:locLoading?'rgba(65,124,164,0.15)':'#F29337',border:'none',borderRadius:16,color:'#fff',fontSize:'1rem',fontFamily:"'Inter',sans-serif",fontWeight:800,letterSpacing:'0.06em',cursor:locLoading?'not-allowed':'pointer',boxShadow:locLoading?'none':'0 6px 32px rgba(242,147,55,0.45)',transition:'all 0.2s',opacity:locLoading?0.45:1}}>
-          {locLoading?'Loading…':'● Start Scan'}
+        <button onClick={onStartScan} style={{width:'100%',padding:'1.15rem',background:'#F29337',border:'none',borderRadius:16,color:'#fff',fontSize:'1rem',fontFamily:"'Inter',sans-serif",fontWeight:800,letterSpacing:'0.06em',cursor:'pointer',boxShadow:'0 6px 32px rgba(242,147,55,0.45)',transition:'all 0.2s'}}>
+          ● Start Scan
         </button>
 
         <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>

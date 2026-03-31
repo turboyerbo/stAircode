@@ -134,7 +134,7 @@ export default function HelpScreen() {
 
       {/* Intro card */}
       <div style={{ margin: '0 1rem 1rem', background: '#fff', border: '1.5px solid rgba(65,124,164,0.14)', borderRadius: 16, padding: '1rem 1.1rem' }}>
-        <div style={{ fontSize: '0.82rem', color: '#2C4A68', lineHeight: 1.7 }}>
+        <div style={{ fontSize: '0.82rem', color: '#0D2B45', lineHeight: 1.7 }}>
           The AI coach opens with your camera and guides you through <strong style={{ color: TEXT }}>three positions</strong> around the staircase. Follow its instructions — it will tell you exactly where to stand and how to angle your phone. Measurement lines appear on screen as each dimension is captured.
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
@@ -144,14 +144,14 @@ export default function HelpScreen() {
             { label: 'Width', color: BLUE },
             { label: 'Headroom', color: AMBER },
             { label: 'Handrail', color: PURPLE },
-            { label: 'Nosing ✦', color: '#5E7D9B' },
+            { label: 'Nosing ✦', color: '#2C5A7A' },
           ].map(({ label, color }) => (
             <div key={label} style={{ fontSize: '0.6rem', fontFamily: 'monospace', color, background: `${color}18`, border: `1px solid ${color}33`, borderRadius: 10, padding: '0.2rem 0.6rem', fontWeight: 700 }}>
               {label}
             </div>
           ))}
         </div>
-        <div style={{ fontSize: '0.62rem', color: '#5E7D9B', marginTop: '0.5rem', fontStyle: 'italic' }}>
+        <div style={{ fontSize: '0.62rem', color: '#2C5A7A', marginTop: '0.5rem', fontStyle: 'italic' }}>
           ✦ Nosing and baluster spacing are measured automatically in the background.
         </div>
       </div>
@@ -183,9 +183,9 @@ export default function HelpScreen() {
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: step.color, boxShadow: `0 0 8px ${step.color}`, flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: TEXT }}>{step.title}</div>
-                <div style={{ fontSize: '0.7rem', color: '#2C4A68', marginTop: '0.1rem', lineHeight: 1.4 }}>{step.what}</div>
+                <div style={{ fontSize: '0.7rem', color: '#93BAD4', marginTop: '0.1rem', lineHeight: 1.4 }}>{step.what}</div>
               </div>
-              <span style={{ color: '#5E7D9B', fontSize: '1.1rem', transition: 'transform 0.2s', transform: isOpen ? 'rotate(45deg)' : 'none', flexShrink: 0 }}>+</span>
+              <span style={{ color: '#2C5A7A', fontSize: '1.1rem', transition: 'transform 0.2s', transform: isOpen ? 'rotate(45deg)' : 'none', flexShrink: 0 }}>+</span>
             </button>
 
             {/* Expanded instructions */}
@@ -199,13 +199,13 @@ export default function HelpScreen() {
                     <div style={{ width: 20, height: 20, borderRadius: '50%', background: `${step.color}22`, border: `1px solid ${step.color}44`, color: step.color, fontSize: '0.6rem', fontFamily: 'monospace', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '0.05rem' }}>
                       {i + 1}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#2C4A68', lineHeight: 1.6 }}>{instruction}</div>
+                    <div style={{ fontSize: '0.78rem', color: '#0D2B45', lineHeight: 1.6 }}>{instruction}</div>
                   </div>
                 ))}
                 {/* Tip */}
                 <div style={{ marginTop: '0.75rem', background: `${step.color}0F`, border: `1px solid ${step.color}30`, borderRadius: 12, padding: '0.65rem 0.85rem', display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>💡</span>
-                  <div style={{ fontSize: '0.73rem', color: '#2C4A68', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: '0.73rem', color: '#0D2B45', lineHeight: 1.6 }}>
                     <strong style={{ color: step.color }}>Tip: </strong>{step.tip}
                   </div>
                 </div>
@@ -223,13 +223,13 @@ export default function HelpScreen() {
           { color: AMBER,  line: '  ║  ', label: 'Tread Depth',   desc: 'Vertical line (in top-down view) from the front nosing to the back riser — measures step depth' },
           { color: BLUE,   line: '◄────►', label: 'Stair Width',  desc: 'Wide horizontal line spanning both edges of the staircase' },
           { color: PURPLE, line: '▬▬▬',  label: 'Handrail Height', desc: 'Vertical line from tread level up to the top of the rail' },
-          { color: '#5E7D9B',  line: '· · ·', label: 'Nosing',        desc: 'Short tick at the tread edge — or a note if none is detected' },
+          { color: '#2C5A7A',  line: '· · ·', label: 'Nosing',        desc: 'Short tick at the tread edge — or a note if none is detected' },
         ].map(({ color, line, label, desc }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ width: 36, textAlign: 'center', fontSize: '0.75rem', color, fontFamily: 'monospace', flexShrink: 0 }}>{line}</div>
             <div>
               <div style={{ fontSize: '0.78rem', fontWeight: 600, color: TEXT }}>{label}</div>
-              <div style={{ fontSize: '0.68rem', color: '#2C4A68', lineHeight: 1.45 }}>{desc}</div>
+              <div style={{ fontSize: '0.68rem', color: '#1A3A5C', lineHeight: 1.45 }}>{desc}</div>
             </div>
           </div>
         ))}
@@ -244,11 +244,11 @@ export default function HelpScreen() {
               onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
               style={{ width: '100%', padding: '0.9rem 1rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.6rem' }}
             >
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0D1E2E', lineHeight: 1.4 }}>{item.q}</span>
-              <span style={{ color: '#5E7D9B', fontSize: '1.1rem', flexShrink: 0, transition: 'transform 0.2s', transform: openFAQ === i ? 'rotate(45deg)' : 'none' }}>+</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0A1C2E', lineHeight: 1.4 }}>{item.q}</span>
+              <span style={{ color: '#2C5A7A', fontSize: '1.1rem', flexShrink: 0, transition: 'transform 0.2s', transform: openFAQ === i ? 'rotate(45deg)' : 'none' }}>+</span>
             </button>
             {openFAQ === i && (
-              <div style={{ padding: '0 1rem 0.9rem', paddingTop: '0.6rem', fontSize: '0.78rem', color: '#2C4A68', lineHeight: 1.7, borderTop: `1px solid ${BORDER}` }}>
+              <div style={{ padding: '0 1rem 0.9rem', paddingTop: '0.6rem', fontSize: '0.78rem', color: '#0D2B45', lineHeight: 1.7, borderTop: `1px solid ${BORDER}` }}>
                 {item.a}
               </div>
             )}
@@ -260,13 +260,13 @@ export default function HelpScreen() {
       <SectionHeader label="Support" />
       <div style={{ margin: '0 1rem 1.5rem', background: '#fff', border: '1.5px solid rgba(65,124,164,0.14)', borderRadius: 16, padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
         <div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0D1E2E', marginBottom: '0.3rem' }}>Still have questions?</div>
-          <div style={{ fontSize: '0.78rem', color: '#2C4A68', lineHeight: 1.55 }}>Our team typically responds within one business day.</div>
+          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0A1C2E', marginBottom: '0.3rem' }}>Still have questions?</div>
+          <div style={{ fontSize: '0.78rem', color: '#1A3A5C', lineHeight: 1.55 }}>Our team typically responds within one business day.</div>
         </div>
         <FeedbackButton source="help_screen" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <div style={{ flex: 1, height: 1, background: BORDER }} />
-          <span style={{ fontSize: '0.62rem', color: '#5E7D9B', fontFamily: 'monospace' }}>OR</span>
+          <span style={{ fontSize: '0.62rem', color: '#2C5A7A', fontFamily: 'monospace' }}>OR</span>
           <div style={{ flex: 1, height: 1, background: BORDER }} />
         </div>
         <a

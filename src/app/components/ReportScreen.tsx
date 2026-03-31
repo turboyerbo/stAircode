@@ -571,6 +571,8 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
             {/* Email input */}
             <input
+              id="report-email-input"
+              name="email"
               type="email"
               inputMode="email"
               autoComplete="email"

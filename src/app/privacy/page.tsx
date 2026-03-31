@@ -55,7 +55,7 @@ export default function PrivacyPage() {
       <Section title="6. Third-party services">
         <ul>
           <li><strong>Anthropic (Claude API)</strong> — AI measurement analysis.</li>
-          <li><strong>Vercel</strong> — hosting and serverless functions.</li>
+          <li><strong>Netlify</strong> — hosting and serverless functions (netlify.com).</li>
           <li><strong>OpenStreetMap / Nominatim</strong> — reverse geocoding for jurisdiction detection.</li>
           <li><strong>Overpass API</strong> — nearby firms lookup.</li>
         </ul>

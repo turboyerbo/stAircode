@@ -410,7 +410,7 @@ function EditCard({ label, icon, value, onEdit }: { label:string; icon:string; v
         <span style={{ fontSize:'0.6rem', fontFamily:'monospace', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)', textTransform:'uppercase' as const }}>{label}</span>
       </div>
       {editing ? (
-        <input autoFocus type="number" value={raw}
+        <input id="stair-input" name="measurement" autoFocus type="number" value={raw}
           onChange={e => setRaw(e.target.value)}
           onBlur={commit} onKeyDown={e => e.key==='Enter'&&commit()}
           style={{ background:'transparent', border:'none', borderBottom:'1px solid #4A90E2', outline:'none', color:'#fff', fontFamily:'monospace', fontSize:'1.1rem', fontWeight:700, width:'100%' }}/>

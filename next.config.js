@@ -75,6 +75,23 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=self, geolocation=self, xr-spatial-tracking=self, microphone=(), payment=(), usb=()',
           },
+          {
+            // CSP: allow eval for PostHog analytics bundle + Next.js internals.
+            // unsafe-eval is required by posthog-js (uses Function() internally).
+            // Tighten this after PostHog releases an eval-free build.
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://www.googletagmanager.com https://www.google-analytics.com",
+              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com",
+              "img-src 'self' data: blob: https:",
+              "media-src 'self' blob:",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "frame-src https://tally.so https://js.stripe.com https://*.stripe.com",
+              "worker-src 'self' blob:",
+            ].join('; '),
+          },
         ],
       },
     ]

@@ -378,6 +378,8 @@ export default function AuthScreen({ onAuth }: Props) {
       <div style={card}>
         {/* Email / phone input */}
         <input
+          id="email-address"
+          name="email"
           type="text"
           inputMode="email"
           autoComplete="email"
@@ -537,6 +539,8 @@ export default function AuthScreen({ onAuth }: Props) {
           {digits.map((d, i) => (
             <input
               key={i}
+              id={`otp-digit-${i}`}
+              name={`otp-digit-${i}`}
               ref={el => { refs.current[i] = el }}
               type="text"
               inputMode="numeric"

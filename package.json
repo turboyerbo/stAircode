@@ -1,7 +1,7 @@
 {
   "name": "staircode-beta",
   "version": "1.0.0-beta.1",
-  "description": "Staircode Beta — AI stair compliance inspector",
+  "description": "Staircode Beta \u2014 AI stair compliance inspector",
   "private": true,
   "engines": {
     "node": ">=18.0.0",
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
-    "next": "^14.2.0",
+    "next": "14.2.35",
     "posthog-js": "^1.170.0",
     "posthog-node": "^5.28.6",
     "react": "^18.3.0",

@@ -36,6 +36,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { checkXRSupport } from '@/lib/xr-measure'
 import type { UserRole } from './AuthScreen'
 import { Analytics } from '@/lib/analytics'
+import ARSession from '@/app/components/ARSession'
 import { BetaLogo } from '@/app/components/Logo'
 import { getProfile } from '@/lib/profiles'
 import type { ScanMode } from '@/app/components/ScanModeSelect'
@@ -226,7 +227,6 @@ export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy
   const [results,    setResults]    = useState<Record<string, number | string>>({})
   const [showReview, setShowReview] = useState(false)
   const [reviewVals, setReviewVals] = useState<Record<string, number | string>>({})
-  const [arSupported, setArSupported] = useState(false)
   // Intro overlay — fades out before AI begins
   const [introOpacity, setIntroOpacity]   = useState(1)
   const [introGone,    setIntroGone]      = useState(false)
@@ -235,6 +235,11 @@ export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy
   const [detecting,    setDetecting]      = useState(false)   // AI call in flight
   // Stuck hint — man-crouching image shown when user appears stuck
   const [showStuck,    setShowStuck]      = useState(false)
+  // ── WebXR / ARCore state ────────────────────────────────────────────────────
+  const [arSupported,   setArSupported]   = useState<boolean | null>(null)  // null = not yet checked
+  const [useAR,         setUseAR]         = useState(false)    // true = ARCore active for current step
+  const [arStepActive,  setArStepActive]  = useState(false)    // AR session mounted
+
   // Speed mode: auto-fill timer ref — fires after 8s per step if no lock
   const speedAutoFillRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -459,86 +464,126 @@ export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy
     return c.toDataURL('image/jpeg', 0.80).split(',')[1]
   }
 
-  // ── Intro image fade — starts when camera is ready ─────────────────────────
-  // ── Countdown + stair detection gate ──────────────────────────────────────
+  // ── STAIR DETECTION GATE ────────────────────────────────────────────────────
+  // Full flow:
+  //   1. Camera ready → start 5s countdown + poll for stair every 1.5s
+  //   2. If stair detected → freeze countdown, count steps, show green ✓
+  //   3. After step count confirmed → fade intro, begin measurements
+  //   4. If 5s expires with no stair → keep showing overlay, prompt to reposition
+  //      (measurements NEVER start without stair confirmation)
   useEffect(() => {
     if (!camReady) return
 
     let tick = 5
+    let alive = true
+    let callInFlight = false
     setCountdown(5)
     setStairDetected(false)
 
-    // Fire a quick stair-detection call immediately when camera is ready
-    const detectStair = async () => {
-      if (detecting) return
+    async function detectStair() {
+      if (callInFlight || !alive) return
+      callInFlight = true
       setDetecting(true)
+
       const b64 = captureB64(0.45)
-      if (!b64) { setDetecting(false); return }
+      if (!b64) { callInFlight = false; setDetecting(false); return }
+
       try {
         const res = await fetch('/api/vision', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             imageB64: b64,
-            prompt: `Look at this image. Is a staircase (steps/stairs) clearly visible?
-Answer ONLY with valid JSON, nothing else:
-{"stairVisible": true or false, "confidence": 0.0 to 1.0}
-If you see steps, stairs, risers, or treads — set stairVisible: true.`
+            prompt: `Analyse this image. Is a staircase (steps or stairs) clearly visible in the frame?
+
+Reply ONLY with valid JSON, no other text:
+{"stairVisible": true or false, "stepCount": number or null, "confident": true or false}
+
+Rules:
+- stairVisible: true if you can see 2 or more steps/treads/risers
+- stepCount: count of visible steps (null if fewer than 2 visible)
+- confident: true if stair is clearly visible and countable
+- Do NOT return true for a single step, floor edge, or furniture`
           }),
         })
-        if (res.ok) {
+
+        if (res.ok && alive) {
           const d = await res.json()
           try {
-            const txt = (d.text ?? '').replace(/```json|```/g, '').trim()
+            const txt = (d.text ?? '').replace(/\`\`\`json|\`\`\`/g, '').trim()
             const parsed = JSON.parse(txt.match(/\{[\s\S]*\}/)?.[0] ?? '{}')
-            if (parsed.stairVisible && parsed.confidence >= 0.55) {
-              setStairDetected(true)
+            if (parsed.stairVisible && parsed.confident && parsed.stepCount >= 2) {
+              // Confirmed — freeze countdown, store step count, mark detected
+              clearInterval(interval)
+              if (alive) {
+                setStepCount(parsed.stepCount)
+                setStairDetected(true)
+              }
             }
           } catch {}
         }
       } catch {}
+
+      callInFlight = false
       setDetecting(false)
     }
 
-    // Start countdown — tick every second
+    // Poll every 1.5s — faster than the countdown tick
+    detectStair()
+    const pollTimer = setInterval(() => { detectStair() }, 1500)
+
+    // Countdown visual — purely cosmetic, does NOT trigger scan start
     const interval = setInterval(() => {
       tick -= 1
-      setCountdown(tick)
-      // Re-attempt detection on each tick so we catch stairs as user positions
-      detectStair()
-      if (tick <= 0) clearInterval(interval)
+      setCountdown(Math.max(0, tick))
+      // When countdown hits 0 — stop ticking but DO NOT start scan
+      // User must reposition until stair is detected
+      if (tick <= 0) {
+        clearInterval(interval)
+        // Keep polling so user can still get detected after repositioning
+      }
     }, 1000)
 
-    // First detection attempt immediately
-    detectStair()
-
-    return () => clearInterval(interval)
+    return () => {
+      alive = false
+      clearInterval(interval)
+      clearInterval(pollTimer)
+    }
   }, [camReady]) // eslint-disable-line
 
-  // ── When stair detected OR countdown hits 0 — start the scan ───────────────
+  // ── Launch scan only after stair is confirmed ───────────────────────────────
   useEffect(() => {
-    if (!camReady) return
-    if (!stairDetected && countdown > 0) return  // still waiting
+    if (!stairDetected) return  // hard gate — never starts without stair
 
-    // Fade intro image over 0.8s then launch scan
-    const start = Date.now()
-    const FADE  = stairDetected ? 600 : 1000
-    const tick  = () => {
-      const elapsed = Date.now() - start
-      const opacity = Math.max(0, 1 - elapsed / FADE)
-      setIntroOpacity(opacity)
-      if (opacity > 0) { requestAnimationFrame(tick) }
-      else {
-        setIntroGone(true)
-        setTimeout(() => setTextGone(true), 1500)
-        historyRef.current = []
-        setMessages([{ id: 0, text: getProfile(userRole).copy.scanIntro, phase: 'searching' as const }])
-        if (stairDetected) countStepsFirst()
-        scheduleAnalysis(800)
+    // Show the step count banner briefly, then fade into measurements
+    setShowStepCount(true)
+
+    // Hold for 2s so user sees the confirmation, then fade and launch
+    const holdTimer = setTimeout(() => {
+      setShowStepCount(false)
+
+      // Fade intro over 0.7s
+      const start = Date.now()
+      const FADE  = 700
+      const fadeTick = () => {
+        const elapsed = Date.now() - start
+        const opacity = Math.max(0, 1 - elapsed / FADE)
+        setIntroOpacity(opacity)
+        if (opacity > 0) {
+          requestAnimationFrame(fadeTick)
+        } else {
+          setIntroGone(true)
+          setTimeout(() => setTextGone(true), 1000)
+          historyRef.current = []
+          setMessages([{ id: 0, text: getProfile(userRole).copy.scanIntro, phase: 'searching' as const }])
+          scheduleAnalysis(600)
+        }
       }
-    }
-    requestAnimationFrame(tick)
-  }, [stairDetected, countdown]) // eslint-disable-line
+      requestAnimationFrame(fadeTick)
+    }, 2000)
+
+    return () => clearTimeout(holdTimer)
+  }, [stairDetected]) // eslint-disable-line
 
   // ── Count steps — very first AI call, fires as intro fades ─────────────────
   async function countStepsFirst() {
@@ -634,6 +679,14 @@ If you cannot confidently count steps because: spiral stair, industrial, no stai
     setApiError(null)
     setGuardAttempts(0)
     setShowGuardHelp(false)
+    // If ARCore is available and we're in accuracy mode, use AR for this step
+    // Speed mode always uses AI (faster, no AR session overhead)
+    if (arSupported && !isSpeed && introGone) {
+      setUseAR(true)
+      setArStepActive(true)
+      return  // Don't schedule AI analysis — AR handles this step
+    }
+
     scheduleAnalysis(isSpeed ? 1200 : 2000)
 
     // Speed mode: auto-fill with typical value after 8s
@@ -784,6 +837,36 @@ Analyse the image carefully. Return ONLY this JSON:
   "confidence": 0.0 to 1.0${def.id === 'nosing' ? ',\n  "noNosing": true or false' : ''}${def.id === 'headroom' ? ',\n  "openAbove": true or false' : ''}
 }
 Do not include any other text.`
+  }
+
+
+  // ── AR measurement handler — called by ARSession when it locks a plane ───────
+  function handleARMeasure(primaryMm: number, secondaryMm?: number) {
+    const currentStep = primarySteps[stepIdxRef.current]
+    if (!currentStep) return
+
+    setArStepActive(false)
+    setUseAR(false)
+
+    const mm = Math.min(Math.max(primaryMm, currentStep.rangeMin), currentStep.rangeMax)
+    showMeasurementLine(currentStep, mm)
+    setLockedMm(mm)
+    if (secondaryMm) setPendingSec(Math.min(Math.max(secondaryMm, 600), 2000))
+
+    // Clear any timers
+    if (speedAutoFillRef.current) clearTimeout(speedAutoFillRef.current)
+    if (handrailTimerRef.current) clearTimeout(handrailTimerRef.current)
+
+    Analytics.measurementLocked(currentStep.id + '_arcore', mm, 0.95)
+  }
+
+  // AR fallback — ARSession failed, switch to AI vision for this step
+  function handleARError() {
+    console.warn('[ARCore] AR session failed — falling back to AI vision')
+    setArStepActive(false)
+    setUseAR(false)
+    setArSupported(false)  // Don't try AR again this session
+    scheduleAnalysis(800)
   }
 
   // ── Confirm measurement ──────────────────────────────────────────────────────
@@ -1004,44 +1087,105 @@ Do not include any other text.`
             gap: '0.5rem',
           }}>
             {/* Countdown ring */}
-            <div style={{ position: 'relative', width: 72, height: 72 }}>
-              <svg width="72" height="72" style={{ transform: 'rotate(-90deg)' }}>
-                {/* Background ring */}
-                <circle cx="36" cy="36" r="30" fill="none"
-                  stroke="rgba(255,255,255,0.2)" strokeWidth="5"/>
-                {/* Progress ring — depletes as countdown runs */}
-                <circle cx="36" cy="36" r="30" fill="none"
-                  stroke={stairDetected ? '#27A96B' : '#FA741F'} strokeWidth="5"
-                  strokeDasharray={`${2 * Math.PI * 30}`}
-                  strokeDashoffset={`${2 * Math.PI * 30 * (1 - countdown / 5)}`}
+            <div style={{ position: 'relative', width: 80, height: 80 }}>
+              <svg width="80" height="80" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="40" cy="40" r="34" fill="none"
+                  stroke="rgba(255,255,255,0.15)" strokeWidth="6"/>
+                <circle cx="40" cy="40" r="34" fill="none"
+                  stroke={stairDetected ? '#27A96B' : countdown === 0 ? '#E84545' : '#FA741F'}
+                  strokeWidth="6"
+                  strokeDasharray={`${2 * Math.PI * 34}`}
+                  strokeDashoffset={`${2 * Math.PI * 34 * (countdown > 0 ? (1 - countdown / 5) : 1)}`}
                   strokeLinecap="round"
                   style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.3s ease' }}
                 />
               </svg>
-              {/* Number in centre */}
               <div style={{
                 position: 'absolute', inset: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.5rem', fontWeight: 900,
-                color: stairDetected ? '#27A96B' : '#FFFFFF',
+                fontSize: stairDetected ? '1.6rem' : '1.6rem', fontWeight: 900,
+                color: stairDetected ? '#27A96B' : countdown === 0 ? '#E84545' : '#FFFFFF',
                 fontFamily: 'monospace',
                 transition: 'color 0.3s ease',
               }}>
-                {stairDetected ? '✓' : countdown > 0 ? countdown : '…'}
+                {stairDetected ? '✓' : countdown > 0 ? countdown : '!'}
               </div>
             </div>
 
-            {/* Status text */}
-            <div style={{
-              fontSize: '0.72rem',
-              color: stairDetected ? '#27A96B' : 'rgba(255,255,255,0.7)',
-              fontFamily: 'monospace',
-              letterSpacing: '0.1em',
-              fontWeight: stairDetected ? 700 : 400,
-              textShadow: '0 1px 6px rgba(0,0,0,0.6)',
-              transition: 'color 0.3s ease',
-            }}>
-              {stairDetected ? 'STAIRCASE DETECTED' : 'DETECTING STAIRCASE…'}
+            {/* Status text + repositioning prompt */}
+            {stairDetected ? (
+              <div style={{
+                textAlign: 'center',
+                background: 'rgba(10,28,46,0.88)', backdropFilter: 'blur(6px)',
+                border: '1.5px solid rgba(39,169,107,0.5)',
+                borderRadius: 12, padding: '0.6rem 1rem',
+              }}>
+                <div style={{ fontSize: '0.78rem', color: '#27A96B', fontFamily: 'monospace',
+                  letterSpacing: '0.1em', fontWeight: 800 }}>
+                  ✓ STAIRCASE DETECTED
+                </div>
+                {stepCount !== null && (
+                  <div style={{ fontSize: '0.68rem', color: '#E8F4FF',
+                    marginTop: '0.25rem', fontFamily: 'monospace', fontWeight: 500 }}>
+                    {stepCount} steps counted — starting scan…
+                  </div>
+                )}
+              </div>
+            ) : countdown > 0 ? (
+              <div style={{
+                fontSize: '0.72rem', color: '#FFFFFF', fontFamily: 'monospace',
+                letterSpacing: '0.1em', fontWeight: 600,
+                background: 'rgba(10,28,46,0.82)', backdropFilter: 'blur(6px)',
+                borderRadius: 8, padding: '0.3rem 0.75rem',
+              }}>
+                DETECTING STAIRCASE…
+              </div>
+            ) : (
+              // Countdown expired — no stair found — prompt to reposition
+              <div style={{
+                textAlign: 'center', maxWidth: 280,
+                background: 'rgba(10,28,46,0.92)',
+                border: '1.5px solid rgba(232,69,69,0.6)',
+                borderRadius: 16, padding: '0.85rem 1.1rem',
+                backdropFilter: 'blur(8px)',
+              }}>
+                <div style={{
+                  fontSize: '0.78rem', color: '#FF4444', fontFamily: 'monospace',
+                  fontWeight: 900, letterSpacing: '0.1em', marginBottom: '0.4rem',
+                }}>
+                  ✕ NO STAIRCASE DETECTED
+                </div>
+                <div style={{
+                  fontSize: '0.7rem', color: '#E8F4FF',
+                  lineHeight: 1.65, fontWeight: 500,
+                }}>
+                  Point the camera directly at the stairs so 2–3 steps are visible in frame.
+                  Scanning will begin automatically once stairs are detected.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── ARCORE AVAILABLE TOAST — shown once when AR detected ── */}
+      {arSupported && introGone && stepIdx === 0 && !lockedMm && (
+        <div style={{
+          position: 'absolute', top: 'max(env(safe-area-inset-top,0px),5rem)',
+          left: '1rem', right: '1rem', zIndex: 50,
+          background: 'rgba(39,169,107,0.92)', backdropFilter: 'blur(8px)',
+          borderRadius: 14, padding: '0.7rem 1rem',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          animation: 'fadeInOut 4s ease forwards',
+          pointerEvents: 'none',
+        }}>
+          <span style={{ fontSize: '1rem' }}>📡</span>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
+              ARCore detected
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>
+              Using AR plane detection — accuracy ±2–5mm
             </div>
           </div>
         </div>
@@ -1386,6 +1530,22 @@ Do not include any other text.`
             </div>
           </div>
         </>
+      )}
+
+      {/* ── ARCORE SESSION — renders on top of camera when AR is active ── */}
+      {arStepActive && step && (
+        <ARSession
+          stepId={step.id as any}
+          stepLabel={step.label}
+          stepColor={step.color}
+          onMeasureComplete={handleARMeasure}
+          onError={handleARError}
+          onBack={() => {
+            setArStepActive(false)
+            setUseAR(false)
+            scheduleAnalysis(800)
+          }}
+        />
       )}
 
       {/* ── STUCK HINT OVERLAY ── */}
