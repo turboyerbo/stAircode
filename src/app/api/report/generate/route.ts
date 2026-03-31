@@ -208,7 +208,9 @@ export async function POST(req: NextRequest) {
       // Safe default — control variant always works
     }
   }
-  if (!email || !fields) return NextResponse.json({ error: 'Missing email or fields' }, { status: 400 })
+  // fields is required — email is optional (report still generates, just won't email)
+  if (!fields) return NextResponse.json({ error: 'Missing measurement fields' }, { status: 400 })
+  const reportEmail = email || ''
 
   const prompt = buildPrompt(fields, codeLabel || 'Building Code', codeRef || '', location || '', isOntario || false)
 
@@ -252,19 +254,15 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Email it ─────────────────────────────────────────────────────────────────
-  const emailId = await sendEmail(
-    email,
-    reportText,
-    codeLabel || 'Building Code',
-    location || '',
-    surveyUrl || SURVEY_URL
-  )
+  const emailId = reportEmail
+    ? await sendEmail(reportEmail, reportText, codeLabel || 'Building Code', location || '', surveyUrl || SURVEY_URL)
+    : null
 
   // Track server-side — captures even if the browser closes before client fires
   // Includes experiment variant so PostHog can calculate conversion per arm
   if (ph) {
     ph.capture({
-      distinctId: email || 'anonymous',
+      distinctId: reportEmail || 'anonymous',
       event:      'report_generated_experiment',
       properties: {
         experiment_name:  'print-report',
@@ -279,7 +277,7 @@ export async function POST(req: NextRequest) {
     await ph.shutdown()  // flush queue before serverless fn exits
   }
 
-  await trackServer(email, 'report_generated_server', {
+  await trackServer(reportEmail || 'anonymous', 'report_generated_server', {
     emailed:          !!emailId,
     code_label:       codeLabel,
     location:         location || '',

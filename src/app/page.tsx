@@ -27,6 +27,7 @@ type CodeKey= 'NBC'|'OBC'|'QBC'|'NEN'|'IRC'|'IBC'|'BCBC'
 interface Loc  { city:string; province:string; country:string; countryCode:string }
 interface Code {
   code:CodeKey; label:string; ref:string; reason:string
+  links?: {label:string; url:string}[]
   limits:{ riserMin:number; riserMax:number; runMin:number; nosingMin?:number; nosingMax?:number; widthMin:number; headMin:number; guardMin:number }
 }
 
@@ -39,18 +40,53 @@ function isOntario(l:Loc){
 }
 
 function detectCode(l:Loc):Code{
-  if(isOntario(l))return{code:'OBC',label:'OBC 2024',ref:'s.9.8.4',reason:'Ontario Building Code',
-    limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
-  const cc=l.countryCode.toUpperCase()
-  if(l.province.toLowerCase().includes('quebec')||l.city.toLowerCase().includes('montreal'))
-    return{code:'QBC',label:'QBC 2020',ref:'Art.3.4.6',reason:'Quebec Building Code',
-      limits:{riserMin:125,riserMax:200,runMin:230,widthMin:900,headMin:1950,guardMin:900}}
-  if(cc==='CA')return{code:'NBC',label:'NBC 2020',ref:'9.8.4',reason:'National Building Code',
-    limits:{riserMin:125,riserMax:200,runMin:235,widthMin:860,headMin:1950,guardMin:900}}
-  if(cc==='NL')return{code:'NEN',label:'Bbl 2012',ref:'Art.2.83',reason:'Dutch Building Decree',
-    limits:{riserMin:150,riserMax:220,runMin:230,widthMin:800,headMin:2300,guardMin:1000}}
-  if(cc==='US')return{code:'IRC',label:'IRC 2021',ref:'R311.7',reason:'IRC',
-    limits:{riserMin:0,riserMax:197,runMin:254,widthMin:914,headMin:2032,guardMin:914}}
+  const cc  = l.countryCode.toUpperCase()
+  const prov = l.province.toLowerCase()
+  const city = l.city.toLowerCase()
+
+  // ── Canada ────────────────────────────────────────────────────────────────
+  if(isOntario(l))
+    return{code:'OBC',label:'OBC 2024',ref:'s.9.8.4',reason:'Ontario Building Code',
+      links:[{label:'OBC',url:'https://www.ontario.ca/laws/statute/92b23'},{label:'Toronto Bylaw',url:'https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/'},{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}],
+      limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+
+  if(cc==='CA'){
+    if(prov.includes('quebec')||city.includes('montreal')||city.includes('québec'))
+      return{code:'QBC',label:'QBC 2020',ref:'Art.3.4.6',reason:'Quebec Building Code',
+        limits:{riserMin:125,riserMax:200,runMin:230,widthMin:900,headMin:1950,guardMin:900}}
+    if(prov.includes('british columbia')||prov.includes('b.c.')||city.includes('vancouver'))
+      return{code:'BCBC',label:'BCBC 2024',ref:'9.8.4',reason:'BC Building Code',
+        limits:{riserMin:125,riserMax:200,runMin:235,widthMin:860,headMin:1950,guardMin:900}}
+    // All other Canadian provinces — NBC
+    return{code:'NBC',label:'NBC 2020',ref:'9.8.4',reason:'National Building Code of Canada',
+      links:[{label:'NBC 2020',url:'https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html'}],
+      limits:{riserMin:125,riserMax:200,runMin:235,widthMin:860,headMin:1950,guardMin:900}}
+  }
+
+  // ── United States ────────────────────────────────────────────────────────
+  if(cc==='US'){
+    // NY, CA, TX, FL + most states use IBC for commercial, IRC for residential
+    return{code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',
+      links:[{label:'IBC 2021',url:'https://codes.iccsafe.org/content/IBC2021'}],
+      limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
+  }
+
+  // ── UK ────────────────────────────────────────────────────────────────────
+  if(cc==='GB')
+    return{code:'IBC',label:'UK Building Regs Part K',ref:'K1',reason:'UK Building Regulations',
+      limits:{riserMin:150,riserMax:220,runMin:220,widthMin:800,headMin:2000,guardMin:900}}
+
+  // ── Europe (EU) ───────────────────────────────────────────────────────────
+  if(['DE','FR','IT','ES','NL','BE','AT','CH','SE','NO','DK','FI','PT','PL','IE'].includes(cc))
+    return{code:'IBC',label:'IBC / Eurocode',ref:'EN 1991',reason:'European Standards',
+      limits:{riserMin:140,riserMax:220,runMin:220,widthMin:800,headMin:2000,guardMin:900}}
+
+  // ── Australia / NZ ────────────────────────────────────────────────────────
+  if(cc==='AU'||cc==='NZ')
+    return{code:'IBC',label:'NCC 2022',ref:'D2D3',reason:'National Construction Code',
+      limits:{riserMin:115,riserMax:190,runMin:240,widthMin:1000,headMin:2000,guardMin:865}}
+
+  // Default — IBC as global standard
   return IBC
 }
 
@@ -315,75 +351,56 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   const [detectResult,setDetectResult]=useState<DetectResult|null>(null)
 
   useEffect(()=>{
-    // ── IP-based location fallback — always runs, gives instant result ──────
-    async function getLocationByIP() {
+    // ── Server-side IP geolocation — no CSP issues, no permission needed ────
+    // Hits /api/geo which calls ip-api.com / ipapi.co from the server
+    async function fetchServerGeo() {
       try {
-        // Try ipapi first (no key needed, 1000 req/day free)
-        const r = await fetch('https://ipapi.co/json/')
-        if (r.ok) {
-          const d = await r.json()
-          if (d.city) {
-            const l:Loc = {
-              city: d.city ?? 'Unknown',
-              province: d.region ?? '',
-              country: d.country_name ?? '',
-              countryCode: (d.country_code ?? 'CA').toUpperCase(),
-            }
-            return l
-          }
-        }
-      } catch {}
-      try {
-        // Fallback: ip-api.com (no key needed, 45 req/min free)
-        const r2 = await fetch('http://ip-api.com/json/')
-        if (r2.ok) {
-          const d2 = await r2.json()
-          if (d2.city) {
-            return {
-              city: d2.city ?? 'Unknown',
-              province: d2.regionName ?? '',
-              country: d2.country ?? '',
-              countryCode: (d2.countryCode ?? 'CA').toUpperCase(),
-            } as Loc
-          }
-        }
-      } catch {}
-      return null
+        const r = await fetch('/api/geo')
+        if (!r.ok) return null
+        const d = await r.json()
+        if (!d.city || d.city === 'Unknown') return null
+        return {
+          city:        d.city        as string,
+          province:    d.province    as string,
+          country:     d.country     as string,
+          countryCode: d.countryCode as string,
+        } as Loc
+      } catch { return null }
     }
 
-    // Start IP lookup immediately — doesn't need permission
-    getLocationByIP().then(ipLoc => {
+    // Fire immediately — no permission dialog, resolves in ~200ms
+    fetchServerGeo().then(ipLoc => {
       if (ipLoc) {
-        setLoc(prev => prev ?? ipLoc)   // only set if GPS hasn't already resolved
-        setCode(prev => prev ?? detectCode(ipLoc))
-        setLocLoading(false)
+        setLoc(ipLoc)
+        setCode(detectCode(ipLoc))
+        // Store lat/lon if returned
       }
+      setLocLoading(false)
     })
 
-    // Also try GPS — more accurate, but optional
-    if (!navigator.geolocation) { setLocLoading(false); return }
-
+    // Also try browser GPS for higher accuracy (overrides IP if it resolves)
+    if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
       async pos => {
-        setLatLng({lat:pos.coords.latitude,lng:pos.coords.longitude})
+        setLatLng({lat:pos.coords.latitude, lng:pos.coords.longitude})
         try {
           const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`
+            `/api/geo?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`
           )
-          const d = await r.json()
-          const a = d.address ?? {}
-          const l:Loc = {
-            city: a.city ?? a.town ?? a.village ?? 'Unknown',
-            province: a.state ?? a.province ?? '',
-            country: a.country ?? '',
-            countryCode: (a.country_code ?? 'CA').toUpperCase(),
+          if (r.ok) {
+            const d = await r.json()
+            if (d.city && d.city !== 'Unknown') {
+              const l:Loc = {
+                city: d.city, province: d.province,
+                country: d.country, countryCode: d.countryCode,
+              }
+              setLoc(l); setCode(detectCode(l))
+            }
           }
-          setLoc(l); setCode(detectCode(l))   // GPS overrides IP result
         } catch {}
-        setLocLoading(false)
       },
-      () => { setLocLoading(false) },  // GPS denied/failed — IP result already showing
-      { timeout: 12000, maximumAge: 300000, enableHighAccuracy: false }
+      () => {},  // GPS denied — IP result already set above
+      { timeout: 15000, maximumAge: 300000, enableHighAccuracy: false }
     )
   },[])
 
@@ -426,7 +443,9 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} scanMode={scanMode} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>{setScreen('home');setShowModeSelect(false)}}/>
   if(screen==='detect')return <StairDetect onComplete={handleDetectComplete} onBack={()=>setScreen('scan_ready')} knownWidth={measurements?.width??null}/>
   if(screen==='capture')return <MeasureWalk onComplete={handleCaptureComplete} onBack={()=>setScreen('home')} codeLabel={code?.label??'Building Code'} jurisdiction={code?.code??'NBC'}/>
-  if(screen==='report'&&measurements&&code)return <ReportScreen measurements={measurements} fields={check(measurements,code)} codeLabel={code.label} codeRef={code.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetake} onStartOver={handleStartOver}/>
+  // Use IBC as fallback if code not yet detected (location loading)
+  const activeCode = code ?? {code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
+  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetake} onStartOver={handleStartOver}/>
 
   return(
     <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>

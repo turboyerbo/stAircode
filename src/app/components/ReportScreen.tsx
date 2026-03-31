@@ -791,26 +791,49 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                   </pre>
                 </div>
 
-                {/* Survey link — tracked by PostHog */}
-                {process.env.NEXT_PUBLIC_SURVEY_URL && (
+                {/* ── SURVEY CTA — prominent, tracked by PostHog ── */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(250,116,31,0.12), rgba(250,116,31,0.06))',
+                  border: '2px solid rgba(250,116,31,0.5)',
+                  borderRadius: 18,
+                  padding: '1.1rem 1.25rem',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: profile.text2, marginBottom: '0.4rem', lineHeight: 1.5 }}>
+                    🎉 <strong style={{ color: profile.text }}>Your report is ready!</strong> Help us improve stAIrcode —
+                    takes 2 minutes and makes a real difference.
+                  </div>
                   <a
-                    href={process.env.NEXT_PUBLIC_SURVEY_URL}
+                    href={process.env.NEXT_PUBLIC_SURVEY_URL || 'https://tally.so/r/1AMRbW'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => Analytics.surveyLinkClicked('in_app_report')}
+                    onClick={() => {
+                      Analytics.surveyLinkClicked('in_app_report')
+                      // Fire PostHog event with full context
+                      posthog.capture('survey_clicked', {
+                        source:        'report_screen',
+                        verdict,
+                        codeLabel,
+                        location,
+                        scanMode:      userRole,
+                        reportEmailed: emailSent,
+                        beta:          true,
+                      })
+                    }}
                     style={{
-                      display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem',
-                      width:'100%', padding:'0.8rem',
-                      background:'rgba(65,124,164,0.10)', border:'1.5px solid rgba(65,124,164,0.30)',
-                      borderRadius:14, color:'#417CA4',
-                      fontFamily:'monospace', fontSize:'0.78rem', fontWeight:700,
-                      textDecoration:'none', marginBottom:'0.5rem',
-                      letterSpacing:'0.04em',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                      width: '100%', padding: '1rem 0.75rem',
+                      background: 'linear-gradient(135deg, #FA741F, #C4721E)',
+                      borderRadius: 14, color: '#fff',
+                      fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900,
+                      textDecoration: 'none', letterSpacing: '0.05em',
+                      boxShadow: '0 4px 20px rgba(250,116,31,0.45)',
+                      marginTop: '0.5rem',
                     }}
                   >
-                    📋 Take our 2-min Beta Survey →
+                    📋 Take the Beta Survey →
                   </a>
-                )}
+                </div>
 
                 <button onClick={printReport} disabled={emailSending} style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 14, cursor: emailSending ? 'wait' : 'pointer', color: '#000', fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.1em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
                   {emailSending ? '📨  Sending to your email…' : emailSent ? '✅  Sent to email · Print copy →' : '🖨  Print / Save as PDF'}
