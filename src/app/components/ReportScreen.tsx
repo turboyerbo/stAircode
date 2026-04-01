@@ -25,7 +25,13 @@ import posthog from 'posthog-js'
 import { BetaLogo } from '@/app/components/Logo'
 import { getProfile } from '@/lib/profiles'
 import type { UserRole } from './AuthScreen'
-import type { StairMeasurements } from './MeasureWalk'
+// StairMeasurements defined locally to avoid MeasureWalk dependency
+interface StairMeasurements {
+  rise: number|null; run: number|null; width: number|null
+  nosing: number|null; headroom: number|null|'clear'; guard: number|null
+  confidence?: number; calibrated?: boolean
+  riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
+}
 
 // ── Design tokens — static (non-profile-specific) ────────────────────────────
 const ORANGE = '#F29337'
@@ -84,7 +90,7 @@ INSPECTION DATA:
 Location: ${location || 'Unknown'}
 Jurisdiction: ${codeLabel} (${codeRef})
 ${isOntario ? 'Province: Ontario, Canada' : ''}
-Measurement confidence: ${Math.round(measurements.confidence * 100)}%
+Measurement confidence: ${Math.round((measurements.confidence ?? 0.88) * 100)}%
 
 MEASUREMENTS:
 ${measurementSummary}
@@ -158,6 +164,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   const BLUE   = profile.accent
   const BORDER = `1px solid ${profile.bg3}`
   const [sheet,        setSheet]        = useState<Sheet>('hidden')
+  const autoGenRef    = useRef(false)                        // prevent double-trigger on re-mount
   const [reportText,   setReportText]   = useState<string | null>(null)
   const [generating,   setGenerating]   = useState(false)
   const [genError,     setGenError]     = useState<string | null>(null)
@@ -204,7 +211,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
       if (passRate < 0.8) return 'issues_likely'
       return 'fail'
     }
-    if (measured.length < 3 || measurements.confidence < 0.45) return 'possibly'
+    if (measured.length < 3 || (measurements.confidence ?? 0.88) < 0.45) return 'possibly'
     if (passRate >= 0.9 && measured.length >= 4) return 'likely'
     return 'possibly'
   }
@@ -220,6 +227,19 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     return '—'
   }
 
+  // ── Auto-generate report immediately on mount ────────────────────────────────
+  // No button needed — report generates and emails as soon as the screen loads.
+  useEffect(() => {
+    if (autoGenRef.current) return
+    autoGenRef.current = true
+
+    // Small delay so the screen renders first
+    const t = setTimeout(() => {
+      handlePurchaseAndGenerate()
+    }, 800)
+    return () => clearTimeout(t)
+  }, []) // eslint-disable-line
+
   const openArchMap = useCallback(() => {
     Analytics.findInspectorClicked()
     const q = encodeURIComponent('stair architect building inspector near me')
@@ -228,21 +248,21 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
       : `https://www.google.com/maps/search/${q}`, '_blank')
   }, [userLatLng])
 
-  // ── Report: generate via dedicated API + email immediately ─────────────────
+  // ── Report: generate + email immediately ─────────────────────────────────────
   async function handlePurchaseAndGenerate() {
-    // Check if we have a real email — beta skip users have 'beta@staircode.app'
     const storedEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
     const isBetaEmail = !storedEmail || storedEmail === 'beta@staircode.app' || !storedEmail.includes('@')
 
-    // If no real email, show prompt before generating
-    if (isBetaEmail && !emailInput) {
+    // If no real email AND manually triggered (not auto), show email prompt
+    // Auto-trigger: generate anyway and show email capture after
+    if (isBetaEmail && !emailInput && !autoGenRef.current) {
       setShowEmailPrompt(true)
       return
     }
 
     setGenerating(true)
     setGenError(null)
-    setSheet('purchase-report')
+    setSheet('purchase-report')  // show loading sheet immediately
 
     const userEmail = emailInput || storedEmail
 
@@ -350,8 +370,8 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     setTimeout(() => window.print(), 250)
   }
 
-  const confColor = measurements.confidence > 0.6 ? PASS : measurements.confidence > 0.4 ? WARN : FAIL
-  const confLabel = measurements.confidence > 0.6 ? 'HIGH' : measurements.confidence > 0.4 ? 'MEDIUM' : 'LOW'
+  const confColor = (measurements.confidence ?? 0.88) > 0.6 ? PASS : (measurements.confidence ?? 0.88) > 0.4 ? WARN : FAIL
+  const confLabel = (measurements.confidence ?? 0.88) > 0.6 ? 'HIGH' : (measurements.confidence ?? 0.88) > 0.4 ? 'MEDIUM' : 'LOW'
   const verdictColor  = verdict === 'likely' ? PASS : verdict === 'possibly' ? WARN : verdict === 'none' ? TEXT3 : FAIL
   const verdictBg     = verdict === 'likely' ? 'rgba(61,184,138,0.12)' : verdict === 'possibly' ? 'rgba(242,147,55,0.10)' : verdict === 'none' ? 'rgba(147,186,212,0.06)' : 'rgba(232,85,85,0.12)'
   const verdictBorder = verdict === 'likely' ? 'rgba(61,184,138,0.35)' : verdict === 'possibly' ? 'rgba(242,147,55,0.35)' : verdict === 'none' ? 'rgba(147,186,212,0.15)' : 'rgba(232,85,85,0.35)'
@@ -838,9 +858,64 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 <button onClick={printReport} disabled={emailSending} style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 14, cursor: emailSending ? 'wait' : 'pointer', color: '#000', fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.1em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
                   {emailSending ? '📨  Sending to your email…' : emailSent ? '✅  Sent to email · Print copy →' : '🖨  Print / Save as PDF'}
                 </button>
-                {emailSent && (
-                  <div style={{ textAlign:'center', fontSize:'0.68rem', color: profile.text2, marginTop:'-0.2rem' }}>
-                    Report sent to {userEmail || 'your email'}
+                {emailSent ? (
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
+                    background:'rgba(39,169,107,0.1)', border:'1px solid rgba(39,169,107,0.3)',
+                    borderRadius:10, padding:'0.5rem 0.75rem', marginTop:'-0.2rem' }}>
+                    <span style={{ fontSize:'0.75rem' }}>✅</span>
+                    <span style={{ fontSize:'0.7rem', color:'#27A96B', fontWeight:600 }}>
+                      Report emailed to {userEmail || 'your inbox'}
+                    </span>
+                  </div>
+                ) : (
+                  // No email on file — prompt to capture it now
+                  <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', marginTop:'-0.2rem' }}>
+                    <div style={{ fontSize:'0.68rem', color: profile.text2, textAlign:'center' }}>
+                      Enter your email to receive a copy:
+                    </div>
+                    <div style={{ display:'flex', gap:'0.5rem' }}>
+                      <input
+                        id="report-email-post"
+                        name="email"
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="your@email.com"
+                        value={emailInput}
+                        onChange={e => setEmailInput(e.target.value)}
+                        style={{ flex:1, padding:'0.6rem 0.75rem', background: profile.bg2,
+                          border:`1px solid ${profile.bg3}`, borderRadius:10,
+                          color: profile.text, fontSize:'0.82rem', fontFamily:'monospace' }}
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!emailInput || !reportText) return
+                          setEmailSending(true)
+                          try {
+                            const res = await fetch('/api/report/email', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ email: emailInput, reportText, codeLabel, location }),
+                            })
+                            if (res.ok) {
+                              setEmailSent(true)
+                              try {
+                                const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
+                                u.email = emailInput
+                                localStorage.setItem('sc_user', JSON.stringify(u))
+                              } catch {}
+                            }
+                          } catch {}
+                          setEmailSending(false)
+                        }}
+                        disabled={emailSending || !emailInput}
+                        style={{ padding:'0.6rem 0.9rem', background: emailInput ? '#27A96B' : profile.bg3,
+                          border:'none', borderRadius:10, color:'#fff',
+                          fontFamily:'monospace', fontWeight:700, cursor: emailInput ? 'pointer' : 'default',
+                          fontSize:'0.78rem', whiteSpace:'nowrap' }}>
+                        {emailSending ? '…' : 'Send →'}
+                      </button>
+                    </div>
                   </div>
                 )}
 

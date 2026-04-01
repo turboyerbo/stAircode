@@ -18,19 +18,19 @@ interface Props {
 }
 
 // ── Blueprint dark palette ─────────────────────────────────────────────────────
-const BG2 = '#0F2438'
+const BG2 = '#0A1C2E'
 
 const T = {
-  bg:      '#F0F5FA',
-  card:    '#ffffff',
-  cardHi:  'rgba(65,124,164,0.06)',
-  border:  'rgba(65,124,164,0.16)',
-  borderHi:'rgba(65,124,164,0.32)',
-  text:    '#0D1E2E',
-  text2:   '#2C4A68',
-  text3:   '#5E7D9B',
-  blue:    '#417CA4',
-  orange:  '#F29337',
+  bg:      '#0D2040',        // dark navy — matches app theme
+  card:    '#132A4A',        // slightly lighter navy for cards
+  cardHi:  'rgba(65,124,164,0.15)',
+  border:  'rgba(65,124,164,0.25)',
+  borderHi:'rgba(65,124,164,0.45)',
+  text:    '#E8F4FF',        // bright white text — high contrast on dark
+  text2:   '#93BAD4',        // light blue-grey for secondary text
+  text3:   '#5E8FAA',        // muted for tertiary
+  blue:    '#5BA3D0',
+  orange:  '#FA741F',
   pass:    '#27A96B',
   fail:    '#E84545',
 }
@@ -72,7 +72,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
   return (
     <div style={{
       flex: 1, overflowY: 'auto',
-      background: '#F0F5FA', backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.04) 27px,rgba(65,124,164,0.04) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.04) 27px,rgba(65,124,164,0.04) 28px)',
+      background: '#0D2040', backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)',
       fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       color: T.text,
       paddingBottom: '2rem',

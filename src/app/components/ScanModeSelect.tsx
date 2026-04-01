@@ -78,7 +78,7 @@ export default function ScanModeSelect({ onSelect }: Props) {
           <div style={{ display:'flex', alignItems:'flex-start', gap:'1rem' }}>
             {/* Icon */}
             <div style={{ width:54, height:54, borderRadius:14, background:`rgba(250,116,31,0.15)`, border:`1.5px solid ${ORANGE}55`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'1.6rem' }}>
-              ⚡
+              🧍🏽
             </div>
 
             <div style={{ flex:1 }}>
@@ -87,15 +87,12 @@ export default function ScanModeSelect({ onSelect }: Props) {
                 <span style={{ fontSize:'0.6rem', background:`rgba(250,116,31,0.2)`, color:ORANGE, fontFamily:'monospace', fontWeight:800, letterSpacing:'0.1em', padding:'0.15rem 0.5rem', borderRadius:6 }}>~90 SEC</span>
               </div>
               <p style={{ fontSize:'0.78rem', color:TEXT2, margin:0, lineHeight:1.65 }}>
-                Quick and simple — one shot per measurement, moves on fast. Good for homeowners and first looks.
+                Quick and simple — good for a personal check.
               </p>
             </div>
           </div>
 
-          <div style={{ marginTop:'0.9rem', padding:'0.55rem 0.85rem', background:`rgba(250,116,31,0.10)`, border:`1px solid ${ORANGE}33`, borderRadius:10 }}>
-            <span style={{ fontSize:'0.7rem', color:ORANGE, fontWeight:700 }}>± 25–50mm — </span>
-            <span style={{ fontSize:'0.7rem', color:TEXT3 }}>good for a personal check</span>
-          </div>
+
         </button>
 
         {/* ── ACCURACY card ── */}
@@ -117,7 +114,7 @@ export default function ScanModeSelect({ onSelect }: Props) {
           <div style={{ display:'flex', alignItems:'flex-start', gap:'1rem' }}>
             {/* Icon */}
             <div style={{ width:54, height:54, borderRadius:14, background:`rgba(39,169,107,0.15)`, border:`1.5px solid ${GREEN}55`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'1.6rem' }}>
-              🎯
+              👷🏻‍♀️
             </div>
 
             <div style={{ flex:1 }}>
@@ -131,10 +128,7 @@ export default function ScanModeSelect({ onSelect }: Props) {
             </div>
           </div>
 
-          <div style={{ marginTop:'0.9rem', padding:'0.55rem 0.85rem', background:`rgba(39,169,107,0.10)`, border:`1px solid ${GREEN}33`, borderRadius:10 }}>
-            <span style={{ fontSize:'0.7rem', color:GREEN, fontWeight:700 }}>± 10–20mm — </span>
-            <span style={{ fontSize:'0.7rem', color:TEXT3 }}>suitable for a compliance pre-assessment report</span>
-          </div>
+
         </button>
       </div>
 

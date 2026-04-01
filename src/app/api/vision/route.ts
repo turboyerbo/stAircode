@@ -13,8 +13,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 
+// Tell Netlify/Vercel to allow up to 30s for vision calls
+export const maxDuration = 30
+
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL         = 'claude-sonnet-4-5'
+const MODEL         = 'claude-sonnet-4-6'
 
 export async function POST(req: NextRequest) {
   // ── Rate limiting ──────────────────────────────────────────────────────────

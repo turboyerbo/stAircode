@@ -34,7 +34,7 @@ import { PostHog }                    from 'posthog-node'
 export const maxDuration = 60
 
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL         = 'claude-sonnet-4-5'
+const MODEL         = 'claude-sonnet-4-6'
 const APP_URL       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
 
 // ── PostHog server client factory ─────────────────────────────────────────────
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model:      MODEL,
-        max_tokens: 1500,   // Reduced from 4096 — keeps response fast and focused
+        max_tokens: 2500,   // Enough for a quality 5-section report
         messages: [{
           role:    'user',
           content: [{

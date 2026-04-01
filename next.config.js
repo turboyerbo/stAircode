@@ -17,7 +17,7 @@ console.log('[next.config] Cache version:', BUILD_VERSION)
 
 const nextConfig = {
   // Production domain — used by Next.js for absolute URL generation
-  // Set NEXT_PUBLIC_APP_URL=https://staircode.app in Vercel env vars
+  // Set NEXT_PUBLIC_APP_URL=https://staircode.app in Netlify env vars
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://staircode.app',
   },

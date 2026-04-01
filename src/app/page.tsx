@@ -11,8 +11,6 @@ import SettingsScreen                        from './components/SettingsScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ScanModeSelect                        from './components/ScanModeSelect'
 import type { ScanMode }                     from './components/ScanModeSelect'
-import StairDetect,     { DetectResult }     from './components/StairDetect'
-import MeasureWalk,     { StairMeasurements }from './components/MeasureWalk'
 import ReportScreen                          from './components/ReportScreen'
 
 const C = {
@@ -22,6 +20,13 @@ const C = {
 
 type Tab    = 'home'|'help'|'settings'
 type Screen = 'home'|'scan_ready'|'detect'|'capture'|'report'
+interface StairMeasurements {
+  rise: number|null; run: number|null; width: number|null
+  nosing: number|null; headroom: number|null|'clear'; guard: number|null
+  confidence?: number; calibrated?: boolean
+  riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
+}
+
 type CodeKey= 'NBC'|'OBC'|'QBC'|'NEN'|'IRC'|'IBC'|'BCBC'
 
 interface Loc  { city:string; province:string; country:string; countryCode:string }
@@ -98,11 +103,11 @@ function check(m:StairMeasurements,code:Code){
     {label:'Run',     icon:'↔',value:m.run,    min:L.runMin,
      pass:m.run?m.run>=L.runMin:null},
     {label:'Nosing',  icon:'⌐',value:m.nosing, min:L.nosingMin,max:L.nosingMax,
-     pass:m.nosing&&L.nosingMin?m.nosing>=(L.nosingMin||0)&&m.nosing<=(L.nosingMax||99):null},
+     pass:m.nosing&&L.nosingMin?(+m.nosing)>=(L.nosingMin||0)&&(+m.nosing)<=(L.nosingMax||99):null},
     {label:'Width',   icon:'⟺',value:m.width,  min:L.widthMin,
      pass:m.width?m.width>=L.widthMin:null},
     {label:'Headroom',icon:'⇳',value:m.headroom==='clear'?null:m.headroom,min:L.headMin,clearAbove:m.headroom==='clear',
-     pass:m.headroom==='clear'?true:m.headroom?m.headroom>=L.headMin:null} as any,
+     pass:m.headroom==='clear'?true:m.headroom?(+m.headroom)>=L.headMin:null} as any,
     {label:'Guard Ht',icon:'⊤',value:m.guard,  min:L.guardMin,
      pass:m.guard?m.guard>=L.guardMin:null},
   ]
@@ -167,6 +172,109 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
             50%       { opacity: 0.9; }
           }
         `}</style>
+      </div>
+    </div>
+  )
+}
+
+// ── Scan Countdown Screen ─────────────────────────────────────────────────────
+// Shown between mode select and camera open — gives user time to prepare
+function ScanCountdown({ mode, onDone }: { mode: ScanMode; onDone: () => void }) {
+  const [sec, setSec] = React.useState(5)
+  const [fading, setFading] = React.useState(false)
+
+  React.useEffect(() => {
+    if (sec <= 0) {
+      setFading(true)
+      setTimeout(onDone, 600)
+      return
+    }
+    const t = setTimeout(() => setSec(s => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [sec, onDone])
+
+  const isIndividual = mode === 'speed'
+  const image        = isIndividual ? '/Individual_Scan.png' : '/Girl_measuring.png'
+  const bg           = isIndividual ? '#1A1A1A' : '#F5F0EA'
+  const label        = isIndividual ? 'Get ready to scan' : 'Position yourself at the base of the stairs'
+
+  return (
+    <div
+      onClick={() => { setFading(true); setTimeout(onDone, 400) }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: bg,
+        cursor: 'pointer',
+        opacity: fading ? 0 : 1,
+        transition: fading ? 'opacity 0.6s ease' : 'none',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Full-bleed image */}
+      <img
+        src={image}
+        alt="Prepare to scan"
+        style={{
+          position: 'absolute', inset: 0,
+          width: '100%', height: '100%',
+          objectFit: isIndividual ? 'cover' : 'contain',
+          objectPosition: 'center',
+        }}
+      />
+
+      {/* Instruction pill — top right */}
+      <div style={{
+        position: 'absolute',
+        top: 'max(env(safe-area-inset-top,0px), 1.5rem)',
+        right: '1rem',
+        background: 'rgba(10,28,46,0.85)',
+        backdropFilter: 'blur(8px)',
+        borderRadius: 14,
+        padding: '0.65rem 0.9rem',
+        maxWidth: 200,
+        textAlign: 'right',
+        zIndex: 2,
+      }}>
+        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.5 }}>
+          {label}
+        </div>
+      </div>
+
+      {/* Countdown ring — bottom centre */}
+      <div style={{
+        position: 'absolute',
+        bottom: 'max(env(safe-area-inset-bottom,0px), 3rem)',
+        left: 0, right: 0, zIndex: 2,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', gap: '0.6rem',
+      }}>
+        <div style={{ position: 'relative', width: 80, height: 80 }}>
+          <svg width="80" height="80" style={{ transform: 'rotate(-90deg)' }}>
+            <circle cx="40" cy="40" r="34" fill="none"
+              stroke="rgba(255,255,255,0.2)" strokeWidth="6"/>
+            <circle cx="40" cy="40" r="34" fill="none"
+              stroke={isIndividual ? '#FA741F' : '#27A96B'} strokeWidth="6"
+              strokeDasharray={`${2 * Math.PI * 34}`}
+              strokeDashoffset={`${2 * Math.PI * 34 * (sec / 5)}`}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.9s linear' }}
+            />
+          </svg>
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF',
+            fontFamily: 'monospace',
+          }}>
+            {sec}
+          </div>
+        </div>
+        <div style={{
+          fontSize: '0.68rem', color: 'rgba(255,255,255,0.6)',
+          fontFamily: 'monospace', letterSpacing: '0.15em',
+        }}>
+          TAP TO SKIP
+        </div>
       </div>
     </div>
   )
@@ -343,12 +451,13 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   const [screen,setScreen]=useState<Screen>('home')
   const [scanMode,setScanMode]=useState<ScanMode>('accuracy')
   const [showModeSelect,setShowModeSelect]=useState(false)
+  const [showCountdown,setShowCountdown]=useState(false)
+  const [countdownSec,setCountdownSec]=useState(5)
   const [loc,setLoc]=useState<Loc|null>(null)
   const [locLoading,setLocLoading]=useState(true)
   const [code,setCode]=useState<Code|null>(null)
   const [latLng,setLatLng]=useState<{lat:number;lng:number}|null>(null)
   const [measurements,setMeasurements]=useState<StairMeasurements|null>(null)
-  const [detectResult,setDetectResult]=useState<DetectResult|null>(null)
 
   useEffect(()=>{
     // ── Server-side IP geolocation — no CSP issues, no permission needed ────
@@ -413,7 +522,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
       rise:      n('rise'),
       run:       n('run'),
       width:     n('width'),
-      nosing:    n('nosing'),
+      nosing:    raw.nosing === 'none' ? null : n('nosing'),
       headroom:  raw.headroom === 'clear' ? 'clear' : n('headroom'),
       guard:     n('guard'),
       confidence: 0.88,
@@ -424,25 +533,25 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
     setMeasurements(m)
     setScreen('report')
   },[user])
-  const handleDetectComplete=useCallback((det:DetectResult)=>{setDetectResult(det);setScreen('capture')},[])
-  const handleCaptureComplete=useCallback((m:StairMeasurements)=>{
-    setMeasurements({...m,riserCount:detectResult?.riserCount??undefined,
-      handrailOneSide:detectResult?.handrailOneSide??undefined,handrailBothSides:detectResult?.handrailBothSides??undefined})
-    setScreen('report')
-  },[detectResult])
-  const handleStartOver=useCallback(()=>{setMeasurements(null);setDetectResult(null);setScreen('home')},[])
-  const handleRetake=useCallback(()=>{setMeasurements(null);setDetectResult(null);setScreen('scan_ready')},[])
+  // handleDetectComplete removed — detect/capture screens deprecated,[])
+  // handleCaptureComplete removed — capture screen deprecated
+  const handleStartOver=useCallback(()=>{setMeasurements(null);setScreen('home')},[])
+  const handleRetake=useCallback(()=>{setMeasurements(null);setScreen('scan_ready')},[])
 
   // Full-screen flows (no bottom nav)
   if(showModeSelect)return <ScanModeSelect onSelect={(mode)=>{
     setScanMode(mode)
     setShowModeSelect(false)
-    setScreen('scan_ready')
+    setShowCountdown(true)
+    setCountdownSec(5)
     Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mode})
   }}/>
+
+  if(showCountdown) return <ScanCountdown
+    mode={scanMode}
+    onDone={()=>{ setShowCountdown(false); setScreen('scan_ready') }}
+  />
   if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} scanMode={scanMode} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>{setScreen('home');setShowModeSelect(false)}}/>
-  if(screen==='detect')return <StairDetect onComplete={handleDetectComplete} onBack={()=>setScreen('scan_ready')} knownWidth={measurements?.width??null}/>
-  if(screen==='capture')return <MeasureWalk onComplete={handleCaptureComplete} onBack={()=>setScreen('home')} codeLabel={code?.label??'Building Code'} jurisdiction={code?.code??'NBC'}/>
   // Use IBC as fallback if code not yet detected (location loading)
   const activeCode = code ?? {code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetake} onStartOver={handleStartOver}/>
@@ -484,9 +593,9 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
           {!locLoading&&code&&(
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
               <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
-                {code.code==='OBC' && <>Stair reqs: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
-                {code.code==='NBC' && <>Stair reqs: <a href="https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>NBC 2020</a></>}
-                {code.code==='IBC' && <>Stair reqs: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
+                {code.code==='OBC' && <>Building Codes: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
+                {code.code==='NBC' && <>Building Codes: <a href="https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>NBC 2020</a></>}
+                {code.code==='IBC' && <>Building Codes: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
                 {code.code!=='OBC'&&code.code!=='NBC'&&code.code!=='IBC' && <span>{code.ref}</span>}
               </span>
               <span style={{fontSize:'0.65rem',fontFamily:'monospace',fontWeight:600,letterSpacing:'0.08em',color:confirmed?'#0D7A5F':'#2C5A7A',background:confirmed?'#E6F5F1':'#EBF2FF',padding:'0.22rem 0.65rem',borderRadius:8,border:`1px solid ${confirmed?'rgba(13,122,95,0.3)':'rgba(44,90,122,0.25)'}`}}>{code.label}</span>
@@ -532,7 +641,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
 
 // ── Bottom Nav ────────────────────────────────────────────────────────────────
 function BottomNav({active,onChange}:{active:Tab;onChange:(t:Tab)=>void}){
-  const tabs=[{id:'home' as Tab,icon:'logo',label:'Welcome'},{id:'help' as Tab,icon:'⚡',label:'AI Guide'},{id:'settings' as Tab,icon:'⚙️',label:'Settings'}]
+  const tabs=[{id:'home' as Tab,icon:'logo',label:'Welcome'},{id:'help' as Tab,icon:'🤖',label:'AR / AI'},{id:'settings' as Tab,icon:'⚙️',label:'Settings'}]
   return(
     <div style={{borderTop:'1.5px solid rgba(147,186,212,0.18)',background:'#FFFFFF',paddingBottom:'env(safe-area-inset-bottom,0px)',display:'flex'}}>
       {tabs.map(t=>(
