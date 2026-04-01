@@ -103,7 +103,7 @@ Replace `staircode.app` with your actual deployed URL everywhere.
 ```json
 {
   "host": "staircode-arai-10.vercel.app",
-  "fullScopeUrl": "https://staircode-arai-10.vercel.app/",
+  "fullScopeUrl": "https://staircode.app/",
   "iconUrl": "https://staircode-arai-10.vercel.app/icons/icon-512.png",
   "maskableIconUrl": "https://staircode-arai-10.vercel.app/icons/icon-maskable-512.png",
   "monochromeIconUrl": "https://staircode-arai-10.vercel.app/icons/icon-512.png",
