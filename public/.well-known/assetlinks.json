@@ -1,11 +1,13 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.staircode.twa",
+      "package_name": "app.staircode.android",
       "sha256_cert_fingerprints": [
-        "F7:C4:37:CA:26:63:7C:9C:74:B0:8E:5F:D6:E9:4D:AB:27:A9:A0:39:9A:BD:79:A1:B6:8E:AA:84:A4:EA:28:33"
+        "F7:C4:37:CA:26:63:7C:9C:74:B0:8E:5F:D6:E9:4D:AB:27:A9:A0:39:9A:BD:79:A1:B6:8E:AA:84:A4:B5:44"
       ]
     }
   }
