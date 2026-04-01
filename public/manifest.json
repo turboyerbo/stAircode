@@ -47,21 +47,5 @@
       "label": "AR Stair Measurement",
       "form_factor": "narrow"
     }
-  ],
-  "shortcuts": [
-    {
-      "name": "New Inspection",
-      "short_name": "Inspect",
-      "description": "Start a new stair inspection",
-      "url": "/",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png",
-          "purpose": "any"
-        }
-      ]
-    }
   ]
 }
