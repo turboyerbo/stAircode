@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '2.5rem' }}>Last updated: {updated}</p>
 
       <Section title="1. Who we are">
-        Just Open Technologies Inc. ("Just Open", "we", "our") operates the stAIrcode app and website at staircode.app.
+        Just Open Technologies Inc. (&quot;Just Open&quot;, &quot;we&quot;, &quot;our&quot;) operates the stAIrcode app and website at staircode.app.
         Contact us at <a href="mailto:info@staircode.app" style={{ color: '#1565C0' }}>info@staircode.app</a>.
       </Section>
 
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
 
       <Section title="4. AI processing">
         Camera frames are transmitted over HTTPS to the Anthropic API (Claude) for measurement analysis.
-        Anthropic's data processing is governed by their <a href="https://www.anthropic.com/privacy" style={{ color: '#1565C0' }}>Privacy Policy</a>.
+        Anthropic&apos;s data processing is governed by their <a href="https://www.anthropic.com/privacy" style={{ color: '#1565C0' }}>Privacy Policy</a>.
         We do not use your camera images to train AI models.
       </Section>
 
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="9. Changes">
-        We will post updates to this page and update the "Last updated" date. Continued use of the app
+        We will post updates to this page and update the &quot;Last updated&quot; date. Continued use of the app
         after changes constitutes acceptance of the revised policy.
       </Section>
 

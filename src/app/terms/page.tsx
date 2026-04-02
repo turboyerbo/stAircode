@@ -14,7 +14,7 @@ export default function TermsPage() {
       <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '2.5rem' }}>Last updated: {updated}</p>
 
       <Section title="1. Acceptance">
-        By downloading, installing, or using the Staircode app or website ("Service"), you agree to be
+        By downloading, installing, or using the Staircode app or website (&quot;Service&quot;), you agree to be
         bound by these Terms of Service. If you do not agree, do not use the Service.
       </Section>
 
@@ -25,7 +25,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="3. Disclaimer of warranties">
-        THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. STAIRCODE INC. EXPRESSLY
+        THE SERVICE IS PROVIDED &quot;AS IS&quot; WITHOUT WARRANTY OF ANY KIND. STAIRCODE INC. EXPRESSLY
         DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY,
         FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
         <br /><br />
@@ -39,7 +39,7 @@ export default function TermsPage() {
         INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA,
         OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICE.
         <br /><br />
-        IN NO EVENT SHALL STAIRCODE'S TOTAL LIABILITY EXCEED THE AMOUNT PAID BY YOU FOR THE SERVICE
+        IN NO EVENT SHALL STAIRCODE&apos;S TOTAL LIABILITY EXCEED THE AMOUNT PAID BY YOU FOR THE SERVICE
         IN THE TWELVE MONTHS PRECEDING THE CLAIM, OR CAD $50, WHICHEVER IS GREATER.
       </Section>
 

@@ -63,89 +63,7 @@ interface Props {
 
 type Sheet = 'hidden' | 'plans' | 'purchase-report' | 'report-ready' | 'free-confirm'
 
-// ── Generate the full professional report via Claude ──────────────────────────
-async function generateFullReport(
-  measurements: StairMeasurements,
-  fields: FieldResult[],
-  codeLabel: string,
-  codeRef: string,
-  location: string,
-  isOntario: boolean
-): Promise<string | null> {
-
-  const measurementSummary = fields.map(f => {
-    const val = f.clearAbove ? 'CLEAR/OPEN' : f.value != null ? `${Math.round(f.value)}mm` : 'Not measured'
-    const range = f.min != null && f.max != null ? `${f.min}–${f.max}mm` : f.min != null ? `≥${f.min}mm` : f.max != null ? `≤${f.max}mm` : 'N/A'
-    const status = f.pass === true ? 'PASS' : f.pass === false ? 'FAIL' : 'N/A'
-    return `${f.label}: ${val} (required: ${range}) — ${status}`
-  }).join('\n')
-
-  const failedItems = fields.filter(f => f.pass === false)
-    .map(f => `${f.label}: measured ${f.value}mm, required ${f.min != null && f.max != null ? `${f.min}–${f.max}mm` : f.min != null ? `≥${f.min}mm` : `≤${f.max}mm`}`)
-    .join('\n')
-
-  const prompt = `You are a professional building code compliance consultant producing a formal pre-inspection stair assessment report. Write clearly, precisely, and professionally — like a licensed building inspector's report.
-
-INSPECTION DATA:
-Location: ${location || 'Unknown'}
-Jurisdiction: ${codeLabel} (${codeRef})
-${isOntario ? 'Province: Ontario, Canada' : ''}
-Measurement confidence: ${Math.round((measurements.confidence ?? 0.88) * 100)}%
-
-MEASUREMENTS:
-${measurementSummary}
-
-${failedItems ? `FAILED ITEMS:\n${failedItems}` : 'All measured items passed.'}
-
-Riser count: ${measurements.riserCount ?? 'Unknown'}
-Handrail: ${measurements.handrailBothSides ? 'Both sides' : measurements.handrailOneSide ? 'One side' : 'Unknown'}
-Nosing: ${(measurements as any).nosing === 'none' ? 'No nosing detected' : (measurements as any).nosing ? `~${(measurements as any).nosing}mm projection` : 'Not assessed'}
-Headroom: ${measurements.headroom === 'clear' ? 'Open/clear above' : measurements.headroom ? `~${measurements.headroom}mm` : 'Not assessed'}
-
-Write a professional report with the following sections. Use plain text, no markdown symbols, no asterisks. Use numbered sections with clear headings.
-
-1. STAIR DESCRIPTION
-Describe the staircase based on the measurements — approximate type (straight residential, commercial, etc.), estimated number of risers, overall dimensions, and general character.
-
-2. COMPLIANCE ANALYSIS
-For each measured dimension, explain what was found versus what is required under ${codeLabel}. Be specific about the actual values and the code requirement. State clearly whether each item passes or fails. For failed items, state the exact deficiency in mm.
-
-3. APPLICABLE BUILDING CODE STANDARDS
-List the specific sections of ${codeLabel} (${codeRef}) that apply to this staircase, with a plain-language explanation of what each section requires.
-
-4. PROBABLE OCCUPANCY CLASSIFICATION
-Based on the location (${location}), stair dimensions, and measurement profile, state the most likely occupancy type (e.g., Part 9 residential dwelling, Part 3 assembly, commercial/IBC Group B, etc.) and explain why. Note how occupancy affects the applicable code requirements.
-
-5. BYLAW AND LOCAL AMENDMENT NOTES
-Note any relevant local amendments or bylaws likely applicable in ${location}. If the jurisdiction is Ontario, note relevant OBC 2024 amendments. Include any known variance procedures or exemptions that may apply.
-
-6. RISK ASSESSMENT FOR INSPECTOR
-Summarise the key compliance risks in order of severity. Flag any items that would typically trigger a stop-work order or require immediate remediation versus items that may be subject to discretion or field measurement verification. Provide a concise recommendation on whether a formal inspection is advisable before occupancy.
-
-7. DISCLAIMER
-Include a standard disclaimer that this is a pre-inspection AI analysis, not a certified inspection, and that a licensed building official's determination takes precedence.
-
-Write the full report now.`
-
-  try {
-    const ctrl    = new AbortController()
-    const timeout = setTimeout(() => ctrl.abort(), 45_000)
-    const r = await fetch('/api/vision', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // Send a blank 1x1 image — we only need the text response here
-      body: JSON.stringify({
-        imageB64: '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/APtKKAP/2Q==',
-        prompt,
-      }),
-      signal: ctrl.signal,
-    })
-    clearTimeout(timeout)
-    if (!r.ok) return null
-    const d = await r.json()
-    return d.text ?? null
-  } catch { return null }
-}
+// (generateFullReport removed — report is generated server-side via /api/report/generate)
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function ReportScreen({ measurements, fields, codeLabel, codeRef, location, userLatLng, isOntario, userRole, onRetake, onStartOver }: Props) {
@@ -168,7 +86,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   const [reportText,   setReportText]   = useState<string | null>(null)
   const [generating,   setGenerating]   = useState(false)
   const [genError,     setGenError]     = useState<string | null>(null)
-  const reportRef = useRef<HTMLDivElement>(null)
+  const reportRef = useRef<HTMLPreElement>(null)
   const [proLoading,  setProLoading]  = useState(false)
   const [creditId,    setCreditId]    = useState<string | undefined>(undefined)
   const [emailSent,    setEmailSent]    = useState(false)
@@ -255,7 +173,8 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
     // If no real email AND manually triggered (not auto), show email prompt
     // Auto-trigger: generate anyway and show email capture after
-    if (isBetaEmail && !emailInput && !autoGenRef.current) {
+    if (!emailInput && isBetaEmail) {
+      // No email yet — show the email capture sheet before generating
       setShowEmailPrompt(true)
       return
     }
@@ -313,32 +232,29 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     }
   }
 
-  async function printReport() {
-    Analytics.exportClicked('print')
-    Analytics.betaReportGenerated({ verdict, failCount: failed.length, passCount: passed.length, codeLabel, emailed: emailSent })
-    // Track experiment conversion — this is the goal event PostHog measures
-    posthog.capture('report_generated_experiment', {
-      experiment_name: 'print-report',
-      variant:         reportFlag ?? 'control',
-      verdict,
-    })
-
-    // Email the report to the user (fire-and-forget alongside print)
-    if (reportText && !emailSent) {
-      const userEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
-      if (userEmail) {
-        setEmailSending(true)
-        fetch('/api/report/email', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ email: userEmail, reportText, creditId, codeLabel, location }),
-        }).then(r => r.json()).then(d => {
-          if (d.ok) setEmailSent(true)
-        }).catch(() => {}).finally(() => setEmailSending(false))
+  // ── Email the report to the user ──────────────────────────────────────────────
+  async function emailReport(address: string) {
+    if (!reportText || !address) return
+    setEmailSending(true)
+    try {
+      const res = await fetch('/api/report/email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: address, reportText, codeLabel, location }),
+      })
+      if (res.ok) {
+        setEmailSent(true)
+        // Persist email for future sessions
+        try {
+          const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
+          u.email = address
+          localStorage.setItem('sc_user', JSON.stringify(u))
+        } catch {}
+        Analytics.betaReportGenerated({ verdict, failCount: failed.length, passCount: passed.length, codeLabel, emailed: true })
+        posthog.capture('report_emailed', { experiment_name: 'print-report', variant: reportFlag ?? 'control', verdict })
       }
-    }
-
-    setTimeout(() => window.print(), 200)
+    } catch {}
+    setEmailSending(false)
   }
 
   // ── $38.99/mo Pro: redirect to Stripe subscription checkout ──────────────────
@@ -365,11 +281,6 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     }
   }
 
-  function printFree() {
-    setSheet('hidden')
-    setTimeout(() => window.print(), 250)
-  }
-
   const confColor = (measurements.confidence ?? 0.88) > 0.6 ? PASS : (measurements.confidence ?? 0.88) > 0.4 ? WARN : FAIL
   const confLabel = (measurements.confidence ?? 0.88) > 0.6 ? 'HIGH' : (measurements.confidence ?? 0.88) > 0.4 ? 'MEDIUM' : 'LOW'
   const verdictColor  = verdict === 'likely' ? PASS : verdict === 'possibly' ? WARN : verdict === 'none' ? TEXT3 : FAIL
@@ -392,53 +303,11 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     fail:          { label: '✗ FAIL',     bg: 'rgba(232,69,69,0.15)',          color: '#E84545' },
   }[verdict] ?? { label: '—', bg: 'transparent', color: profile.text3 }
 
-  // ── Print styles injected into head ───────────────────────────────────────
-  const printStyles = `
-    @media print {
-      body * { visibility: hidden !important; }
-      #full-report-print, #full-report-print * { visibility: visible !important; }
-      #full-report-print {
-        position: absolute !important; left: 0 !important; top: 0 !important;
-        width: 100% !important; background: white !important; color: black !important;
-        padding: 2rem !important; font-family: Georgia, serif !important;
-        font-size: 11pt !important; line-height: 1.7 !important;
-      }
-    }
-  `
-
   // Derive userEmail once for the whole render
   const userEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
 
   return (
     <div style={{ minHeight: '100dvh', background: profile.bg, color: profile.text, display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", position: 'relative' }}>
-      <style>{printStyles}</style>
-
-      {/* Hidden print-ready full report */}
-      {reportText && (
-        <div id="full-report-print" style={{ display: 'none' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem', borderBottom: '2px solid #333', paddingBottom: '1rem' }}>
-            <img src='/logo_orange_transparent.png' alt='stAIrcode' style={{ height: 36, objectFit: 'contain' }} />
-            <div style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '0.3rem' }}>Stair Compliance Pre-Inspection Report</div>
-            <div style={{ fontSize: '0.85rem', color: '#555', marginTop: '0.3rem' }}>
-              {codeLabel} · {location} · {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </div>
-          </div>
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'Georgia, serif', fontSize: '11pt', lineHeight: 1.7, color: '#000' }}>
-            {reportText}
-          </pre>
-          <div style={{ marginTop: '3rem', borderTop: '1px solid #ccc', paddingTop: '1rem', fontSize: '9pt', color: '#777', textAlign: 'center' }}>
-            Generated by stAIrcode · staircode.app · © {new Date().getFullYear()} Just Open Technologies Inc.
-          </div>
-        </div>
-      )}
-
-      {/* ── PRINT HEADER (screen-hidden) ── */}
-      <div className="print-header" style={{ padding: '1rem 1.25rem 0.5rem' }}>
-        <img src='/logo_orange_transparent.png' alt='stAIrcode' style={{ height: 28, objectFit: 'contain' }} />
-        <div style={{ fontSize: '0.65rem', color: profile.text2 }}>
-          {codeLabel} · {codeRef} · {location} · {new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
-        </div>
-      </div>
 
       {/* ── TOP BAR ── */}
       <div style={{ padding: '0.75rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -538,23 +407,22 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               <div key={tag} style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: GOLD, background: 'rgba(242,147,55,0.12)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 10, padding: '0.2rem 0.55rem' }}>{tag}</div>
             ))}
           </div>
-          <button onClick={() => { setSheet('plans'); Analytics.pricingViewed() }} style={{ width: '100%', padding: '0.9rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 12, cursor: 'pointer', color: '#000', fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
-            {profile.copy.reportPrice}
+          <button onClick={() => { setShowEmailPrompt(true); Analytics.pricingViewed() }} style={{ width: '100%', padding: '0.9rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 12, cursor: 'pointer', color: '#000', fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
+            ✉️  Get My Report →
           </button>
         </div>
       </div>
 
       {/* ── STICKY BOTTOM ACTIONS ── */}
-      <div className="no-print" style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '1rem 1.25rem 2.2rem', background: `linear-gradient(to top, ${profile.bg} 70%, transparent)`, display: 'flex', flexDirection: 'column', gap: '0.5rem', zIndex: sheet !== 'hidden' ? 0 : 50, visibility: sheet !== 'hidden' ? 'hidden' : 'visible' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => { setSheet('plans'); Analytics.pricingViewed() }} style={{ flex: 2, padding: '0.9rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 12, cursor: 'pointer', color: '#000', fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.08em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
-            📋 {profile.copy.reportPrice}
-          </button>
-          <button onClick={openArchMap} style={{ flex: 1, padding: '0.9rem', borderRadius: 12, background: profile.bg3, border: `1px solid rgba(147,186,212,0.20)`, cursor: 'pointer', color: profile.text, fontSize: '0.76rem', fontFamily: 'monospace', fontWeight: 700 }}>
-            {profile.copy.findInspector}
-          </button>
-        </div>
+      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '1rem 1.25rem 2.2rem', background: `linear-gradient(to top, ${profile.bg} 70%, transparent)`, display: 'flex', flexDirection: 'column', gap: '0.5rem', zIndex: sheet !== 'hidden' ? 0 : 50, visibility: sheet !== 'hidden' ? 'hidden' : 'visible' }}>
+        <button
+          onClick={() => { setSheet('plans'); Analytics.pricingViewed() }}
+          style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 14, cursor: 'pointer', color: '#000', fontSize: '0.92rem', fontFamily: 'monospace', fontWeight: 900, letterSpacing: '0.08em', boxShadow: `0 4px 24px rgba(242,147,55,0.45)` }}
+        >
+          ✉️ &nbsp;Get My Report →
+        </button>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+          <button onClick={openArchMap} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.67rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.06em' }}>{profile.copy.findInspector}</button>
           {([['↩ Retake', onRetake], ['⟳ Start Over', onStartOver]] as const).map(([label, fn]) => (
             <button key={label} onClick={fn} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.67rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.06em' }}>{label}</button>
           ))}
@@ -699,9 +567,9 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 {isTestVariant ? (
                   <div>
                     <button
-                      onClick={() => { Analytics.purchaseInitiated('report'); handlePurchaseAndGenerate() }}
+                      onClick={() => { Analytics.purchaseInitiated('report'); setShowEmailPrompt(true) }}
                       style={{ width: '100%', marginTop: '0.85rem', padding: '1.1rem', background: 'linear-gradient(135deg, #27A96B, #1A7A50)', border: '2px solid rgba(39,169,107,0.6)', borderRadius: 14, cursor: 'pointer', color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.06em', boxShadow: '0 6px 28px rgba(39,169,107,0.55)' }}>
-                      📋 Generate My Free Report →
+                      ✉️  Email Me My Report →
                     </button>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
                       <span style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>✓ FREE during beta</span>
@@ -711,9 +579,9 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 ) : (
                   <div>
                     <button
-                      onClick={() => { Analytics.purchaseInitiated('report'); handlePurchaseAndGenerate() }}
+                      onClick={() => { Analytics.purchaseInitiated('report'); setShowEmailPrompt(true) }}
                       style={{ width: '100%', marginTop: '0.85rem', padding: '0.95rem', background: 'linear-gradient(135deg, #27A96B, #1A7A50)', border: 'none', borderRadius: 12, cursor: 'pointer', color: '#fff', fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.08em', boxShadow: '0 4px 20px rgba(39,169,107,0.45)' }}>
-                      ✓ Get Free Report (Beta) →
+                      ✉️  Email Me My Report →
                     </button>
                     <div style={{ fontSize:'0.6rem', color: profile.text3, textAlign:'center', marginTop:'0.3rem', fontFamily:'monospace' }}>
                       Free during beta · Normally $11.99
@@ -797,131 +665,98 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
             {/* ── REPORT READY SHEET ── */}
             {sheet === 'report-ready' && reportText && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>✅</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 800, color: profile.text, marginBottom: '0.2rem' }}>Report Ready</div>
-                  <div style={{ fontSize: '0.72rem', color: profile.text2 }}>Generated {new Date().toLocaleTimeString()}</div>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-                {/* Report preview */}
-                <div ref={reportRef} style={{ background: profile.bg2, border: `1px solid ${profile.bg3}`, borderRadius: 14, padding: '1rem', maxHeight: '40dvh', overflowY: 'auto' }}>
-                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", fontSize: '0.72rem', color: profile.text2, lineHeight: 1.7 }}>
-                    {reportText}
-                  </pre>
-                </div>
-
-                {/* ── SURVEY CTA — prominent, tracked by PostHog ── */}
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(250,116,31,0.12), rgba(250,116,31,0.06))',
-                  border: '2px solid rgba(250,116,31,0.5)',
-                  borderRadius: 18,
-                  padding: '1.1rem 1.25rem',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: '0.72rem', color: profile.text2, marginBottom: '0.4rem', lineHeight: 1.5 }}>
-                    🎉 <strong style={{ color: profile.text }}>Your report is ready!</strong> Help us improve stAIrcode —
-                    takes 2 minutes and makes a real difference.
+                {/* ── Success header ── */}
+                <div style={{ textAlign: 'center', paddingTop: '0.25rem' }}>
+                  <div style={{ fontSize: '2.2rem', marginBottom: '0.4rem' }}>✅</div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 900, color: profile.text, marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>Your report is ready</div>
+                  <div style={{ fontSize: '0.72rem', color: profile.text2, lineHeight: 1.5 }}>
+                    Enter your email and we&apos;ll send it straight to your inbox.
                   </div>
-                  <a
-                    href={process.env.NEXT_PUBLIC_SURVEY_URL || 'https://tally.so/r/1AMRbW'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      Analytics.surveyLinkClicked('in_app_report')
-                      // Fire PostHog event with full context
-                      posthog.capture('survey_clicked', {
-                        source:        'report_screen',
-                        verdict,
-                        codeLabel,
-                        location,
-                        scanMode:      userRole,
-                        reportEmailed: emailSent,
-                        beta:          true,
-                      })
-                    }}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-                      width: '100%', padding: '1rem 0.75rem',
-                      background: 'linear-gradient(135deg, #FA741F, #C4721E)',
-                      borderRadius: 14, color: '#fff',
-                      fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900,
-                      textDecoration: 'none', letterSpacing: '0.05em',
-                      boxShadow: '0 4px 20px rgba(250,116,31,0.45)',
-                      marginTop: '0.5rem',
-                    }}
-                  >
-                    📋 Take the Beta Survey →
-                  </a>
                 </div>
 
-                <button onClick={printReport} disabled={emailSending} style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 14, cursor: emailSending ? 'wait' : 'pointer', color: '#000', fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.1em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
-                  {emailSending ? '📨  Sending to your email…' : emailSent ? '✅  Sent to email · Print copy →' : '🖨  Print / Save as PDF'}
-                </button>
-                {emailSent ? (
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem',
-                    background:'rgba(39,169,107,0.1)', border:'1px solid rgba(39,169,107,0.3)',
-                    borderRadius:10, padding:'0.5rem 0.75rem', marginTop:'-0.2rem' }}>
-                    <span style={{ fontSize:'0.75rem' }}>✅</span>
-                    <span style={{ fontSize:'0.7rem', color:'#27A96B', fontWeight:600 }}>
-                      Report emailed to {userEmail || 'your inbox'}
-                    </span>
+                {/* ── EMAIL CAPTURE — primary action ── */}
+                {!emailSent ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <input
+                      id="report-email-main"
+                      name="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoFocus
+                      placeholder="your@email.com"
+                      value={emailInput}
+                      onChange={e => setEmailInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && emailInput.includes('@')) emailReport(emailInput)
+                      }}
+                      style={{
+                        width: '100%', padding: '0.95rem 1rem',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: `1.5px solid ${emailInput.includes('@') ? '#27A96B' : 'rgba(147,186,212,0.25)'}`,
+                        borderRadius: 14, color: profile.text,
+                        fontSize: '1rem', fontFamily: '-apple-system,sans-serif',
+                        outline: 'none', transition: 'border-color 0.15s',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <button
+                      onClick={() => emailReport(emailInput)}
+                      disabled={emailSending || !emailInput.includes('@')}
+                      style={{
+                        width: '100%', padding: '1rem',
+                        background: emailInput.includes('@')
+                          ? 'linear-gradient(135deg,#27A96B,#1A7A50)'
+                          : 'rgba(255,255,255,0.06)',
+                        border: 'none', borderRadius: 14,
+                        color: emailInput.includes('@') ? '#fff' : profile.text3,
+                        fontSize: '0.95rem', fontWeight: 800, fontFamily: 'monospace',
+                        letterSpacing: '0.06em',
+                        cursor: emailInput.includes('@') && !emailSending ? 'pointer' : 'not-allowed',
+                        boxShadow: emailInput.includes('@') ? '0 4px 20px rgba(39,169,107,0.4)' : 'none',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {emailSending ? '📨  Sending…' : '✉️  Email My Report →'}
+                    </button>
+                    <p style={{ fontSize: '0.6rem', color: profile.text3, textAlign: 'center', margin: 0, lineHeight: 1.6 }}>
+                      Your email is only used to send this report. We never share it.
+                    </p>
                   </div>
                 ) : (
-                  // No email on file — prompt to capture it now
-                  <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', marginTop:'-0.2rem' }}>
-                    <div style={{ fontSize:'0.68rem', color: profile.text2, textAlign:'center' }}>
-                      Enter your email to receive a copy:
-                    </div>
-                    <div style={{ display:'flex', gap:'0.5rem' }}>
-                      <input
-                        id="report-email-post"
-                        name="email"
-                        type="email"
-                        inputMode="email"
-                        autoComplete="email"
-                        placeholder="your@email.com"
-                        value={emailInput}
-                        onChange={e => setEmailInput(e.target.value)}
-                        style={{ flex:1, padding:'0.6rem 0.75rem', background: profile.bg2,
-                          border:`1px solid ${profile.bg3}`, borderRadius:10,
-                          color: profile.text, fontSize:'0.82rem', fontFamily:'monospace' }}
-                      />
-                      <button
-                        onClick={async () => {
-                          if (!emailInput || !reportText) return
-                          setEmailSending(true)
-                          try {
-                            const res = await fetch('/api/report/email', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ email: emailInput, reportText, codeLabel, location }),
-                            })
-                            if (res.ok) {
-                              setEmailSent(true)
-                              try {
-                                const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
-                                u.email = emailInput
-                                localStorage.setItem('sc_user', JSON.stringify(u))
-                              } catch {}
-                            }
-                          } catch {}
-                          setEmailSending(false)
-                        }}
-                        disabled={emailSending || !emailInput}
-                        style={{ padding:'0.6rem 0.9rem', background: emailInput ? '#27A96B' : profile.bg3,
-                          border:'none', borderRadius:10, color:'#fff',
-                          fontFamily:'monospace', fontWeight:700, cursor: emailInput ? 'pointer' : 'default',
-                          fontSize:'0.78rem', whiteSpace:'nowrap' }}>
-                        {emailSending ? '…' : 'Send →'}
-                      </button>
+                  /* ── SENT confirmation ── */
+                  <div style={{ background: 'rgba(39,169,107,0.1)', border: '1.5px solid rgba(39,169,107,0.35)', borderRadius: 16, padding: '1.1rem 1.25rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.35rem' }}>📬</div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#27A96B', marginBottom: '0.25rem' }}>Report sent!</div>
+                    <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.55 }}>
+                      Check your inbox at <strong style={{ color: profile.text }}>{emailInput || userEmail}</strong>.<br/>
+                      It may take a minute to arrive.
                     </div>
                   </div>
                 )}
 
-                <button onClick={() => { Analytics.exportClicked('copy'); navigator.clipboard?.writeText(reportText).catch(() => {}) }} style={{ width: '100%', padding: '0.85rem', background: profile.bg2, border: `1px solid ${profile.bg3}`, borderRadius: 14, cursor: 'pointer', color: profile.text2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600 }}>
-                  📋  Copy to Clipboard
-                </button>
+                {/* ── Report preview (scrollable) ── */}
+                <div style={{ background: profile.bg2, border: `1px solid ${profile.bg3}`, borderRadius: 14, padding: '1rem', maxHeight: '32dvh', overflowY: 'auto' }}>
+                  <div style={{ fontSize: '0.58rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>REPORT PREVIEW</div>
+                  <pre ref={reportRef} style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", fontSize: '0.72rem', color: profile.text2, lineHeight: 1.7 }}>
+                    {reportText}
+                  </pre>
+                </div>
+
+                {/* ── Survey CTA ── */}
+                <a
+                  href={process.env.NEXT_PUBLIC_SURVEY_URL || 'https://tally.so/r/1AMRbW'}
+                  target="_blank" rel="noopener noreferrer"
+                  onClick={() => {
+                    Analytics.surveyLinkClicked('in_app_report')
+                    posthog.capture('survey_clicked', { source: 'report_screen', verdict, codeLabel, location, reportEmailed: emailSent, beta: true })
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.85rem', background: 'rgba(250,116,31,0.1)', border: '1.5px solid rgba(250,116,31,0.35)', borderRadius: 14, color: '#FA741F', fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', letterSpacing: '0.04em' }}
+                >
+                  📋 Take the 2-min Beta Survey →
+                </a>
 
                 <button onClick={() => setSheet('hidden')} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.68rem', fontFamily: 'monospace', cursor: 'pointer', alignSelf: 'center' }}>
                   ← Back to summary
@@ -933,14 +768,11 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             {sheet === 'free-confirm' && <>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '1rem', fontWeight: 800, color: profile.text, marginBottom: '0.3rem' }}>Free Pre-Analysis Only</div>
-                <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}>The summary above is all you'll get. No occupancy analysis, no code citations, no inspector summary.</div>
+                <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}>The summary above is all you&apos;ll get. No occupancy analysis, no code citations, no inspector summary.</div>
               </div>
               <div style={{ background: 'rgba(242,147,55,0.1)', border: `1px solid rgba(242,147,55,0.3)`, borderRadius: 12, padding: '0.75rem 0.9rem', fontSize: '0.68rem', color: profile.text2, lineHeight: 1.65 }}>
                 <strong style={{ color: profile.warn }}>⚠ Note:</strong> Accuracy ±9.5–25mm. Must not be used as evidence of building code compliance.
               </div>
-              <button onClick={printFree} style={{ width: '100%', padding: '1rem', background: profile.bg2, border: `1px solid ${profile.bg3}`, borderRadius: 12, cursor: 'pointer', color: profile.text2, fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.08em' }}>
-                🖨  Download Free Summary
-              </button>
               <button onClick={() => { setSheet('plans'); Analytics.pricingViewed() }} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.65rem', fontFamily: 'monospace', cursor: 'pointer', alignSelf: 'center' }}>
                 ← Back to options
               </button>

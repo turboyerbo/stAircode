@@ -625,7 +625,7 @@ export default function AuthScreen({ onAuth }: Props) {
 
         {/* Hint */}
         <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(28,64,88,0.4)', textAlign: 'center', lineHeight: 1.6 }}>
-          <span style={{ color: '#1A3A5C', fontWeight: 600 }}>Check your spam folder</span><span style={{ color: 'rgba(44,74,100,0.5)' }}> if you don't see it within 60 seconds.</span>
+          <span style={{ color: '#1A3A5C', fontWeight: 600 }}>Check your spam folder</span><span style={{ color: 'rgba(44,74,100,0.5)' }}> if you don&apos;t see it within 60 seconds.</span>
         </p>
       </div>
     </div>
