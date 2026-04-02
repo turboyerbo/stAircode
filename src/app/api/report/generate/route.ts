@@ -110,7 +110,7 @@ Keep the total report under 600 words. Be direct and professional.`
 }
 
 // ── Send email via Resend ──────────────────────────────────────────────────────
-async function sendEmail(to: string, reportText: string, codeLabel: string, location: string, surveyUrl: string) {
+async function sendEmail(to: string, reportText: string, codeLabel: string, location: string, surveyUrl: string, frames: Record<string,string> = {}) {
   const resendKey = process.env.RESEND_API_KEY
   if (!resendKey) { console.warn('[report/generate] No RESEND_API_KEY'); return false }
 
@@ -118,6 +118,39 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
   const subject = `Your stAIrcode Compliance Report — ${location || codeLabel}`
   const date    = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 
+
+  // Build photo grid HTML if frames were captured
+  const frameLabels: Record<string,string> = {
+    overview:    'Full Stair View',
+    riser_front: 'Riser Height',
+    rotate_90:   'Nosing Check',
+    nosing:      'Nosing Close-Up',
+    handrail:    'Handrail Height',
+    alt_angle:   'Stair Width',
+    tread_top:   'Tread Depth',
+  }
+  const frameEntries = Object.entries(frames).filter(([k]) => frameLabels[k] && frames[k])
+  // Photo grid: each row = label + measurement reading (inline images blocked by many email clients)
+  // Instead we describe what was captured with a visual indicator row
+  const photoGridHtml = frameEntries.length > 0 ? `
+    <div style="background:#F5F8FA;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:1.5rem 2rem;">
+      <h2 style="font-size:0.85rem;font-weight:800;color:#0A1C2E;margin:0 0 0.25rem;letter-spacing:0.05em;text-transform:uppercase;">📸 Measurements Captured</h2>
+      <p style="font-size:0.72rem;color:#4E7A9B;margin:0 0 1rem;">The following positions were successfully scanned during this inspection.</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="background:#E8F4FF;">
+          <th style="padding:0.5rem 0.75rem;font-size:0.65rem;color:#2C5A7A;font-weight:700;text-align:left;font-family:monospace;letter-spacing:0.08em;text-transform:uppercase;">Position</th>
+          <th style="padding:0.5rem 0.75rem;font-size:0.65rem;color:#2C5A7A;font-weight:700;text-align:left;font-family:monospace;letter-spacing:0.08em;text-transform:uppercase;">Status</th>
+        </tr>
+        ${frameEntries.map(([posId], i) => `
+        <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F5F8FA'};">
+          <td style="padding:0.5rem 0.75rem;font-size:0.8rem;color:#0A1C2E;font-weight:600;">${frameLabels[posId] ?? posId}</td>
+          <td style="padding:0.5rem 0.75rem;font-size:0.75rem;color:#27A96B;font-weight:700;">✓ Captured</td>
+        </tr>`).join('')}
+      </table>
+      <p style="font-size:0.65rem;color:#93BAD4;margin:0.75rem 0 0;font-style:italic;">
+        ${frameEntries.length} of 7 measurement positions captured during this inspection.
+      </p>
+    </div>` : ''
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -131,6 +164,8 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
       <p style="font-size:0.78rem;color:#93BAD4;margin:0;">${codeLabel}${location ? ' · ' + location : ''} · ${date}</p>
     </div>
   </div>
+
+  ${photoGridHtml}
 
   <div style="background:#ffffff;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:2rem;">
     <pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:10.5pt;line-height:1.75;color:#0A1C2E;margin:0;">${reportText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
@@ -184,6 +219,9 @@ export async function POST(req: NextRequest) {
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
 
   const { email, fields, codeLabel, codeRef, location, isOntario, surveyUrl } = body
+  // Captured measurement frames (base64 JPEGs keyed by position id)
+  let capturedFrames: Record<string,string> = {}
+  try { if (body.frames) capturedFrames = JSON.parse(body.frames) } catch {}
 
   // ── Experiment: print-report ──────────────────────────────────────────────
   // Evaluate server-side so ad-blockers can't interfere with the measurement.
@@ -210,7 +248,39 @@ export async function POST(req: NextRequest) {
   }
   // fields is required — email is optional (report still generates, just won't email)
   if (!fields) return NextResponse.json({ error: 'Missing measurement fields' }, { status: 400 })
-  const reportEmail = email || ''
+  const reportEmail = (email || '').toLowerCase().trim()
+
+  // ── Free trial limit: 1 free report per email ─────────────────────────────
+  // Pro members bypass this check (paid: true in body)
+  const FREE_REPORT_LIMIT = 1
+  const isPaid = body.paid === true
+
+  if (!isPaid && reportEmail) {
+    const sbUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const sbKey  = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (sbUrl && sbKey) {
+      try {
+        // Check existing usage
+        const checkRes = await fetch(
+          `${sbUrl}/rest/v1/report_usage?select=report_count&email=eq.${encodeURIComponent(reportEmail)}`,
+          { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` } }
+        )
+        if (checkRes.ok) {
+          const rows: { report_count: number }[] = await checkRes.json()
+          const used = rows[0]?.report_count ?? 0
+          if (used >= FREE_REPORT_LIMIT) {
+            return NextResponse.json(
+              { error: 'trial_exhausted', used, limit: FREE_REPORT_LIMIT },
+              { status: 402 }   // 402 Payment Required
+            )
+          }
+        }
+      } catch (err) {
+        console.warn('[report/generate] Usage check failed — proceeding:', err)
+        // Fail open: if Supabase is unreachable, don't block the user
+      }
+    }
+  }
 
   const prompt = buildPrompt(fields, codeLabel || 'Building Code', codeRef || '', location || '', isOntario || false)
 
@@ -255,7 +325,7 @@ export async function POST(req: NextRequest) {
 
   // ── Email it ─────────────────────────────────────────────────────────────────
   const emailId = reportEmail
-    ? await sendEmail(reportEmail, reportText, codeLabel || 'Building Code', location || '', surveyUrl || SURVEY_URL)
+    ? await sendEmail(reportEmail, reportText, codeLabel || 'Building Code', location || '', surveyUrl || SURVEY_URL, capturedFrames)
     : null
 
   // Track server-side — captures even if the browser closes before client fires
@@ -285,10 +355,52 @@ export async function POST(req: NextRequest) {
     experiment_variant: experimentVariant,
   })
 
+  // ── Increment usage counter in Supabase ──────────────────────────────────────
+  if (!isPaid && reportEmail) {
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (sbUrl && sbKey) {
+      try {
+        await fetch(`${sbUrl}/rest/v1/report_usage`, {
+          method: 'POST',
+          headers: {
+            apikey: sbKey,
+            Authorization: `Bearer ${sbKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates',
+          },
+          body: JSON.stringify({
+            email:        reportEmail,
+            report_count: 1,
+            first_at:     new Date().toISOString(),
+            last_at:      new Date().toISOString(),
+          }),
+        })
+        // Note: the upsert increments via DB trigger — see supabase/email_events.sql
+        // For now we just record the row; if duplicate, update last_at
+        // Full increment via raw SQL patch:
+        await fetch(
+          `${sbUrl}/rest/v1/rpc/increment_report_usage`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: sbKey,
+              Authorization: `Bearer ${sbKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_email: reportEmail }),
+          }
+        )
+      } catch (err) {
+        console.warn('[report/generate] Usage increment failed:', err)
+      }
+    }
+  }
+
   return NextResponse.json({
     ok:        true,
     emailed:   !!emailId,
-    emailId,          // Resend email ID — for tracking delivery via webhook
-    reportText,       // also return text so app can show it inline
+    emailId,
+    reportText,
   })
 }

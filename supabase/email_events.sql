@@ -44,3 +44,49 @@ create index if not exists email_events_email_id_idx on email_events (resend_ema
 -- select distinct recipient from email_events
 -- where event_type = 'email.opened'
 -- and subject ilike '%Compliance Report%';
+
+
+-- ── Report Usage Tracking ──────────────────────────────────────────────────────
+-- Tracks how many free reports each email address has generated.
+-- Used to enforce the 1 free report per email trial limit.
+
+create table if not exists report_usage (
+  id           uuid primary key default gen_random_uuid(),
+  email        text not null,
+  report_count integer not null default 1,
+  first_at     timestamptz not null default now(),
+  last_at      timestamptz not null default now()
+);
+
+-- Unique index — one row per email
+create unique index if not exists report_usage_email_idx on report_usage (lower(email));
+
+-- Upsert helper: increment count or insert on first use
+-- Usage: call this after every successful free report generation
+-- insert into report_usage (email, report_count, first_at, last_at)
+-- values ($1, 1, now(), now())
+-- on conflict (lower(email)) do update
+--   set report_count = report_usage.report_count + 1,
+--       last_at = now();
+
+-- Check if an email has used their free trial:
+-- select report_count from report_usage where lower(email) = lower($1);
+
+
+-- ── increment_report_usage RPC ────────────────────────────────────────────────
+-- Called server-side after every successful free report generation.
+-- Upserts the row and increments count atomically.
+
+create or replace function increment_report_usage(user_email text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  insert into report_usage (email, report_count, first_at, last_at)
+  values (lower(user_email), 1, now(), now())
+  on conflict (lower(email)) do update
+    set report_count = report_usage.report_count + 1,
+        last_at = now();
+end;
+$$;

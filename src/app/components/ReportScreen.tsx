@@ -66,6 +66,92 @@ type Sheet = 'hidden' | 'plans' | 'purchase-report' | 'report-ready' | 'free-con
 // (generateFullReport removed — report is generated server-side via /api/report/generate)
 
 // ── Component ──────────────────────────────────────────────────────────────────
+
+// ── Loading slideshow shown while report is being generated ───────────────────
+const LOADING_SLIDES = [
+  {
+    src:     '/Report_loading_1.jpg',
+    caption: 'Analysing your stair measurements…',
+    sub:     'Checking every dimension against the building code',
+  },
+  {
+    src:     '/Report_loading_2.jpg',
+    caption: 'Cross-referencing compliance rules…',
+    sub:     'Rise, run, nosing, headroom, handrail — all checked',
+  },
+  {
+    src:     '/Report_loading_3.jpg',
+    caption: 'Preparing your inspection report…',
+    sub:     'Building a summary suitable for your local authority',
+  },
+]
+
+function GeneratingSlideshow({
+  slide, onSlide, codeLabel, textColor, text2,
+}: {
+  slide: number
+  onSlide: (n: number) => void
+  codeLabel: string
+  textColor: string
+  text2:     string
+}) {
+  useEffect(() => {
+    const t = setTimeout(() => onSlide((slide + 1) % LOADING_SLIDES.length), 4500)
+    return () => clearTimeout(t)
+  }, [slide, onSlide])
+
+  const s = LOADING_SLIDES[slide]
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}>
+      {/* Image */}
+      <div style={{ width: '100%', borderRadius: 14, overflow: 'hidden', position: 'relative', background: '#0A1C2E', maxHeight: 260 }}>
+        <img
+          key={s.src}
+          src={s.src}
+          alt={s.caption}
+          style={{
+            width: '100%', height: 260, objectFit: 'cover', objectPosition: 'center top',
+            display: 'block',
+            animation: 'fadeInSlide 0.5s ease',
+          }}
+        />
+        {/* Spinner overlay — bottom right */}
+        <div style={{ position: 'absolute', bottom: 10, right: 12, display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(10,28,46,0.82)', borderRadius: 20, padding: '0.25rem 0.6rem' }}>
+          <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(242,147,55,0.3)', borderTopColor: '#FA741F', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: '#FA741F', fontWeight: 700, letterSpacing: '0.08em' }}>PROCESSING</span>
+        </div>
+      </div>
+
+      {/* Caption */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '0.92rem', fontWeight: 800, color: textColor, marginBottom: '0.2rem', animation: 'fadeInSlide 0.5s ease' }}>
+          {s.caption}
+        </div>
+        <div style={{ fontSize: '0.7rem', color: text2, lineHeight: 1.55, animation: 'fadeInSlide 0.5s ease' }}>
+          {s.sub} · {codeLabel}
+        </div>
+      </div>
+
+      {/* Slide dots */}
+      <div style={{ display: 'flex', gap: '0.4rem' }}>
+        {LOADING_SLIDES.map((_, i) => (
+          <div key={i} style={{
+            width: i === slide ? 18 : 6, height: 6,
+            borderRadius: i === slide ? 3 : '50%',
+            background: i === slide ? '#FA741F' : 'rgba(255,255,255,0.2)',
+            transition: 'all 0.3s ease',
+          }} />
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes fadeInSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin        { to   { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  )
+}
+
 export default function ReportScreen({ measurements, fields, codeLabel, codeRef, location, userLatLng, isOntario, userRole, onRetake, onStartOver }: Props) {
   const profile = getProfile(userRole)
 
@@ -86,6 +172,8 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   const [reportText,   setReportText]   = useState<string | null>(null)
   const [generating,   setGenerating]   = useState(false)
   const [genError,     setGenError]     = useState<string | null>(null)
+  const [trialExhausted, setTrialExhausted] = useState(false)
+  const [loadingSlide, setLoadingSlide] = useState(0)  // cycles 0-2 during generation
   const reportRef = useRef<HTMLPreElement>(null)
   const [proLoading,  setProLoading]  = useState(false)
   const [creditId,    setCreditId]    = useState<string | undefined>(undefined)
@@ -158,13 +246,21 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     return () => clearTimeout(t)
   }, []) // eslint-disable-line
 
-  const openArchMap = useCallback(() => {
+  function openMap(type: 'inspector' | 'architect' | 'contractor') {
     Analytics.findInspectorClicked()
-    const q = encodeURIComponent('stair architect building inspector near me')
-    window.open(userLatLng
-      ? `https://www.google.com/maps/search/${q}/@${userLatLng.lat},${userLatLng.lng},13z`
-      : `https://www.google.com/maps/search/${q}`, '_blank')
-  }, [userLatLng])
+    const queries = {
+      inspector: 'building inspector stair inspection',
+      architect: 'licensed architect stair compliance',
+      contractor: 'stair contractor renovation',
+    }
+    const q = encodeURIComponent(queries[type])
+    const url = userLatLng
+      ? `https://www.google.com/maps/search/${q}/@${userLatLng.lat},${userLatLng.lng},14z`
+      : `https://www.google.com/maps/search/${q}`
+    window.open(url, '_blank')
+  }
+  // Keep for backwards compat (used in plans sheet)
+  const openArchMap = () => openMap('inspector')
 
   // ── Report: generate + email immediately ─────────────────────────────────────
   async function handlePurchaseAndGenerate() {
@@ -181,6 +277,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
     setGenerating(true)
     setGenError(null)
+    setLoadingSlide(0)
     setSheet('purchase-report')  // show loading sheet immediately
 
     const userEmail = emailInput || storedEmail
@@ -208,10 +305,26 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           location,
           isOntario,
           surveyUrl: process.env.NEXT_PUBLIC_SURVEY_URL || 'https://tally.so/r/1AMRbW',
+          // Captured measurement photos (from ScanReadyScreen)
+          // Captured frames for email report — sent only if under 2MB total
+          frames: (() => {
+            try {
+              const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
+              const f = u._frames || ''
+              return f.length < 2_000_000 ? f : ''  // skip if too large
+            } catch { return '' }
+          })(),
         }),
       })
 
       const data = await res.json()
+
+      if (res.status === 402 || data.error === 'trial_exhausted') {
+        setGenerating(false)
+        setTrialExhausted(true)
+        setSheet('plans')
+        return
+      }
 
       if (!res.ok || !data.ok) {
         setGenerating(false)
@@ -316,7 +429,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
       </div>
 
       {/* ── SCROLLABLE BODY ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.25rem', paddingBottom: sheet !== 'hidden' ? '1rem' : '8rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.25rem', paddingBottom: sheet !== 'hidden' ? '1rem' : '20rem' }}>
 
         {/* Verdict */}
         <div style={{ borderRadius: 16, padding: '1rem 1.1rem', marginBottom: '0.75rem', background: verdictBg, border: `1.5px solid ${verdictBorder}`, display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
@@ -407,25 +520,56 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               <div key={tag} style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: GOLD, background: 'rgba(242,147,55,0.12)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 10, padding: '0.2rem 0.55rem' }}>{tag}</div>
             ))}
           </div>
-          <button onClick={() => { setShowEmailPrompt(true); Analytics.pricingViewed() }} style={{ width: '100%', padding: '0.9rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 12, cursor: 'pointer', color: '#000', fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em', boxShadow: `0 4px 20px rgba(242,147,55,0.4)` }}>
-            ✉️  Get My Report →
-          </button>
         </div>
       </div>
 
       {/* ── STICKY BOTTOM ACTIONS ── */}
-      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '1rem 1.25rem 2.2rem', background: `linear-gradient(to top, ${profile.bg} 70%, transparent)`, display: 'flex', flexDirection: 'column', gap: '0.5rem', zIndex: sheet !== 'hidden' ? 0 : 50, visibility: sheet !== 'hidden' ? 'hidden' : 'visible' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, padding: '0.85rem 1.25rem max(env(safe-area-inset-bottom,0px),1.5rem)', background: `linear-gradient(to top, ${profile.bg} 75%, transparent)`, display: 'flex', flexDirection: 'column', gap: '0.55rem', zIndex: sheet !== 'hidden' ? 0 : 50, visibility: sheet !== 'hidden' ? 'hidden' : 'visible' }}>
+
+        {/* Primary CTA — single Get My Report */}
         <button
-          onClick={() => { setSheet('plans'); Analytics.pricingViewed() }}
-          style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg, ${GOLD}, #D97706)`, border: 'none', borderRadius: 14, cursor: 'pointer', color: '#000', fontSize: '0.92rem', fontFamily: 'monospace', fontWeight: 900, letterSpacing: '0.08em', boxShadow: `0 4px 24px rgba(242,147,55,0.45)` }}
+          onClick={() => { if (trialExhausted) { setSheet('plans'); Analytics.pricingViewed() } else { setShowEmailPrompt(true); Analytics.pricingViewed() } }}
+          style={{ width: '100%', padding: '1rem', background: trialExhausted ? 'rgba(232,69,69,0.15)' : `linear-gradient(135deg, ${GOLD}, #D97706)`, border: trialExhausted ? '1.5px solid rgba(232,69,69,0.45)' : 'none', borderRadius: 14, cursor: 'pointer', color: trialExhausted ? '#E84545' : '#000', fontSize: '0.92rem', fontFamily: 'monospace', fontWeight: 900, letterSpacing: '0.08em', boxShadow: trialExhausted ? 'none' : `0 4px 24px rgba(242,147,55,0.45)` }}
         >
-          ✉️ &nbsp;Get My Report →
+          {trialExhausted ? '🔒 Free Trial Used — Upgrade for More' : '✉️  Get My Report →'}
         </button>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
-          <button onClick={openArchMap} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.67rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.06em' }}>{profile.copy.findInspector}</button>
-          {([['↩ Retake', onRetake], ['⟳ Start Over', onStartOver]] as const).map(([label, fn]) => (
-            <button key={label} onClick={fn} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.67rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.06em' }}>{label}</button>
+
+        {/* Find buttons — three large tappable rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          {([
+            { type: 'inspector'  as const, icon: '🔍', label: 'Find a Building Inspector' },
+            { type: 'architect'  as const, icon: '📐', label: 'Find a Licensed Architect'  },
+            { type: 'contractor' as const, icon: '🔨', label: 'Find a Stair Contractor'    },
+          ]).map(({ type, icon, label }) => (
+            <button
+              key={type}
+              onClick={() => openMap(type)}
+              style={{
+                width: '100%', padding: '0.72rem 1rem',
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid rgba(147,186,212,0.22)`,
+                borderRadius: 12, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem',
+                color: profile.text, fontSize: '0.82rem', fontWeight: 700,
+                fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+                letterSpacing: '0.01em',
+              }}
+            >
+              <span style={{ fontSize: '1rem' }}>{icon}</span>
+              <span>{label}</span>
+              <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: profile.text2 }}>↗ Maps</span>
+            </button>
           ))}
+        </div>
+
+        {/* Retake / Start Over — visible, contrasted */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={onRetake} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(147,186,212,0.3)`, borderRadius: 11, color: profile.text, fontSize: '0.8rem', fontWeight: 700, fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.04em' }}>
+            ↩ Retake
+          </button>
+          <button onClick={onStartOver} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.08)', border: `1px solid rgba(147,186,212,0.3)`, borderRadius: 11, color: profile.text, fontSize: '0.8rem', fontWeight: 700, fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.04em' }}>
+            ⟳ Start Over
+          </button>
         </div>
       </div>
 
@@ -532,6 +676,18 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
             {/* ── PLANS SHEET ── */}
             {sheet === 'plans' && <>
+              {/* ── Trial exhausted banner ── */}
+              {trialExhausted && (
+                <div style={{ background: 'rgba(232,69,69,0.1)', border: '1.5px solid rgba(232,69,69,0.4)', borderRadius: 14, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔒</span>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#E84545', marginBottom: '0.25rem' }}>Free trial used</div>
+                    <div style={{ fontSize: '0.72rem', color: profile.text2, lineHeight: 1.6 }}>
+                      Your free report has already been sent to your email. To generate another report, upgrade to Pro or purchase a single report below.
+                    </div>
+                  </div>
+                </div>
+              )}
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: profile.text, marginBottom: '0.25rem' }}>Get Your Report</div>
                 <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.6 }}>Choose the option that fits your needs.</div>
@@ -567,14 +723,21 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 {isTestVariant ? (
                   <div>
                     <button
-                      onClick={() => { Analytics.purchaseInitiated('report'); setShowEmailPrompt(true) }}
-                      style={{ width: '100%', marginTop: '0.85rem', padding: '1.1rem', background: 'linear-gradient(135deg, #27A96B, #1A7A50)', border: '2px solid rgba(39,169,107,0.6)', borderRadius: 14, cursor: 'pointer', color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.06em', boxShadow: '0 6px 28px rgba(39,169,107,0.55)' }}>
-                      ✉️  Email Me My Report →
+                      onClick={() => { if (!trialExhausted) { Analytics.purchaseInitiated('report'); setShowEmailPrompt(true) } }}
+                      disabled={trialExhausted}
+                      style={{ width: '100%', marginTop: '0.85rem', padding: '1.1rem', background: trialExhausted ? 'rgba(232,69,69,0.15)' : 'linear-gradient(135deg, #27A96B, #1A7A50)', border: trialExhausted ? '1px solid rgba(232,69,69,0.4)' : '2px solid rgba(39,169,107,0.6)', borderRadius: 14, cursor: trialExhausted ? 'default' : 'pointer', color: trialExhausted ? '#E84545' : '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.06em', boxShadow: trialExhausted ? 'none' : '0 6px 28px rgba(39,169,107,0.55)' }}>
+                      {trialExhausted ? '🔒 Free Trial Used' : '✉️  Email Me My Report →'}
                     </button>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
-                      <span style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>✓ FREE during beta</span>
-                      <span style={{ fontSize:'0.6rem', color: profile.text3 }}>· Normally $11.99 · Emailed instantly</span>
-                    </div>
+                    {trialExhausted ? (
+                      <div style={{ fontSize: '0.68rem', color: '#E84545', textAlign:'center', marginTop:'0.35rem' }}>
+                        Check your inbox — your report was already sent.
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
+                        <span style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>✓ FREE during beta</span>
+                        <span style={{ fontSize:'0.6rem', color: profile.text3 }}>· Normally $11.99 · Emailed instantly</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -592,27 +755,65 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               </div>
 
               {/* ── PRO ── */}
-              <div style={{ border: `1.5px solid ${profile.accent}55`, borderRadius: 16, padding: '0.9rem 1.1rem', background: 'rgba(65,124,164,0.05)' }}>
+              <div style={{ border: `2px solid ${profile.accent}`, borderRadius: 16, padding: '1rem 1.1rem', background: 'rgba(65,124,164,0.08)', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: -11, left: 14, background: profile.accent, borderRadius: 20, padding: '0.15rem 0.7rem', fontSize: '0.56rem', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>AVAILABLE NOW</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: profile.text }}>Pro</div>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.text }}>Pro</div>
                     <div style={{ fontSize: '0.63rem', color: profile.text2 }}>Homeowners · Contractors · Inspectors</div>
                   </div>
-                  <div style={{ color: profile.accent, fontWeight: 800, fontSize: '1.1rem' }}>$38.99<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
+                  <div style={{ color: profile.accent, fontWeight: 900, fontSize: '1.2rem' }}>$38.99<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
                 </div>
                 {[
                   'Unlimited scans & full reports',
-                  'AR plane detection — ±2mm accuracy',
-                  'All 8 dimensions + full code library',
-                  'OBC 2024, NBC, BCBC, IRC + 6 more',
+                  'AI Vision measurement on all devices',
+                  'All 7 dimensions + full code library',
+                  'OBC 2024, NBC, BCBC, IBC, IRC + more',
+                  'Priority email support',
                 ].map(f => (
-                  <div key={f} style={{ fontSize: '0.7rem', color: profile.text2, padding: '0.15rem 0', display: 'flex', gap: '0.4rem' }}>
+                  <div key={f} style={{ fontSize: '0.72rem', color: profile.text2, padding: '0.18rem 0', display: 'flex', gap: '0.45rem' }}>
                     <span style={{ color: profile.accent, flexShrink: 0 }}>✓</span> {f}
                   </div>
                 ))}
-                <button onClick={() => { Analytics.purchaseInitiated('pro'); handleProCheckout() }} style={{ width: '100%', marginTop: '0.75rem', padding: '0.85rem', background: profile.accent, border: 'none', borderRadius: 12, cursor: 'pointer', color: '#fff', fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.08em', boxShadow: `0 3px 14px rgba(65,124,164,0.35)` }}>
+                <button
+                  onClick={() => { Analytics.purchaseInitiated('pro'); handleProCheckout() }}
+                  style={{ width: '100%', marginTop: '0.85rem', padding: '0.95rem', background: `linear-gradient(135deg, ${profile.accent}, #2C6FBF)`, border: 'none', borderRadius: 13, cursor: 'pointer', color: '#fff', fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.06em', boxShadow: `0 4px 18px rgba(65,124,164,0.45)` }}>
                   {proLoading ? 'Redirecting…' : 'Start Pro — $38.99/mo →'}
                 </button>
+              </div>
+
+              {/* ── LiDAR PRO (Coming May 2026) ── */}
+              <div style={{ border: `1.5px solid rgba(167,139,250,0.35)`, borderRadius: 16, padding: '0.9rem 1.1rem', background: 'rgba(167,139,250,0.04)', position: 'relative', opacity: 0.85 }}>
+                <div style={{ position: 'absolute', top: -11, left: 14, background: 'rgba(167,139,250,0.85)', borderRadius: 20, padding: '0.15rem 0.7rem', fontSize: '0.56rem', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>LAUNCHING MAY 2026</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.text, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      LiDAR Pro
+                      <span style={{ fontSize: '0.58rem', fontFamily: 'monospace', background: 'rgba(167,139,250,0.2)', color: '#A78BFA', borderRadius: 6, padding: '0.1rem 0.45rem', fontWeight: 700 }}>iPhone 12 Pro+</span>
+                    </div>
+                    <div style={{ fontSize: '0.63rem', color: profile.text2 }}>Architects · Engineers · Building Officials</div>
+                  </div>
+                  <div style={{ color: '#A78BFA', fontWeight: 900, fontSize: '1.2rem' }}>$59.99<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
+                </div>
+                {[
+                  'Everything in Pro',
+                  'LiDAR depth scanning — ±1mm accuracy',
+                  'Point cloud export (LAS / E57)',
+                  'BIM-ready measurement data',
+                  'Full AS-BUILT stair reports',
+                ].map(f => (
+                  <div key={f} style={{ fontSize: '0.72rem', color: profile.text2, padding: '0.18rem 0', display: 'flex', gap: '0.45rem' }}>
+                    <span style={{ color: '#A78BFA', flexShrink: 0 }}>✓</span> {f}
+                  </div>
+                ))}
+                <button
+                  onClick={() => window.open('https://staircode.app/pro#lidar', '_blank')}
+                  style={{ width: '100%', marginTop: '0.85rem', padding: '0.9rem', background: 'rgba(167,139,250,0.12)', border: '1.5px solid rgba(167,139,250,0.4)', borderRadius: 13, cursor: 'pointer', color: '#A78BFA', fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.06em' }}>
+                  Notify Me When Available →
+                </button>
+                <div style={{ fontSize: '0.58rem', color: profile.text3, textAlign: 'center', marginTop: '0.35rem', fontFamily: 'monospace' }}>
+                  Requires iPhone 12 Pro or newer · App Store only
+                </div>
               </div>
 
               {/* ── ENTERPRISE ── */}
@@ -642,15 +843,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             {/* ── GENERATING SHEET ── */}
             {sheet === 'purchase-report' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.2rem', padding: '1.5rem 0' }}>
-                {generating ? <>
-                  <div style={{ width: 48, height: 48, borderRadius: '50%', border: `3px solid rgba(242,147,55,0.2)`, borderTopColor: GOLD, animation: 'spin 0.9s linear infinite' }} />
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: profile.text, marginBottom: '0.4rem' }}>Generating your report…</div>
-                    <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.6, maxWidth: 280 }}>
-                      Claude is analysing your measurements against {codeLabel} and preparing a full compliance report. This takes 15–30 seconds.
-                    </div>
-                  </div>
-                </> : genError ? <>
+                {generating ? <GeneratingSlideshow slide={loadingSlide} onSlide={setLoadingSlide} codeLabel={codeLabel} textColor={profile.text} text2={profile.text2} /> : genError ? <>
                   <div style={{ fontSize: '2rem' }}>⚠️</div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.9rem', fontWeight: 700, color: profile.warn, marginBottom: '0.5rem' }}>Report generation failed</div>
