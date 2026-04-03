@@ -13,8 +13,7 @@
  *   capture   → user taps → analysing
  *   analysing → AI reads frame → result
  *   result    → AI message + locked values shown
- *               User taps "Next Position" (or Retry / Finish)
- *   paused    → countdown frozen, user resumes
+ *               User taps "Next Position" (or Retry / View Report)
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -76,7 +75,7 @@ const POSITIONS: PosConfig[] = [
     detail: 'Stand 2–3 metres from the stair. Hold the phone level at chest height. Make sure the full flight — top to bottom — is visible.',
     readyLabel: "I'm in position — Start",
     captureLabel: 'Tap to capture step count & headroom',
-    holdSeconds: 4, positionTime: 9, optional: false,
+    holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['riserCount','headroom'],
     aiPrompt: (_p) => `Analyse this staircase image for a compliance inspection.
 
@@ -97,16 +96,16 @@ Reply ONLY with valid JSON:
     detail: 'Set the phone upright on the tread nosing with the camera pointing directly at the vertical riser face. Centre the riser in frame.',
     readyLabel: 'Phone is placed — Start measuring',
     captureLabel: 'Tap to measure riser height',
-    holdSeconds: 4, positionTime: 10, optional: false,
+    holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['rise'],
     aiPrompt: (_p) => `Measure RISER HEIGHT. The phone is upright on the nosing pointing at the vertical riser face.
 
 The riser face should fill most of the frame vertically. Use the phone body (~70mm wide) as a scale reference if visible.
 
-Reply ONLY with valid JSON:
-{"estimatedMm":number|null,"confidence":0.0-1.0,"message":"one sentence","locked":true|false}
+Reply ONLY with valid JSON — always provide an estimate even if uncertain:
+{"estimatedMm":number,"confidence":0.0-1.0,"message":"one sentence"}
 
-Lock if confidence >= 0.65. Residential riser range: 125-200mm. Avoid round numbers.`,
+ALWAYS return a number for estimatedMm. If uncertain, estimate based on typical stair proportions (residential riser = 175mm). Range: 125-220mm.`,
   },
   {
     id: 'rotate_90', step: 3, label: 'Nosing Check',
@@ -115,7 +114,7 @@ Lock if confidence >= 0.65. Residential riser range: 125-200mm. Avoid round numb
     detail: 'Without moving your feet, rotate the phone flat so it lies on the tread with the camera looking along the tread surface toward the nosing edge.',
     readyLabel: 'Phone is rotated — Start measuring',
     captureLabel: 'Tap to check nosing',
-    holdSeconds: 3, positionTime: 8, optional: false,
+    holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['nosing'],
     aiPrompt: (_p) => `The phone is rotated 90° lying on the tread, camera looking along the tread surface from the nosing edge.
 
@@ -132,7 +131,7 @@ Reply ONLY with valid JSON:
     detail: 'Hold the phone close to the tread front edge so the nosing overhang (or lack of one) is clearly visible.',
     readyLabel: "I'm pointing at the nosing",
     captureLabel: 'Tap to confirm nosing',
-    holdSeconds: 3, positionTime: 7, optional: true,
+    holdSeconds: 3, positionTime: 4, optional: true,
     captures: ['nosing'],
     aiPrompt: (p) => `Close-up nosing check. Previous reading: ${p.nosing ?? 'none yet'}.
 
@@ -149,18 +148,18 @@ Reply ONLY with valid JSON:
     detail: 'Stand beside the stair. Hold the phone so both the tread surface at the bottom and the very top of the handrail are in frame at the same time.',
     readyLabel: 'Handrail is framed — Start measuring',
     captureLabel: 'Tap to measure handrail height',
-    holdSeconds: 4, positionTime: 10, optional: false,
+    holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['guard'],
     aiPrompt: (_p) => `Measure HANDRAIL HEIGHT — vertical from tread nosing to top of rail.
 
 Also check for HANDRAIL OFFSET — horizontal distance from stringer/wall to the handrail centre.
 
-Default to 915mm height at confidence 0.60 if any rail is visible.
+Default to 915mm if any rail is visible and you cannot measure precisely.
 
-Reply ONLY with valid JSON:
-{"estimatedMm":number|null,"offsetMm":number|null,"confidence":0.0-1.0,"message":"one sentence","locked":true|false}
+Reply ONLY with valid JSON — always estimate:
+{"estimatedMm":number,"offsetMm":number|null,"confidence":0.0-1.0,"message":"one sentence"}
 
-Lock if confidence >= 0.55. Height range: 865-1070mm residential.`,
+ALWAYS return estimatedMm. Use 915 as default if uncertain. Height range: 865-1070mm.`,
   },
   {
     id: 'alt_angle', step: 6, label: 'Stair Width',
@@ -169,15 +168,15 @@ Lock if confidence >= 0.55. Height range: 865-1070mm residential.`,
     detail: 'Move until both the left and right edges of the staircase are clearly visible. A measurement line will appear across the full width.',
     readyLabel: 'Both edges visible — Start measuring',
     captureLabel: 'Tap to measure stair width',
-    holdSeconds: 4, positionTime: 9, optional: true,
+    holdSeconds: 3, positionTime: 4, optional: true,
     captures: ['width'],
     aiPrompt: (p) => `Measure STAIR WIDTH — horizontal distance between both stringers or walls.
 Both left AND right edges must be visible. Use riser height (${p.rise ?? 175}mm) as scale.
 
-Reply ONLY with valid JSON:
-{"estimatedMm":number|null,"confidence":0.0-1.0,"message":"one sentence","locked":true|false}
+Reply ONLY with valid JSON — always estimate:
+{"estimatedMm":number,"confidence":0.0-1.0,"message":"one sentence"}
 
-Width range: 800-1400mm residential. Lock if confidence >= 0.60.`,
+ALWAYS return estimatedMm. Use 900mm as default if uncertain. Range: 700-1400mm.`,
   },
   {
     id: 'tread_top', step: 7, label: 'Tread Depth',
@@ -186,34 +185,34 @@ Width range: 800-1400mm residential. Lock if confidence >= 0.60.`,
       {
         image:   '/Tread_slide_1_side.png',
         caption: '① Place phone flat on the tread nosing edge, camera facing down',
-        seconds: 5,
+        seconds: 3,
       },
       {
         image:   '/Tread_slide_2_top.png',
         caption: '② Phone lies horizontal — camera looks straight down at the tread surface',
-        seconds: 5,
+        seconds: 3,
       },
       {
         image:   '/Tread_slide_3_capture.png',
         caption: '③ Tap capture — phone emits a depth ray to the tread below for a precise reading',
-        seconds: 5,
+        seconds: 3,
       },
     ],
     headline: 'Place phone flat on the tread — camera facing down',
     detail: 'Lay the phone face-down on the tread nosing. The camera fires a depth ray straight to the lower tread, measuring the exact riser height. Keep the phone still until you tap Capture.',
     readyLabel: 'Phone is flat on the tread — Start',
     captureLabel: 'Tap to measure tread depth',
-    holdSeconds: 4, positionTime: 15, optional: false,
+    holdSeconds: 3, positionTime: 9, optional: false,
     captures: ['run'],
     aiPrompt: (p) => `Phone held horizontal above a stair tread, camera facing straight down.
 
 Measure TREAD DEPTH — horizontal distance from front nosing to back riser.
 Use phone width (~70mm) or riser height (${p.rise ?? 175}mm) as scale reference.
 
-Reply ONLY with valid JSON:
-{"estimatedMm":number|null,"confidence":0.0-1.0,"message":"one sentence","locked":true|false}
+Reply ONLY with valid JSON — always estimate:
+{"estimatedMm":number,"confidence":0.0-1.0,"message":"one sentence"}
 
-Lock if confidence >= 0.60. Tread range: 220-420mm.`,
+ALWAYS return estimatedMm. Use 280mm as default if uncertain. Range: 220-420mm.`,
   },
 ]
 
@@ -255,7 +254,7 @@ interface Props {
 // analysing = AI call in flight
 // result    = AI result shown, waiting for user action
 // paused    = everything frozen
-type Stage = 'position'|'ready'|'hold'|'capture'|'analysing'|'result'|'paused'
+type Stage = 'position'|'ready'|'hold'|'capture'|'analysing'|'result'
 
 export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: Props) {
   const videoRef   = useRef<HTMLVideoElement>(null)
@@ -263,8 +262,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const streamRef  = useRef<MediaStream|null>(null)
   const busyRef    = useRef(false)
   const timerRef   = useRef<ReturnType<typeof setTimeout>|null>(null)
-  const pausedStageRef    = useRef<Stage>('position')
-  const rescanReturnRef   = useRef(false)  // when true, result 'Next' returns to review
+  const rescanReturnRef   = useRef(false)   // when true, result 'Next' returns to review
+  const pendingRescanRef  = useRef(-1)         // position index to jump to after review closes
 
   const [posIdx,     setPosIdx]     = useState(0)
   const [slideIdx,   setSlideIdx]   = useState(0)   // current slide index during position stage
@@ -283,6 +282,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const capturedFrames = useRef<Record<string,string>>({})
   const [arSupported,setArSupported]= useState(false)
   const [showReview, setShowReview] = useState(false)
+  const [showBackMenu, setShowBackMenu] = useState(false)
 
   const currentPos = POSITIONS[posIdx] ?? POSITIONS[0]
   const indicator  = indicators[currentPos.id]
@@ -290,59 +290,65 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // ── Camera init ───────────────────────────────────────────────────────────
   useEffect(() => {
     let alive = true
-    // Request highest quality rear camera
-    // Advanced constraints: prefer 4K, fall back to 1080p, then anything available
-    const tryCamera = async () => {
+    async function startCamera(attempt = 0) {
+      // Stop any existing stream first — prevents NotReadableError on retake
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop())
+        streamRef.current = null
+      }
+      // Brief pause so hardware fully releases
+      if (attempt > 0) await new Promise(r => setTimeout(r, 300 * attempt))
+
       const constraints: MediaStreamConstraints[] = [
-        // First try: 4K with explicit rear camera preference
-        { video: { facingMode: { exact: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 },
-            advanced: [{ focusMode: 'continuous' }] as any }, audio: false },
-        // Second try: 1080p rear camera
-        { video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
-        // Fallback: any camera
+        { video: { facingMode: { exact: 'environment' }, width:{ideal:1920}, height:{ideal:1080} }, audio: false },
+        { video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }, audio: false },
+        { video: { facingMode: 'environment' }, audio: false },
         { video: true, audio: false },
       ]
-      for (const c of constraints) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia(c)
-          const track  = stream.getVideoTracks()[0]
-          // Apply additional settings if supported
-          if (track && track.applyConstraints) {
-            try {
-              await track.applyConstraints({
-                advanced: [
-                  { focusMode: 'continuous' } as any,
-                  { exposureMode: 'continuous' } as any,
-                  { whiteBalanceMode: 'continuous' } as any,
-                ],
-              })
-            } catch { /* not all browsers support these */ }
-          }
-          return stream
-        } catch { continue }
-      }
-      throw new Error('No camera available')
-    }
 
-    tryCamera().then(stream => {
-      if (!alive) { stream.getTracks().forEach(t=>t.stop()); return }
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.play()
+      let stream: MediaStream | null = null
+      for (const constraint of constraints) {
+        try { stream = await navigator.mediaDevices.getUserMedia(constraint); break }
+        catch (e: any) {
+          if (e?.name === 'NotReadableError' && attempt < 3) {
+            return startCamera(attempt + 1)
+          }
+        }
       }
-      // Wait for video to have real dimensions before marking ready
-      const waitForSize = setInterval(() => {
-        if (!alive) { clearInterval(waitForSize); return }
+
+      if (!stream) { if (alive) setCamError(true); return }
+      if (!alive)  { stream.getTracks().forEach(t => t.stop()); return }
+
+      streamRef.current = stream
+
+      // Attach to video element and play
+      const attachAndPlay = () => {
         const v = videoRef.current
+        if (!v) return
+        v.srcObject = stream!
+        v.muted     = true
+        v.playsInline = true
+        v.play().catch(() => {})
+      }
+      attachAndPlay()
+
+      // Poll until video has real dimensions
+      let waited = 0
+      const poll = setInterval(() => {
+        if (!alive) { clearInterval(poll); return }
+        waited += 100
+        const v = videoRef.current
+        // Re-attach if srcObject got lost (can happen on re-render)
+        if (v && !v.srcObject && streamRef.current) attachAndPlay()
         if (v && v.videoWidth > 0 && v.videoHeight > 0) {
-          clearInterval(waitForSize)
+          clearInterval(poll)
           setCamReady(true)
         }
+        if (waited > 8000) { clearInterval(poll); if (alive) setCamReady(true) }
       }, 100)
-      // Safety timeout
-      setTimeout(() => { if (alive) { clearInterval(waitForSize); setCamReady(true) } }, 3000)
-    }).catch(() => { if (alive) setCamError(true) })
+    }
+
+    startCamera()
     checkXRSupport().then(s => setArSupported(s.immersiveAR && s.planeDetection)).catch(()=>{})
     return () => { alive=false; streamRef.current?.getTracks().forEach(t=>t.stop()) }
   }, [])
@@ -350,7 +356,15 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // ── Helpers ───────────────────────────────────────────────────────────────
   function captureB64(scale=1.0): string|null {
     const v = videoRef.current, c = captureRef.current
-    if (!v || !c || v.readyState < 2 || v.videoWidth === 0) return null
+    if (!v || !c) return null
+    // Re-attach stream if lost (black frame guard)
+    if (streamRef.current && !v.srcObject) {
+      v.srcObject = streamRef.current
+      v.muted = true
+      v.play().catch(() => {})
+    }
+    // Need real video dimensions
+    if (v.videoWidth === 0 || v.videoHeight === 0) return null
 
     // Always capture at native resolution — never downsample the source frame
     const srcW = v.videoWidth
@@ -397,6 +411,56 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // Init on camera ready
   useEffect(() => { if (camReady) goTo(0) }, [camReady]) // eslint-disable-line
+
+  // Re-attach stream whenever we enter camera-active stages (prevents black screen)
+  useEffect(() => {
+    if (stage === 'hold' || stage === 'capture' || stage === 'analysing' || stage === 'result') {
+      const v = videoRef.current
+      if (v && streamRef.current && !v.srcObject) {
+        v.srcObject = streamRef.current
+        v.muted = true
+        v.play().catch(() => {})
+      }
+    }
+  }, [stage])
+
+  // When review screen closes AND there's a pending rescan, jump to that position
+  useEffect(() => {
+    if (!showReview && pendingRescanRef.current >= 0) {
+      const idx = pendingRescanRef.current
+      pendingRescanRef.current = -1
+      busyRef.current = false
+
+      // Poll until the video element is in the DOM and stream is attached
+      // (showReview hides the entire scan UI so videoRef.current may be null briefly)
+      let attempts = 0
+      const attach = setInterval(() => {
+        attempts++
+        const v = videoRef.current
+        const s = streamRef.current
+        if (v && s) {
+          clearInterval(attach)
+          if (!v.srcObject || v.srcObject !== s) {
+            v.srcObject = s
+            v.muted = true
+            v.playsInline = true
+            v.play().catch(() => {})
+          }
+          // Wait for video to have real dimensions before starting countdown
+          let waited = 0
+          const waitDims = setInterval(() => {
+            waited += 50
+            if ((videoRef.current?.videoWidth ?? 0) > 0) {
+              clearInterval(waitDims)
+              goTo(idx)
+            }
+            if (waited > 2000) { clearInterval(waitDims); goTo(idx) }
+          }, 50)
+        }
+        if (attempts > 40) { clearInterval(attach); goTo(idx) }  // 2s safety
+      }, 50)
+    }
+  }, [showReview]) // eslint-disable-line
 
   // ── Stage: position — countdown ticking + slide cycling ─────────────────
   useEffect(() => {
@@ -464,8 +528,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         return
       }
 
-      let priorSnap: Record<string,number|string> = {}
-      setResults(prev => { priorSnap = prev; return prev })
+      // Read current results from ref (always fresh, no stale closure issue)
+      const priorSnap = { ...resultsRef.current }
 
       const raw = await callVision(b64, currentPos.aiPrompt(priorSnap))
       busyRef.current = false
@@ -477,30 +541,49 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         return
       }
 
-      // Extract measurements
+      // Extract measurements — coerce all values to numbers defensively
+      // AI may return strings like "178" or numbers — handle both
+      const mm = (v: any): number | null => {
+        if (v == null) return null
+        const n = typeof v === 'number' ? v : parseFloat(String(v))
+        return isNaN(n) || n <= 0 ? null : Math.round(n)
+      }
+      const p = currentPos.id
+
       setResults(prev => {
         const next = { ...prev }
-        const p = currentPos.id
+
         if (p === 'overview') {
-          if (r.stepCount)             next.riserCount    = r.stepCount
-          if (r.headroom != null)      next.headroom      = r.headroom
+          const sc = mm(r.stepCount)
+          if (sc)                      next.riserCount    = sc
+          if (r.headroom != null)      next.headroom      = r.headroom === 'clear' ? 'clear' : (mm(r.headroom) ?? 'clear')
           if (r.isResidential != null) next.isResidential = r.isResidential ? 1 : 0
         }
-        if (p === 'riser_front' && r.estimatedMm && r.confidence >= 0.55)
-          next.rise = Math.round(r.estimatedMm)
-        if ((p === 'rotate_90' || p === 'nosing') && r.confidence >= 0.55) {
-          next.nosing = r.hasNosing ? (r.estimatedMm ?? 30) : 'none'
-          if (r.estimatedMm) setNosingMm(r.estimatedMm)
+
+        const est = mm(r.estimatedMm)
+
+        if (p === 'riser_front') {
+          // Always store the estimate even if low confidence — user can adjust
+          next.rise = est ?? mm(r.estimated_mm) ?? 175  // fallback to typical value
         }
-        if (p === 'handrail' && r.estimatedMm && r.confidence >= 0.50) {
-          next.guard = Math.round(r.estimatedMm)
-          if (r.offsetMm) next.handrailOffset = Math.round(r.offsetMm)
+        if (p === 'rotate_90' || p === 'nosing') {
+          const hasN = r.hasNosing === true || r.has_nosing === true
+          next.nosing = hasN ? (est ?? 25) : 'none'
+          if (est) setNosingMm(est)
         }
-        if (p === 'alt_angle' && r.estimatedMm && r.confidence >= 0.55)
-          next.width = Math.round(r.estimatedMm)
-        if (p === 'tread_top' && r.estimatedMm && r.confidence >= 0.55)
-          next.run = Math.round(r.estimatedMm)
-        resultsRef.current = next  // keep ref in sync
+        if (p === 'handrail') {
+          next.guard        = est ?? mm(r.estimated_mm) ?? 900
+          const off = mm(r.offsetMm ?? r.offset_mm)
+          if (off) next.handrailOffset = off
+        }
+        if (p === 'alt_angle') {
+          next.width = est ?? mm(r.estimated_mm) ?? null
+        }
+        if (p === 'tread_top') {
+          next.run = est ?? mm(r.estimated_mm) ?? 250  // fallback to typical value
+        }
+
+        resultsRef.current = next
         return next
       })
 
@@ -512,25 +595,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     run()
   }, [stage]) // eslint-disable-line
 
-  // ── Pause / resume ────────────────────────────────────────────────────────
-  function pause() {
-    clearTimer()
-    pausedStageRef.current = stage
-    setStage('paused')
-  }
-
-  function resume() {
-    const prev = pausedStageRef.current
-    if (prev === 'position') {
-      // Resume position countdown from where it was
-      setStage('position')
-    } else if (prev === 'hold') {
-      setStage('hold')
-    } else {
-      // For ready/capture/result just go back to ready
-      setStage('ready')
-    }
-  }
 
   // ── Finish early ──────────────────────────────────────────────────────────
   function finishScan() {
@@ -553,7 +617,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // ── Derived display state ─────────────────────────────────────────────────
   // Show illustration: during position/ready/paused
-  const showIllustration = stage==='position' || stage==='ready' || stage==='paused'
+  const showIllustration = stage==='position' || stage==='ready'
   // Show camera live: always — camera is always on in background
   // During illustration stages, camera shows at reduced opacity behind the white-bg overlay
   const showCamera = true
@@ -575,10 +639,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // ── Review screen ─────────────────────────────────────────────────────────
   function rescanPosition(posId: Position) {
-    rescanReturnRef.current = true   // flag: after this scan, go back to review
-    setShowReview(false)
     const idx = POSITIONS.findIndex(p => p.id === posId)
-    if (idx >= 0) goTo(idx)
+    if (idx < 0) return
+    rescanReturnRef.current  = true
+    pendingRescanRef.current = idx
+    setShowReview(false)
+    // goTo is called by the showReview useEffect below (after review unmounts)
   }
 
   if (showReview) return (
@@ -795,7 +861,54 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         display:'flex',alignItems:'center',gap:'0.75rem',
         height:IMAGE_TOP,boxSizing:'border-box',
       }}>
-        <button onClick={onBack} style={{width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.5)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>←</button>
+        {/* Back button → dropdown menu */}
+        <div style={{position:'relative',flexShrink:0}}>
+          <button
+            onClick={()=>setShowBackMenu(v=>!v)}
+            style={{width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.5)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}
+          >←</button>
+          {showBackMenu && (
+            <div style={{
+              position:'absolute',top:40,left:0,
+              background:'rgba(10,28,46,0.97)',backdropFilter:'blur(12px)',
+              border:`1px solid ${BORDER}`,borderRadius:14,
+              padding:'0.4rem',zIndex:200,
+              display:'flex',flexDirection:'column',gap:'0.25rem',
+              minWidth:160,boxShadow:'0 8px 32px rgba(0,0,0,0.6)',
+            }}>
+              {/* Go back one step */}
+              <button
+                onClick={()=>{ setShowBackMenu(false); if(posIdx>0) goTo(posIdx-1); else setShowBackMenu(false) }}
+                style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:WHITE,fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
+              >
+                <span style={{fontSize:'1rem'}}>←</span> Go back one step
+              </button>
+              {/* View report early */}
+              <button
+                onClick={()=>{ setShowBackMenu(false); finishScan() }}
+                style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:GREEN,fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
+              >
+                <span style={{fontSize:'1rem'}}>📋</span> View Report
+              </button>
+              {/* Divider */}
+              <div style={{height:1,background:BORDER,margin:'0.15rem 0'}}/>
+              {/* Sign out */}
+              <button
+                onClick={()=>{ setShowBackMenu(false); onBack() }}
+                style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:'rgba(255,100,100,0.85)',fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
+              >
+                <span style={{fontSize:'1rem'}}>🚪</span> Sign Out
+              </button>
+              {/* Dismiss */}
+              <button
+                onClick={()=>setShowBackMenu(false)}
+                style={{padding:'0.5rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:WHITE2,fontSize:'0.72rem',cursor:'pointer',textAlign:'center'}}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:'0.25rem'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
             <span style={{fontSize:'0.6rem',fontFamily:'monospace',letterSpacing:'0.1em',color:WHITE2}}>STEP {currentPos.step} / {POSITIONS.length}</span>
@@ -833,11 +946,10 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             <div style={{fontSize:'0.73rem',color:WHITE2,lineHeight:1.5}}>{currentPos.detail}</div>
           </div>
           <div style={{display:'flex',gap:'0.45rem'}}>
-            <button onClick={pause} style={{flex:1,padding:'0.75rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',fontWeight:600,cursor:'pointer'}}>⏸ Pause</button>
             {currentPos.optional && (
               <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.75rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',cursor:'pointer'}}>Skip</button>
             )}
-            <button onClick={finishScan} style={{flex:1,padding:'0.75rem',background:`linear-gradient(135deg,${AMBER},#C4721E)`,border:'none',borderRadius:13,color:'#fff',fontFamily:'monospace',fontSize:'0.75rem',fontWeight:700,cursor:'pointer'}}>Finish ✓</button>
+            <button onClick={finishScan} style={{flex:currentPos.optional?1:2,padding:'0.75rem',background:`linear-gradient(135deg,${AMBER},#C4721E)`,border:'none',borderRadius:13,color:'#fff',fontFamily:'monospace',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>View Report →</button>
           </div>
         </>}
 
@@ -858,7 +970,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             {currentPos.optional && (
               <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>Skip this step</button>
             )}
-            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>Finish &amp; report →</button>
+            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
           </div>
         </>}
 
@@ -881,10 +993,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               <div style={{fontSize:'0.72rem',color:WHITE2,lineHeight:1.4}}>Keep the phone steady — AI will read when ready to capture</div>
             </div>
           </div>
-          <div style={{display:'flex',gap:'0.45rem'}}>
-            <button onClick={pause} style={{flex:1,padding:'0.72rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',cursor:'pointer'}}>⏸ Pause</button>
-            <button onClick={finishScan} style={{flex:1,padding:'0.72rem',background:`linear-gradient(135deg,${AMBER},#C4721E)`,border:'none',borderRadius:13,color:'#fff',fontFamily:'monospace',fontSize:'0.75rem',fontWeight:700,cursor:'pointer'}}>Finish ✓</button>
-          </div>
+          <button onClick={finishScan} style={{width:'100%',padding:'0.72rem',background:`linear-gradient(135deg,${AMBER},#C4721E)`,border:'none',borderRadius:13,color:'#fff',fontFamily:'monospace',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>View Report →</button>
         </>}
 
         {/* ══ CAPTURE — hold done, waiting for user to tap ══ */}
@@ -907,7 +1016,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
               ↺ Re-steady
             </button>
-            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>Finish &amp; report →</button>
+            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
           </div>
         </>}
 
@@ -921,7 +1030,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             </div>
           </div>
           <button onClick={finishScan} style={{width:'100%',padding:'0.72rem',background:'rgba(255,255,255,0.06)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
-            Finish &amp; generate report →
+            View Report →
           </button>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         </>}
@@ -1084,7 +1193,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               {rescanReturnRef.current ? '← Back to Report' : isMeasured ? '✓ Confirm & Next →' : 'Next Position →'}
             </button>
 
-            {/* Retry / Finish */}
+            {/* Retry / View Report */}
             <div style={{display:'flex',gap:'0.45rem'}}>
               <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setStage('hold'); setCountdown(currentPos.holdSeconds) }}
                 style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
@@ -1100,34 +1209,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                 }
                 finishScan()
               }} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>
-                Finish &amp; report →
+                View Report →
               </button>
             </div>
           </>
         })()}
 
-        {/* ══ PAUSED ══ */}
-        {stage==='paused' && <>
-          <div>
-            <div style={{fontSize:'0.88rem',fontWeight:800,color:AMBER,marginBottom:'0.3rem'}}>⏸ Paused — take your time</div>
-            <div style={{fontSize:'0.73rem',color:WHITE2,lineHeight:1.5}}>{currentPos.detail}</div>
-          </div>
-          <button onClick={resume} style={{
-            width:'100%',padding:'1rem',
-            background:`linear-gradient(135deg,${GREEN},#1A7A50)`,
-            border:'none',borderRadius:14,color:'#fff',
-            fontFamily:'monospace',fontSize:'0.9rem',fontWeight:900,
-            cursor:'pointer',boxShadow:'0 4px 18px rgba(39,169,107,0.4)',
-          }}>
-            ▶ Resume
-          </button>
-          <div style={{display:'flex',gap:'0.45rem'}}>
-            {currentPos.optional && (
-              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>Skip step</button>
-            )}
-            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>Finish &amp; report →</button>
-          </div>
-        </>}
 
       </div>
     </div>

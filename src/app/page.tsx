@@ -437,7 +437,12 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   // handleDetectComplete removed — detect/capture screens deprecated,[])
   // handleCaptureComplete removed — capture screen deprecated
   const handleStartOver=useCallback(()=>{setMeasurements(null);setScreen('home')},[])
-  const handleRetake=useCallback(()=>{setMeasurements(null);setScreen('scan_ready')},[])
+  const handleRetake=useCallback(()=>{
+    // Clear measurements and go back to scan
+    // Small delay ensures old camera stream is fully released before new one requests it
+    setMeasurements(null)
+    setScreen('scan_ready')
+  },[])
 
   // Full-screen flows (no bottom nav)
 
