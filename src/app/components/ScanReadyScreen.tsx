@@ -278,6 +278,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const resultsRef   = useRef<Record<string,number|string>>({})   // closure-safe mirror
   const [reviewVals, setReviewVals] = useState<Record<string,number|string>>({})
   const [nosingMm,   setNosingMm]   = useState(0)
+  const [adjustVal,  setAdjustVal]  = useState<number|null>(null)  // user-adjusted value for current result
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
   const [arSupported,setArSupported]= useState(false)
@@ -289,25 +290,92 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // ── Camera init ───────────────────────────────────────────────────────────
   useEffect(() => {
     let alive = true
-    navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} }, audio:false,
-    }).then(stream => {
+    // Request highest quality rear camera
+    // Advanced constraints: prefer 4K, fall back to 1080p, then anything available
+    const tryCamera = async () => {
+      const constraints: MediaStreamConstraints[] = [
+        // First try: 4K with explicit rear camera preference
+        { video: { facingMode: { exact: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 },
+            advanced: [{ focusMode: 'continuous' }] as any }, audio: false },
+        // Second try: 1080p rear camera
+        { video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+        // Fallback: any camera
+        { video: true, audio: false },
+      ]
+      for (const c of constraints) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(c)
+          const track  = stream.getVideoTracks()[0]
+          // Apply additional settings if supported
+          if (track && track.applyConstraints) {
+            try {
+              await track.applyConstraints({
+                advanced: [
+                  { focusMode: 'continuous' } as any,
+                  { exposureMode: 'continuous' } as any,
+                  { whiteBalanceMode: 'continuous' } as any,
+                ],
+              })
+            } catch { /* not all browsers support these */ }
+          }
+          return stream
+        } catch { continue }
+      }
+      throw new Error('No camera available')
+    }
+
+    tryCamera().then(stream => {
       if (!alive) { stream.getTracks().forEach(t=>t.stop()); return }
       streamRef.current = stream
-      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play() }
-      setTimeout(() => { if (alive) setCamReady(true) }, 600)
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play()
+      }
+      // Wait for video to have real dimensions before marking ready
+      const waitForSize = setInterval(() => {
+        if (!alive) { clearInterval(waitForSize); return }
+        const v = videoRef.current
+        if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+          clearInterval(waitForSize)
+          setCamReady(true)
+        }
+      }, 100)
+      // Safety timeout
+      setTimeout(() => { if (alive) { clearInterval(waitForSize); setCamReady(true) } }, 3000)
     }).catch(() => { if (alive) setCamError(true) })
     checkXRSupport().then(s => setArSupported(s.immersiveAR && s.planeDetection)).catch(()=>{})
     return () => { alive=false; streamRef.current?.getTracks().forEach(t=>t.stop()) }
   }, [])
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  function captureB64(scale=0.65): string|null {
-    const v=videoRef.current, c=captureRef.current
-    if (!v||!c||v.readyState<2) return null
-    c.width=Math.round(v.videoWidth*scale); c.height=Math.round(v.videoHeight*scale)
-    c.getContext('2d')!.drawImage(v,0,0,c.width,c.height)
-    return c.toDataURL('image/jpeg',0.82).split(',')[1]
+  function captureB64(scale=1.0): string|null {
+    const v = videoRef.current, c = captureRef.current
+    if (!v || !c || v.readyState < 2 || v.videoWidth === 0) return null
+
+    // Always capture at native resolution — never downsample the source frame
+    const srcW = v.videoWidth
+    const srcH = v.videoHeight
+
+    // Cap at 2048px on longest side to stay under Anthropic 5MB limit
+    // while preserving maximum detail
+    const MAX = 2048
+    const ratio = Math.min(1, MAX / Math.max(srcW, srcH)) * scale
+    c.width  = Math.round(srcW * ratio)
+    c.height = Math.round(srcH * ratio)
+
+    const ctx = c.getContext('2d')!
+    // Use high-quality image smoothing
+    ctx.imageSmoothingEnabled  = true
+    ctx.imageSmoothingQuality  = 'high'
+    ctx.drawImage(v, 0, 0, c.width, c.height)
+
+    // JPEG at 0.92 quality — sharp enough for AI analysis, small enough for API
+    return c.toDataURL('image/jpeg', 0.92).split(',')[1]
+  }
+
+  function captureB64Small(): string|null {
+    // Smaller version for email embedding only — 50% of native
+    return captureB64(0.5)
   }
 
   function clearTimer() {
@@ -321,6 +389,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     busyRef.current = false
     setPosIdx(idx)
     setSlideIdx(0)
+    setAdjustVal(null)
     setAiMessage(null)
     setStage('position')
     setCountdown(POSITIONS[idx].positionTime)
@@ -375,7 +444,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // ── Stage: capture — user taps, save frame for report, then analyse ────────
   function handleCapture() {
     // Capture and store the frame for this position (used in email report)
-    const b64 = captureB64(0.5)   // slightly smaller for email embedding
+    const b64 = captureB64Small()  // smaller for email embedding
     if (b64) capturedFrames.current[currentPos.id] = b64
     busyRef.current = false
     setStage('analysing')
@@ -413,8 +482,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         const next = { ...prev }
         const p = currentPos.id
         if (p === 'overview') {
-          if (r.stepCount)            next.riserCount    = r.stepCount
-          if (r.headroom != null)     next.headroom      = r.headroom
+          if (r.stepCount)             next.riserCount    = r.stepCount
+          if (r.headroom != null)      next.headroom      = r.headroom
           if (r.isResidential != null) next.isResidential = r.isResidential ? 1 : 0
         }
         if (p === 'riser_front' && r.estimatedMm && r.confidence >= 0.55)
@@ -431,6 +500,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           next.width = Math.round(r.estimatedMm)
         if (p === 'tread_top' && r.estimatedMm && r.confidence >= 0.55)
           next.run = Math.round(r.estimatedMm)
+        resultsRef.current = next  // keep ref in sync
         return next
       })
 
@@ -735,8 +805,11 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             <div style={{height:'100%',width:`${progressPct}%`,background:`linear-gradient(90deg,${GREEN},${BLUE})`,borderRadius:2,transition:'width 0.4s ease'}}/>
           </div>
         </div>
-        <div style={{background:arSupported?'rgba(74,144,226,0.15)':'rgba(242,147,55,0.15)',border:`1px solid ${arSupported?'rgba(74,144,226,0.4)':'rgba(242,147,55,0.4)'}`,borderRadius:10,padding:'0.18rem 0.5rem',flexShrink:0}}>
-          <span style={{fontSize:'0.5rem',fontFamily:'monospace',letterSpacing:'0.1em',color:arSupported?BLUE:AMBER,fontWeight:700}}>{arSupported?'AR':'AI'}</span>
+        <div
+          title={arSupported ? 'ARCore plane detection active' : 'AI Vision mode — ARCore not available on this device/browser'}
+          style={{background:arSupported?'rgba(74,144,226,0.15)':'rgba(242,147,55,0.15)',border:`1px solid ${arSupported?'rgba(74,144,226,0.4)':'rgba(242,147,55,0.4)'}`,borderRadius:10,padding:'0.18rem 0.6rem',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
+          <div style={{width:5,height:5,borderRadius:'50%',background:arSupported?BLUE:AMBER,boxShadow:`0 0 4px ${arSupported?BLUE:AMBER}`}}/>
+          <span style={{fontSize:'0.5rem',fontFamily:'monospace',letterSpacing:'0.1em',color:arSupported?BLUE:AMBER,fontWeight:700}}>{arSupported?'AR·CORE':'AI·VISION'}</span>
         </div>
       </div>
 
@@ -854,49 +927,184 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         </>}
 
         {/* ══ RESULT — AI message, wait for user action ══ */}
-        {stage==='result' && <>
-          {/* AI message + locked values */}
-          <div style={{background:'rgba(10,28,46,0.7)',borderRadius:12,padding:'0.65rem 0.85rem',border:`1px solid ${BORDER}`}}>
-            {aiMessage && (
-              <div style={{fontSize:'0.82rem',fontWeight:600,color:WHITE,lineHeight:1.45,marginBottom:'0.4rem'}}>{aiMessage}</div>
+        {stage==='result' && (() => {
+          // Primary captured value for this position
+          const capKey   = currentPos.captures[0] as string
+          const rawVal   = results[capKey]
+          const numVal   = typeof rawVal === 'number' ? rawVal : null
+          const dispVal  = adjustVal ?? numVal
+          const indColor = indicator.color
+          const isMeasured = dispVal !== null
+
+          // Previously confirmed measurements — shown as badges top-right of camera
+          const confirmed = Object.entries(results).filter(([k,v]) =>
+            !currentPos.captures.includes(k) && typeof v === 'number' && k !== 'riserCount' && k !== 'isResidential'
+          ) as [string, number][]
+
+          const capLabels: Record<string,string> = {
+            rise:'RISER HEIGHT', run:'TREAD DEPTH', width:'STAIR WIDTH',
+            guard:'HANDRAIL', headroom:'HEADROOM', nosing:'NOSING',
+          }
+
+          return <>
+            {/* ── AR measurement line drawn over camera ── */}
+            {isMeasured && (
+              <div style={{
+                position:'absolute', top:IMAGE_TOP, left:0, right:0, bottom:BOTTOM_PANEL+8,
+                zIndex:20, pointerEvents:'none', overflow:'hidden',
+              }}>
+                {/* Confirmed badges — top right stack */}
+                <div style={{position:'absolute',top:8,right:8,display:'flex',flexDirection:'column',gap:'0.3rem',zIndex:25}}>
+                  {confirmed.slice(0,4).map(([k,v])=>(
+                    <div key={k} style={{
+                      background:'rgba(10,28,46,0.88)', backdropFilter:'blur(6px)',
+                      borderRadius:8, padding:'0.22rem 0.55rem',
+                      border:`1px solid rgba(39,169,107,0.45)`,
+                      display:'flex', alignItems:'center', gap:'0.35rem',
+                    }}>
+                      <span style={{fontSize:'0.55rem',fontFamily:'monospace',fontWeight:700,color:'rgba(39,169,107,0.7)',letterSpacing:'0.06em'}}>{capLabels[k]??k.toUpperCase()}</span>
+                      <span style={{fontSize:'0.72rem',fontFamily:'monospace',fontWeight:900,color:'#27A96B'}}>{v}mm</span>
+                      <span style={{fontSize:'0.65rem',color:'#27A96B'}}>✓</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Measurement line SVG — vertical or horizontal based on position */}
+                <svg width="100%" height="100%" style={{position:'absolute',inset:0}}>
+                  {/* Vertical line for riser/handrail, horizontal for width/tread */}
+                  {['riser_front','handrail','overview'].includes(currentPos.id) ? (
+                    // Vertical measurement line — centre of camera
+                    <>
+                      <line x1="50%" y1="22%" x2="50%" y2="75%"
+                        stroke={indColor} strokeWidth="2.5" strokeLinecap="round"
+                        style={{filter:`drop-shadow(0 0 4px ${indColor})`}}/>
+                      <circle cx="50%" cy="22%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
+                      <circle cx="50%" cy="75%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
+                      {/* Label box */}
+                      <rect x="calc(50% - 42px)" y="calc(48% - 13px)" width="84" height="26" rx="6"
+                        fill="rgba(10,28,46,0.85)" stroke={indColor} strokeWidth="1"/>
+                      <text x="50%" y="calc(48% + 5px)" textAnchor="middle"
+                        fill="white" fontSize="13" fontFamily="monospace" fontWeight="bold">{dispVal}mm</text>
+                    </>
+                  ) : (
+                    // Horizontal measurement line — across the stair width
+                    <>
+                      <line x1="8%" y1="62%" x2="92%" y2="62%"
+                        stroke={indColor} strokeWidth="2.5" strokeLinecap="round"
+                        style={{filter:`drop-shadow(0 0 4px ${indColor})`}}/>
+                      <circle cx="8%" cy="62%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
+                      <circle cx="92%" cy="62%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
+                      {/* Label box */}
+                      <rect x="calc(50% - 42px)" y="calc(62% - 19px)" width="84" height="26" rx="6"
+                        fill="rgba(10,28,46,0.85)" stroke={indColor} strokeWidth="1"/>
+                      <text x="50%" y="calc(62% - 3px)" textAnchor="middle"
+                        fill="white" fontSize="13" fontFamily="monospace" fontWeight="bold">{dispVal}mm</text>
+                    </>
+                  )}
+                </svg>
+
+                {/* Measured label — bottom centre */}
+                <div style={{
+                  position:'absolute', bottom:10, left:'50%', transform:'translateX(-50%)',
+                  background:`rgba(10,28,46,0.88)`, backdropFilter:'blur(6px)',
+                  borderRadius:20, padding:'0.25rem 0.9rem',
+                  border:`1px solid ${indColor}66`,
+                  display:'flex', alignItems:'center', gap:'0.4rem',
+                  whiteSpace:'nowrap',
+                }}>
+                  <div style={{width:7,height:7,borderRadius:'50%',background:indColor,boxShadow:`0 0 5px ${indColor}`}}/>
+                  <span style={{fontSize:'0.62rem',fontFamily:'monospace',fontWeight:700,color:indColor,letterSpacing:'0.1em'}}>
+                    {capLabels[capKey]??currentPos.label.toUpperCase()} — MEASURED
+                  </span>
+                </div>
+              </div>
             )}
-            <div style={{display:'flex',gap:'0.35rem',flexWrap:'wrap'}}>
-              {currentPos.captures.map(cap => {
-                const val = results[cap]
-                if (val == null) return null
-                return (
-                  <div key={cap} style={{fontSize:'0.6rem',fontFamily:'monospace',color:GREEN,background:'rgba(39,169,107,0.12)',border:'1px solid rgba(39,169,107,0.3)',borderRadius:7,padding:'0.12rem 0.45rem'}}>
-                    ✓ {cap}: {typeof val==='number'?`${val}mm`:String(val)}
+
+            {/* ── Bottom panel result content ── */}
+            {/* Big measurement number + ± adjustment */}
+            {isMeasured ? (
+              <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
+                  {/* − button */}
+                  <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - 5))}
+                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    −
+                  </button>
+                  {/* Big number */}
+                  <div style={{flex:1,textAlign:'center'}}>
+                    <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'0.2rem'}}>
+                      <span style={{fontSize:'3rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
+                      <span style={{fontSize:'1rem',color:WHITE2,fontFamily:'monospace'}}>mm</span>
+                    </div>
+                    {aiMessage && (
+                      <div style={{fontSize:'0.65rem',color:WHITE2,lineHeight:1.4,marginTop:'0.15rem'}}>{aiMessage}</div>
+                    )}
+                    {adjustVal !== null && (
+                      <div style={{fontSize:'0.58rem',color:AMBER,fontFamily:'monospace',marginTop:'0.1rem'}}>ADJUSTED</div>
+                    )}
                   </div>
-                )
-              })}
+                  {/* + button */}
+                  <button onClick={()=>setAdjustVal(v => (v ?? numVal ?? 0) + 5)}
+                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    +
+                  </button>
+                </div>
+                {adjustVal !== null && (
+                  <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>
+                    Adjust with − / + if needed · original: {numVal}mm
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{fontSize:'0.82rem',fontWeight:600,color:WHITE,textAlign:'center',padding:'0.5rem 0'}}>
+                {aiMessage ?? 'Could not read — tap Retry to try again.'}
+              </div>
+            )}
+
+            {/* Confirm & Next — primary */}
+            <button onClick={()=>{
+              if (adjustVal !== null && capKey) {
+                setResults(prev => {
+                  const next = { ...prev, [capKey]: adjustVal }
+                  resultsRef.current = next
+                  return next
+                })
+                setAdjustVal(null)
+              }
+              if (rescanReturnRef.current) { rescanReturnRef.current=false; finishScan() }
+              else goTo(posIdx+1)
+            }} style={{
+              width:'100%', padding:'1rem',
+              background: isMeasured ? `linear-gradient(135deg,${GREEN},#1A7A50)` : `linear-gradient(135deg,${AMBER},#C4721E)`,
+              border:'none', borderRadius:14, color:'#fff',
+              fontFamily:'monospace', fontSize:'0.9rem', fontWeight:900,
+              cursor:'pointer', letterSpacing:'0.04em',
+              boxShadow: isMeasured ? '0 4px 18px rgba(39,169,107,0.45)' : '0 4px 18px rgba(250,116,31,0.35)',
+            }}>
+              {rescanReturnRef.current ? '← Back to Report' : isMeasured ? '✓ Confirm & Next →' : 'Next Position →'}
+            </button>
+
+            {/* Retry / Finish */}
+            <div style={{display:'flex',gap:'0.45rem'}}>
+              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setStage('hold'); setCountdown(currentPos.holdSeconds) }}
+                style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
+                ↺ Retry
+              </button>
+              <button onClick={()=>{
+                if (adjustVal !== null && capKey) {
+                  setResults(prev => {
+                    const next = { ...prev, [capKey]: adjustVal }
+                    resultsRef.current = next
+                    return next
+                  })
+                }
+                finishScan()
+              }} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>
+                Finish &amp; report →
+              </button>
             </div>
-          </div>
-          {/* Primary: next position */}
-          <button onClick={()=>{
-            if (rescanReturnRef.current) { rescanReturnRef.current=false; finishScan() }
-            else goTo(posIdx+1)
-          }} style={{
-            width:'100%',padding:'1rem',
-            background:`linear-gradient(135deg,${GREEN},#1A7A50)`,
-            border:'none',borderRadius:14,color:'#fff',
-            fontFamily:'monospace',fontSize:'0.9rem',fontWeight:900,
-            cursor:'pointer',letterSpacing:'0.04em',
-            boxShadow:'0 4px 18px rgba(39,169,107,0.45)',
-          }}>
-            {rescanReturnRef.current ? '← Back to Report' : 'Next Position →'}
-          </button>
-          {/* Secondary: retry or finish */}
-          <div style={{display:'flex',gap:'0.45rem'}}>
-            <button onClick={()=>{ busyRef.current=false; setStage('hold'); setCountdown(currentPos.holdSeconds) }}
-              style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
-              ↺ Retry
-            </button>
-            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>
-              Finish &amp; report →
-            </button>
-          </div>
-        </>}
+          </>
+        })()}
 
         {/* ══ PAUSED ══ */}
         {stage==='paused' && <>
