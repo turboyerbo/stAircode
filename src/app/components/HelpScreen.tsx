@@ -197,8 +197,8 @@ export default function HelpScreen() {
       {/* ══ HOW YOUR PHONE MEASURES ══ */}
       <SectionHeader label="How Your Phone Measures" />
 
-      {/* Pill tabs */}
-      <div style={{ display:'flex', gap:'0.4rem', padding:'0 1rem 0.75rem', overflowX:'auto', WebkitOverflowScrolling:'touch' as any }}>
+      {/* Pill tabs — no scrollbar */}
+      <div style={{ display:'flex', gap:'0.4rem', padding:'0 1rem 0.75rem', overflowX:'auto', WebkitOverflowScrolling:'touch' as any, scrollbarWidth:'none', msOverflowStyle:'none' } as any}>
         {MEASURE_STEPS.map((s, i) => (
           <button key={s.id} onClick={() => setActiveMeasure(i)} style={{ flexShrink:0, padding:'0.32rem 0.75rem', borderRadius:20, border:`1.5px solid ${activeMeasure===i ? s.color : BORDER}`, background: activeMeasure===i ? `${s.color}22` : 'transparent', color: activeMeasure===i ? s.color : TEXT3, fontFamily:'monospace', fontSize:'0.6rem', fontWeight:700, letterSpacing:'0.08em', cursor:'pointer', transition:'all 0.15s' }}>
             {s.badge} {s.label}
@@ -206,31 +206,28 @@ export default function HelpScreen() {
         ))}
       </div>
 
-      {/* Active card */}
+      {/* Active card — no image, nav arrows + text only */}
       <div style={{ margin:'0 1rem 1rem', borderRadius:18, overflow:'hidden', border:`1.5px solid ${ms.color}44` }}>
-        {/* Image — white bg, landscape ratio, contain fit */}
-        <div style={{ position:'relative', background:'#FFFFFF', borderBottom:`1px solid ${ms.color}22` }}>
-          <img src={ms.image} alt={ms.title}
-            style={{ width:'100%', display:'block', height:220, objectFit:'contain', objectPosition:'center', padding:'1rem' }} />
-          {/* Step badge */}
-          <div style={{ position:'absolute', top:'0.7rem', left:'0.7rem', background:ms.color, color: ms.id==='fail' ? '#fff' : '#000', fontFamily:'monospace', fontWeight:800, fontSize:'0.6rem', letterSpacing:'0.12em', borderRadius:8, padding:'0.2rem 0.6rem', boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}>
-            {ms.badge} / 05
-          </div>
-          {/* Prev / Next nav arrows */}
+        {/* Step nav bar — large prominent arrows, no scrollbar */}
+        <div style={{ background: `${ms.color}12`, borderBottom:`1px solid ${ms.color}22`, padding:'0.7rem 1rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem' }}>
           <button onClick={() => setActiveMeasure(i => Math.max(0, i-1))} disabled={activeMeasure===0}
-            style={{ position:'absolute', left:'0.5rem', top:'50%', transform:'translateY(-50%)', width:34, height:34, borderRadius:'50%', background: activeMeasure===0 ? 'rgba(0,0,0,0.08)' : 'rgba(10,28,46,0.75)', border:`1px solid ${activeMeasure===0 ? 'transparent' : BORDER}`, color: activeMeasure===0 ? 'transparent' : TEXT, fontSize:'1.1rem', cursor: activeMeasure===0 ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(4px)' }}>‹</button>
-          <button onClick={() => setActiveMeasure(i => Math.min(MEASURE_STEPS.length-1, i+1))} disabled={activeMeasure===MEASURE_STEPS.length-1}
-            style={{ position:'absolute', right:'0.5rem', top:'50%', transform:'translateY(-50%)', width:34, height:34, borderRadius:'50%', background: activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(0,0,0,0.08)' : `rgba(10,28,46,0.80)`, border:`1px solid ${activeMeasure===MEASURE_STEPS.length-1 ? 'transparent' : ms.color+'66'}`, color: activeMeasure===MEASURE_STEPS.length-1 ? 'transparent' : ms.color, fontSize:'1.1rem', cursor: activeMeasure===MEASURE_STEPS.length-1 ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(4px)' }}>›</button>
-          {/* Dot progress */}
-          <div style={{ position:'absolute', bottom:'0.55rem', left:'50%', transform:'translateX(-50%)', display:'flex', gap:'0.4rem', alignItems:'center' }}>
+            style={{ width:44, height:44, borderRadius:12, background: activeMeasure===0 ? 'rgba(255,255,255,0.05)' : `${ms.color}22`, border:`2px solid ${activeMeasure===0 ? 'rgba(255,255,255,0.1)' : ms.color}`, color: activeMeasure===0 ? 'rgba(255,255,255,0.2)' : ms.color, fontSize:'1.5rem', fontWeight:700, cursor: activeMeasure===0 ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s', flexShrink:0 }}>‹</button>
+          {/* Dot progress — centred */}
+          <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flex:1, justifyContent:'center' }}>
             {MEASURE_STEPS.map((_,i) => (
-              <div key={i} onClick={() => setActiveMeasure(i)} style={{ width:i===activeMeasure?18:6, height:6, borderRadius:3, background:i===activeMeasure ? ms.color : 'rgba(10,28,46,0.2)', cursor:'pointer', transition:'all 0.2s', boxShadow: i===activeMeasure ? `0 0 6px ${ms.color}88` : 'none' }} />
+              <div key={i} onClick={() => setActiveMeasure(i)} style={{ width:i===activeMeasure?22:8, height:8, borderRadius:4, background:i===activeMeasure ? ms.color : 'rgba(255,255,255,0.18)', cursor:'pointer', transition:'all 0.25s', boxShadow: i===activeMeasure ? `0 0 8px ${ms.color}` : 'none' }} />
             ))}
           </div>
+          <button onClick={() => setActiveMeasure(i => Math.min(MEASURE_STEPS.length-1, i+1))} disabled={activeMeasure===MEASURE_STEPS.length-1}
+            style={{ width:44, height:44, borderRadius:12, background: activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(255,255,255,0.05)' : `${ms.color}22`, border:`2px solid ${activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(255,255,255,0.1)' : ms.color}`, color: activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(255,255,255,0.2)' : ms.color, fontSize:'1.5rem', fontWeight:700, cursor: activeMeasure===MEASURE_STEPS.length-1 ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s', flexShrink:0 }}>›</button>
+        </div>
+        {/* Step badge + counter */}
+        <div style={{ background:BG2, padding:'0.65rem 1.1rem 0', display:'flex', alignItems:'center', gap:'0.5rem' }}>
+          <div style={{ background:ms.color, color: ms.id==='fail' ? '#fff' : '#000', fontFamily:'monospace', fontWeight:800, fontSize:'0.58rem', letterSpacing:'0.12em', borderRadius:8, padding:'0.2rem 0.6rem' }}>{ms.badge} / 05</div>
         </div>
 
         {/* Text */}
-        <div style={{ background:BG2, padding:'1rem 1.1rem' }}>
+        <div style={{ background:BG2, padding:'0.75rem 1.1rem 1rem' }}>
           <div style={{ fontSize:'0.92rem', fontWeight:800, color:TEXT, lineHeight:1.3, marginBottom:'0.5rem' }}>{ms.title}</div>
           <div style={{ fontSize:'0.78rem', color:TEXT2, lineHeight:1.7, marginBottom:'0.65rem' }}>{ms.desc}</div>
           <div style={{ background:`${ms.color}0D`, border:`1px solid ${ms.color}30`, borderRadius:12, padding:'0.6rem 0.85rem', display:'flex', gap:'0.5rem', alignItems:'flex-start' }}>
@@ -263,58 +260,31 @@ export default function HelpScreen() {
         ))}
       </div>
 
-      {/* ══ SCANNING POSITIONS ══ */}
-      <SectionHeader label="Scanning Positions — Step by Step" />
+      {/* ══ SCANNING POSITIONS — Instagram link ══ */}
+      <SectionHeader label="Scanning Positions" />
 
-      <div style={{ margin:'0 1rem 0.5rem', background:BG2, border:`1.5px solid ${BORDER}`, borderRadius:14, padding:'0.85rem 1rem 0.75rem' }}>
-        <div style={{ fontSize:'0.78rem', color:TEXT2, lineHeight:1.65 }}>
-          The app guides you through <strong style={{ color:TEXT }}>6 phone positions</strong>. Each position shows a countdown so you have time to get into place. Tap any step to expand full instructions.
-        </div>
-      </div>
-
-      {SCAN_STEPS.map(step => {
-        const isOpen = expandedStep === step.id
-        return (
-          <div key={step.id} style={{ margin:'0 1rem 0.6rem', borderRadius:16, overflow:'hidden', border:`1.5px solid ${isOpen ? step.color+'55' : BORDER}`, transition:'border-color 0.2s' }}>
-
-            {isOpen && (
-              <div style={{ position:'relative', background:'#F5F0EB' }}>
-                <img src={step.image} alt={step.title} style={{ width:'100%', display:'block', maxHeight:220, objectFit:'cover', objectPosition:'center top' }} />
-                <div style={{ position:'absolute', top:'0.6rem', left:'0.6rem', background:step.color, color:'#000', fontFamily:'monospace', fontWeight:800, fontSize:'0.6rem', letterSpacing:'0.1em', borderRadius:7, padding:'0.2rem 0.55rem' }}>
-                  POSITION {step.step}
-                </div>
-              </div>
-            )}
-
-            <button onClick={() => setExpandedStep(isOpen ? null : step.id)} style={{ width:'100%', padding:'0.85rem 1rem', background:BG2, border:'none', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:'0.7rem', borderTop: isOpen ? `1px solid ${BORDER}` : 'none' }}>
-              <div style={{ width:26, height:26, borderRadius:'50%', background:`${step.color}22`, border:`1.5px solid ${step.color}55`, color:step.color, fontSize:'0.62rem', fontFamily:'monospace', fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                {step.step}
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:'0.88rem', fontWeight:700, color:TEXT }}>{step.title}</div>
-                <div style={{ fontSize:'0.68rem', color:TEXT2, marginTop:'0.1rem', lineHeight:1.35 }}>{step.what}</div>
-              </div>
-              <span style={{ color:TEXT2, fontSize:'1.1rem', transition:'transform 0.2s', transform:isOpen?'rotate(45deg)':'none', flexShrink:0 }}>+</span>
-            </button>
-
-            {isOpen && (
-              <div style={{ background:'rgba(65,124,164,0.04)', borderTop:`1px solid ${BORDER}`, padding:'0.85rem 1rem 1rem' }}>
-                <div style={{ fontSize:'0.58rem', fontFamily:'monospace', letterSpacing:'0.14em', color:step.color, fontWeight:700, marginBottom:'0.55rem' }}>INSTRUCTIONS</div>
-                {step.how.map((instr, i) => (
-                  <div key={i} style={{ display:'flex', gap:'0.65rem', marginBottom:'0.5rem', alignItems:'flex-start' }}>
-                    <div style={{ width:20, height:20, borderRadius:'50%', background:`${step.color}22`, border:`1px solid ${step.color}44`, color:step.color, fontSize:'0.6rem', fontFamily:'monospace', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:'0.05rem' }}>{i+1}</div>
-                    <div style={{ fontSize:'0.77rem', color:TEXT2, lineHeight:1.6 }}>{instr}</div>
-                  </div>
-                ))}
-                <div style={{ marginTop:'0.7rem', background:`${step.color}0F`, border:`1px solid ${step.color}28`, borderRadius:11, padding:'0.6rem 0.8rem', display:'flex', gap:'0.5rem', alignItems:'flex-start' }}>
-                  <span style={{ fontSize:'0.82rem', flexShrink:0 }}>💡</span>
-                  <div style={{ fontSize:'0.72rem', color:TEXT2, lineHeight:1.6 }}><strong style={{ color:step.color }}>Tip: </strong>{step.tip}</div>
-                </div>
-              </div>
-            )}
+      <div style={{ margin:'0 1rem 1rem' }}>
+        {/* Intro */}
+        <div style={{ background:BG2, border:`1.5px solid ${BORDER}`, borderRadius:14, padding:'0.85rem 1rem', marginBottom:'0.75rem' }}>
+          <div style={{ fontSize:'0.78rem', color:TEXT2, lineHeight:1.65 }}>
+            Follow us on Instagram for <strong style={{ color:TEXT }}>step-by-step video guides</strong> showing exactly how to position your phone for each of the 6 scan positions — riser, tread, nosing, handrail, width, and headroom.
           </div>
-        )
-      })}
+        </div>
+        {/* Instagram card */}
+        <a href="https://www.instagram.com/staircode.app" target="_blank" rel="noopener noreferrer"
+          style={{ display:'flex', alignItems:'center', gap:'1rem', background:'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', borderRadius:16, padding:'1.1rem 1.25rem', textDecoration:'none', boxShadow:'0 6px 24px rgba(131,58,180,0.35)' }}>
+          <div style={{ width:48, height:48, borderRadius:14, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.8rem', flexShrink:0 }}>
+            📸
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:'0.92rem', fontWeight:800, color:'#fff', marginBottom:'0.2rem' }}>@staircode.app</div>
+            <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.85)', lineHeight:1.5 }}>
+              How-to videos · Scan guides · Tips & updates
+            </div>
+          </div>
+          <div style={{ fontSize:'1.4rem', color:'rgba(255,255,255,0.8)', flexShrink:0 }}>→</div>
+        </a>
+      </div>
 
       {/* ══ FAQ ══ */}
       <SectionHeader label="Frequently Asked Questions" />

@@ -517,6 +517,32 @@ export default function AuthScreen({ onAuth }: Props) {
         </p>
       </div>
 
+      {/* Instagram link */}
+      <a
+        href="https://www.instagram.com/staircode.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+          marginTop: '1.1rem', marginBottom: '0.25rem',
+          padding: '0.6rem 1.2rem',
+          background: 'linear-gradient(135deg, rgba(131,58,180,0.18), rgba(253,29,29,0.18), rgba(252,176,69,0.18))',
+          border: '1px solid rgba(253,29,29,0.3)',
+          borderRadius: 12,
+          textDecoration: 'none',
+          color: '#fff',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          maxWidth: 240,
+          margin: '1rem auto 0',
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}>📸</span>
+        <span>@staircode.app on Instagram</span>
+        <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>→</span>
+      </a>
+
       <p style={{ fontSize: '0.62rem', color: '#2C4A68', textAlign: 'center', marginTop: '0.75rem', lineHeight: 1.7, maxWidth: 300 }}>
         By continuing you agree to our{' '}
         <a href="/terms" style={{ color: '#F29337', fontWeight: 600, textDecoration: 'underline' }}>Terms of Service</a>

@@ -216,6 +216,285 @@ ALWAYS return estimatedMm. Use 280mm as default if uncertain. Range: 220-420mm.`
   },
 ]
 
+// ── AR Measurement Overlay ───────────────────────────────────────────────────
+// Renders per-position measurement lines, endpoint markers, normal vectors,
+// and animated tick marks directly over the live camera feed.
+//
+// Geometry per position:
+//   riser_front  — vertical line centre-screen, normal vector pointing toward camera (Z-)
+//   rotate_90    — horizontal line at tread edge, normal pointing up (Y+)
+//   nosing       — short horizontal span at nose edge, normal pointing forward (Z-)
+//   handrail     — vertical line right-side, normal pointing inward (X-)
+//   alt_angle    — full-width horizontal line, normals on both endpoints pointing inward
+//   tread_top    — depth line front-to-back, normal pointing up (Y+)
+//   overview     — diagonal span across full stair, normal pointing toward camera
+
+interface AROverlayProps {
+  posId:   string
+  color:   string
+  valueMm: number
+  label:   string
+}
+
+function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) {
+  // All coordinates are percentages of the overlay container (0–100)
+  // The overlay sits between top bar and bottom panel — portrait phone viewport
+
+  type Config = {
+    x1: number; y1: number   // line start (percent)
+    x2: number; y2: number   // line end   (percent)
+    // Normal vector: shown at midpoint, perpendicular to the measured plane
+    // direction in SVG space: dx/dy unit vector, length in px
+    nx: number; ny: number; nLen: number
+    // Tick orientation: 'h' = horizontal ticks at endpoints, 'v' = vertical
+    ticks: 'h' | 'v'
+    // Extra annotation lines (e.g. parallel guide lines for riser face)
+    guides?: Array<{x1:number;y1:number;x2:number;y2:number}>
+  }
+
+  const configs: Record<string, Config> = {
+    riser_front: {
+      x1:50, y1:20,  x2:50, y2:75,   // vertical centre
+      nx:1,  ny:0,   nLen:40,         // normal points right (toward viewer)
+      ticks:'h',
+      guides:[
+        {x1:20,y1:20,x2:80,y2:20},   // top edge of riser
+        {x1:20,y1:75,x2:80,y2:75},   // bottom edge of riser
+      ],
+    },
+    rotate_90: {
+      x1:25, y1:55,  x2:75, y2:55,
+      nx:0,  ny:-1,  nLen:35,         // normal points up
+      ticks:'v',
+      guides:[{x1:25,y1:50,x2:75,y2:50}],
+    },
+    nosing: {
+      x1:30, y1:52,  x2:65, y2:52,
+      nx:0,  ny:-1,  nLen:30,
+      ticks:'v',
+      guides:[],
+    },
+    handrail: {
+      x1:68, y1:18,  x2:68, y2:72,
+      nx:-1, ny:0,   nLen:38,         // normal points left (toward stair)
+      ticks:'h',
+      guides:[
+        {x1:50,y1:18,x2:85,y2:18},
+        {x1:50,y1:72,x2:85,y2:72},
+      ],
+    },
+    alt_angle: {
+      x1:6,  y1:58,  x2:94, y2:58,
+      nx:0,  ny:-1,  nLen:32,
+      ticks:'v',
+      guides:[
+        {x1:6, y1:50,x2:6,  y2:66},  // left stringer
+        {x1:94,y1:50,x2:94, y2:66},  // right stringer
+      ],
+    },
+    tread_top: {
+      x1:50, y1:28,  x2:50, y2:68,
+      nx:1,  ny:0,   nLen:36,
+      ticks:'h',
+      guides:[
+        {x1:20,y1:28,x2:80,y2:28},   // nosing line
+        {x1:20,y1:68,x2:80,y2:68},   // back riser line
+      ],
+    },
+    overview: {
+      x1:18, y1:22,  x2:82, y2:72,
+      nx:-1, ny:0.4, nLen:30,         // angled normal
+      ticks:'v',
+      guides:[],
+    },
+  }
+
+  const cfg = configs[posId] ?? configs.riser_front
+  const mid = { x: (cfg.x1+cfg.x2)/2, y: (cfg.y1+cfg.y2)/2 }
+
+  // Normal vector tip (mid + normal direction * length, in %)
+  // nLen is in px but we approximate as %, good enough for display
+  const nTip = { x: mid.x + cfg.nx * cfg.nLen * 0.12, y: mid.y + cfg.ny * cfg.nLen * 0.12 }
+
+  const tickSize = 6  // half-tick length in percent-ish (small)
+
+  const hexAlpha = (a: number) => {
+    const h = Math.round(a*255).toString(16).padStart(2,'0')
+    return color + h
+  }
+
+  return (
+    <svg
+      width="100%" height="100%"
+      style={{position:'absolute',inset:0,overflow:'visible'}}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        {/* Glowing filter for measurement line */}
+        <filter id={`glow-${posId}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+
+        {/* Animated line draw */}
+        <style>{`
+          @keyframes drawLine {
+            from { stroke-dashoffset: 200; }
+            to   { stroke-dashoffset: 0; }
+          }
+          @keyframes fadeInSVG {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+          }
+          @keyframes pulseRing {
+            0%   { r: 3; opacity: 0.9; }
+            50%  { r: 6; opacity: 0.3; }
+            100% { r: 3; opacity: 0.9; }
+          }
+          @keyframes normalGrow {
+            from { stroke-dashoffset: 60; opacity: 0; }
+            to   { stroke-dashoffset: 0;  opacity: 1; }
+          }
+          .ar-line {
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            animation: drawLine 0.6s ease-out 0.1s forwards;
+          }
+          .ar-guide {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: drawLine 0.5s ease-out 0.4s forwards;
+            opacity: 0;
+          }
+          .ar-guide { animation: drawLine 0.5s ease-out 0.4s forwards, fadeInSVG 0.5s ease-out 0.4s forwards; }
+          .ar-normal {
+            stroke-dasharray: 60;
+            stroke-dashoffset: 60;
+            animation: normalGrow 0.5s ease-out 0.7s forwards;
+          }
+          .ar-label { animation: fadeInSVG 0.4s ease-out 0.65s both; }
+          .ar-pulse  { animation: pulseRing 1.5s ease-in-out infinite; }
+        `}</style>
+
+        {/* Arrowhead marker for normal vector */}
+        <marker id={`arrow-${posId}`} markerWidth="6" markerHeight="6"
+          refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill={color} opacity="0.95"/>
+        </marker>
+
+        {/* Tick marker */}
+        <marker id={`tick-${posId}`} markerWidth="4" markerHeight="8"
+          refX="2" refY="4" orient="auto-start-reverse">
+          <line x1="2" y1="0" x2="2" y2="8" stroke={color} strokeWidth="1.5"/>
+        </marker>
+      </defs>
+
+      {/* ── Guide lines (faint parallel lines showing the measured face) ── */}
+      {cfg.guides.map((g, i) => (
+        <line key={i}
+          className="ar-guide"
+          x1={`${g.x1}%`} y1={`${g.y1}%`}
+          x2={`${g.x2}%`} y2={`${g.y2}%`}
+          stroke={color} strokeWidth="0.4" strokeDasharray="2,2" opacity="0.45"
+        />
+      ))}
+
+      {/* ── Main measurement line ── */}
+      <line
+        className="ar-line"
+        x1={`${cfg.x1}%`} y1={`${cfg.y1}%`}
+        x2={`${cfg.x2}%`} y2={`${cfg.y2}%`}
+        stroke={color} strokeWidth="0.7" strokeLinecap="round"
+        filter={`url(#glow-${posId})`}
+        opacity="0.95"
+      />
+
+      {/* ── Tick marks at both endpoints ── */}
+      {cfg.ticks === 'h' ? (
+        <>
+          <line x1={`${cfg.x1-tickSize*0.5}%`} y1={`${cfg.y1}%`}
+                x2={`${cfg.x1+tickSize*0.5}%`} y2={`${cfg.y1}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+          <line x1={`${cfg.x2-tickSize*0.5}%`} y1={`${cfg.y2}%`}
+                x2={`${cfg.x2+tickSize*0.5}%`} y2={`${cfg.y2}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+        </>
+      ) : (
+        <>
+          <line x1={`${cfg.x1}%`} y1={`${cfg.y1-tickSize*0.5}%`}
+                x2={`${cfg.x1}%`} y2={`${cfg.y1+tickSize*0.5}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+          <line x1={`${cfg.x2}%`} y1={`${cfg.y2-tickSize*0.5}%`}
+                x2={`${cfg.x2}%`} y2={`${cfg.y2+tickSize*0.5}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+        </>
+      )}
+
+      {/* ── Endpoint dot + pulse ring ── */}
+      {[{x:cfg.x1,y:cfg.y1},{x:cfg.x2,y:cfg.y2}].map((pt,i)=>(
+        <g key={i} className="ar-label">
+          {/* Pulse ring */}
+          <circle cx={`${pt.x}%`} cy={`${pt.y}%`} r="2.5%"
+            fill="none" stroke={color} strokeWidth="0.4" opacity="0.4"
+            className="ar-pulse"
+            style={{animationDelay: i===1 ? '0.75s' : '0s'}}
+          />
+          {/* Solid dot */}
+          <circle cx={`${pt.x}%`} cy={`${pt.y}%`} r="1.2%"
+            fill={color} opacity="0.95" filter={`url(#glow-${posId})`}
+          />
+        </g>
+      ))}
+
+      {/* ── Normal vector ── perpendicular arrow from plane midpoint ── */}
+      {/* Shows which face is being measured (oriented outward from surface) */}
+      <line
+        className="ar-normal"
+        x1={`${mid.x}%`} y1={`${mid.y}%`}
+        x2={`${nTip.x}%`} y2={`${nTip.y}%`}
+        stroke={color} strokeWidth="0.5" opacity="0.85"
+        strokeDasharray="3,1.5"
+        markerEnd={`url(#arrow-${posId})`}
+      />
+      {/* Normal label */}
+      <text
+        className="ar-normal"
+        x={`${nTip.x + cfg.nx*2}%`} y={`${nTip.y + cfg.ny*2 + 1.2}%`}
+        textAnchor="middle" fill={color} fontSize="2.2" opacity="0.7"
+        fontFamily="monospace"
+      >n̂</text>
+
+      {/* ── Dimension label ── centred on line ── */}
+      <g className="ar-label">
+        {/* Background pill */}
+        <rect
+          x={`${mid.x - 8}%`} y={`${mid.y - 3}%`}
+          width="16%" height="6%"
+          rx="1.5%"
+          fill="rgba(10,28,46,0.88)"
+          stroke={color} strokeWidth="0.4"
+        />
+        {/* Value */}
+        <text
+          x={`${mid.x}%`} y={`${mid.y + 1.5}%`}
+          textAnchor="middle"
+          fill="white" fontSize="3" fontFamily="monospace" fontWeight="bold"
+        >{valueMm}mm</text>
+      </g>
+
+      {/* ── Measurement type label ── top of overlay ── */}
+      <g className="ar-label">
+        <rect x="2%" y="3%" width={`${label.length * 1.6 + 4}%`} height="5.5%"
+          rx="1%" fill="rgba(10,28,46,0.82)" stroke={hexAlpha(0.5)} strokeWidth="0.3"/>
+        <circle cx="4.5%" cy="5.75%" r="0.8%" fill={color}/>
+        <text x="6.5%" y="7%" fill={color} fontSize="2.4" fontFamily="monospace" fontWeight="bold"
+          letterSpacing="0.05em">{label}</text>
+      </g>
+    </svg>
+  )
+}
+
 // ── Vision helper ─────────────────────────────────────────────────────────────
 async function callVision(b64: string, prompt: string, ms = 18000): Promise<string|null> {
   const ctrl = new AbortController()
@@ -278,6 +557,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [reviewVals, setReviewVals] = useState<Record<string,number|string>>({})
   const [nosingMm,   setNosingMm]   = useState(0)
   const [adjustVal,  setAdjustVal]  = useState<number|null>(null)  // user-adjusted value for current result
+  const [camWarm,    setCamWarm]    = useState(false)  // true once camera has had 1.5s to auto-expose
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
   const [arSupported,setArSupported]= useState(false)
@@ -487,10 +767,15 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   }, [stage, posIdx, slideIdx])
 
   // ── Stage: ready — waiting for user tap (no timer) ────────────────────────
-  // User taps "I'm Ready" → start hold countdown
+  // User taps "I'm Ready" → start hold countdown + warm-up timer
   function handleReady() {
-    setStage('hold')
+    // Immediately hide illustration so camera gets full unobstructed view
+    // BEFORE we start the hold countdown — critical for auto-exposure
+    setCamWarm(false)
+    setStage('hold')          // illustration disappears immediately (showIllustration becomes false)
     setCountdown(currentPos.holdSeconds)
+    // Camera warm-up: 1.5s for auto-exposure to settle on the unobstructed scene
+    setTimeout(() => setCamWarm(true), 1500)
   }
 
   // ── Stage: hold — camera live, hold-still countdown ───────────────────────
@@ -621,8 +906,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // Show camera live: always — camera is always on in background
   // During illustration stages, camera shows at reduced opacity behind the white-bg overlay
   const showCamera = true
-  // During scan stages camera is full opacity; during illustration it fades to ~35%
-  const cameraOpacity = (stage==='hold' || stage==='capture' || stage==='analysing' || stage==='result') ? 1 : 0.35
+  // Camera is ALWAYS full opacity — dimming it causes auto-exposure to recalibrate
+  // and produces dark/blurry frames when we need to capture
+  const cameraOpacity = 1
 
   const progressPct   = (posIdx / POSITIONS.length) * 100
   const IMAGE_TOP     = 88
@@ -769,12 +1055,25 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // ── Main scan UI ──────────────────────────────────────────────────────────
   return (
-    <div style={{position:'fixed',inset:0,background:'#111',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Live camera feed */}
-      <video ref={videoRef} autoPlay playsInline muted
-        style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',
-          opacity:cameraOpacity,transition:'opacity 0.4s ease'}}/>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        disablePictureInPicture
+        style={{
+          position:'absolute', inset:0,
+          width:'100%', height:'100%',
+          objectFit:'cover',
+          opacity:1,
+          // Prevent any GPU compositing layer from darkening the feed
+          willChange:'transform',
+          backfaceVisibility:'hidden',
+        }}
+      />
       <canvas ref={captureRef} style={{display:'none'}}/>
 
       {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
@@ -786,11 +1085,11 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           <div style={{
             position:'absolute', top:IMAGE_TOP, left:0, right:0, bottom:BOTTOM_PANEL,
             zIndex:10, overflow:'hidden',
-            background: 'transparent',
+            background: 'transparent',  // camera always visible behind illustration
           }}>
             <img key={imgSrc} src={imgSrc} alt={currentPos.headline}
               style={{width:'100%',height:'100%',objectFit:'contain',objectPosition:'center',display:'block',
-                animation:'fadeIn 0.4s ease'}}/>
+                opacity:0.45,animation:'fadeIn 0.3s ease'}}/>
 
             {/* Slide caption */}
             {activeSlide && (
@@ -847,17 +1146,16 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         )
       })()}
 
-      {/* Dim overlay during analyse */}
-      {stage==='analysing' && (
-        <div style={{position:'absolute',inset:0,zIndex:15,background:'rgba(10,28,46,0.5)',backdropFilter:'blur(2px)'}}/>
-      )}
+      {/* No overlay during analyse — keep camera frame fully visible */}
 
       {/* ── TOP BAR ── */}
       <div style={{
         position:'absolute',top:0,left:0,right:0,zIndex:50,
         paddingTop:'max(env(safe-area-inset-top,0px),1.5rem)',
         paddingBottom:'0.6rem',paddingLeft:'1rem',paddingRight:'1rem',
-        background:'linear-gradient(to bottom,rgba(10,28,46,0.95),rgba(10,28,46,0.6))',
+        background: (stage==='hold'||stage==='capture')
+          ? 'linear-gradient(to bottom,rgba(0,0,0,0.7),transparent)'
+          : 'linear-gradient(to bottom,rgba(10,28,46,0.95),rgba(10,28,46,0.6))',
         display:'flex',alignItems:'center',gap:'0.75rem',
         height:IMAGE_TOP,boxSizing:'border-box',
       }}>
@@ -932,7 +1230,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
       <div style={{
         position:'absolute',bottom:0,left:0,right:0,
         height:BOTTOM_PANEL,zIndex:50,
-        background:'linear-gradient(to top,rgba(10,28,46,0.99) 80%,rgba(10,28,46,0.6))',
+        background: (stage==='hold'||stage==='capture')
+          ? 'linear-gradient(to top,rgba(0,0,0,0.85) 60%,transparent)'
+          : 'linear-gradient(to top,rgba(10,28,46,0.99) 80%,rgba(10,28,46,0.6))',
         paddingBottom:'max(env(safe-area-inset-bottom,0px),1.25rem)',
         paddingLeft:'1.25rem',paddingRight:'1.25rem',paddingTop:'0.85rem',
         display:'flex',flexDirection:'column',gap:'0.6rem',
@@ -1001,18 +1301,24 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.5}}>
             Phone is steady — tap the button below when you are ready to capture.
           </div>
-          <button onClick={handleCapture} style={{
-            width:'100%',padding:'1.15rem',
-            background:`linear-gradient(135deg,${BLUE},#2C6FBF)`,
-            border:'none',borderRadius:16,color:'#fff',
-            fontFamily:'monospace',fontSize:'1rem',fontWeight:900,
-            letterSpacing:'0.06em',cursor:'pointer',
-            boxShadow:'0 6px 28px rgba(74,144,226,0.5)',
-          }}>
-            📸 {currentPos.captureLabel}
+          <button
+            onClick={camWarm ? handleCapture : undefined}
+            style={{
+              width:'100%',padding:'1.15rem',
+              background: camWarm ? `linear-gradient(135deg,${BLUE},#2C6FBF)` : 'rgba(255,255,255,0.07)',
+              border: camWarm ? 'none' : `1px solid ${BORDER}`,
+              borderRadius:16,
+              color: camWarm ? '#fff' : WHITE2,
+              fontFamily:'monospace',fontSize:'1rem',fontWeight:900,
+              letterSpacing:'0.06em',
+              cursor: camWarm ? 'pointer' : 'default',
+              boxShadow: camWarm ? '0 6px 28px rgba(74,144,226,0.5)' : 'none',
+              transition:'all 0.4s ease',
+            }}>
+            {camWarm ? `📸 ${currentPos.captureLabel}` : '⏳ Camera focusing…'}
           </button>
           <div style={{display:'flex',gap:'0.45rem'}}>
-            <button onClick={()=>{ busyRef.current=false; setStage('hold'); setCountdown(currentPos.holdSeconds) }}
+            <button onClick={()=>{ busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),1500) }}
               style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
               ↺ Re-steady
             </button>
@@ -1078,39 +1384,13 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                   ))}
                 </div>
 
-                {/* Measurement line SVG — vertical or horizontal based on position */}
-                <svg width="100%" height="100%" style={{position:'absolute',inset:0}}>
-                  {/* Vertical line for riser/handrail, horizontal for width/tread */}
-                  {['riser_front','handrail','overview'].includes(currentPos.id) ? (
-                    // Vertical measurement line — centre of camera
-                    <>
-                      <line x1="50%" y1="22%" x2="50%" y2="75%"
-                        stroke={indColor} strokeWidth="2.5" strokeLinecap="round"
-                        style={{filter:`drop-shadow(0 0 4px ${indColor})`}}/>
-                      <circle cx="50%" cy="22%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
-                      <circle cx="50%" cy="75%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
-                      {/* Label box */}
-                      <rect x="calc(50% - 42px)" y="calc(48% - 13px)" width="84" height="26" rx="6"
-                        fill="rgba(10,28,46,0.85)" stroke={indColor} strokeWidth="1"/>
-                      <text x="50%" y="calc(48% + 5px)" textAnchor="middle"
-                        fill="white" fontSize="13" fontFamily="monospace" fontWeight="bold">{dispVal}mm</text>
-                    </>
-                  ) : (
-                    // Horizontal measurement line — across the stair width
-                    <>
-                      <line x1="8%" y1="62%" x2="92%" y2="62%"
-                        stroke={indColor} strokeWidth="2.5" strokeLinecap="round"
-                        style={{filter:`drop-shadow(0 0 4px ${indColor})`}}/>
-                      <circle cx="8%" cy="62%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
-                      <circle cx="92%" cy="62%" r="5" fill={indColor} style={{filter:`drop-shadow(0 0 5px ${indColor})`}}/>
-                      {/* Label box */}
-                      <rect x="calc(50% - 42px)" y="calc(62% - 19px)" width="84" height="26" rx="6"
-                        fill="rgba(10,28,46,0.85)" stroke={indColor} strokeWidth="1"/>
-                      <text x="50%" y="calc(62% - 3px)" textAnchor="middle"
-                        fill="white" fontSize="13" fontFamily="monospace" fontWeight="bold">{dispVal}mm</text>
-                    </>
-                  )}
-                </svg>
+                {/* ── Full AR measurement overlay ── */}
+                <ARMeasurementOverlay
+                  posId={currentPos.id}
+                  color={indColor}
+                  valueMm={dispVal ?? 0}
+                  label={capLabels[capKey] ?? currentPos.label.toUpperCase()}
+                />
 
                 {/* Measured label — bottom centre */}
                 <div style={{
@@ -1195,7 +1475,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
             {/* Retry / View Report */}
             <div style={{display:'flex',gap:'0.45rem'}}>
-              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setStage('hold'); setCountdown(currentPos.holdSeconds) }}
+              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),1500) }}
                 style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
                 ↺ Retry
               </button>
