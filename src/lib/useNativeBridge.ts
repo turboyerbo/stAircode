@@ -57,7 +57,7 @@ export function useNativeBridge(): NativeBridgeState {
   const [planeCount,      setPlaneCount]      = useState(0)
 
   // ARCore (Android TWA) session ref
-  const arcoreRef = useRef<typeof import('./arcore-session') | null>(null)
+  const arcoreRef = useRef<any | null>(null)
 
   useEffect(() => {
     // ── Detect iOS native bridge ───────────────────────────────────────────
@@ -122,11 +122,11 @@ export function useNativeBridge(): NativeBridgeState {
     if (arcoreRef.current) {
       const arcore  = arcoreRef.current
       const modeMap: Record<string, () => Promise<import('./arcore-session').ARMeasurement | null>> = {
-        rise:     () => arcore.measureWithARCore('riser',    {}),
-        run:      () => arcore.measureWithARCore('tread',    {}),
-        width:    () => arcore.measureWithARCore('width',    {}),
-        guard:    () => arcore.measureWithARCore('handrail', {}),
-        headroom: () => arcore.measureWithARCore('headroom', {}),
+        rise:     () => arcore.measureFromPlanes('riser',    {}),
+        run:      () => arcore.measureFromPlanes('tread',    {}),
+        width:    () => arcore.measureFromPlanes('width',    {}),
+        guard:    () => arcore.measureFromPlanes('handrail', {}),
+        headroom: () => arcore.measureFromPlanes('headroom', {}),
       }
 
       const fn = modeMap[type]

@@ -18,6 +18,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { checkXRSupport } from '@/lib/xr-measure'
+import {
+  startARSession, stopARSession, measureFromPlanes,
+  isARSessionActive, type ScreenPlane,
+} from '@/lib/arcore-session'
 import type { UserRole } from './AuthScreen'
 import { Analytics } from '@/lib/analytics'
 
@@ -42,7 +46,7 @@ const indicators: Record<string, { label: string; color: string }> = {
 }
 
 // ── Position definitions ──────────────────────────────────────────────────────
-type Position = 'overview'|'riser_front'|'rotate_90'|'nosing'|'handrail'|'alt_angle'|'tread_top'
+type Position = 'overview'|'riser_front'|'handrail'|'alt_angle'|'tread_top'
 
 interface Slide {
   image:   string
@@ -77,17 +81,29 @@ const POSITIONS: PosConfig[] = [
     captureLabel: 'Tap to capture step count & headroom',
     holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['riserCount','headroom'],
-    aiPrompt: (_p) => `Analyse this staircase image for a compliance inspection.
+    aiPrompt: (_p) => `Analyse this staircase image for a building compliance inspection.
 
-Determine:
-1. Count the visible steps/risers carefully
-2. Is headroom restricted? Look for a ceiling or soffit above the stair flight.
-   - "clear" = no ceiling, open above
-   - number in mm if ceiling is visible (use riser as scale ~175mm each)
-3. Residential (<=1000mm wide) or commercial?
+STEP 1 — SCALE CALIBRATION (critical — do this first):
+Scan the entire scene for any of these known-dimension objects and use the BEST one found:
+• Standard brick course: 75mm (brick 65mm + 10mm mortar joint)
+• Door frame width: typically 838mm (2'9") or 914mm (3'0")
+• Door frame height: typically 2032mm (6'8") or 2040mm
+• Electrical outlet/switch plate: 86×86mm (North America standard)
+• Standard timber stud: 38×89mm (2×4 nominal)
+• Skirting/baseboard: typically 90–120mm tall
+• Human adult standing height for scale: 1700–1800mm
+• Handrail tube diameter: 38–50mm typical
+• If none found, use stair riser stack: assume residential risers ~175mm each
+
+STEP 2 — MEASUREMENTS:
+1. Count visible steps/risers precisely
+2. Headroom: "clear" (open above) or number in mm (ceiling/soffit visible)
+3. Residential (stair width ≤1000mm) or commercial?
+
+Explain briefly which scale reference you used.
 
 Reply ONLY with valid JSON:
-{"stepCount":number|null,"headroom":"clear"|number,"isResidential":true|false|null,"confident":true|false,"message":"one sentence for the user"}`,
+{"stepCount":number|null,"headroom":"clear"|number,"isResidential":true|false|null,"scaleRef":"what you used for scale","confident":true|false,"message":"one sentence for the user"}`,
   },
   {
     id: 'riser_front', step: 2, label: 'Riser Height',
@@ -98,51 +114,36 @@ Reply ONLY with valid JSON:
     captureLabel: 'Tap to measure riser height',
     holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['rise'],
-    aiPrompt: (_p) => `Measure RISER HEIGHT. The phone is upright on the nosing pointing at the vertical riser face.
+    aiPrompt: (_p) => `Measure RISER HEIGHT. Phone is upright on the tread nosing, camera facing the riser face.
 
-The riser face should fill most of the frame vertically. Use the phone body (~70mm wide) as a scale reference if visible.
+SCALE CALIBRATION — scan the scene for reference objects in this priority order:
+1. Phone body edges visible at frame border: smartphone width is 68–80mm (typical 72mm)
+2. Skirting/baseboard beside the stair: typically 90–120mm tall — look for it at the wall base
+3. Tread nosing depth visible at bottom of frame: typically 25–38mm overhang
+4. Standard timber stringer: typically 235–286mm deep (visible as side board)
+5. Tile/hardwood flooring planks: standard 90mm or 120mm wide boards
+6. Electrical outlet on nearby wall: 86mm square face plate
+7. If none visible: use typical residential riser (175mm) as working assumption
 
-Reply ONLY with valid JSON — always provide an estimate even if uncertain:
-{"estimatedMm":number,"confidence":0.0-1.0,"message":"one sentence"}
+USE THE BEST REFERENCE FOUND. State which one in your message.
 
-ALWAYS return a number for estimatedMm. If uncertain, estimate based on typical stair proportions (residential riser = 175mm). Range: 125-220mm.`,
+Measure the vertical distance from tread nosing top to the tread above (= riser height).
+The riser face fills most of the frame — the full height is visible.
+
+ALSO detect NOSING while you have this view:
+Look at the front edge of the tread the phone is resting on. Is there a physical overhang
+(nosing projection) where the tread lip extends beyond the riser face below it?
+Estimate the horizontal projection in mm if visible. No nosing = square-edge tread (also valid).
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm for the riser:
+{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"object used","hasNosing":true|false,"nosingMm":number|null,"message":"one sentence"}
+
+Riser range: 125–220mm residential. Default 175mm if uncertain.
+Nosing range: 15–38mm if present. null if square-edge or not visible.`,
   },
+
   {
-    id: 'rotate_90', step: 3, label: 'Nosing Check',
-    image: '/Rotate_Phone_90.png',
-    headline: 'Rotate phone 90° — stay in the same spot',
-    detail: 'Without moving your feet, rotate the phone flat so it lies on the tread with the camera looking along the tread surface toward the nosing edge.',
-    readyLabel: 'Phone is rotated — Start measuring',
-    captureLabel: 'Tap to check nosing',
-    holdSeconds: 3, positionTime: 4, optional: false,
-    captures: ['nosing'],
-    aiPrompt: (_p) => `The phone is rotated 90° lying on the tread, camera looking along the tread surface from the nosing edge.
-
-Check for NOSING — a physical lip overhanging the riser face below the tread.
-Look at the tread front edge. Is there an overhang more than ~15mm?
-
-Reply ONLY with valid JSON:
-{"hasNosing":true|false,"estimatedMm":number|null,"confidence":0.0-1.0,"message":"one sentence"}`,
-  },
-  {
-    id: 'nosing', step: 4, label: 'Nosing Close-Up',
-    image: '/Nosing.png',
-    headline: 'Point at the front edge of a tread',
-    detail: 'Hold the phone close to the tread front edge so the nosing overhang (or lack of one) is clearly visible.',
-    readyLabel: "I'm pointing at the nosing",
-    captureLabel: 'Tap to confirm nosing',
-    holdSeconds: 3, positionTime: 4, optional: true,
-    captures: ['nosing'],
-    aiPrompt: (p) => `Close-up nosing check. Previous reading: ${p.nosing ?? 'none yet'}.
-
-Is there a physical nosing (overhang) at the tread front edge beyond the riser face?
-Estimate the projection in mm if visible.
-
-Reply ONLY with valid JSON:
-{"hasNosing":true|false,"estimatedMm":number|null,"confidence":0.0-1.0,"message":"one sentence"}`,
-  },
-  {
-    id: 'handrail', step: 5, label: 'Handrail Height',
+    id: 'handrail', step: 3, label: 'Handrail Height',
     image: '/Handrail_height_offset.png',
     headline: 'Frame the handrail — tread to top of rail',
     detail: 'Stand beside the stair. Hold the phone so both the tread surface at the bottom and the very top of the handrail are in frame at the same time.',
@@ -150,19 +151,28 @@ Reply ONLY with valid JSON:
     captureLabel: 'Tap to measure handrail height',
     holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['guard'],
-    aiPrompt: (_p) => `Measure HANDRAIL HEIGHT — vertical from tread nosing to top of rail.
+    aiPrompt: (_p) => `Measure HANDRAIL HEIGHT — vertical distance from tread nosing surface to the top of the handrail gripping surface.
 
-Also check for HANDRAIL OFFSET — horizontal distance from stringer/wall to the handrail centre.
+SCALE CALIBRATION — look for these in the scene:
+1. Handrail tube/profile diameter: round tube typically 38–50mm, square profile 40–50mm
+2. Wall tiles or brick: standard brick 65mm + 10mm mortar = 75mm per course
+3. Baluster/spindle spacing: typically 100mm clear gap (code maximum)
+4. Baluster diameter: typically 32–44mm round or 25–38mm square
+5. Skirting board at stair base: typically 90–120mm tall
+6. Door or window visible in background: door height ~2032mm, width ~838mm
+7. Riser height (known from prior scan): use to count courses up to rail height
+8. Wall switch/outlet plate: 86×86mm if visible on adjacent wall
 
-Default to 915mm if any rail is visible and you cannot measure precisely.
+Measure vertical height from tread nosing to handrail top.
+Also measure HORIZONTAL OFFSET: distance from stringer face or wall to handrail centreline.
 
-Reply ONLY with valid JSON — always estimate:
-{"estimatedMm":number,"offsetMm":number|null,"confidence":0.0-1.0,"message":"one sentence"}
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{"estimatedMm":number,"offsetMm":number|null,"confidence":0.0-1.0,"scaleRef":"object used","message":"one sentence"}
 
-ALWAYS return estimatedMm. Use 915 as default if uncertain. Height range: 865-1070mm.`,
+Range: 865–1070mm. Default 915mm if uncertain.`,
   },
   {
-    id: 'alt_angle', step: 6, label: 'Stair Width',
+    id: 'alt_angle', step: 4, label: 'Stair Width',
     image: '/Change_angles.png',
     headline: 'Step back — both edges of the stair in frame',
     detail: 'Move until both the left and right edges of the staircase are clearly visible. A measurement line will appear across the full width.',
@@ -170,16 +180,28 @@ ALWAYS return estimatedMm. Use 915 as default if uncertain. Height range: 865-10
     captureLabel: 'Tap to measure stair width',
     holdSeconds: 3, positionTime: 4, optional: true,
     captures: ['width'],
-    aiPrompt: (p) => `Measure STAIR WIDTH — horizontal distance between both stringers or walls.
-Both left AND right edges must be visible. Use riser height (${p.rise ?? 175}mm) as scale.
+    aiPrompt: (p) => `Measure STAIR WIDTH — clear horizontal distance between both stringers, walls, or balustrades.
+Both left AND right edges of the stair must be visible in frame.
 
-Reply ONLY with valid JSON — always estimate:
-{"estimatedMm":number,"confidence":0.0-1.0,"message":"one sentence"}
+SCALE CALIBRATION — use all visible references, combine for best estimate:
+1. Riser height from prior scan: ${p.rise ?? 175}mm — count how many riser heights fit across the width
+2. Handrail tube diameter: 38–50mm — if rail visible at left and right, centres-to-centres minus one diameter
+3. Standard door width in background: 838mm (2'9") or 914mm (3'0") if any door is visible
+4. Wall tiles: standard tiles 300mm or 600mm wide — count horizontal tiles across
+5. Floor planks: typically 70–90mm wide — count planks visible at base of stair
+6. Human figure if present: adult shoulder width ~450mm, total height ~1750mm
+7. Brick courses on adjacent wall: 75mm per course (65mm brick + 10mm mortar)
+8. Baluster spacing: 100mm clear gap (code max) — count balusters × 100mm + diameter
 
-ALWAYS return estimatedMm. Use 900mm as default if uncertain. Range: 700-1400mm.`,
+Measure the clear width at the narrowest point (usually top or bottom landing).
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"objects used","message":"one sentence"}
+
+Range: 700–1500mm. Default 900mm if uncertain.`,
   },
   {
-    id: 'tread_top', step: 7, label: 'Tread Depth',
+    id: 'tread_top', step: 5, label: 'Tread Depth',
     image: '/Measure_tread.png',
     slides: [
       {
@@ -204,15 +226,28 @@ ALWAYS return estimatedMm. Use 900mm as default if uncertain. Range: 700-1400mm.
     captureLabel: 'Tap to measure tread depth',
     holdSeconds: 3, positionTime: 9, optional: false,
     captures: ['run'],
-    aiPrompt: (p) => `Phone held horizontal above a stair tread, camera facing straight down.
+    aiPrompt: (p) => `Phone is face-down above a stair tread, camera pointing straight down at the tread surface.
 
-Measure TREAD DEPTH — horizontal distance from front nosing to back riser.
-Use phone width (~70mm) or riser height (${p.rise ?? 175}mm) as scale reference.
+Measure TREAD DEPTH — horizontal distance from front nosing edge to the back riser face.
 
-Reply ONLY with valid JSON — always estimate:
-{"estimatedMm":number,"confidence":0.0-1.0,"message":"one sentence"}
+SCALE CALIBRATION — look for ALL of these simultaneously in the top-down view:
+1. Phone body edges at frame border: phone width 68–80mm (typically 72mm) — MOST RELIABLE for this position
+2. Wood grain / floorboard planks: typically 70–90mm wide — count planks across the tread
+3. Tile joints if tiled: standard tiles 300×300mm or 600×600mm — measure fraction visible
+4. Carpet pile direction change at nosing — the nosing overhang is typically 25–38mm
+5. Riser height (${p.rise ?? 175}mm) visible at back of tread if riser face is in frame
+6. Screw or fixing holes in tread: typically 50–75mm from edge — can set minimum scale
+7. Grout lines in tile: standard joint 2–5mm
 
-ALWAYS return estimatedMm. Use 280mm as default if uncertain. Range: 220-420mm.`,
+USE MULTIPLE references and average/cross-check them. The phone body width is especially
+reliable when the phone edges are visible at the sides of the frame.
+
+Measure from front nosing lip to where the tread meets the back riser.
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"objects used","message":"one sentence"}
+
+Range: 220–420mm. Default 280mm if uncertain.`,
   },
 ]
 
@@ -262,18 +297,7 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
         {x1:20,y1:75,x2:80,y2:75},   // bottom edge of riser
       ],
     },
-    rotate_90: {
-      x1:25, y1:55,  x2:75, y2:55,
-      nx:0,  ny:-1,  nLen:35,         // normal points up
-      ticks:'v',
-      guides:[{x1:25,y1:50,x2:75,y2:50}],
-    },
-    nosing: {
-      x1:30, y1:52,  x2:65, y2:52,
-      nx:0,  ny:-1,  nLen:30,
-      ticks:'v',
-      guides:[],
-    },
+
     handrail: {
       x1:68, y1:18,  x2:68, y2:72,
       nx:-1, ny:0,   nLen:38,         // normal points left (toward stair)
@@ -560,7 +584,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [camWarm,    setCamWarm]    = useState(false)  // true once camera has had 1.5s to auto-expose
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
-  const [arSupported,setArSupported]= useState(false)
+  const [arSupported,  setArSupported]  = useState(false)
+  const [arPlanes,     setArPlanes]     = useState<ScreenPlane[]>([])
+  const arOverlayRef = useRef<HTMLDivElement>(null)  // dom-overlay root for WebXR
   const [showReview, setShowReview] = useState(false)
   const [showBackMenu, setShowBackMenu] = useState(false)
 
@@ -629,8 +655,25 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     }
 
     startCamera()
-    checkXRSupport().then(s => setArSupported(s.immersiveAR && s.planeDetection)).catch(()=>{})
-    return () => { alive=false; streamRef.current?.getTracks().forEach(t=>t.stop()) }
+    checkXRSupport().then(async s => {
+      const supported = s.immersiveAR && s.planeDetection
+      setArSupported(supported)
+      if (supported && arOverlayRef.current) {
+        // Start session on first user gesture — WebXR requires gesture context.
+        // We attach it to the first camera-ready event which happens after user
+        // grants camera permission (itself a gesture).
+        const started = await startARSession(
+          arOverlayRef.current,
+          (planes) => { if (alive) setArPlanes(planes) }
+        )
+        console.log('[ARCore] session started:', started)
+      }
+    }).catch(()=>{})
+    return () => {
+      alive = false
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      stopARSession()
+    }
   }, [])
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -816,6 +859,31 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
       // Read current results from ref (always fresh, no stale closure issue)
       const priorSnap = { ...resultsRef.current }
 
+      // ── Try ARCore plane measurement first (Android only) ──────────────────
+      const modeMap: Record<string, import('@/lib/arcore-session').ARMeasurementMode> = {
+        riser_front: 'riser', tread_top: 'tread', alt_angle: 'width',
+        handrail: 'handrail', overview: 'headroom',
+      }
+      const arMode = modeMap[currentPos.id]
+      if (isARSessionActive() && arMode) {
+        const arResult = measureFromPlanes(arMode, priorSnap)
+        if (arResult) {
+          busyRef.current = false
+          // Inject as if it came from AI
+          const fakeR = {
+            estimatedMm: arResult.estimatedMm,
+            confidence:  arResult.confidence,
+            message:     arResult.message,
+            hasNosing:   undefined,
+          }
+          // Fall through to extraction with fakeR
+          extractMeasurements(fakeR)
+          setAiMessage(arResult.message)
+          setStage('result')
+          return
+        }
+      }
+
       const raw = await callVision(b64, currentPos.aiPrompt(priorSnap))
       busyRef.current = false
       const r = parseJSON(raw)
@@ -826,8 +894,18 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         return
       }
 
+      extractMeasurements(r)
+      setAiMessage(r.message ?? null)
+      setStage('result')
+    }
+
+    run()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage])
+
+  // ── Shared measurement extraction (used by both AI Vision and ARCore) ─────
+  function extractMeasurements(r: any) {
       // Extract measurements — coerce all values to numbers defensively
-      // AI may return strings like "178" or numbers — handle both
       const mm = (v: any): number | null => {
         if (v == null) return null
         const n = typeof v === 'number' ? v : parseFloat(String(v))
@@ -846,15 +924,19 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         }
 
         const est = mm(r.estimatedMm)
+        // Store scale reference used for this measurement (shown in UI)
+        if (r.scaleRef) next.scaleRef = r.scaleRef
 
         if (p === 'riser_front') {
           // Always store the estimate even if low confidence — user can adjust
           next.rise = est ?? mm(r.estimated_mm) ?? 175  // fallback to typical value
         }
-        if (p === 'rotate_90' || p === 'nosing') {
+        if (p === 'riser_front') {
+          // Also extract nosing detected during riser measurement
           const hasN = r.hasNosing === true || r.has_nosing === true
-          next.nosing = hasN ? (est ?? 25) : 'none'
-          if (est) setNosingMm(est)
+          const nm = mm(r.nosingMm ?? r.nosing_mm)
+          next.nosing = hasN ? (nm ?? 25) : 'none'
+          if (nm) setNosingMm(nm)
         }
         if (p === 'handrail') {
           next.guard        = est ?? mm(r.estimated_mm) ?? 900
@@ -871,14 +953,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         resultsRef.current = next
         return next
       })
-
-      setAiMessage(r.message ?? null)
-      setStage('result')
-      // Never auto-advance — user must tap "Next Position"
-    }
-
-    run()
-  }, [stage]) // eslint-disable-line
+  }  // end extractMeasurements
 
 
   // ── Finish early ──────────────────────────────────────────────────────────
@@ -1055,7 +1130,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // ── Main scan UI ──────────────────────────────────────────────────────────
   return (
-    <div style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div ref={arOverlayRef} style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Live camera feed */}
       <video
@@ -1075,6 +1150,58 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         }}
       />
       <canvas ref={captureRef} style={{display:'none'}}/>
+
+      {/* ── LIVE ARCORE PLANE OVERLAY — rendered every frame from WebXR render loop ── */}
+      {arPlanes.length > 0 && (stage === 'hold' || stage === 'capture' || stage === 'analysing') && (
+        <svg
+          width="100%" height="100%"
+          style={{ position:'absolute', inset:0, zIndex:18, pointerEvents:'none', overflow:'visible' }}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <filter id="planeGlow">
+              <feGaussianBlur stdDeviation="0.5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <marker id="normalArrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="rgba(48,216,138,0.9)"/>
+            </marker>
+          </defs>
+          {arPlanes.map((plane, i) => {
+            const col = plane.orientation === 'horizontal' ? 'rgba(74,144,226,0.75)' : 'rgba(48,216,138,0.75)'
+            const fillCol = plane.orientation === 'horizontal' ? 'rgba(74,144,226,0.08)' : 'rgba(48,216,138,0.08)'
+            const pts = plane.screenPoly.filter(p => p.x >= 0 && p.x <= 100 && p.y >= 0 && p.y <= 100)
+            if (pts.length < 3) return null
+            const polyStr = pts.map(p => `${p.x},${p.y}`).join(' ')
+            return (
+              <g key={i} filter="url(#planeGlow)">
+                {/* Filled polygon — faint tint showing plane extent */}
+                <polygon points={polyStr} fill={fillCol} stroke={col} strokeWidth="0.4" strokeDasharray="1.5,1"/>
+                {/* Centroid dot */}
+                <circle cx={`${plane.cx}%`} cy={`${plane.cy}%`} r="0.8%" fill={col}/>
+                {/* Normal vector arrow — perpendicular to the detected surface */}
+                <line
+                  x1={`${plane.cx}%`} y1={`${plane.cy}%`}
+                  x2={`${plane.nx}%`} y2={`${plane.ny}%`}
+                  stroke="rgba(48,216,138,0.9)" strokeWidth="0.6" strokeDasharray="2,1"
+                  markerEnd="url(#normalArrow)"
+                />
+                {/* n̂ label at arrow tip */}
+                <text x={`${plane.nx}%`} y={`${plane.ny - 1}%`}
+                  textAnchor="middle" fill="rgba(48,216,138,0.85)"
+                  fontSize="2.2" fontFamily="monospace">n̂</text>
+                {/* Orientation label */}
+                <text x={`${plane.cx}%`} y={`${plane.cy + 2.5}%`}
+                  textAnchor="middle" fill={col}
+                  fontSize="1.8" fontFamily="monospace" fontWeight="bold">
+                  {plane.orientation === 'horizontal' ? '━━ H' : '┃ V'}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      )}
 
       {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
       {showIllustration && (() => {
@@ -1209,7 +1336,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:'0.25rem'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:'0.6rem',fontFamily:'monospace',letterSpacing:'0.1em',color:WHITE2}}>STEP {currentPos.step} / {POSITIONS.length}</span>
+            <span style={{fontSize:'0.6rem',fontFamily:'monospace',letterSpacing:'0.1em',color:WHITE2}}>STEP {currentPos.step} / 5</span>
             <span style={{fontSize:'0.72rem',fontWeight:700,color:WHITE}}>{currentPos.label}</span>
           </div>
           <div style={{height:3,background:'rgba(255,255,255,0.1)',borderRadius:2,overflow:'hidden'}}>
@@ -1430,6 +1557,11 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                     )}
                     {adjustVal !== null && (
                       <div style={{fontSize:'0.58rem',color:AMBER,fontFamily:'monospace',marginTop:'0.1rem'}}>ADJUSTED</div>
+                    )}
+                    {results.scaleRef && (
+                      <div style={{fontSize:'0.58rem',color:WHITE2,fontFamily:'monospace',marginTop:'0.2rem',opacity:0.7}}>
+                        📐 {String(results.scaleRef)}
+                      </div>
                     )}
                   </div>
                   {/* + button */}
