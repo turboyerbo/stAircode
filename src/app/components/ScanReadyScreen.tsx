@@ -58,8 +58,6 @@ interface PosConfig {
   id:           Position
   step:         number
   label:        string
-  image:        string        // single illustration (used when no slides)
-  slides?:      Slide[]       // multi-slide intro sequence (cycles during position stage)
   headline:     string
   detail:       string
   readyLabel:   string
@@ -71,10 +69,60 @@ interface PosConfig {
   aiPrompt:     (prior: Record<string, number|string>) => string
 }
 
+
+// ── Pre-scan instruction slides ──────────────────────────────────────────────
+// Shown ONCE before the scan sequence begins. Fully dismounted after user starts.
+const INTRO_SLIDES = [
+  {
+    img:     '/Instr_01_overview.png',
+    title:   'Step 1 — Full Stair View',
+    desc:    'Stand back so the entire staircase fits in frame. Hold the phone level at chest height.',
+  },
+  {
+    img:     '/Instr_02_headroom.png',
+    title:   'Step 1b — Headroom Check',
+    desc:    'If there is a ceiling or soffit above the stair, step back to include it. This checks clearance compliance.',
+  },
+  {
+    img:     '/Instr_03_riser.png',
+    title:   'Step 2 — Riser Height',
+    desc:    'Place the phone upright on the tread nosing with the camera pointing directly at the riser face.',
+  },
+  {
+    img:     '/Instr_04_handrail.png',
+    title:   'Step 3 — Handrail Height',
+    desc:    'Stand beside the stair. Frame both the tread surface and the top of the handrail in the same shot.',
+  },
+  {
+    img:     '/Instr_05_tread_side.png',
+    title:   'Step 4 — Tread Depth (side view)',
+    desc:    'Hold the phone level beside the stair so the full tread depth is visible from nosing to riser.',
+  },
+  {
+    img:     '/Instr_06_tread_top.png',
+    title:   'Step 4b — Tread Depth (top view)',
+    desc:    'Place the phone flat above the tread with the camera facing straight down. This gives the most accurate depth reading.',
+  },
+  {
+    img:     '/Instr_07_riser_steady.png',
+    title:   'Tip — Steady Your Phone',
+    desc:    'Rest the phone against the riser or on the tread for a sharp, stable image. Motion blur reduces accuracy.',
+  },
+  {
+    img:     '/Instr_08_width.png',
+    title:   'Step 5 — Stair Width',
+    desc:    'Step back until both left and right edges of the staircase are visible. The AI measures wall to wall.',
+  },
+  {
+    img:     '/Instr_09_nosing.png',
+    title:   'Nosing — Auto Detected',
+    desc:    'Nosing is detected automatically during the riser scan. No extra step needed.',
+  },
+]
+
 const POSITIONS: PosConfig[] = [
   {
     id: 'overview', step: 1, label: 'Full Stair View',
-    image: '/Low_headroom_clearance.png',
     headline: 'Step back — fit the full staircase in frame',
     detail: 'Stand 2–3 metres from the stair. Hold the phone level at chest height. Make sure the full flight — top to bottom — is visible.',
     readyLabel: "I'm in position — Start",
@@ -107,7 +155,6 @@ Reply ONLY with valid JSON:
   },
   {
     id: 'riser_front', step: 2, label: 'Riser Height',
-    image: '/Measure_Riser_front.png',
     headline: 'Place phone on the nosing, camera facing the riser',
     detail: 'Set the phone upright on the tread nosing with the camera pointing directly at the vertical riser face. Centre the riser in frame.',
     readyLabel: 'Phone is placed — Start measuring',
@@ -144,7 +191,6 @@ Nosing range: 15–38mm if present. null if square-edge or not visible.`,
 
   {
     id: 'handrail', step: 3, label: 'Handrail Height',
-    image: '/Handrail_height_offset.png',
     headline: 'Frame the handrail — tread to top of rail',
     detail: 'Stand beside the stair. Hold the phone so both the tread surface at the bottom and the very top of the handrail are in frame at the same time.',
     readyLabel: 'Handrail is framed — Start measuring',
@@ -173,7 +219,6 @@ Range: 865–1070mm. Default 915mm if uncertain.`,
   },
   {
     id: 'alt_angle', step: 4, label: 'Stair Width',
-    image: '/Change_angles.png',
     headline: 'Step back — both edges of the stair in frame',
     detail: 'Move until both the left and right edges of the staircase are clearly visible. A measurement line will appear across the full width.',
     readyLabel: 'Both edges visible — Start measuring',
@@ -202,24 +247,7 @@ Range: 700–1500mm. Default 900mm if uncertain.`,
   },
   {
     id: 'tread_top', step: 5, label: 'Tread Depth',
-    image: '/Measure_tread.png',
-    slides: [
-      {
-        image:   '/Tread_slide_1_side.png',
-        caption: '① Place phone flat on the tread nosing edge, camera facing down',
-        seconds: 3,
-      },
-      {
-        image:   '/Tread_slide_2_top.png',
-        caption: '② Phone lies horizontal — camera looks straight down at the tread surface',
-        seconds: 3,
-      },
-      {
-        image:   '/Tread_slide_3_capture.png',
-        caption: '③ Tap capture — phone emits a depth ray to the tread below for a precise reading',
-        seconds: 3,
-      },
-    ],
+
     headline: 'Place phone flat on the tread — camera facing down',
     detail: 'Lay the phone face-down on the tread nosing. The camera fires a depth ray straight to the lower tread, measuring the exact riser height. Keep the phone still until you tap Capture.',
     readyLabel: 'Phone is flat on the tread — Start',
@@ -351,8 +379,6 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
     <svg
       width="100%" height="100%"
       style={{position:'absolute',inset:0,overflow:'visible'}}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
     >
       <defs>
         {/* Glowing filter for measurement line */}
@@ -484,36 +510,34 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
       {/* Normal label */}
       <text
         className="ar-normal"
-        x={`${nTip.x + cfg.nx*2}%`} y={`${nTip.y + cfg.ny*2 + 1.2}%`}
-        textAnchor="middle" fill={color} fontSize="2.2" opacity="0.7"
+        x={`${nTip.x + cfg.nx*2}%`} y={`${nTip.y + cfg.ny*2 + 1.5}%`}
+        textAnchor="middle" fill={color} fontSize="12" opacity="0.8"
         fontFamily="monospace"
       >n̂</text>
 
       {/* ── Dimension label ── centred on line ── */}
       <g className="ar-label">
-        {/* Background pill */}
+        {/* Background pill — inline rect avoids calc() which is invalid SVG */}
         <rect
           x={`${mid.x - 8}%`} y={`${mid.y - 3}%`}
           width="16%" height="6%"
-          rx="1.5%"
-          fill="rgba(10,28,46,0.88)"
-          stroke={color} strokeWidth="0.4"
+          rx="3"
+          fill="rgba(10,28,46,0.92)"
+          stroke={color} strokeWidth="0.5"
         />
-        {/* Value */}
         <text
-          x={`${mid.x}%`} y={`${mid.y + 1.5}%`}
+          x={`${mid.x}%`} y={`${mid.y + 1.8}%`}
           textAnchor="middle"
-          fill="white" fontSize="3" fontFamily="monospace" fontWeight="bold"
+          fill="white" fontSize="14" fontFamily="monospace" fontWeight="bold"
         >{valueMm}mm</text>
       </g>
 
       {/* ── Measurement type label ── top of overlay ── */}
       <g className="ar-label">
-        <rect x="2%" y="3%" width={`${label.length * 1.6 + 4}%`} height="5.5%"
-          rx="1%" fill="rgba(10,28,46,0.82)" stroke={hexAlpha(0.5)} strokeWidth="0.3"/>
-        <circle cx="4.5%" cy="5.75%" r="0.8%" fill={color}/>
-        <text x="6.5%" y="7%" fill={color} fontSize="2.4" fontFamily="monospace" fontWeight="bold"
-          letterSpacing="0.05em">{label}</text>
+        <rect x="1.5%" y="2.5%" width="45%" height="7%"
+          rx="3" fill="rgba(10,28,46,0.88)" stroke={hexAlpha(0.5)} strokeWidth="0.5"/>
+        <circle cx="4%" cy="6%" r="1.2%" fill={color}/>
+        <text x="7%" y="7.5%" fill={color} fontSize="12" fontFamily="monospace" fontWeight="bold">{label}</text>
       </g>
     </svg>
   )
@@ -569,8 +593,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const pendingRescanRef  = useRef(-1)         // position index to jump to after review closes
 
   const [posIdx,     setPosIdx]     = useState(0)
-  const [slideIdx,   setSlideIdx]   = useState(0)   // current slide index during position stage
-  const slideTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null)
   const [stage,      setStage]      = useState<Stage>('position')
   const [countdown,  setCountdown]  = useState(0)
   const [camReady,   setCamReady]   = useState(false)
@@ -584,6 +606,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [camWarm,    setCamWarm]    = useState(false)  // true once camera has had 1.5s to auto-expose
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
+  // ── Intro slideshow state (shown before scan begins) ─────────────────────
+  const [showIntro,    setShowIntro]    = useState(true)   // true = show slideshow
+  const [introSlide,   setIntroSlide]   = useState(0)      // current slide index
+  // ── Back-to-guide state ────────────────────────────────────────────────────
+  const [showGuide,    setShowGuide]    = useState(false)  // AI Guide overlay during scan
+
   const [arSupported,  setArSupported]  = useState(false)
   const [arPlanes,     setArPlanes]     = useState<ScreenPlane[]>([])
   const arOverlayRef = useRef<HTMLDivElement>(null)  // dom-overlay root for WebXR
@@ -605,10 +633,24 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
       // Brief pause so hardware fully releases
       if (attempt > 0) await new Promise(r => setTimeout(r, 300 * attempt))
 
+      // iOS Safari: never use { exact: 'environment' } — throws OverconstrainedError
+      // iOS Safari: never request specific width/height — often returns degraded stream
+      // Instead: enumerate devices and pick the back camera by deviceId
+      let backDeviceId: string | undefined
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const cams    = devices.filter(d => d.kind === 'videoinput')
+        // On iOS, the back camera label contains 'back' or is the last in the list
+        const back    = cams.find(d => /back|rear|environment/i.test(d.label)) ?? cams[cams.length - 1]
+        if (back?.deviceId) backDeviceId = back.deviceId
+      } catch {}
+
       const constraints: MediaStreamConstraints[] = [
-        { video: { facingMode: { exact: 'environment' }, width:{ideal:1920}, height:{ideal:1080} }, audio: false },
-        { video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }, audio: false },
+        // Best: specific back camera by deviceId (most reliable on iOS)
+        ...(backDeviceId ? [{ video: { deviceId: { exact: backDeviceId } }, audio: false }] : []),
+        // Good: non-exact facingMode (iOS-safe)
         { video: { facingMode: 'environment' }, audio: false },
+        // Fallback: any camera
         { video: true, audio: false },
       ]
 
@@ -619,6 +661,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           if (e?.name === 'NotReadableError' && attempt < 3) {
             return startCamera(attempt + 1)
           }
+          // OverconstrainedError or other — try next constraint
+          continue
         }
       }
 
@@ -680,34 +724,40 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   function captureB64(scale=1.0): string|null {
     const v = videoRef.current, c = captureRef.current
     if (!v || !c) return null
-    // Re-attach stream if lost (black frame guard)
+
+    // Re-attach stream if lost
     if (streamRef.current && !v.srcObject) {
       v.srcObject = streamRef.current
-      v.muted = true
+      v.muted     = true
       v.play().catch(() => {})
     }
-    // Need real video dimensions
-    if (v.videoWidth === 0 || v.videoHeight === 0) return null
 
-    // Always capture at native resolution — never downsample the source frame
+    // iOS Safari: readyState must be HAVE_ENOUGH_DATA (4) for a valid frame
+    // readyState 2 (HAVE_CURRENT_DATA) often gives a black frame on iPhone
+    if (v.videoWidth === 0 || v.videoHeight === 0) return null
+    if (v.readyState < 2) return null
+
     const srcW = v.videoWidth
     const srcH = v.videoHeight
 
-    // Cap at 2048px on longest side to stay under Anthropic 5MB limit
-    // while preserving maximum detail
-    const MAX = 2048
+    // Cap at 1600px — iOS JPEG encode is slow above this, and 1600px is plenty for Claude
+    const MAX   = 1600
     const ratio = Math.min(1, MAX / Math.max(srcW, srcH)) * scale
-    c.width  = Math.round(srcW * ratio)
-    c.height = Math.round(srcH * ratio)
+    c.width     = Math.round(srcW * ratio)
+    c.height    = Math.round(srcH * ratio)
 
     const ctx = c.getContext('2d')!
-    // Use high-quality image smoothing
-    ctx.imageSmoothingEnabled  = true
-    ctx.imageSmoothingQuality  = 'high'
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(v, 0, 0, c.width, c.height)
 
-    // JPEG at 0.92 quality — sharp enough for AI analysis, small enough for API
-    return c.toDataURL('image/jpeg', 0.92).split(',')[1]
+    // Check for black frame — iOS sometimes returns an all-black canvas
+    // Sample a few pixels; if all are 0,0,0 the frame hasn't decoded yet
+    const probe = ctx.getImageData(c.width >> 1, c.height >> 1, 4, 4).data
+    const isBlack = Array.from(probe).every((_,i) => i%4===3 || probe[i] < 8)
+    if (isBlack) return null
+
+    return c.toDataURL('image/jpeg', 0.88).split(',')[1]
   }
 
   function captureB64Small(): string|null {
@@ -725,7 +775,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     if (idx >= POSITIONS.length) { finishScan(); return }
     busyRef.current = false
     setPosIdx(idx)
-    setSlideIdx(0)
     setAdjustVal(null)
     setAiMessage(null)
     setStage('position')
@@ -796,18 +845,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     return () => clearTimeout(t)
   }, [stage, countdown])
 
-  // Cycle through slides every N seconds while in position stage
-  useEffect(() => {
-    if (stage !== 'position') return
-    const slides = POSITIONS[posIdx]?.slides
-    if (!slides || slides.length <= 1) return
-    const secs = slides[slideIdx]?.seconds ?? 5
-    if (slideTimerRef.current) clearTimeout(slideTimerRef.current)
-    slideTimerRef.current = setTimeout(() => {
-      setSlideIdx(i => (i + 1) % slides.length)
-    }, secs * 1000)
-    return () => { if (slideTimerRef.current) clearTimeout(slideTimerRef.current) }
-  }, [stage, posIdx, slideIdx])
+  // Slide cycle effect removed — intro slideshow handles all illustrations
 
   // ── Stage: ready — waiting for user tap (no timer) ────────────────────────
   // User taps "I'm Ready" → start hold countdown + warm-up timer
@@ -817,8 +855,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     setCamWarm(false)
     setStage('hold')          // illustration disappears immediately (showIllustration becomes false)
     setCountdown(currentPos.holdSeconds)
-    // Camera warm-up: 1.5s for auto-exposure to settle on the unobstructed scene
-    setTimeout(() => setCamWarm(true), 1500)
+    // Camera warm-up: 2s — iOS autofocus/exposure takes longer than Android
+    setTimeout(() => setCamWarm(true), 2000)
   }
 
   // ── Stage: hold — camera live, hold-still countdown ───────────────────────
@@ -848,10 +886,16 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     busyRef.current = true
 
     async function run() {
-      const b64 = captureB64()
+      // iOS Safari: video frame may not be decoded on first call
+      // Retry up to 6 times with 250ms gap before giving up
+      let b64: string|null = null
+      for (let attempt = 0; attempt < 6; attempt++) {
+        b64 = captureB64()
+        if (b64) break
+        await new Promise(r => setTimeout(r, 250))
+      }
       if (!b64) {
         busyRef.current = false
-        // No frame available — go back to capture prompt
         setStage('capture')
         return
       }
@@ -977,7 +1021,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // ── Derived display state ─────────────────────────────────────────────────
   // Show illustration: during position/ready/paused
-  const showIllustration = stage==='position' || stage==='ready'
+  const showIllustration = false  // images removed — intro slideshow handles all illustrations
   // Show camera live: always — camera is always on in background
   // During illustration stages, camera shows at reduced opacity behind the white-bg overlay
   const showCamera = true
@@ -1006,6 +1050,130 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     pendingRescanRef.current = idx
     setShowReview(false)
     // goTo is called by the showReview useEffect below (after review unmounts)
+  }
+
+  // ── INTRO SLIDESHOW — shown before scan begins ─────────────────────────────
+  if (showIntro) {
+    const slide = INTRO_SLIDES[introSlide]
+    const isLast = introSlide === INTRO_SLIDES.length - 1
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>
+        {/* Header */}
+        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <button onClick={onBack} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.85rem',cursor:'pointer',fontFamily:'monospace',padding:'0.25rem 0'}}>← Exit</button>
+          <span style={{fontSize:'0.72rem',fontFamily:'monospace',color:'#9ca3af',letterSpacing:'0.1em'}}>HOW TO SCAN</span>
+          <button onClick={()=>setShowIntro(false)} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.75rem',cursor:'pointer',fontFamily:'monospace'}}>Skip →</button>
+        </div>
+
+        {/* Image — full white bg, fills most of screen */}
+        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
+          <img
+            key={slide.img}
+            src={slide.img}
+            alt={slide.title}
+            style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',display:'block',animation:'fadeSlide 0.3s ease'}}
+          />
+          {/* Left arrow */}
+          {introSlide > 0 && (
+            <button
+              onClick={()=>setIntroSlide(i=>i-1)}
+              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
+              ‹
+            </button>
+          )}
+          {/* Right arrow */}
+          <button
+            onClick={()=>{ if(isLast) setShowIntro(false); else setIntroSlide(i=>i+1) }}
+            style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background: isLast ? '#27A96B' : 'rgba(10,28,46,0.85)',border:`2px solid ${isLast ? '#27A96B' : 'rgba(255,255,255,0.25)'}`,color:'#fff',fontSize: isLast ? '1rem' : '1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)',fontFamily:'monospace'}}>
+            {isLast ? '✓' : '›'}
+          </button>
+        </div>
+
+        {/* Text */}
+        <div style={{padding:'1rem 1.25rem',flexShrink:0}}>
+          <div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
+          <div style={{fontSize:'0.82rem',color:'#4b5563',lineHeight:1.6,fontFamily:'system-ui,sans-serif'}}>{slide.desc}</div>
+        </div>
+
+        {/* Dot indicators */}
+        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 0.75rem)',paddingTop:'0.25rem',flexShrink:0}}>
+          {INTRO_SLIDES.map((_,i)=>(
+            <div key={i} onClick={()=>setIntroSlide(i)} style={{
+              width: i===introSlide ? 22 : 8, height:8,
+              borderRadius: i===introSlide ? 4 : '50%',
+              background: i===introSlide ? '#0A1C2E' : '#d1d5db',
+              cursor:'pointer',transition:'all 0.25s ease',
+            }}/>
+          ))}
+        </div>
+
+        {/* Start scan button — only on last slide */}
+        {isLast && (
+          <div style={{padding:'0 1.25rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1rem)',flexShrink:0}}>
+            <button
+              onClick={()=>setShowIntro(false)}
+              style={{width:'100%',padding:'1.1rem',background:'linear-gradient(135deg,#0A1C2E,#1a3a5c)',border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'1rem',fontWeight:900,letterSpacing:'0.06em',cursor:'pointer',boxShadow:'0 6px 24px rgba(10,28,46,0.4)'}}>
+              📷 Start Scanning →
+            </button>
+          </div>
+        )}
+
+        <style>{`@keyframes fadeSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      </div>
+    )
+  }
+
+  // ── AI GUIDE OVERLAY — shown when user taps AI Guide during scan ────────────
+  if (showGuide) {
+    const slide = INTRO_SLIDES[introSlide]
+    const isLast = introSlide === INTRO_SLIDES.length - 1
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>
+        {/* Header */}
+        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <span style={{fontSize:'0.85rem',fontWeight:700,color:'#0A1C2E',fontFamily:'system-ui,sans-serif'}}>📷 AI Guide</span>
+          <button
+            onClick={()=>setShowGuide(false)}
+            style={{background:'#0A1C2E',border:'none',borderRadius:10,color:'#fff',fontSize:'0.8rem',fontFamily:'monospace',fontWeight:700,cursor:'pointer',padding:'0.5rem 1rem',letterSpacing:'0.06em'}}>
+            ← Resume Scan
+          </button>
+        </div>
+
+        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
+          <img key={slide.img} src={slide.img} alt={slide.title}
+            style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',display:'block',animation:'fadeSlide 0.3s ease'}}/>
+          {introSlide > 0 && (
+            <button onClick={()=>setIntroSlide(i=>i-1)}
+              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
+              ‹
+            </button>
+          )}
+          {!isLast && (
+            <button onClick={()=>setIntroSlide(i=>i+1)}
+              style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
+              ›
+            </button>
+          )}
+        </div>
+
+        <div style={{padding:'1rem 1.25rem',flexShrink:0}}>
+          <div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
+          <div style={{fontSize:'0.82rem',color:'#4b5563',lineHeight:1.6,fontFamily:'system-ui,sans-serif'}}>{slide.desc}</div>
+        </div>
+
+        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1.5rem)',paddingTop:'0.25rem',flexShrink:0}}>
+          {INTRO_SLIDES.map((_,i)=>(
+            <div key={i} onClick={()=>setIntroSlide(i)} style={{
+              width: i===introSlide ? 22 : 8, height:8,
+              borderRadius: i===introSlide ? 4 : '50%',
+              background: i===introSlide ? '#0A1C2E' : '#d1d5db',
+              cursor:'pointer',transition:'all 0.25s ease',
+            }}/>
+          ))}
+        </div>
+        <style>{`@keyframes fadeSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      </div>
+    )
   }
 
   if (showReview) return (
@@ -1133,20 +1301,22 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     <div ref={arOverlayRef} style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
       {/* Live camera feed */}
+      {/* iOS Safari requires playsInline AND webkit-playsinline as HTML attributes */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        disablePictureInPicture
+        webkit-playsinline="true"
+        x-webkit-airplay="deny"
         style={{
           position:'absolute', inset:0,
           width:'100%', height:'100%',
           objectFit:'cover',
           opacity:1,
-          // Prevent any GPU compositing layer from darkening the feed
           willChange:'transform',
           backfaceVisibility:'hidden',
+          WebkitBackfaceVisibility:'hidden',
         }}
       />
       <canvas ref={captureRef} style={{display:'none'}}/>
@@ -1156,8 +1326,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         <svg
           width="100%" height="100%"
           style={{ position:'absolute', inset:0, zIndex:18, pointerEvents:'none', overflow:'visible' }}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
         >
           <defs>
             <filter id="planeGlow">
@@ -1190,11 +1358,11 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                 {/* n̂ label at arrow tip */}
                 <text x={`${plane.nx}%`} y={`${plane.ny - 1}%`}
                   textAnchor="middle" fill="rgba(48,216,138,0.85)"
-                  fontSize="2.2" fontFamily="monospace">n̂</text>
+                  fontSize="11" fontFamily="monospace">n̂</text>
                 {/* Orientation label */}
                 <text x={`${plane.cx}%`} y={`${plane.cy + 2.5}%`}
                   textAnchor="middle" fill={col}
-                  fontSize="1.8" fontFamily="monospace" fontWeight="bold">
+                  fontSize="10" fontFamily="monospace" fontWeight="bold">
                   {plane.orientation === 'horizontal' ? '━━ H' : '┃ V'}
                 </text>
               </g>
@@ -1204,74 +1372,19 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
       )}
 
       {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
-      {showIllustration && (() => {
-        const slides = currentPos.slides
-        const activeSlide = slides ? slides[slideIdx] : null
-        const imgSrc = activeSlide ? activeSlide.image : currentPos.image
-        return (
-          <div style={{
-            position:'absolute', top:IMAGE_TOP, left:0, right:0, bottom:BOTTOM_PANEL,
-            zIndex:10, overflow:'hidden',
-            background: 'transparent',  // camera always visible behind illustration
-          }}>
-            <img key={imgSrc} src={imgSrc} alt={currentPos.headline}
-              style={{width:'100%',height:'100%',objectFit:'contain',objectPosition:'center',display:'block',
-                opacity:0.45,animation:'fadeIn 0.3s ease'}}/>
-
-            {/* Slide caption */}
-            {activeSlide && (
-              <div style={{
-                position:'absolute',bottom:slides && slides.length > 1 ? 40 : 12,left:12,right:12,
-                background:'rgba(10,28,46,0.88)',backdropFilter:'blur(8px)',
-                borderRadius:10,padding:'0.4rem 0.75rem',
-                border:`1px solid ${indicator.color}44`,
-              }}>
-                <div style={{fontSize:'0.7rem',color:WHITE,lineHeight:1.45,fontWeight:600}}>
-                  {activeSlide.caption}
-                </div>
-              </div>
-            )}
-
-            {/* Slide dots — bottom centre */}
-            {slides && slides.length > 1 && (
-              <div style={{position:'absolute',bottom:14,left:0,right:0,display:'flex',justifyContent:'center',gap:'0.4rem'}}>
-                {slides.map((_, i) => (
-                  <div key={i} onClick={()=>setSlideIdx(i)} style={{
-                    width: i===slideIdx ? 20 : 7, height:7,
-                    borderRadius: i===slideIdx ? 4 : '50%',
-                    background: i===slideIdx ? indicator.color : 'rgba(255,255,255,0.35)',
-                    cursor:'pointer',transition:'all 0.3s ease',
-                  }}/>
-                ))}
-              </div>
-            )}
-
-            {/* Measurement label badge — bottom left */}
-            {!activeSlide && (
-              <div style={{position:'absolute',bottom:12,left:12,background:'rgba(10,28,46,0.85)',backdropFilter:'blur(6px)',borderRadius:10,padding:'0.35rem 0.65rem',border:`1px solid ${indicator.color}55`,display:'flex',alignItems:'center',gap:'0.45rem'}}>
-                <div style={{width:8,height:8,borderRadius:'50%',background:indicator.color,boxShadow:`0 0 6px ${indicator.color}`,flexShrink:0}}/>
-                <span style={{fontSize:'0.65rem',color:indicator.color,fontFamily:'monospace',fontWeight:700,letterSpacing:'0.08em'}}>
-                  {indicator.label.toUpperCase()}
-                </span>
-              </div>
-            )}
-
-            {/* Position countdown — top right (only while ticking) */}
-            {stage === 'position' && (
-              <div style={{position:'absolute',top:10,right:12,background:'rgba(10,28,46,0.88)',backdropFilter:'blur(8px)',borderRadius:12,padding:'0.4rem 0.75rem',border:`1px solid ${AMBER}55`,display:'flex',alignItems:'center',gap:'0.5rem'}}>
-                <svg width="20" height="20" viewBox="0 0 36 36" style={{transform:'rotate(-90deg)',flexShrink:0}}>
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3"/>
-                  <circle cx="18" cy="18" r="14" fill="none" stroke={AMBER} strokeWidth="3"
-                    strokeDasharray={`${2*Math.PI*14}`}
-                    strokeDashoffset={`${2*Math.PI*14*(countdown/currentPos.positionTime)}`}
-                    strokeLinecap="round" style={{transition:'stroke-dashoffset 0.9s linear'}}/>
-                </svg>
-                <span style={{fontSize:'0.8rem',fontFamily:'monospace',fontWeight:800,color:WHITE}}>{countdown}s</span>
-              </div>
-            )}
-          </div>
-        )
-      })()}
+      {/* Countdown timer — top right, only during position stage */}
+      {showIllustration && stage === 'position' && (
+        <div style={{position:'absolute',top:IMAGE_TOP+10,right:12,background:'rgba(10,28,46,0.88)',backdropFilter:'blur(8px)',borderRadius:12,padding:'0.4rem 0.75rem',border:`1px solid ${AMBER}55`,display:'flex',alignItems:'center',gap:'0.5rem',zIndex:12}}>
+          <svg width="20" height="20" viewBox="0 0 36 36" style={{transform:'rotate(-90deg)',flexShrink:0}}>
+            <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3"/>
+            <circle cx="18" cy="18" r="14" fill="none" stroke={AMBER} strokeWidth="3"
+              strokeDasharray={`${2*Math.PI*14}`}
+              strokeDashoffset={`${2*Math.PI*14*(countdown/currentPos.positionTime)}`}
+              strokeLinecap="round" style={{transition:'stroke-dashoffset 0.9s linear'}}/>
+          </svg>
+          <span style={{fontSize:'0.8rem',fontFamily:'monospace',fontWeight:800,color:WHITE}}>{countdown}s</span>
+        </div>
+      )}
 
       {/* No overlay during analyse — keep camera frame fully visible */}
 
@@ -1343,8 +1456,15 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             <div style={{height:'100%',width:`${progressPct}%`,background:`linear-gradient(90deg,${GREEN},${BLUE})`,borderRadius:2,transition:'width 0.4s ease'}}/>
           </div>
         </div>
+        {/* AI Guide button */}
+        <button
+          onClick={()=>{ setShowGuide(true); setIntroSlide(Math.max(0, Math.min(posIdx, INTRO_SLIDES.length-1))) }}
+          style={{background:'rgba(10,28,46,0.7)',border:`1px solid ${BORDER}`,borderRadius:10,padding:'0.28rem 0.65rem',color:WHITE2,fontFamily:'monospace',fontSize:'0.58rem',fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
+          <span>📷</span><span>Guide</span>
+        </button>
+        {/* AR / AI badge */}
         <div
-          title={arSupported ? 'ARCore plane detection active' : 'AI Vision mode — ARCore not available on this device/browser'}
+          title={arSupported ? 'ARCore active' : 'AI Vision mode'}
           style={{background:arSupported?'rgba(74,144,226,0.15)':'rgba(242,147,55,0.15)',border:`1px solid ${arSupported?'rgba(74,144,226,0.4)':'rgba(242,147,55,0.4)'}`,borderRadius:10,padding:'0.18rem 0.6rem',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
           <div style={{width:5,height:5,borderRadius:'50%',background:arSupported?BLUE:AMBER,boxShadow:`0 0 4px ${arSupported?BLUE:AMBER}`}}/>
           <span style={{fontSize:'0.5rem',fontFamily:'monospace',letterSpacing:'0.1em',color:arSupported?BLUE:AMBER,fontWeight:700}}>{arSupported?'AR·CORE':'AI·VISION'}</span>
@@ -1366,36 +1486,43 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         boxSizing:'border-box',
       }}>
 
-        {/* ══ POSITION — countdown ticking, read the instructions ══ */}
+        {/* ══ POSITION — countdown ticking, dialogue instruction ══ */}
         {stage==='position' && <>
-          <div>
-            <div style={{fontSize:'0.92rem',fontWeight:800,color:WHITE,lineHeight:1.3,marginBottom:'0.3rem'}}>{currentPos.headline}</div>
-            <div style={{fontSize:'0.73rem',color:WHITE2,lineHeight:1.5}}>{currentPos.detail}</div>
+          {/* Instruction card */}
+          <div style={{background:'rgba(255,255,255,0.06)',borderRadius:14,padding:'0.9rem 1rem',border:`1px solid rgba(255,255,255,0.1)`}}>
+            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.45rem'}}>
+              <div style={{width:24,height:24,borderRadius:'50%',background:indicator.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.65rem',fontFamily:'monospace',fontWeight:900,color:'#000',flexShrink:0}}>{currentPos.step}</div>
+              <div style={{fontSize:'0.92rem',fontWeight:800,color:WHITE,lineHeight:1.2}}>{currentPos.label}</div>
+            </div>
+            <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.6}}>{currentPos.detail}</div>
           </div>
           <div style={{display:'flex',gap:'0.45rem'}}>
             {currentPos.optional && (
-              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.75rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',cursor:'pointer'}}>Skip</button>
+              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.75rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',cursor:'pointer'}}>Skip →</button>
             )}
-            <button onClick={finishScan} style={{flex:currentPos.optional?1:2,padding:'0.75rem',background:`linear-gradient(135deg,${AMBER},#C4721E)`,border:'none',borderRadius:13,color:'#fff',fontFamily:'monospace',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>View Report →</button>
+            <button onClick={finishScan} style={{flex:currentPos.optional?1:2,padding:'0.75rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:13,color:AMBER,fontFamily:'monospace',fontSize:'0.75rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
           </div>
         </>}
 
-        {/* ══ READY — countdown done, waiting for user to confirm ══ */}
+        {/* ══ READY — in position, tap to start ══ */}
         {stage==='ready' && <>
-          <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.5,marginBottom:'0.1rem'}}>{currentPos.detail}</div>
+          <div style={{background:`${indicator.color}11`,borderRadius:14,padding:'0.75rem 1rem',border:`1px solid ${indicator.color}33`}}>
+            <div style={{fontSize:'0.72rem',fontFamily:'monospace',color:indicator.color,fontWeight:700,letterSpacing:'0.08em',marginBottom:'0.3rem'}}>STEP {currentPos.step} / 5 — {currentPos.label.toUpperCase()}</div>
+            <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.55}}>{currentPos.detail}</div>
+          </div>
           <button onClick={handleReady} style={{
-            width:'100%',padding:'1.1rem',
+            width:'100%',padding:'1.15rem',
             background:`linear-gradient(135deg,${GREEN},#1A7A50)`,
             border:'none',borderRadius:16,color:'#fff',
-            fontFamily:'monospace',fontSize:'0.95rem',fontWeight:900,
-            letterSpacing:'0.06em',cursor:'pointer',
+            fontFamily:'monospace',fontSize:'1rem',fontWeight:900,
+            letterSpacing:'0.04em',cursor:'pointer',
             boxShadow:'0 6px 28px rgba(39,169,107,0.5)',
           }}>
             ✓ {currentPos.readyLabel}
           </button>
           <div style={{display:'flex',gap:'0.45rem'}}>
             {currentPos.optional && (
-              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>Skip this step</button>
+              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>Skip →</button>
             )}
             <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
           </div>
@@ -1445,7 +1572,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             {camWarm ? `📸 ${currentPos.captureLabel}` : '⏳ Camera focusing…'}
           </button>
           <div style={{display:'flex',gap:'0.45rem'}}>
-            <button onClick={()=>{ busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),1500) }}
+            <button onClick={()=>{ busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
               style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
               ↺ Re-steady
             </button>
@@ -1607,7 +1734,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
             {/* Retry / View Report */}
             <div style={{display:'flex',gap:'0.45rem'}}>
-              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),1500) }}
+              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
                 style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
                 ↺ Retry
               </button>
