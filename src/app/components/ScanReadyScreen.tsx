@@ -1317,6 +1317,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           willChange:'transform',
           backfaceVisibility:'hidden',
           WebkitBackfaceVisibility:'hidden',
+          // Camera fills full screen — bottom panel overlays on top
         }}
       />
       <canvas ref={captureRef} style={{display:'none'}}/>
@@ -1476,7 +1477,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
       ══════════════════════════════════════════════════════════════════════ */}
       <div style={{
         position:'absolute',bottom:0,left:0,right:0,
-        height:BOTTOM_PANEL,zIndex:50,
+        minHeight:BOTTOM_PANEL, zIndex:50, maxHeight:'55vh', overflowY:'auto',
         background: (stage==='hold'||stage==='capture')
           ? 'linear-gradient(to top,rgba(0,0,0,0.85) 60%,transparent)'
           : 'linear-gradient(to top,rgba(10,28,46,0.99) 80%,rgba(10,28,46,0.6))',
@@ -1669,7 +1670,11 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
                   {/* − button */}
-                  <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - 5))}
+                  {/* − button: step by 1 for counts, 5mm for measurements */}
+                  <button onClick={()=>{
+                    const step = capKey === 'riserCount' ? 1 : 5
+                    setAdjustVal(v => Math.max(1, (v !== null ? v : (numVal ?? 0)) - step))
+                  }}
                     style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     −
                   </button>
@@ -1685,23 +1690,24 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                     {adjustVal !== null && (
                       <div style={{fontSize:'0.58rem',color:AMBER,fontFamily:'monospace',marginTop:'0.1rem'}}>ADJUSTED</div>
                     )}
-                    {results.scaleRef && (
-                      <div style={{fontSize:'0.58rem',color:WHITE2,fontFamily:'monospace',marginTop:'0.2rem',opacity:0.7}}>
-                        📐 {String(results.scaleRef)}
-                      </div>
-                    )}
+
                   </div>
                   {/* + button */}
-                  <button onClick={()=>setAdjustVal(v => (v ?? numVal ?? 0) + 5)}
+                  {/* + button */}
+                  <button onClick={()=>{
+                    const step = capKey === 'riserCount' ? 1 : 5
+                    setAdjustVal(v => (v !== null ? v : (numVal ?? 0)) + step)
+                  }}
                     style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     +
                   </button>
                 </div>
-                {adjustVal !== null && (
-                  <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>
-                    Adjust with − / + if needed · original: {numVal}mm
-                  </div>
-                )}
+                <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>
+                  {adjustVal !== null
+                    ? `Adjusted · original: ${numVal}${capKey==='riserCount'?' steps':' mm'}`
+                    : `Tap − / + to adjust (${capKey==='riserCount'?'±1 step':'±5mm'})`
+                  }
+                </div>
               </div>
             ) : (
               <div style={{fontSize:'0.82rem',fontWeight:600,color:WHITE,textAlign:'center',padding:'0.5rem 0'}}>
