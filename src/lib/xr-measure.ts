@@ -1,40 +1,15 @@
 /**
- * src/lib/xr-measure.ts — ARAI_14
+ * src/lib/xr-measure.ts — ARAI_10
  *
- * AR capability detection and measurement utilities.
- *
- * WHY WebXR DOESN'T WORK ON ANDROID/WEB:
- * ─────────────────────────────────────────
- * WebXR immersive-ar with plane detection requires:
- *   1. Chrome for Android 81+ with WebXR Incubations flag enabled
- *   2. A device with Google ARCore installed and supported
- *   3. The page served over HTTPS (not localhost)
- *   4. The user explicitly granting camera + motion permissions
- *
- * navigator.xr.isSessionSupported('immersive-ar') returns FALSE in:
- *   - Safari (all versions — Apple blocks WebXR AR)
- *   - Chrome iOS (Apple WKWebView restriction)
- *   - Android Chrome without ARCore installed/updated
- *   - PWA installed to home screen on Android (some versions)
- *   - Any non-HTTPS context
- *
- * CURRENT STATUS: The app correctly falls back to AI Vision when WebXR
- * is unavailable. The "AR" badge in the UI changes to "AI" automatically.
- * Full ARCore integration requires a native Android app (React Native /
- * Flutter / native) or waiting for broader WebXR AR adoption.
- *
- * WHAT WE DO INSTEAD (AI Vision):
- *   - Full-res camera frame captured at tap
- *   - Claude Vision analyses it with scale references
- *   - Returns measurement in mm with confidence score
- *   - Accuracy: ±9–25mm depending on lighting and framing
+ * Converts WebXR plane geometry (XRPlane.polygon) into stair measurements in mm.
+ * Also provides device capability detection for AR/fallback routing.
  */
 
 export interface MeasurementResult {
-  primaryMm:    number
+  primaryMm: number
   secondaryMm?: number
-  confidence:   'high' | 'medium' | 'low'
-  method:       'webxr' | 'ai-fallback'
+  confidence: 'high' | 'medium' | 'low'
+  method: 'webxr' | 'ai-fallback'
 }
 
 /** Derive bounding-box width/height from an XRPlane polygon (metres → mm). */
@@ -61,10 +36,11 @@ export function planeConfidence(
   return 'low'
 }
 
+/** Filter planes by orientation and plausible stair dimensions. */
 export function filterStairPlanes(planes: XRPlane[], mode: 'riser' | 'tread' | 'width'): XRPlane[] {
   return planes.filter((plane) => {
     const { w, h } = polygonToMm(Array.from(plane.polygon))
-    const larger  = Math.max(w, h)
+    const larger = Math.max(w, h)
     const smaller = Math.min(w, h)
     if (mode === 'riser')  return plane.orientation === 'vertical'   && smaller >= 80  && smaller <= 320 && larger >= 150
     if (mode === 'tread')  return plane.orientation === 'horizontal' && smaller >= 150 && smaller <= 550 && larger >= 250
@@ -85,39 +61,22 @@ export function extractMeasurement(plane: XRPlane, mode: 'riser' | 'tread' | 'wi
   return Math.max(w, h)
 }
 
-/**
- * Check WebXR immersive-AR support.
- *
- * Returns true only when ALL conditions are met:
- *  - navigator.xr exists
- *  - immersive-ar session type is supported (requires ARCore on Android)
- *
- * On most devices this will return false and the app correctly uses AI Vision.
- */
 export async function checkXRSupport(): Promise<{
-  immersiveAR: boolean
-  planeDetection: boolean
-  hitTest: boolean
-  domOverlay: boolean
+  immersiveAR: boolean; planeDetection: boolean; hitTest: boolean; domOverlay: boolean
 }> {
-  const none = { immersiveAR: false, planeDetection: false, hitTest: false, domOverlay: false }
-  if (typeof navigator === 'undefined' || !navigator.xr) return none
+  if (!navigator.xr) return { immersiveAR: false, planeDetection: false, hitTest: false, domOverlay: false }
   let immersiveAR = false
-  try {
-    immersiveAR = await navigator.xr.isSessionSupported('immersive-ar')
-  } catch {
-    return none
-  }
-  if (!immersiveAR) return none
+  try { immersiveAR = await navigator.xr.isSessionSupported('immersive-ar') } catch {}
+  if (!immersiveAR) return { immersiveAR: false, planeDetection: false, hitTest: false, domOverlay: false }
   return { immersiveAR: true, planeDetection: true, hitTest: true, domOverlay: true }
 }
 
-// ── WebXR type augmentations ──────────────────────────────────────────────────
+// ── WebXR type augmentations (not in all TS lib versions) ──────────────────
 declare global {
   interface XRPlane {
-    orientation:     'horizontal' | 'vertical'
-    polygon:         DOMPointReadOnly[]
-    planeSpace:      object
+    orientation: 'horizontal' | 'vertical'
+    polygon: DOMPointReadOnly[]
+    planeSpace: object
     lastChangedTime: number
   }
   interface XRPlanesDetectedEvent extends Event { planes: Set<XRPlane> }

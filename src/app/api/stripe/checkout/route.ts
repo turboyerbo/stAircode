@@ -4,8 +4,8 @@
  * POST /api/stripe/checkout
  *
  * Creates a Stripe Checkout session for:
- *   - $4.99 one-time report purchase (product: 'report')
- *   - $14.99/mo Pro subscription       (product: 'pro')
+ *   - $11.99 one-time report purchase (product: 'report')
+ *   - $38.99/mo Pro subscription       (product: 'pro')
  *
  * Body:
  *   { product: 'report' | 'pro', userEmail: string, reportData?: string }
@@ -18,8 +18,8 @@
  *
  * Required env vars:
  *   STRIPE_SECRET_KEY          sk_live_... or sk_test_...
- *   STRIPE_REPORT_PRICE_ID     price_xxx  (one-time $4.99 price in Stripe)
- *   STRIPE_PRO_PRICE_ID        price_xxx  (recurring $14.99/mo price in Stripe)
+ *   STRIPE_REPORT_PRICE_ID     price_xxx  (one-time $11.99 price in Stripe)
+ *   STRIPE_PRO_PRICE_ID        price_xxx  (recurring $38.99/mo price in Stripe)
  *   NEXT_PUBLIC_APP_URL        https://staircode.app
  */
 

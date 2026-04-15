@@ -382,15 +382,3 @@ html, body {
   .no-print { display: none !important; }
   .print-header { display: block !important; border-bottom: 2px solid var(--blue); padding-bottom: 0.75rem; margin-bottom: 1rem; }
 }
-
-/* ── Light pages (Terms, Privacy) — override dark body ───────────────────── */
-.light-page,
-.light-page html,
-.light-page body {
-  background: #ffffff !important;
-  background-image: none !important;
-  color: #111827 !important;
-}
-.light-page main {
-  background: #ffffff !important;
-}

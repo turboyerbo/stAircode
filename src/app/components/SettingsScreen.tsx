@@ -202,7 +202,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       <div style={{ margin: '0 1rem 1rem' }}>
         <div style={{ background: BG2, border: `1px solid ${T.border}`, borderRadius: 16, padding: '1rem' }}>
           <div style={{ fontSize: '0.78rem', color: T.text2, lineHeight: 1.6, marginBottom: '0.85rem' }}>
-            You&apos;re using an early build of Staircode. Your feedback directly shapes what gets built next.
+            You're using an early build of Staircode. Your feedback directly shapes what gets built next.
           </div>
           <FeedbackButton source="settings" />
         </div>
@@ -233,7 +233,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
             <strong style={{ color: T.text }}>LIMITATION OF LIABILITY:</strong> Just Open Technologies Inc.,
             its officers, directors, employees, and agents accept no liability whatsoever for any loss, damage,
             injury, or consequence arising from the use or misuse of this application or its outputs.
-            Use of this application is entirely at the user&apos;s own risk.
+            Use of this application is entirely at the user's own risk.
             <br /><br />
             All building code references are indicative only. Consult the applicable authority having jurisdiction
             (AHJ) for binding requirements. Building codes change — always verify against the current edition.

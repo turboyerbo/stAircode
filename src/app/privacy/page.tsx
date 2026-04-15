@@ -9,14 +9,12 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   const updated = 'March 20, 2026'
   return (
-    <div style={{ position:'fixed', inset:0, overflowY:'auto', background:'#ffffff', zIndex:9999 }}>
-    <main style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem 5rem', fontFamily: "system-ui, sans-serif", color: '#111827', lineHeight: 1.75 , background: '#ffffff'}}>
-      <a href="javascript:history.back()" style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', color:'#1d4ed8', fontSize:'0.82rem', marginBottom:'2rem', textDecoration:'none', fontFamily:'system-ui,sans-serif' }}>← Back</a>
+    <main style={{ maxWidth: 720, margin: '0 auto', padding: '3rem 1.5rem 5rem', fontFamily: "system-ui, sans-serif", color: '#1a2b3c', lineHeight: 1.75 }}>
       <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.3rem' }}>Privacy Policy</h1>
-      <p style={{ color: '#4b5563', fontSize: '0.85rem', marginBottom: '2.5rem' }}>Last updated: {updated}</p>
+      <p style={{ color: '#6b7280', fontSize: '0.85rem', marginBottom: '2.5rem' }}>Last updated: {updated}</p>
 
       <Section title="1. Who we are">
-        Just Open Technologies Inc. (&quot;Just Open&quot;, &quot;we&quot;, &quot;our&quot;) operates the stAIrcode app and website at staircode.app.
+        Just Open Technologies Inc. ("Just Open", "we", "our") operates the stAIrcode app and website at staircode.app.
         Contact us at <a href="mailto:info@staircode.app" style={{ color: '#1565C0' }}>info@staircode.app</a>.
       </Section>
 
@@ -45,7 +43,7 @@ export default function PrivacyPage() {
 
       <Section title="4. AI processing">
         Camera frames are transmitted over HTTPS to the Anthropic API (Claude) for measurement analysis.
-        Anthropic&apos;s data processing is governed by their <a href="https://www.anthropic.com/privacy" style={{ color: '#1565C0' }}>Privacy Policy</a>.
+        Anthropic's data processing is governed by their <a href="https://www.anthropic.com/privacy" style={{ color: '#1565C0' }}>Privacy Policy</a>.
         We do not use your camera images to train AI models.
       </Section>
 
@@ -75,23 +73,22 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="9. Changes">
-        We will post updates to this page and update the &quot;Last updated&quot; date. Continued use of the app
+        We will post updates to this page and update the "Last updated" date. Continued use of the app
         after changes constitutes acceptance of the revised policy.
       </Section>
 
-      <p style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#4b5563' }}>
+      <p style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#9ca3af' }}>
         © {new Date().getFullYear()} Just Open Technologies Inc. All rights reserved.
       </p>
     </main>
-    </div>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section style={{ marginBottom: '2rem' }}>
-      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.6rem', color: '#0A1C2E' }}>{title}</h2>
-      <div style={{ fontSize: '0.92rem', color: '#1f2937' }}>{children}</div>
+      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.6rem', color: '#0D2B45' }}>{title}</h2>
+      <div style={{ fontSize: '0.92rem', color: '#374151' }}>{children}</div>
     </section>
   )
 }

@@ -360,195 +360,265 @@ export default function AuthScreen({ onAuth }: Props) {
     </div>
   )
 
-  // ── Entry screen ──────────────────────────────────────────────────────────────
+  // ── Entry / Landing screen ───────────────────────────────────────────────────
   if (screen === 'entry') return (
-    <div style={wrap}>
-      {logo}
+    <div style={{
+      minHeight: '100dvh',
+      background: '#0A1C2E',
+      backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '0 0 3rem',
+      fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      color: '#E8F4FF',
+      overflowY: 'auto',
+    }}>
 
-      {/* Safety stripe — signature brand cue */}
-      <div style={{ width:'100%', maxWidth:360, height:5, borderRadius:'2px 2px 0 0', background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px', marginBottom:0 }} />
+      {/* Hero section */}
+      <div style={{
+        width: '100%', position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(180deg, #0A1C2E 0%, #0F2438 100%)',
+        padding: 'max(env(safe-area-inset-top,0px),2.5rem) 1.5rem 2.5rem',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        borderBottom: '1px solid rgba(65,124,164,0.2)',
+      }}>
+        {/* Safety stripe */}
+        <div style={{ width: '100%', maxWidth: 480, height: 4, borderRadius: 2,
+          background: 'repeating-linear-gradient(-45deg,#FA741F 0px,#FA741F 5px,#0A1C2E 5px,#0A1C2E 12px)',
+          marginBottom: '1.75rem' }} />
 
-      <div style={{ textAlign: 'center', marginBottom: '1.4rem' }}>
-        <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.02em' }}>Sign in</div>
-        <div style={{ fontSize: '0.8rem', color: 'rgba(28,64,88,0.55)', marginTop: '0.3rem' }}>
-          Enter your email to continue
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+          <img src="/logo_mark.svg" alt="stAIrcode" style={{ height: 40, filter: 'brightness(0) saturate(100%) invert(52%) sepia(90%) saturate(600%) hue-rotate(1deg) brightness(103%)' }} />
+          <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", fontSize: 28, fontWeight: 600, letterSpacing: '-0.01em' }}>
+            <span style={{ color: '#E8F4FF' }}>st</span>
+            <span style={{ color: '#FA741F' }}>AI</span>
+            <span style={{ color: '#E8F4FF' }}>rcode</span>
+          </div>
+          <div style={{ background: '#FA741F', color: '#fff', fontSize: '0.55rem', fontWeight: 800,
+            letterSpacing: '0.12em', padding: '0.2rem 0.55rem', borderRadius: 999,
+            fontFamily: 'monospace', boxShadow: '0 2px 8px rgba(250,116,31,0.5)' }}>BETA</div>
         </div>
-      </div>
 
-      <div style={card}>
-        {/* Email / phone input */}
-        <input
-          id="email-address"
-          name="email"
-          type="text"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="Email address"
-          value={contact}
-          onChange={e => { setContact(e.target.value); setError('') }}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
-          autoFocus
-          style={{
-            background: 'rgba(44,90,122,0.08)',
-            border: `1.5px solid ${error ? '#E85555' : C.border}`,
-            borderRadius: 14,
-            padding: '0.95rem 1.1rem',
-            color: '#0A1C2E',
-            fontSize: '1rem',
-            outline: 'none',
-            width: '100%',
-            boxSizing: 'border-box' as const,
-            fontFamily: 'inherit',
-            transition: 'border-color 0.2s',
-          }}
-        />
+        {/* Hero headline */}
+        <h1 style={{ fontSize: 'clamp(1.4rem,5vw,1.9rem)', fontWeight: 900, color: '#E8F4FF',
+          textAlign: 'center', margin: '0 0 0.75rem', lineHeight: 1.2, letterSpacing: '-0.02em', maxWidth: 420 }}>
+          Stair compliance inspection —{" "}
+          <span style={{ color: '#FA741F' }}>in 90 seconds.</span>
+        </h1>
+        <p style={{ fontSize: '1.05rem', color: '#93BAD4', textAlign: 'center',
+          margin: '0 0 0.5rem', lineHeight: 1.6, maxWidth: 380, fontWeight: 400 }}>
+          Real estate agents: generate a stair compliance pre-assessment report in 90 seconds.{" "}
+          <strong style={{ color: '#27A96B' }}>Free during beta.</strong>
+        </p>
 
-        {/* Phone format hint */}
-        {contact.trim() && !contact.includes('@') && (
-          <div style={{ fontSize: '0.68rem', color: 'rgba(28,64,88,0.45)', marginTop: '-0.5rem' }}>
+        {/* AR image */}
+        <div style={{ width: '100%', maxWidth: 420, borderRadius: 18, overflow: 'hidden',
+          margin: '1.5rem 0', border: '1px solid rgba(65,124,164,0.25)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
+          <img src="/AR_guided_inspection.png" alt="AR-guided stair inspection"
+            style={{ width: '100%', display: 'block', maxHeight: 280, objectFit: 'cover', objectPosition: 'center top' }} />
+          <div style={{ background: 'rgba(10,28,46,0.95)', padding: '0.65rem 1rem',
+            borderTop: '1px solid rgba(65,124,164,0.2)' }}>
+            <div style={{ fontSize: '0.72rem', color: '#93BAD4', textAlign: 'center' }}>
+              📡 AR measures real-world distances · 🤖 AI validates compliance
             </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div style={{
-            fontSize: '0.74rem', color: '#ff8080',
-            background: 'rgba(232,85,85,0.08)',
-            border: '1px solid rgba(232,85,85,0.2)',
-            borderRadius: 8, padding: '0.5rem 0.75rem',
-          }}>{error}</div>
-        )}
-
-        {/* Send code button */}
-        <button
-          onClick={handleSend}
-          disabled={loading || !contact.trim()}
-          style={{
-            width: '100%', padding: '1rem', border: 'none', borderRadius: 14,
-            fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.04em',
-            cursor: loading || !contact.trim() ? 'not-allowed' : 'pointer',
-            color: loading || !contact.trim() ? 'rgba(28,64,88,0.4)' : '#fff',
-            background: loading || !contact.trim()
-              ? 'rgba(44,90,122,0.08)'
-              : `linear-gradient(135deg,#F29337,#C4721E)`,
-            boxShadow: !loading && contact.trim() ? '0 4px 20px rgba(65,124,164,0.4)' : 'none',
-            transition: 'all 0.2s',
-          }}
-        >
-          {sending ? 'Sending…' : 'Send code →'}
-        </button>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ flex: 1, height: 1, background: C.border }} />
-          <span style={{ fontSize: '0.7rem', color: 'rgba(28,64,88,0.55)' }}>or</span>
-          <div style={{ flex: 1, height: 1, background: C.border }} />
+          </div>
         </div>
 
-
-      </div>
-
-      {/* Beta skip */}
-      <div style={{ marginTop: '1.6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div style={{ height: 1, width: 40, background: 'rgba(44,90,122,0.09)' }} />
-          <span style={{ fontSize: '0.65rem', color: '#F29337', letterSpacing: '0.14em', fontFamily: 'monospace', fontWeight: 700 }}>🚧 BETA TESTING</span>
-          <div style={{ height: 1, width: 40, background: 'rgba(44,90,122,0.09)' }} />
+        {/* Testimonial */}
+        <div style={{ width: '100%', maxWidth: 420, background: 'rgba(39,169,107,0.1)',
+          border: '1px solid rgba(39,169,107,0.3)', borderRadius: 16, padding: '1rem 1.1rem',
+          marginBottom: '0.5rem' }}>
+          <div style={{ fontSize: '1rem', color: '#E8F4FF', lineHeight: 1.6, marginBottom: '0.5rem', fontStyle: 'italic' }}>
+            &ldquo;I used stAIrcode on a listing inspection and flagged a riser height violation in under 2 minutes. The report was in my inbox before I left the property. This is exactly what agents need.&rdquo;
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#27A96B',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.9rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>J</div>
+            <div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#E8F4FF' }}>Jordan M.</div>
+              <div style={{ fontSize: '0.65rem', color: '#93BAD4' }}>Real Estate Agent · Toronto, ON · Beta Tester</div>
+            </div>
+            <div style={{ marginLeft: 'auto', color: '#FA741F', fontSize: '0.85rem' }}>★★★★★</div>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            const guest: AppUser = { email: 'beta@staircode.app', name: 'Beta Tester', provider: 'otp', membership: 'free', units: 'mm' }
-            save(guest)
-            identifyUser(guest.email, { membership: 'free', method: 'beta' })
-            Analytics.userSignedIn('beta')
-            onAuth(guest)
-          }}
-          style={{
-            padding: '0.9rem 2.8rem',
-            background: 'linear-gradient(135deg,#1565C0,#0D47A1)',
-            border: 'none', borderRadius: 14, color: '#ffffff',
-            fontSize: '1rem', fontWeight: 800, cursor: 'pointer',
-            letterSpacing: '0.06em',
-            boxShadow: '0 6px 24px rgba(44,90,122,0.38)',
-          }}
-        >
-          START →
-        </button>
-        <span style={{ fontSize: '0.62rem', color: 'rgba(44,90,122,0.3)' }}>Skip sign-in for now</span>
       </div>
 
-      {/* Store badges */}
-      <div style={{ marginTop: '1.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', width: '100%', maxWidth: 320 }}>
-        <div style={{ fontSize: '0.6rem', color: 'rgba(44,90,122,0.3)', letterSpacing: '0.12em', fontFamily: 'monospace' }}>AVAILABLE ON</div>
-        <div style={{ display: 'flex', gap: '0.6rem', width: '100%' }}>
-          {/* Google Play */}
-          <a
-            href="https://play.google.com/store/apps/details?id=app.staircode.android"
-            target="_blank" rel="noopener noreferrer"
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', background: 'rgba(44,90,122,0.07)', border: '1.5px solid rgba(44,90,122,0.18)', borderRadius: 14, padding: '0.75rem 0.6rem', textDecoration: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+      {/* Sign-in card */}
+      <div style={{ width: '100%', maxWidth: 420, padding: '1.75rem 1.5rem 0' }}>
+        <div style={{ background: '#0F2438', border: '1px solid rgba(65,124,164,0.25)',
+          borderRadius: 20, padding: '1.5rem 1.4rem', marginBottom: '1.5rem',
+          boxShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
+
+          <div style={{ marginBottom: '1.1rem' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#E8F4FF', marginBottom: '0.3rem' }}>
+              Create your free account
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#93BAD4', lineHeight: 1.5 }}>
+              Enter your email — we&apos;ll send a 6-digit code to sign you in. No password needed.
+              Your account saves your scan history and reports across devices.
+            </div>
+          </div>
+
+          <input
+            id="email-address"
+            name="email"
+            type="text"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="your@email.com"
+            value={contact}
+            onChange={e => { setContact(e.target.value); setError('') }}
+            onKeyDown={e => e.key === 'Enter' && handleSend()}
+            autoFocus
+            style={{
+              background: 'rgba(65,124,164,0.1)',
+              border: `1.5px solid ${error ? '#E85555' : 'rgba(65,124,164,0.3)'}`,
+              borderRadius: 12, padding: '0.9rem 1rem',
+              color: '#E8F4FF', fontSize: '1rem', outline: 'none',
+              width: '100%', boxSizing: 'border-box' as const,
+              fontFamily: 'inherit', marginBottom: '0.75rem',
+            }}
+          />
+
+          {error && (
+            <div style={{ fontSize: '0.74rem', color: '#ff8080',
+              background: 'rgba(232,85,85,0.1)', border: '1px solid rgba(232,85,85,0.25)',
+              borderRadius: 8, padding: '0.5rem 0.75rem', marginBottom: '0.75rem' }}>{error}</div>
+          )}
+
+          <button
+            onClick={handleSend}
+            disabled={loading || !contact.trim()}
+            style={{
+              width: '100%', padding: '1rem', border: 'none', borderRadius: 12,
+              fontSize: '1rem', fontWeight: 800, letterSpacing: '0.04em', cursor: 'pointer',
+              color: '#fff',
+              background: !contact.trim() ? 'rgba(65,124,164,0.2)' : 'linear-gradient(135deg,#FA741F,#C4721E)',
+              boxShadow: contact.trim() ? '0 4px 20px rgba(250,116,31,0.45)' : 'none',
+              transition: 'all 0.2s',
+              marginBottom: '0.75rem',
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M3.18 23.76c.3.17.64.24.99.21l11.87-11.88L12.59 8.6 3.18 23.76z"/><path fill="#EA4335" d="M20.6 10.27l-2.79-1.6-3.43 3.43 3.43 3.43 2.82-1.62c.8-.46.8-1.18-.03-1.64z"/><path fill="#FBBC05" d="M3.18.24C2.83.53 2.6 1.03 2.6 1.7v20.6c0 .67.23 1.17.58 1.46l.09.08 11.54-11.54v-.27L3.27.16l-.09.08z"/><path fill="#34A853" d="M16.04 12.09l-3.43-3.43-9.43 9.43c.38.4.98.44 1.64.08l11.22-6.08z"/></svg>
+            {sending ? 'Sending…' : 'Get free access →'}
+          </button>
+
+          <div style={{ fontSize: '0.68rem', color: '#5E7D9B', textAlign: 'center', lineHeight: 1.6 }}>
+            Already have an account? Enter the same email — you&apos;ll get a new code to sign back in.
+            Your previous scans and reports will be waiting.
+          </div>
+        </div>
+
+        {/* Beta tester access */}
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.6rem', color: '#FA741F', letterSpacing: '0.18em',
+            fontFamily: 'monospace', fontWeight: 700, marginBottom: '0.6rem' }}>🚧 BETA TESTING IN PROGRESS</div>
+          <button
+            onClick={() => {
+              const guest: AppUser = { email: 'beta@staircode.app', name: 'Beta Tester', provider: 'otp', membership: 'free', units: 'mm' }
+              save(guest)
+              identifyUser(guest.email, { membership: 'free', method: 'beta' })
+              Analytics.userSignedIn('beta')
+              onAuth(guest)
+            }}
+            style={{
+              padding: '0.8rem 2rem', background: 'rgba(65,124,164,0.15)',
+              border: '1px solid rgba(65,124,164,0.3)', borderRadius: 12, color: '#93BAD4',
+              fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.04em',
+            }}
+          >
+            Continue without signing in
+          </button>
+          <div style={{ fontSize: '0.62rem', color: '#3A5A78', marginTop: '0.4rem' }}>
+            Reports won&apos;t be saved to your account
+          </div>
+        </div>
+
+        {/* Safety stats section */}
+        <div style={{ background: 'rgba(232,85,85,0.06)', border: '1px solid rgba(232,85,85,0.2)',
+          borderRadius: 18, padding: '1.25rem 1.25rem', marginBottom: '1.25rem' }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#E84545',
+            fontFamily: 'monospace', letterSpacing: '0.12em', marginBottom: '0.75rem' }}>
+            ⚠ WHY STAIR COMPLIANCE MATTERS
+          </div>
+          {[
+            { stat: '1,800+', text: 'emergency department visits per day in Canada from unintentional falls¹' },
+            { stat: '20%', text: 'of fall-related hospitalizations among seniors caused by stair falls in Canada¹' },
+            { stat: '50%+', text: 'increase in trip risk from riser height inconsistency greater than 3/8 inch²' },
+            { stat: '$92B', text: 'annual direct medical costs of non-fatal stair injuries in the US²' },
+          ].map(({ stat, text }) => (
+            <div key={stat} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.65rem', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#E84545',
+                fontFamily: 'monospace', flexShrink: 0, minWidth: 60, lineHeight: 1.2 }}>{stat}</div>
+              <div style={{ fontSize: '0.75rem', color: '#93BAD4', lineHeight: 1.55 }}>{text}</div>
+            </div>
+          ))}
+          <div style={{ marginTop: '0.5rem', padding: '0.6rem 0.75rem',
+            background: 'rgba(10,28,46,0.5)', borderRadius: 10 }}>
+            <div style={{ fontSize: '0.78rem', color: '#E8F4FF', lineHeight: 1.6, fontWeight: 500 }}>
+              Non-compliant stairs injure and kill people every day. The regulatory requirement to
+              check stairs against building codes is real. stAIrcode closes the gap between
+              &ldquo;I have stairs&rdquo; and &ldquo;I know they&apos;re compliant.&rdquo;
+            </div>
+          </div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.58rem', color: '#3A5A78', lineHeight: 1.6 }}>
+            ¹ Canadian Institute for Health Information · Global News Canada (2018)<br/>
+            ² Gitnux Stair Injury Statistics Report (2025) · US National Safety Council
+          </div>
+        </div>
+
+        {/* Report preview */}
+        <div style={{ background: '#0F2438', border: '1px solid rgba(65,124,164,0.25)',
+          borderRadius: 18, padding: '1.1rem 1.25rem', marginBottom: '1.25rem' }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#5BA3D0',
+            fontFamily: 'monospace', letterSpacing: '0.12em', marginBottom: '0.85rem' }}>
+            📋 WHAT YOU GET
+          </div>
+          {[
+            { icon: '✅', label: 'Full compliance report', sub: 'Riser, tread, width, handrail — checked against OBC, NBC, IBC and more' },
+            { icon: '📧', label: 'Emailed as PDF instantly', sub: 'Report arrives in your inbox before you leave the property' },
+            { icon: '📍', label: 'Auto-detected jurisdiction', sub: 'Ontario OBC, Quebec QBC, BC, National NBC, USA IBC, and more' },
+            { icon: '⏱', label: 'Under 90 seconds', sub: 'Camera-based AR + AI measurement — no tape measure needed' },
+          ].map(({ icon, label, sub }) => (
+            <div key={label} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: '1.1rem', flexShrink: 0, width: 24 }}>{icon}</div>
               <div>
-                <div style={{ fontSize: '0.55rem', color: 'rgba(28,64,88,0.55)', lineHeight: 1 }}>GET IT ON</div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0A1C2E', lineHeight: 1.2 }}>Google Play</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#E8F4FF', marginBottom: '0.15rem' }}>{label}</div>
+                <div style={{ fontSize: '0.7rem', color: '#5E7D9B', lineHeight: 1.5 }}>{sub}</div>
               </div>
             </div>
-            <div style={{ fontSize: '0.56rem', fontFamily: 'monospace', color: 'rgba(44,90,122,0.6)', background: 'rgba(44,90,122,0.1)', borderRadius: 6, padding: '0.18rem 0.5rem', letterSpacing: '0.06em' }}>LAUNCHING APRIL</div>
-          </a>
-          {/* App Store */}
-          <a
-            href="https://apps.apple.com/app/staircode/id6744870260"
-            target="_blank" rel="noopener noreferrer"
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', background: 'rgba(44,90,122,0.07)', border: '1.5px solid rgba(44,90,122,0.18)', borderRadius: 14, padding: '0.75rem 0.6rem', textDecoration: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#555"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-              <div>
-                <div style={{ fontSize: '0.55rem', color: 'rgba(28,64,88,0.55)', lineHeight: 1 }}>DOWNLOAD ON THE</div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0A1C2E', lineHeight: 1.2 }}>App Store</div>
+          ))}
+          <div style={{ marginTop: '0.5rem', background: 'rgba(39,169,107,0.1)',
+            border: '1px solid rgba(39,169,107,0.25)', borderRadius: 12, padding: '0.65rem 0.85rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: '#93BAD4' }}>Report price</div>
+              <div style={{ fontSize: '1rem', fontWeight: 900, color: '#27A96B' }}>
+                FREE during beta
+                <span style={{ fontSize: '0.65rem', color: '#5E7D9B', fontWeight: 400, marginLeft: '0.4rem' }}>normally $2.99</span>
               </div>
             </div>
-            <div style={{ fontSize: '0.56rem', fontFamily: 'monospace', color: 'rgba(44,90,122,0.6)', background: 'rgba(44,90,122,0.1)', borderRadius: 6, padding: '0.18rem 0.5rem', letterSpacing: '0.06em' }}>LAUNCHING MAY</div>
-          </a>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: '#93BAD4' }}>Pro plan</div>
+              <div style={{ fontSize: '1rem', fontWeight: 900, color: '#5BA3D0' }}>
+                $12.99<span style={{ fontSize: '0.65rem', fontWeight: 400 }}>/mo</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <p style={{ fontSize: '0.62rem', color: '#2C5A7A', textAlign: 'center', lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
-          Currently in beta · Web version available now
+
+        {/* Footer */}
+        <p style={{ fontSize: '0.62rem', color: '#3A5A78', textAlign: 'center',
+          lineHeight: 1.7, margin: '0 0 0.5rem' }}>
+          By continuing you agree to our{" "}
+          <a href="/terms" style={{ color: '#FA741F', textDecoration: 'underline' }}>Terms of Service</a>
+          {" "}and{" "}
+          <a href="/privacy" style={{ color: '#FA741F', textDecoration: 'underline' }}>Privacy Policy</a>.
+          <br/>
+          stAIrcode is a pre-assessment tool. Always confirm with a qualified building inspector.
         </p>
       </div>
-
-      {/* Instagram link */}
-      <a
-        href="https://www.instagram.com/staircode.app"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-          marginTop: '1.1rem', marginBottom: '0.25rem',
-          padding: '0.6rem 1.2rem',
-          background: 'linear-gradient(135deg, rgba(131,58,180,0.18), rgba(253,29,29,0.18), rgba(252,176,69,0.18))',
-          border: '1px solid rgba(253,29,29,0.3)',
-          borderRadius: 12,
-          textDecoration: 'none',
-          color: '#fff',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          letterSpacing: '0.04em',
-          maxWidth: 240,
-          margin: '1rem auto 0',
-        }}
-      >
-        <span style={{ fontSize: '1.1rem' }}>📸</span>
-        <span>@staircode.app on Instagram</span>
-        <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>→</span>
-      </a>
-
-      <p style={{ fontSize: '0.62rem', color: '#2C4A68', textAlign: 'center', marginTop: '0.75rem', lineHeight: 1.7, maxWidth: 300 }}>
-        By continuing you agree to our{' '}
-        <a href="/terms" style={{ color: '#F29337', fontWeight: 600, textDecoration: 'underline' }}>Terms of Service</a>
-        {' '}and{' '}
-        <a href="/privacy" style={{ color: '#F29337', fontWeight: 600, textDecoration: 'underline' }}>Privacy Policy</a>.
-      </p>
     </div>
   )
 
@@ -659,7 +729,7 @@ export default function AuthScreen({ onAuth }: Props) {
 
         {/* Hint */}
         <p style={{ margin: 0, fontSize: '0.65rem', color: 'rgba(28,64,88,0.4)', textAlign: 'center', lineHeight: 1.6 }}>
-          <span style={{ color: '#1A3A5C', fontWeight: 600 }}>Check your spam folder</span><span style={{ color: 'rgba(44,74,100,0.5)' }}> if you don&apos;t see it within 60 seconds.</span>
+          <span style={{ color: '#1A3A5C', fontWeight: 600 }}>Check your spam folder</span><span style={{ color: 'rgba(44,74,100,0.5)' }}> if you don't see it within 60 seconds.</span>
         </p>
       </div>
     </div>
