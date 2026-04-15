@@ -13,8 +13,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 
+// Tell Netlify/Vercel to allow up to 30s for vision calls
+export const maxDuration = 30
+
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL         = 'claude-sonnet-4-5'
+const MODEL         = 'claude-sonnet-4-6'
 
 export async function POST(req: NextRequest) {
   // ── Rate limiting ──────────────────────────────────────────────────────────
@@ -50,9 +53,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  // ── Basic size guard (max ~1.2MB base64 ≈ ~900KB image) ───────────────────
-  if (imageB64.length > 1_600_000) {
-    return NextResponse.json({ error: 'Image too large' }, { status: 413 })
+  // ── Size guard: Anthropic allows up to 5MB base64 (~3.75MB image) ─────────
+  if (imageB64.length > 5_000_000) {
+    return NextResponse.json({ error: 'Image too large — max 5MB' }, { status: 413 })
   }
 
   // ── Call Anthropic ─────────────────────────────────────────────────────────

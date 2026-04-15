@@ -9,8 +9,6 @@ import { initAnalytics, identifyUser, resetUser, Analytics } from '@/lib/analyti
 import HelpScreen                            from './components/HelpScreen'
 import SettingsScreen                        from './components/SettingsScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
-import ScanModeSelect                        from './components/ScanModeSelect'
-import type { ScanMode }                     from './components/ScanModeSelect'
 import ReportScreen                          from './components/ReportScreen'
 
 const C = {
@@ -118,12 +116,12 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   const [phase, setPhase] = useState<'image' | 'fading'>('image')
 
   useEffect(() => {
-    // Hold image for 2.2s then fade over 1.2s into auth
+    // Hold image for 4.5s then fade over 1.2s into auth
     const hold = setTimeout(() => {
       setPhase('fading')
       const fade = setTimeout(() => onDone(), 1200)
       return () => clearTimeout(fade)
-    }, 2200)
+    }, 4500)
     return () => clearTimeout(hold)
   }, [onDone])
 
@@ -177,108 +175,6 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   )
 }
 
-// ── Scan Countdown Screen ─────────────────────────────────────────────────────
-// Shown between mode select and camera open — gives user time to prepare
-function ScanCountdown({ mode, onDone }: { mode: ScanMode; onDone: () => void }) {
-  const [sec, setSec] = React.useState(5)
-  const [fading, setFading] = React.useState(false)
-
-  React.useEffect(() => {
-    if (sec <= 0) {
-      setFading(true)
-      setTimeout(onDone, 600)
-      return
-    }
-    const t = setTimeout(() => setSec(s => s - 1), 1000)
-    return () => clearTimeout(t)
-  }, [sec, onDone])
-
-  const isIndividual = mode === 'speed'
-  const image        = isIndividual ? '/Individual_Scan.png' : '/Girl_measuring.png'
-  const bg           = isIndividual ? '#1A1A1A' : '#F5F0EA'
-  const label        = isIndividual ? 'Get ready to scan' : 'Position yourself at the base of the stairs'
-
-  return (
-    <div
-      onClick={() => { setFading(true); setTimeout(onDone, 400) }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: bg,
-        cursor: 'pointer',
-        opacity: fading ? 0 : 1,
-        transition: fading ? 'opacity 0.6s ease' : 'none',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Full-bleed image */}
-      <img
-        src={image}
-        alt="Prepare to scan"
-        style={{
-          position: 'absolute', inset: 0,
-          width: '100%', height: '100%',
-          objectFit: isIndividual ? 'cover' : 'contain',
-          objectPosition: 'center',
-        }}
-      />
-
-      {/* Instruction pill — top right */}
-      <div style={{
-        position: 'absolute',
-        top: 'max(env(safe-area-inset-top,0px), 1.5rem)',
-        right: '1rem',
-        background: 'rgba(10,28,46,0.85)',
-        backdropFilter: 'blur(8px)',
-        borderRadius: 14,
-        padding: '0.65rem 0.9rem',
-        maxWidth: 200,
-        textAlign: 'right',
-        zIndex: 2,
-      }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.5 }}>
-          {label}
-        </div>
-      </div>
-
-      {/* Countdown ring — bottom centre */}
-      <div style={{
-        position: 'absolute',
-        bottom: 'max(env(safe-area-inset-bottom,0px), 3rem)',
-        left: 0, right: 0, zIndex: 2,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: '0.6rem',
-      }}>
-        <div style={{ position: 'relative', width: 80, height: 80 }}>
-          <svg width="80" height="80" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="40" cy="40" r="34" fill="none"
-              stroke="rgba(255,255,255,0.2)" strokeWidth="6"/>
-            <circle cx="40" cy="40" r="34" fill="none"
-              stroke={isIndividual ? '#FA741F' : '#27A96B'} strokeWidth="6"
-              strokeDasharray={`${2 * Math.PI * 34}`}
-              strokeDashoffset={`${2 * Math.PI * 34 * (sec / 5)}`}
-              strokeLinecap="round"
-              style={{ transition: 'stroke-dashoffset 0.9s linear' }}
-            />
-          </svg>
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF',
-            fontFamily: 'monospace',
-          }}>
-            {sec}
-          </div>
-        </div>
-        <div style={{
-          fontSize: '0.68rem', color: 'rgba(255,255,255,0.6)',
-          fontFamily: 'monospace', letterSpacing: '0.15em',
-        }}>
-          TAP TO SKIP
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function Home(){
@@ -449,10 +345,6 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
 function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>('home')
-  const [scanMode,setScanMode]=useState<ScanMode>('accuracy')
-  const [showModeSelect,setShowModeSelect]=useState(false)
-  const [showCountdown,setShowCountdown]=useState(false)
-  const [countdownSec,setCountdownSec]=useState(5)
   const [loc,setLoc]=useState<Loc|null>(null)
   const [locLoading,setLocLoading]=useState(true)
   const [code,setCode]=useState<Code|null>(null)
@@ -519,39 +411,42 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
       return typeof v === 'number' ? v : fallback
     }
     const m: StairMeasurements = {
-      rise:      n('rise'),
-      run:       n('run'),
-      width:     n('width'),
-      nosing:    raw.nosing === 'none' ? null : n('nosing'),
-      headroom:  raw.headroom === 'clear' ? 'clear' : n('headroom'),
-      guard:     n('guard'),
+      rise:       n('rise'),
+      run:        n('run'),
+      width:      n('width'),
+      nosing:     raw.nosing === 'none' ? null : n('nosing'),
+      headroom:   raw.headroom === 'clear' ? 'clear' : n('headroom'),
+      guard:      n('guard'),
       confidence: 0.88,
       calibrated: true,
+      riserCount: n('riserCount') ?? undefined,
     }
     const measurementCount = (['rise','run','width','guard'] as const).filter(k => n(k) !== null).length
     Analytics.scanCompleted({ role: user?.role ?? 'diy', measurementCount, hasFailed: false })
+    // Persist captured frames for report email embedding
+    if (raw._frames) {
+      try {
+        const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
+        u._frames = raw._frames
+        localStorage.setItem('sc_user', JSON.stringify(u))
+      } catch {}
+    }
     setMeasurements(m)
     setScreen('report')
   },[user])
   // handleDetectComplete removed — detect/capture screens deprecated,[])
   // handleCaptureComplete removed — capture screen deprecated
   const handleStartOver=useCallback(()=>{setMeasurements(null);setScreen('home')},[])
-  const handleRetake=useCallback(()=>{setMeasurements(null);setScreen('scan_ready')},[])
+  const handleRetake=useCallback(()=>{
+    // Clear measurements and go back to scan
+    // Small delay ensures old camera stream is fully released before new one requests it
+    setMeasurements(null)
+    setScreen('scan_ready')
+  },[])
 
   // Full-screen flows (no bottom nav)
-  if(showModeSelect)return <ScanModeSelect onSelect={(mode)=>{
-    setScanMode(mode)
-    setShowModeSelect(false)
-    setShowCountdown(true)
-    setCountdownSec(5)
-    Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mode})
-  }}/>
 
-  if(showCountdown) return <ScanCountdown
-    mode={scanMode}
-    onDone={()=>{ setShowCountdown(false); setScreen('scan_ready') }}
-  />
-  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} scanMode={scanMode} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>{setScreen('home');setShowModeSelect(false)}}/>
+  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('home')}/>
   // Use IBC as fallback if code not yet detected (location loading)
   const activeCode = code ?? {code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetake} onStartOver={handleStartOver}/>
@@ -559,7 +454,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   return(
     <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
       <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
-        {tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');setShowModeSelect(true)}} onLogout={onLogout}/>}
+        {tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined});setScreen('scan_ready')}} onLogout={onLogout}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>

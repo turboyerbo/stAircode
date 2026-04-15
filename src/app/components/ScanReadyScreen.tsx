@@ -1,129 +1,556 @@
 'use client'
 /**
- * ScanReadyScreen.tsx — ARAI_10  v2 "Guided Phase Flow"
+ * ScanReadyScreen.tsx — ARAI_13  "Tap-to-Confirm Flow"
  *
- * PHASE-BASED ARCHITECTURE:
- * ─────────────────────────
- *  Phase 0 — DETECT    : Claude Vision confirms stairs + counts steps
- *                         Non-residential → confirmation prompt
- *  Phase 1 — RISER     : User faces a riser. AR ray-cast measures height.
- *                         Claude Vision checks orthogonality. If tilted,
- *                         AI corrects the reading for perspective distortion.
- *  Phase 2 — TREAD     : Same feedback loop for tread depth.
- *  Phase 3 — WIDTH     : Side-on shot — AI measures stair width.
- *  Phase 4 — NOSING    : Simple Y/N visual check by Claude Vision.
- *  Phase 5 — HANDRAIL  : Optimised: single fast AI call with low threshold.
- *  Phase 6 — REVIEW    : Results confirmed, proceed to report.
+ * EVERY transition requires an explicit user tap. No auto-advances.
+ *
+ * Stage flow per position:
+ *   position  → countdown ticks (7-10s), illustration shown over camera
+ *               When countdown hits 0: show "I'm Ready" tap prompt
+ *   ready     → user taps big "I'm Ready" button → hold
+ *   hold      → camera live, hold-still countdown (3-4s)
+ *               When countdown hits 0: show "Tap to Capture" prompt
+ *   capture   → user taps → analysing
+ *   analysing → AI reads frame → result
+ *   result    → AI message + locked values shown
+ *               User taps "Next Position" (or Retry / View Report)
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { checkXRSupport, pickBestPlane, extractMeasurement, planeConfidence, polygonToMm } from '@/lib/xr-measure'
+import { checkXRSupport } from '@/lib/xr-measure'
+import {
+  startARSession, stopARSession, measureFromPlanes,
+  isARSessionActive, type ScreenPlane,
+} from '@/lib/arcore-session'
 import type { UserRole } from './AuthScreen'
 import { Analytics } from '@/lib/analytics'
-import { BetaLogo } from '@/app/components/Logo'
-import { getProfile } from '@/lib/profiles'
-import type { ScanMode } from '@/app/components/ScanModeSelect'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const NAVY  = '#0A1C2E'
-const GREEN = '#27A96B'
-const AMBER = '#FA741F'
-const RED   = '#E84545'
-const WHITE = '#E8F4FF'
-const BLUE  = '#4A90E2'
+const NAVY   = '#0A1C2E'
+const GREEN  = '#27A96B'
+const AMBER  = '#FA741F'
+const WHITE  = '#E8F4FF'
+const WHITE2 = '#93BAD4'
+const BLUE   = '#4A90E2'
+const BORDER = 'rgba(147,186,212,0.15)'
 
-type Phase = 'detect' | 'riser' | 'tread' | 'width' | 'nosing' | 'handrail' | 'review'
+// ── Measurement indicator labels ──────────────────────────────────────────────
+const indicators: Record<string, { label: string; color: string }> = {
+  overview:    { label: 'Step count + headroom', color: BLUE   },
+  riser_front: { label: 'Riser height',          color: GREEN  },
+  rotate_90:   { label: 'Nosing overhang',       color: AMBER  },
+  nosing:      { label: 'Nosing close-up',       color: AMBER  },
+  handrail:    { label: 'Handrail height',       color: '#A78BFA' },
+  alt_angle:   { label: 'Stair width',           color: BLUE   },
+  tread_top:   { label: 'Tread depth',           color: GREEN  },
+}
 
-const PHASES: Phase[] = ['detect', 'riser', 'tread', 'width', 'nosing', 'handrail', 'review']
+// ── Position definitions ──────────────────────────────────────────────────────
+type Position = 'overview'|'riser_front'|'handrail'|'alt_angle'|'tread_top'
 
-interface PhaseConfig {
-  id:           Phase
+interface Slide {
+  image:   string
+  caption: string
+  seconds: number   // how long to show this slide (default 5)
+}
+
+interface PosConfig {
+  id:           Position
+  step:         number
   label:        string
-  instruction:  string   // shown at top of screen
-  arUsed:       boolean  // whether to attempt AR ray-cast
-  aiPrompt:     (arMm: number | null) => string
-  rangeMin:     number
-  rangeMax:     number
-  typical:      number
+  headline:     string
+  detail:       string
+  readyLabel:   string
+  holdSeconds:  number
+  captureLabel: string
+  positionTime: number
+  captures:     string[]
+  optional:     boolean
+  aiPrompt:     (prior: Record<string, number|string>) => string
 }
 
-const PHASE_CONFIG: Record<Exclude<Phase, 'detect' | 'review'>, PhaseConfig> = {
-  riser: {
-    id: 'riser', label: 'Riser Height', instruction: 'Face the riser — hold phone level, step fills frame',
-    arUsed: true, rangeMin: 100, rangeMax: 250, typical: 175,
-    aiPrompt: (arMm) => `You are measuring RISER HEIGHT from a phone camera image of a staircase.
-${arMm ? `ARCore ray-cast returned ${arMm}mm. Verify this reading.` : 'No AR data available.'}
 
-ORTHOGONALITY CHECK: Is the camera facing the riser face directly (< 15° angle)?
-- If YES: the AR/pixel measurement is reliable — use it directly.
-- If NO: estimate the perspective distortion angle and CORRECT the reading.
-  Formula: corrected = measured / cos(angle). State the angle you estimated.
+// ── Pre-scan instruction slides ──────────────────────────────────────────────
+// Shown ONCE before the scan sequence begins. Fully dismounted after user starts.
+const INTRO_SLIDES = [
+  {
+    img:     '/Instr_01_overview.png',
+    title:   'Step 1 — Full Stair View',
+    desc:    'Stand back so the entire staircase fits in frame. Hold the phone level at chest height.',
+  },
+  {
+    img:     '/Instr_02_headroom.png',
+    title:   'Step 1b — Headroom Check',
+    desc:    'If there is a ceiling or soffit above the stair, step back to include it. This checks clearance compliance.',
+  },
+  {
+    img:     '/Instr_03_riser.png',
+    title:   'Step 2 — Riser Height',
+    desc:    'Place the phone upright on the tread nosing with the camera pointing directly at the riser face.',
+  },
+  {
+    img:     '/Instr_04_handrail.png',
+    title:   'Step 3 — Handrail Height',
+    desc:    'Stand beside the stair. Frame both the tread surface and the top of the handrail in the same shot.',
+  },
+  {
+    img:     '/Instr_05_tread_side.png',
+    title:   'Step 4 — Tread Depth (side view)',
+    desc:    'Hold the phone level beside the stair so the full tread depth is visible from nosing to riser.',
+  },
+  {
+    img:     '/Instr_06_tread_top.png',
+    title:   'Step 4b — Tread Depth (top view)',
+    desc:    'Place the phone flat above the tread with the camera facing straight down. This gives the most accurate depth reading.',
+  },
+  {
+    img:     '/Instr_07_riser_steady.png',
+    title:   'Tip — Steady Your Phone',
+    desc:    'Rest the phone against the riser or on the tread for a sharp, stable image. Motion blur reduces accuracy.',
+  },
+  {
+    img:     '/Instr_08_width.png',
+    title:   'Step 5 — Stair Width',
+    desc:    'Step back until both left and right edges of the staircase are visible. The AI measures wall to wall.',
+  },
+  {
+    img:     '/Instr_09_nosing.png',
+    title:   'Nosing — Auto Detected',
+    desc:    'Nosing is detected automatically during the riser scan. No extra step needed.',
+  },
+]
+
+const POSITIONS: PosConfig[] = [
+  {
+    id: 'overview', step: 1, label: 'Full Stair View',
+    headline: 'Step back — fit the full staircase in frame',
+    detail: 'Stand 2–3 metres from the stair. Hold the phone level at chest height. Make sure the full flight — top to bottom — is visible.',
+    readyLabel: "I'm in position — Start",
+    captureLabel: 'Tap to capture step count & headroom',
+    holdSeconds: 3, positionTime: 4, optional: false,
+    captures: ['riserCount','headroom'],
+    aiPrompt: (_p) => `Analyse this staircase image for a building compliance inspection.
+
+STEP 1 — SCALE CALIBRATION (critical — do this first):
+Scan the entire scene for any of these known-dimension objects and use the BEST one found:
+• Standard brick course: 75mm (brick 65mm + 10mm mortar joint)
+• Door frame width: typically 838mm (2'9") or 914mm (3'0")
+• Door frame height: typically 2032mm (6'8") or 2040mm
+• Electrical outlet/switch plate: 86×86mm (North America standard)
+• Standard timber stud: 38×89mm (2×4 nominal)
+• Skirting/baseboard: typically 90–120mm tall
+• Human adult standing height for scale: 1700–1800mm
+• Handrail tube diameter: 38–50mm typical
+• If none found, use stair riser stack: assume residential risers ~175mm each
+
+STEP 2 — MEASUREMENTS:
+1. Count visible steps/risers precisely
+2. Headroom: "clear" (open above) or number in mm (ceiling/soffit visible)
+3. Residential (stair width ≤1000mm) or commercial?
+
+Explain briefly which scale reference you used.
 
 Reply ONLY with valid JSON:
-{"phase":"searching"|"guiding"|"measuring"|"locked","message":"1 short sentence","estimatedMm":number|null,"confidence":0.0-1.0,"orthogonalDeg":number,"correctionApplied":boolean}
-
-Rules: lock if confidence >= 0.60. Residential risers: 125-200mm. No round numbers.`,
+{"stepCount":number|null,"headroom":"clear"|number,"isResidential":true|false|null,"scaleRef":"what you used for scale","confident":true|false,"message":"one sentence for the user"}`,
   },
-  tread: {
-    id: 'tread', label: 'Tread Depth', instruction: 'Point camera down at the treads from waist height',
-    arUsed: true, rangeMin: 180, rangeMax: 420, typical: 250,
-    aiPrompt: (arMm) => `You are measuring TREAD DEPTH from a phone camera image.
-${arMm ? `ARCore returned ${arMm}mm. Verify.` : 'No AR data.'}
+  {
+    id: 'riser_front', step: 2, label: 'Riser Height',
+    headline: 'Place phone on the nosing, camera facing the riser',
+    detail: 'Set the phone upright on the tread nosing with the camera pointing directly at the vertical riser face. Centre the riser in frame.',
+    readyLabel: 'Phone is placed — Start measuring',
+    captureLabel: 'Tap to measure riser height',
+    holdSeconds: 3, positionTime: 4, optional: false,
+    captures: ['rise'],
+    aiPrompt: (_p) => `Measure RISER HEIGHT. Phone is upright on the tread nosing, camera facing the riser face.
 
-TREAD = flat horizontal surface from front edge (nosing) to back riser.
-Check if camera is pointing straight down (< 20° from vertical). Correct for tilt if needed.
+SCALE CALIBRATION — scan the scene for reference objects in this priority order:
+1. Phone body edges visible at frame border: smartphone width is 68–80mm (typical 72mm)
+2. Skirting/baseboard beside the stair: typically 90–120mm tall — look for it at the wall base
+3. Tread nosing depth visible at bottom of frame: typically 25–38mm overhang
+4. Standard timber stringer: typically 235–286mm deep (visible as side board)
+5. Tile/hardwood flooring planks: standard 90mm or 120mm wide boards
+6. Electrical outlet on nearby wall: 86mm square face plate
+7. If none visible: use typical residential riser (175mm) as working assumption
 
-Reply ONLY with valid JSON:
-{"phase":"searching"|"guiding"|"measuring"|"locked","message":"1 short sentence","estimatedMm":number|null,"secondaryMm":number|null,"confidence":0.0-1.0,"tiltDeg":number}
+USE THE BEST REFERENCE FOUND. State which one in your message.
 
-secondaryMm = stair width if both edges visible. Tread range: 220-350mm.`,
+Measure the vertical distance from tread nosing top to the tread above (= riser height).
+The riser face fills most of the frame — the full height is visible.
+
+ALSO detect NOSING while you have this view:
+Look at the front edge of the tread the phone is resting on. Is there a physical overhang
+(nosing projection) where the tread lip extends beyond the riser face below it?
+Estimate the horizontal projection in mm if visible. No nosing = square-edge tread (also valid).
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm for the riser:
+{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"object used","hasNosing":true|false,"nosingMm":number|null,"message":"one sentence"}
+
+Riser range: 125–220mm residential. Default 175mm if uncertain.
+Nosing range: 15–38mm if present. null if square-edge or not visible.`,
   },
-  width: {
-    id: 'width', label: 'Stair Width', instruction: 'Step back — both edges of stair in frame',
-    arUsed: false, rangeMin: 600, rangeMax: 2000, typical: 900,
-    aiPrompt: (_) => `Measure STAIR WIDTH — horizontal distance between both stringers/walls.
-Both left AND right edges must be visible. Use riser height as scale reference.
 
-Reply ONLY with valid JSON:
-{"phase":"searching"|"guiding"|"measuring"|"locked","message":"1 short sentence","estimatedMm":number|null,"confidence":0.0-1.0}
+  {
+    id: 'handrail', step: 3, label: 'Handrail Height',
+    headline: 'Frame the handrail — tread to top of rail',
+    detail: 'Stand beside the stair. Hold the phone so both the tread surface at the bottom and the very top of the handrail are in frame at the same time.',
+    readyLabel: 'Handrail is framed — Start measuring',
+    captureLabel: 'Tap to measure handrail height',
+    holdSeconds: 3, positionTime: 4, optional: false,
+    captures: ['guard'],
+    aiPrompt: (_p) => `Measure HANDRAIL HEIGHT — vertical distance from tread nosing surface to the top of the handrail gripping surface.
 
-Width range: 800-1400mm residential.`,
+SCALE CALIBRATION — look for these in the scene:
+1. Handrail tube/profile diameter: round tube typically 38–50mm, square profile 40–50mm
+2. Wall tiles or brick: standard brick 65mm + 10mm mortar = 75mm per course
+3. Baluster/spindle spacing: typically 100mm clear gap (code maximum)
+4. Baluster diameter: typically 32–44mm round or 25–38mm square
+5. Skirting board at stair base: typically 90–120mm tall
+6. Door or window visible in background: door height ~2032mm, width ~838mm
+7. Riser height (known from prior scan): use to count courses up to rail height
+8. Wall switch/outlet plate: 86×86mm if visible on adjacent wall
+
+Measure vertical height from tread nosing to handrail top.
+Also measure HORIZONTAL OFFSET: distance from stringer face or wall to handrail centreline.
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{"estimatedMm":number,"offsetMm":number|null,"confidence":0.0-1.0,"scaleRef":"object used","message":"one sentence"}
+
+Range: 865–1070mm. Default 915mm if uncertain.`,
   },
-  nosing: {
-    id: 'nosing', label: 'Nosing', instruction: 'Point at the front edge of a tread',
-    arUsed: false, rangeMin: 0, rangeMax: 50, typical: 0,
-    aiPrompt: (_) => `Check for NOSING — the lip that overhangs the riser below the tread.
+  {
+    id: 'alt_angle', step: 4, label: 'Stair Width',
+    headline: 'Step back — both edges of the stair in frame',
+    detail: 'Move until both the left and right edges of the staircase are clearly visible. A measurement line will appear across the full width.',
+    readyLabel: 'Both edges visible — Start measuring',
+    captureLabel: 'Tap to measure stair width',
+    holdSeconds: 3, positionTime: 4, optional: true,
+    captures: ['width'],
+    aiPrompt: (p) => `Measure STAIR WIDTH — clear horizontal distance between both stringers, walls, or balustrades.
+Both left AND right edges of the stair must be visible in frame.
 
-Look at the front edge of the tread. Is there a physical overhang MORE THAN 25mm beyond the riser face?
-Ignore shadows and carpet edges — only count an actual physical protrusion.
+SCALE CALIBRATION — use all visible references, combine for best estimate:
+1. Riser height from prior scan: ${p.rise ?? 175}mm — count how many riser heights fit across the width
+2. Handrail tube diameter: 38–50mm — if rail visible at left and right, centres-to-centres minus one diameter
+3. Standard door width in background: 838mm (2'9") or 914mm (3'0") if any door is visible
+4. Wall tiles: standard tiles 300mm or 600mm wide — count horizontal tiles across
+5. Floor planks: typically 70–90mm wide — count planks visible at base of stair
+6. Human figure if present: adult shoulder width ~450mm, total height ~1750mm
+7. Brick courses on adjacent wall: 75mm per course (65mm brick + 10mm mortar)
+8. Baluster spacing: 100mm clear gap (code max) — count balusters × 100mm + diameter
 
-Reply ONLY with valid JSON:
-{"hasNosing":true|false,"estimatedMm":number|null,"confidence":0.0-1.0,"message":"1 sentence describing what you see"}`,
+Measure the clear width at the narrowest point (usually top or bottom landing).
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"objects used","message":"one sentence"}
+
+Range: 700–1500mm. Default 900mm if uncertain.`,
   },
-  handrail: {
-    id: 'handrail', label: 'Handrail Height', instruction: 'Stand beside stair — frame rail from tread to top',
-    arUsed: false, rangeMin: 600, rangeMax: 1300, typical: 900,
-    aiPrompt: (_) => `Measure HANDRAIL HEIGHT — vertical distance from tread nosing to top of rail.
+  {
+    id: 'tread_top', step: 5, label: 'Tread Depth',
 
-IMPORTANT: Commit to a measurement immediately. Do NOT return "searching" more than once.
-Use any visible portion to extrapolate. Default to 915mm at confidence 0.65 if rail is partially visible.
+    headline: 'Place phone flat on the tread — camera facing down',
+    detail: 'Lay the phone face-down on the tread nosing. The camera fires a depth ray straight to the lower tread, measuring the exact riser height. Keep the phone still until you tap Capture.',
+    readyLabel: 'Phone is flat on the tread — Start',
+    captureLabel: 'Tap to measure tread depth',
+    holdSeconds: 3, positionTime: 9, optional: false,
+    captures: ['run'],
+    aiPrompt: (p) => `Phone is face-down above a stair tread, camera pointing straight down at the tread surface.
 
-Reply ONLY with valid JSON:
-{"phase":"searching"|"locked","message":"1 short sentence","estimatedMm":number|null,"confidence":0.0-1.0}
+Measure TREAD DEPTH — horizontal distance from front nosing edge to the back riser face.
 
-Residential range: 865-1070mm. Lock at confidence >= 0.55.`,
+SCALE CALIBRATION — look for ALL of these simultaneously in the top-down view:
+1. Phone body edges at frame border: phone width 68–80mm (typically 72mm) — MOST RELIABLE for this position
+2. Wood grain / floorboard planks: typically 70–90mm wide — count planks across the tread
+3. Tile joints if tiled: standard tiles 300×300mm or 600×600mm — measure fraction visible
+4. Carpet pile direction change at nosing — the nosing overhang is typically 25–38mm
+5. Riser height (${p.rise ?? 175}mm) visible at back of tread if riser face is in frame
+6. Screw or fixing holes in tread: typically 50–75mm from edge — can set minimum scale
+7. Grout lines in tile: standard joint 2–5mm
+
+USE MULTIPLE references and average/cross-check them. The phone body width is especially
+reliable when the phone edges are visible at the sides of the frame.
+
+Measure from front nosing lip to where the tread meets the back riser.
+
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"objects used","message":"one sentence"}
+
+Range: 220–420mm. Default 280mm if uncertain.`,
   },
+]
+
+// ── AR Measurement Overlay ───────────────────────────────────────────────────
+// Renders per-position measurement lines, endpoint markers, normal vectors,
+// and animated tick marks directly over the live camera feed.
+//
+// Geometry per position:
+//   riser_front  — vertical line centre-screen, normal vector pointing toward camera (Z-)
+//   rotate_90    — horizontal line at tread edge, normal pointing up (Y+)
+//   nosing       — short horizontal span at nose edge, normal pointing forward (Z-)
+//   handrail     — vertical line right-side, normal pointing inward (X-)
+//   alt_angle    — full-width horizontal line, normals on both endpoints pointing inward
+//   tread_top    — depth line front-to-back, normal pointing up (Y+)
+//   overview     — diagonal span across full stair, normal pointing toward camera
+
+interface AROverlayProps {
+  posId:   string
+  color:   string
+  valueMm: number
+  label:   string
 }
 
-let msgCounter = 0
+function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) {
+  // All coordinates are percentages of the overlay container (0–100)
+  // The overlay sits between top bar and bottom panel — portrait phone viewport
 
-async function callVision(b64: string, prompt: string, timeoutMs = 12000): Promise<string | null> {
+  type Config = {
+    x1: number; y1: number   // line start (percent)
+    x2: number; y2: number   // line end   (percent)
+    // Normal vector: shown at midpoint, perpendicular to the measured plane
+    // direction in SVG space: dx/dy unit vector, length in px
+    nx: number; ny: number; nLen: number
+    // Tick orientation: 'h' = horizontal ticks at endpoints, 'v' = vertical
+    ticks: 'h' | 'v'
+    // Extra annotation lines (e.g. parallel guide lines for riser face)
+    guides?: Array<{x1:number;y1:number;x2:number;y2:number}>
+  }
+
+  const configs: Record<string, Config> = {
+    riser_front: {
+      x1:50, y1:20,  x2:50, y2:75,   // vertical centre
+      nx:1,  ny:0,   nLen:40,         // normal points right (toward viewer)
+      ticks:'h',
+      guides:[
+        {x1:20,y1:20,x2:80,y2:20},   // top edge of riser
+        {x1:20,y1:75,x2:80,y2:75},   // bottom edge of riser
+      ],
+    },
+
+    handrail: {
+      x1:68, y1:18,  x2:68, y2:72,
+      nx:-1, ny:0,   nLen:38,         // normal points left (toward stair)
+      ticks:'h',
+      guides:[
+        {x1:50,y1:18,x2:85,y2:18},
+        {x1:50,y1:72,x2:85,y2:72},
+      ],
+    },
+    alt_angle: {
+      x1:6,  y1:58,  x2:94, y2:58,
+      nx:0,  ny:-1,  nLen:32,
+      ticks:'v',
+      guides:[
+        {x1:6, y1:50,x2:6,  y2:66},  // left stringer
+        {x1:94,y1:50,x2:94, y2:66},  // right stringer
+      ],
+    },
+    tread_top: {
+      x1:50, y1:28,  x2:50, y2:68,
+      nx:1,  ny:0,   nLen:36,
+      ticks:'h',
+      guides:[
+        {x1:20,y1:28,x2:80,y2:28},   // nosing line
+        {x1:20,y1:68,x2:80,y2:68},   // back riser line
+      ],
+    },
+    overview: {
+      x1:18, y1:22,  x2:82, y2:72,
+      nx:-1, ny:0.4, nLen:30,         // angled normal
+      ticks:'v',
+      guides:[],
+    },
+  }
+
+  const cfg = configs[posId] ?? configs.riser_front
+  const mid = { x: (cfg.x1+cfg.x2)/2, y: (cfg.y1+cfg.y2)/2 }
+
+  // Normal vector tip (mid + normal direction * length, in %)
+  // nLen is in px but we approximate as %, good enough for display
+  const nTip = { x: mid.x + cfg.nx * cfg.nLen * 0.12, y: mid.y + cfg.ny * cfg.nLen * 0.12 }
+
+  const tickSize = 6  // half-tick length in percent-ish (small)
+
+  const hexAlpha = (a: number) => {
+    const h = Math.round(a*255).toString(16).padStart(2,'0')
+    return color + h
+  }
+
+  return (
+    <svg
+      width="100%" height="100%"
+      style={{position:'absolute',inset:0,overflow:'visible'}}
+    >
+      <defs>
+        {/* Glowing filter for measurement line */}
+        <filter id={`glow-${posId}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="0.8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+
+        {/* Animated line draw */}
+        <style>{`
+          @keyframes drawLine {
+            from { stroke-dashoffset: 200; }
+            to   { stroke-dashoffset: 0; }
+          }
+          @keyframes fadeInSVG {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+          }
+          @keyframes pulseRing {
+            0%   { r: 3; opacity: 0.9; }
+            50%  { r: 6; opacity: 0.3; }
+            100% { r: 3; opacity: 0.9; }
+          }
+          @keyframes normalGrow {
+            from { stroke-dashoffset: 60; opacity: 0; }
+            to   { stroke-dashoffset: 0;  opacity: 1; }
+          }
+          .ar-line {
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            animation: drawLine 0.6s ease-out 0.1s forwards;
+          }
+          .ar-guide {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: drawLine 0.5s ease-out 0.4s forwards;
+            opacity: 0;
+          }
+          .ar-guide { animation: drawLine 0.5s ease-out 0.4s forwards, fadeInSVG 0.5s ease-out 0.4s forwards; }
+          .ar-normal {
+            stroke-dasharray: 60;
+            stroke-dashoffset: 60;
+            animation: normalGrow 0.5s ease-out 0.7s forwards;
+          }
+          .ar-label { animation: fadeInSVG 0.4s ease-out 0.65s both; }
+          .ar-pulse  { animation: pulseRing 1.5s ease-in-out infinite; }
+        `}</style>
+
+        {/* Arrowhead marker for normal vector */}
+        <marker id={`arrow-${posId}`} markerWidth="6" markerHeight="6"
+          refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill={color} opacity="0.95"/>
+        </marker>
+
+        {/* Tick marker */}
+        <marker id={`tick-${posId}`} markerWidth="4" markerHeight="8"
+          refX="2" refY="4" orient="auto-start-reverse">
+          <line x1="2" y1="0" x2="2" y2="8" stroke={color} strokeWidth="1.5"/>
+        </marker>
+      </defs>
+
+      {/* ── Guide lines (faint parallel lines showing the measured face) ── */}
+      {cfg.guides.map((g, i) => (
+        <line key={i}
+          className="ar-guide"
+          x1={`${g.x1}%`} y1={`${g.y1}%`}
+          x2={`${g.x2}%`} y2={`${g.y2}%`}
+          stroke={color} strokeWidth="0.4" strokeDasharray="2,2" opacity="0.45"
+        />
+      ))}
+
+      {/* ── Main measurement line ── */}
+      <line
+        className="ar-line"
+        x1={`${cfg.x1}%`} y1={`${cfg.y1}%`}
+        x2={`${cfg.x2}%`} y2={`${cfg.y2}%`}
+        stroke={color} strokeWidth="0.7" strokeLinecap="round"
+        filter={`url(#glow-${posId})`}
+        opacity="0.95"
+      />
+
+      {/* ── Tick marks at both endpoints ── */}
+      {cfg.ticks === 'h' ? (
+        <>
+          <line x1={`${cfg.x1-tickSize*0.5}%`} y1={`${cfg.y1}%`}
+                x2={`${cfg.x1+tickSize*0.5}%`} y2={`${cfg.y1}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+          <line x1={`${cfg.x2-tickSize*0.5}%`} y1={`${cfg.y2}%`}
+                x2={`${cfg.x2+tickSize*0.5}%`} y2={`${cfg.y2}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+        </>
+      ) : (
+        <>
+          <line x1={`${cfg.x1}%`} y1={`${cfg.y1-tickSize*0.5}%`}
+                x2={`${cfg.x1}%`} y2={`${cfg.y1+tickSize*0.5}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+          <line x1={`${cfg.x2}%`} y1={`${cfg.y2-tickSize*0.5}%`}
+                x2={`${cfg.x2}%`} y2={`${cfg.y2+tickSize*0.5}%`}
+                stroke={color} strokeWidth="0.7" className="ar-label"/>
+        </>
+      )}
+
+      {/* ── Endpoint dot + pulse ring ── */}
+      {[{x:cfg.x1,y:cfg.y1},{x:cfg.x2,y:cfg.y2}].map((pt,i)=>(
+        <g key={i} className="ar-label">
+          {/* Pulse ring */}
+          <circle cx={`${pt.x}%`} cy={`${pt.y}%`} r="2.5%"
+            fill="none" stroke={color} strokeWidth="0.4" opacity="0.4"
+            className="ar-pulse"
+            style={{animationDelay: i===1 ? '0.75s' : '0s'}}
+          />
+          {/* Solid dot */}
+          <circle cx={`${pt.x}%`} cy={`${pt.y}%`} r="1.2%"
+            fill={color} opacity="0.95" filter={`url(#glow-${posId})`}
+          />
+        </g>
+      ))}
+
+      {/* ── Normal vector ── perpendicular arrow from plane midpoint ── */}
+      {/* Shows which face is being measured (oriented outward from surface) */}
+      <line
+        className="ar-normal"
+        x1={`${mid.x}%`} y1={`${mid.y}%`}
+        x2={`${nTip.x}%`} y2={`${nTip.y}%`}
+        stroke={color} strokeWidth="0.5" opacity="0.85"
+        strokeDasharray="3,1.5"
+        markerEnd={`url(#arrow-${posId})`}
+      />
+      {/* Normal label */}
+      <text
+        className="ar-normal"
+        x={`${nTip.x + cfg.nx*2}%`} y={`${nTip.y + cfg.ny*2 + 1.5}%`}
+        textAnchor="middle" fill={color} fontSize="12" opacity="0.8"
+        fontFamily="monospace"
+      >n̂</text>
+
+      {/* ── Dimension label ── centred on line ── */}
+      <g className="ar-label">
+        {/* Background pill — inline rect avoids calc() which is invalid SVG */}
+        <rect
+          x={`${mid.x - 8}%`} y={`${mid.y - 3}%`}
+          width="16%" height="6%"
+          rx="3"
+          fill="rgba(10,28,46,0.92)"
+          stroke={color} strokeWidth="0.5"
+        />
+        <text
+          x={`${mid.x}%`} y={`${mid.y + 1.8}%`}
+          textAnchor="middle"
+          fill="white" fontSize="14" fontFamily="monospace" fontWeight="bold"
+        >{valueMm}mm</text>
+      </g>
+
+      {/* ── Measurement type label ── top of overlay ── */}
+      <g className="ar-label">
+        <rect x="1.5%" y="2.5%" width="45%" height="7%"
+          rx="3" fill="rgba(10,28,46,0.88)" stroke={hexAlpha(0.5)} strokeWidth="0.5"/>
+        <circle cx="4%" cy="6%" r="1.2%" fill={color}/>
+        <text x="7%" y="7.5%" fill={color} fontSize="12" fontFamily="monospace" fontWeight="bold">{label}</text>
+      </g>
+    </svg>
+  )
+}
+
+// ── Vision helper ─────────────────────────────────────────────────────────────
+async function callVision(b64: string, prompt: string, ms = 18000): Promise<string|null> {
   const ctrl = new AbortController()
-  const t = setTimeout(() => ctrl.abort(), timeoutMs)
+  const t = setTimeout(() => ctrl.abort(), ms)
   try {
     const r = await fetch('/api/vision', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageB64: b64, prompt }), signal: ctrl.signal,
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({imageB64:b64, prompt}), signal:ctrl.signal,
     })
     clearTimeout(t)
     if (!r.ok) return null
@@ -132,792 +559,1203 @@ async function callVision(b64: string, prompt: string, timeoutMs = 12000): Promi
   } catch { clearTimeout(t); return null }
 }
 
-function parseJSON(s: string | null): any {
+function parseJSON(s: string|null): any {
   if (!s) return null
   try {
-    const m = s.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/)
+    const m = s.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/)
     return m ? JSON.parse(m[0]) : null
   } catch { return null }
 }
 
 interface Props {
   userRole?: UserRole
-  scanMode?: ScanMode
-  onSuccess: (measurements: Record<string, number | string>) => void
-  onBack:    () => void
+  onSuccess: (m: Record<string,number|string>) => void
+  onBack: () => void
 }
 
-interface Message { id: number; text: string; phase: string }
+// Stage: what is happening right now
+// position  = illustration shown, countdown ticking
+// ready     = countdown done, waiting for user tap to confirm ready
+// hold      = camera live, hold-still countdown
+// capture   = hold countdown done, waiting for user tap to capture
+// analysing = AI call in flight
+// result    = AI result shown, waiting for user action
+// paused    = everything frozen
+type Stage = 'position'|'ready'|'hold'|'capture'|'analysing'|'result'
 
-export default function ScanReadyScreen({ userRole = 'diy', scanMode = 'accuracy', onSuccess, onBack }: Props) {
+export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: Props) {
   const videoRef   = useRef<HTMLVideoElement>(null)
   const captureRef = useRef<HTMLCanvasElement>(null)
-  const streamRef  = useRef<MediaStream | null>(null)
+  const streamRef  = useRef<MediaStream|null>(null)
   const busyRef    = useRef(false)
-  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const xrSessionRef = useRef<any>(null)
-  const latestPlanesRef = useRef<any[]>([])
+  const timerRef   = useRef<ReturnType<typeof setTimeout>|null>(null)
+  const rescanReturnRef   = useRef(false)   // when true, result 'Next' returns to review
+  const pendingRescanRef  = useRef(-1)         // position index to jump to after review closes
 
-  // ── Core state ─────────────────────────────────────────────────────────────
-  const [camReady,      setCamReady]      = useState(false)
-  const [camError,      setCamError]      = useState(false)
-  const [phase,         setPhase]         = useState<Phase>('detect')
-  const [messages,      setMessages]      = useState<Message[]>([])
-  const [thinking,      setThinking]      = useState(false)
-  const [results,       setResults]       = useState<Record<string, number | string>>({})
+  const [posIdx,     setPosIdx]     = useState(0)
+  const [stage,      setStage]      = useState<Stage>('position')
+  const [countdown,  setCountdown]  = useState(0)
+  const [camReady,   setCamReady]   = useState(false)
+  const [camError,   setCamError]   = useState(false)
+  const [aiMessage,  setAiMessage]  = useState<string|null>(null)
+  const [results,    setResults]    = useState<Record<string,number|string>>({})
+  const resultsRef   = useRef<Record<string,number|string>>({})   // closure-safe mirror
+  const [reviewVals, setReviewVals] = useState<Record<string,number|string>>({})
+  const [nosingMm,   setNosingMm]   = useState(0)
+  const [adjustVal,  setAdjustVal]  = useState<number|null>(null)  // user-adjusted value for current result
+  const [camWarm,    setCamWarm]    = useState(false)  // true once camera has had 1.5s to auto-expose
+  // Captured frames: positionId → base64 JPEG (for report images)
+  const capturedFrames = useRef<Record<string,string>>({})
+  // ── Intro slideshow state (shown before scan begins) ─────────────────────
+  const [showIntro,    setShowIntro]    = useState(true)   // true = show slideshow
+  const [introSlide,   setIntroSlide]   = useState(0)      // current slide index
+  // ── Back-to-guide state ────────────────────────────────────────────────────
+  const [showGuide,    setShowGuide]    = useState(false)  // AI Guide overlay during scan
 
-  // ── Detect phase state ─────────────────────────────────────────────────────
-  const [stepCount,         setStepCount]         = useState<number | null>(null)
-  const [isResidential,     setIsResidential]      = useState<boolean | null>(null)
-  const [needsConfirmation, setNeedsConfirmation]  = useState(false)
-  const [countdown,         setCountdown]          = useState(5)
-  const [stairDetected,     setStairDetected]      = useState(false)
+  const [arSupported,  setArSupported]  = useState(false)
+  const [arPlanes,     setArPlanes]     = useState<ScreenPlane[]>([])
+  const arOverlayRef = useRef<HTMLDivElement>(null)  // dom-overlay root for WebXR
+  const [showReview, setShowReview] = useState(false)
+  const [showBackMenu, setShowBackMenu] = useState(false)
 
-  // ── Measurement phase state ────────────────────────────────────────────────
-  const [lockedMm,      setLockedMm]      = useState<number | null>(null)
-  const [arMm,          setArMm]          = useState<number | null>(null)
-  const [arActive,      setArActive]      = useState(false)
-  const [arSupported,   setArSupported]   = useState(false)
-  const [correction,    setCorrection]    = useState<string | null>(null)
+  const currentPos = POSITIONS[posIdx] ?? POSITIONS[0]
+  const indicator  = indicators[currentPos.id]
 
-  // ── Nosing phase state ─────────────────────────────────────────────────────
-  const [nosingResult,  setNosingResult]  = useState<boolean | null>(null)
-  const [nosingMm,      setNosingMm]      = useState<number>(0)
-
-  // ── Review ─────────────────────────────────────────────────────────────────
-  const [showReview,    setShowReview]    = useState(false)
-  const [reviewVals,    setReviewVals]    = useState<Record<string, number | string>>({})
-
-  const isSpeed = scanMode === 'speed'
-
-  // ── Camera init ─────────────────────────────────────────────────────────────
+  // ── Camera init ───────────────────────────────────────────────────────────
   useEffect(() => {
     let alive = true
-    async function startCam() {
+    async function startCamera(attempt = 0) {
+      // Stop any existing stream first — prevents NotReadableError on retake
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop())
+        streamRef.current = null
+      }
+      // Brief pause so hardware fully releases
+      if (attempt > 0) await new Promise(r => setTimeout(r, 300 * attempt))
+
+      // iOS Safari: never use { exact: 'environment' } — throws OverconstrainedError
+      // iOS Safari: never request specific width/height — often returns degraded stream
+      // Instead: enumerate devices and pick the back camera by deviceId
+      let backDeviceId: string | undefined
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false,
-        })
-        if (!alive) { stream.getTracks().forEach(t => t.stop()); return }
-        streamRef.current = stream
-        if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play() }
-        setTimeout(() => { if (alive) setCamReady(true) }, 800)
-      } catch { if (alive) setCamError(true) }
-    }
-    startCam()
-    return () => { alive = false; streamRef.current?.getTracks().forEach(t => t.stop()) }
-  }, [])
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const cams    = devices.filter(d => d.kind === 'videoinput')
+        // On iOS, the back camera label contains 'back' or is the last in the list
+        const back    = cams.find(d => /back|rear|environment/i.test(d.label)) ?? cams[cams.length - 1]
+        if (back?.deviceId) backDeviceId = back.deviceId
+      } catch {}
 
-  // ── WebXR check ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    checkXRSupport().then(s => setArSupported(s.immersiveAR && s.planeDetection)).catch(() => {})
-  }, [])
+      const constraints: MediaStreamConstraints[] = [
+        // Best: specific back camera by deviceId (most reliable on iOS)
+        ...(backDeviceId ? [{ video: { deviceId: { exact: backDeviceId } }, audio: false }] : []),
+        // Good: non-exact facingMode (iOS-safe)
+        { video: { facingMode: 'environment' }, audio: false },
+        // Fallback: any camera
+        { video: true, audio: false },
+      ]
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  function captureB64(scale = 0.65): string | null {
-    const v = videoRef.current, c = captureRef.current
-    if (!v || !c || v.readyState < 2) return null
-    c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale)
-    c.getContext('2d')!.drawImage(v, 0, 0, c.width, c.height)
-    return c.toDataURL('image/jpeg', 0.80).split(',')[1]
-  }
-
-  function addMsg(text: string, p = 'guiding') {
-    if (!text) return
-    setMessages(prev => {
-      if (prev.length > 0 && prev[prev.length - 1].text === text) return prev
-      return [...prev.slice(-3), { id: ++msgCounter, text, phase: p }]
-    })
-  }
-
-  function schedule(fn: () => void, ms: number) {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(fn, ms)
-  }
-
-  // ── AR ray-cast: launch XR session and poll planes ─────────────────────────
-  async function startARSession(phaseId: Phase) {
-    if (!arSupported || !navigator.xr) return
-    try {
-      // @ts-ignore
-      const session = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test', 'plane-detection'],
-        optionalFeatures: ['dom-overlay'],
-      })
-      xrSessionRef.current = session
-      setArActive(true)
-
-      session.addEventListener('planesdetected', (event: any) => {
-        const planes: any[] = Array.from(event.planes as Set<any>)
-        latestPlanesRef.current = planes
-
-        const mode = phaseId === 'riser' ? 'riser' : phaseId === 'tread' ? 'tread' : 'width'
-        const best = pickBestPlane(planes, mode)
-        if (!best) return
-
-        const mm = extractMeasurement(best, mode)
-        const conf = planeConfidence(Array.from(best.polygon), 80, 2200, mm)
-        if (conf !== 'low') {
-          setArMm(mm)
-        }
-      })
-
-      session.addEventListener('end', () => {
-        setArActive(false)
-        xrSessionRef.current = null
-      })
-    } catch {
-      setArActive(false)
-    }
-  }
-
-  function stopARSession() {
-    xrSessionRef.current?.end().catch(() => {})
-    xrSessionRef.current = null
-    setArActive(false)
-    setArMm(null)
-    latestPlanesRef.current = []
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // PHASE 0 — DETECT
-  // ════════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (!camReady || phase !== 'detect') return
-
-    let tick = 5, alive = true, inFlight = false
-    setCountdown(5); setStairDetected(false)
-
-    async function detect() {
-      if (inFlight || !alive) return
-      inFlight = true
-      const b64 = captureB64(0.45)
-      if (!b64) { inFlight = false; return }
-
-      const raw = await callVision(b64, `Analyse this image of a potential staircase.
-
-Reply ONLY with valid JSON:
-{"stairVisible":true|false,"stepCount":number|null,"confident":true|false,"isResidential":true|false|null,"residentialReason":"brief reason"}
-
-Rules:
-- stairVisible: true if 2+ steps/risers/treads visible
-- stepCount: count of visible steps (null if < 2)
-- confident: true if clearly countable
-- isResidential: true if typical home stair (under 4m wide, 125-200mm risers), false if commercial/industrial, null if unsure`, 10000)
-
-      const parsed = parseJSON(raw)
-      if (parsed?.stairVisible && parsed.confident && parsed.stepCount >= 2 && alive) {
-        clearInterval(countdownInterval)
-        clearInterval(pollInterval)
-        setStepCount(parsed.stepCount)
-        setIsResidential(parsed.isResidential)
-        setStairDetected(true)
-        if (parsed.isResidential === false) {
-          setNeedsConfirmation(true)
+      let stream: MediaStream | null = null
+      for (const constraint of constraints) {
+        try { stream = await navigator.mediaDevices.getUserMedia(constraint); break }
+        catch (e: any) {
+          if (e?.name === 'NotReadableError' && attempt < 3) {
+            return startCamera(attempt + 1)
+          }
+          // OverconstrainedError or other — try next constraint
+          continue
         }
       }
-      inFlight = false
+
+      if (!stream) { if (alive) setCamError(true); return }
+      if (!alive)  { stream.getTracks().forEach(t => t.stop()); return }
+
+      streamRef.current = stream
+
+      // Attach to video element and play
+      const attachAndPlay = () => {
+        const v = videoRef.current
+        if (!v) return
+        v.srcObject = stream!
+        v.muted     = true
+        v.playsInline = true
+        v.play().catch(() => {})
+      }
+      attachAndPlay()
+
+      // Poll until video has real dimensions
+      let waited = 0
+      const poll = setInterval(() => {
+        if (!alive) { clearInterval(poll); return }
+        waited += 100
+        const v = videoRef.current
+        // Re-attach if srcObject got lost (can happen on re-render)
+        if (v && !v.srcObject && streamRef.current) attachAndPlay()
+        if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+          clearInterval(poll)
+          setCamReady(true)
+        }
+        if (waited > 8000) { clearInterval(poll); if (alive) setCamReady(true) }
+      }, 100)
     }
 
-    detect()
-    const pollInterval = setInterval(detect, 1500)
-    const countdownInterval = setInterval(() => {
-      tick -= 1
-      if (alive) setCountdown(Math.max(0, tick))
-      if (tick <= 0) clearInterval(countdownInterval)
-    }, 1000)
-
+    startCamera()
+    checkXRSupport().then(async s => {
+      const supported = s.immersiveAR && s.planeDetection
+      setArSupported(supported)
+      if (supported && arOverlayRef.current) {
+        // Start session on first user gesture — WebXR requires gesture context.
+        // We attach it to the first camera-ready event which happens after user
+        // grants camera permission (itself a gesture).
+        const started = await startARSession(
+          arOverlayRef.current,
+          (planes) => { if (alive) setArPlanes(planes) }
+        )
+        console.log('[ARCore] session started:', started)
+      }
+    }).catch(()=>{})
     return () => {
       alive = false
-      clearInterval(pollInterval)
-      clearInterval(countdownInterval)
-    }
-  }, [camReady, phase]) // eslint-disable-line
-
-  // When detected, advance after 2s (or wait for confirmation)
-  useEffect(() => {
-    if (!stairDetected || needsConfirmation) return
-    const t = setTimeout(() => {
-      setPhase('riser')
-      addMsg('Great! Now face the riser directly — hold the phone level.', 'guiding')
-    }, 2000)
-    return () => clearTimeout(t)
-  }, [stairDetected, needsConfirmation]) // eslint-disable-line
-
-  // ════════════════════════════════════════════════════════════════
-  // PHASES 1-3 — RISER / TREAD / WIDTH  (AI + optional AR)
-  // ════════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (phase !== 'riser' && phase !== 'tread' && phase !== 'width') return
-    if (!camReady) return
-
-    const cfg = PHASE_CONFIG[phase]
-    busyRef.current = false
-    setLockedMm(null)
-    setArMm(null)
-    setCorrection(null)
-
-    // Start AR for riser/tread in accuracy mode
-    if (cfg.arUsed && arSupported && !isSpeed) {
-      startARSession(phase)
-    }
-
-    let alive = true
-
-    async function analyse() {
-      if (busyRef.current || !alive || lockedMm !== null) return
-      busyRef.current = true
-      setThinking(true)
-
-      const b64 = captureB64()
-      if (!b64) { busyRef.current = false; setThinking(false); schedule(analyse, 2000); return }
-
-      const currentArMm = latestPlanesRef.current.length > 0
-        ? (() => {
-            const best = pickBestPlane(latestPlanesRef.current, phase === 'riser' ? 'riser' : 'tread')
-            return best ? extractMeasurement(best, phase === 'riser' ? 'riser' : 'tread') : null
-          })()
-        : null
-
-      const raw = await callVision(b64, cfg.aiPrompt(currentArMm), isSpeed ? 8000 : 15000)
-      setThinking(false)
-      busyRef.current = false
-
-      if (!alive) return
-
-      const r = parseJSON(raw)
-      if (!r) { schedule(analyse, isSpeed ? 1500 : 3000); return }
-
-      addMsg(r.message, r.phase)
-
-      // Show correction note if AI adjusted for perspective
-      if (r.correctionApplied && r.orthogonalDeg > 10) {
-        setCorrection(`Corrected ${r.orthogonalDeg}° tilt`)
-      }
-
-      const threshold = isSpeed ? 0.50 : (phase === 'width' ? 0.60 : 0.62)
-      if ((r.phase === 'locked' || isSpeed) && r.estimatedMm && r.confidence >= threshold) {
-        const mm = Math.min(Math.max(Math.round(r.estimatedMm), cfg.rangeMin), cfg.rangeMax)
-        setLockedMm(mm)
-        if (r.secondaryMm && phase === 'tread') {
-          setResults(prev => ({ ...prev, width: Math.round(r.secondaryMm) }))
-        }
-        stopARSession()
-        Analytics.measurementLocked(phase, mm, r.confidence)
-      } else {
-        schedule(analyse, isSpeed ? 1200 : (r.phase === 'searching' ? 3000 : 2200))
-      }
-    }
-
-    schedule(analyse, 800)
-
-    // Speed mode auto-fill after 8s
-    const autoFill = isSpeed ? setTimeout(() => {
-      if (!lockedMm && alive) {
-        setLockedMm(cfg.typical)
-        stopARSession()
-      }
-    }, 8000) : null
-
-    return () => {
-      alive = false
-      if (timerRef.current) clearTimeout(timerRef.current)
-      if (autoFill) clearTimeout(autoFill)
+      streamRef.current?.getTracks().forEach(t => t.stop())
       stopARSession()
     }
-  }, [phase, camReady]) // eslint-disable-line
+  }, [])
 
-  // ════════════════════════════════════════════════════════════════
-  // PHASE 4 — NOSING  (single AI check, Y/N)
-  // ════════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (phase !== 'nosing' || !camReady) return
-    let alive = true
-    busyRef.current = false
-    setNosingResult(null)
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function captureB64(scale=1.0): string|null {
+    const v = videoRef.current, c = captureRef.current
+    if (!v || !c) return null
 
-    addMsg('Point the camera at the front edge of a tread — checking for nosing.', 'guiding')
-
-    async function checkNosing() {
-      if (busyRef.current || !alive) return
-      busyRef.current = true
-      setThinking(true)
-
-      const b64 = captureB64()
-      if (!b64) { busyRef.current = false; setThinking(false); schedule(checkNosing, 1500); return }
-
-      const raw = await callVision(b64, PHASE_CONFIG.nosing.aiPrompt(null), 10000)
-      setThinking(false)
-      busyRef.current = false
-
-      if (!alive) return
-      const r = parseJSON(raw)
-      if (!r) { schedule(checkNosing, 2000); return }
-
-      addMsg(r.message, 'measuring')
-
-      if (r.confidence >= 0.65) {
-        setNosingResult(r.hasNosing ?? false)
-        setNosingMm(r.estimatedMm ?? 0)
-      } else {
-        schedule(checkNosing, 2000)
-      }
+    // Re-attach stream if lost
+    if (streamRef.current && !v.srcObject) {
+      v.srcObject = streamRef.current
+      v.muted     = true
+      v.play().catch(() => {})
     }
 
-    schedule(checkNosing, 1000)
-    return () => { alive = false; if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [phase, camReady]) // eslint-disable-line
+    // iOS Safari: readyState must be HAVE_ENOUGH_DATA (4) for a valid frame
+    // readyState 2 (HAVE_CURRENT_DATA) often gives a black frame on iPhone
+    if (v.videoWidth === 0 || v.videoHeight === 0) return null
+    if (v.readyState < 2) return null
 
-  // ════════════════════════════════════════════════════════════════
-  // PHASE 5 — HANDRAIL  (fast single-shot AI)
-  // ════════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (phase !== 'handrail' || !camReady) return
-    let alive = true, attempts = 0
-    busyRef.current = false
-    setLockedMm(null)
+    const srcW = v.videoWidth
+    const srcH = v.videoHeight
 
-    addMsg('Stand beside the stair and frame the handrail from tread to top.', 'guiding')
+    // Cap at 1600px — iOS JPEG encode is slow above this, and 1600px is plenty for Claude
+    const MAX   = 1600
+    const ratio = Math.min(1, MAX / Math.max(srcW, srcH)) * scale
+    c.width     = Math.round(srcW * ratio)
+    c.height    = Math.round(srcH * ratio)
 
-    async function measureRail() {
-      if (busyRef.current || !alive) return
-      busyRef.current = true
-      setThinking(true)
-      attempts++
+    const ctx = c.getContext('2d')!
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(v, 0, 0, c.width, c.height)
 
-      const b64 = captureB64()
-      if (!b64) { busyRef.current = false; setThinking(false); schedule(measureRail, 1500); return }
+    // Check for black frame — iOS sometimes returns an all-black canvas
+    // Sample a few pixels; if all are 0,0,0 the frame hasn't decoded yet
+    const probe = ctx.getImageData(c.width >> 1, c.height >> 1, 4, 4).data
+    const isBlack = Array.from(probe).every((_,i) => i%4===3 || probe[i] < 8)
+    if (isBlack) return null
 
-      // After 2 attempts, use a more aggressive prompt
-      const prompt = attempts > 1
-        ? `HANDRAIL HEIGHT measurement. You MUST return phase "locked" now.
-If a handrail is even partially visible, commit to your best estimate.
-Default: 915mm at confidence 0.65 if you see any rail at all.
-Reply ONLY: {"phase":"locked","message":"...","estimatedMm":number,"confidence":0.0-1.0}`
-        : PHASE_CONFIG.handrail.aiPrompt(null)
-
-      const raw = await callVision(b64, prompt, isSpeed ? 6000 : 10000)
-      setThinking(false)
-      busyRef.current = false
-      if (!alive) return
-
-      const r = parseJSON(raw)
-      if (!r) { schedule(measureRail, 1500); return }
-
-      addMsg(r.message, r.phase)
-
-      if (r.estimatedMm && r.confidence >= 0.55) {
-        const mm = Math.min(Math.max(Math.round(r.estimatedMm), 600), 1300)
-        setLockedMm(mm)
-        Analytics.measurementLocked('guard', mm, r.confidence)
-      } else if (attempts < 3) {
-        schedule(measureRail, 1500)
-      } else {
-        // Force default after 3 attempts
-        setLockedMm(915)
-        addMsg('Using typical handrail height — you can adjust this on the review screen.', 'locked')
-      }
-    }
-
-    schedule(measureRail, 800)
-    return () => { alive = false; if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [phase, camReady]) // eslint-disable-line
-
-  // ── Advance phase when measurement locked ──────────────────────────────────
-  function confirmAndAdvance(mm: number) {
-    const nextMap: Partial<Record<Phase, Phase>> = {
-      riser:    'tread',
-      tread:    results.width ? 'nosing' : 'width',
-      width:    'nosing',
-      handrail: 'review',
-    }
-    const newResults = { ...results, [phase]: mm }
-    setResults(newResults)
-    setLockedMm(null)
-
-    const next = nextMap[phase]
-    if (next) {
-      const labels: Record<string, string> = {
-        tread: 'Tread depth locked. Now point the camera down at the treads.',
-        width: 'Now step back so both sides of the stair are visible.',
-        nosing: 'Now check for nosing — point at the front edge of a tread.',
-        handrail: 'Almost done! Frame the handrail from tread to top.',
-        review: 'All measurements complete!',
-      }
-      addMsg(labels[next] ?? 'Next step', 'guiding')
-      setPhase(next)
-    }
+    return c.toDataURL('image/jpeg', 0.88).split(',')[1]
   }
 
-  function confirmNosing(hasNosing: boolean) {
-    const newResults = { ...results, nosing: hasNosing ? (nosingMm || 30) : 'none' }
-    setResults(newResults)
-    addMsg('Almost done! Frame the handrail from tread to top.', 'guiding')
-    setPhase('handrail')
+  function captureB64Small(): string|null {
+    // Smaller version for email embedding only — 50% of native
+    return captureB64(0.5)
   }
 
-  function confirmHandrail(mm: number) {
-    const newResults: Record<string, number | string> = { ...results, guard: mm }
-    setResults(newResults)
-    if (!newResults.headroom) newResults.headroom = 'clear'
-    setReviewVals(newResults)
+  function clearTimer() {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
+  }
+
+  // ── Go to a position — always starts at 'position' stage with full countdown ─
+  const goTo = useCallback((idx: number) => {
+    clearTimer()
+    if (idx >= POSITIONS.length) { finishScan(); return }
+    busyRef.current = false
+    setPosIdx(idx)
+    setAdjustVal(null)
+    setAiMessage(null)
+    setStage('position')
+    setCountdown(POSITIONS[idx].positionTime)
+  }, []) // eslint-disable-line
+
+  // Init on camera ready
+  useEffect(() => { if (camReady) goTo(0) }, [camReady]) // eslint-disable-line
+
+  // Re-attach stream whenever we enter camera-active stages (prevents black screen)
+  useEffect(() => {
+    if (stage === 'hold' || stage === 'capture' || stage === 'analysing' || stage === 'result') {
+      const v = videoRef.current
+      if (v && streamRef.current && !v.srcObject) {
+        v.srcObject = streamRef.current
+        v.muted = true
+        v.play().catch(() => {})
+      }
+    }
+  }, [stage])
+
+  // When review screen closes AND there's a pending rescan, jump to that position
+  useEffect(() => {
+    if (!showReview && pendingRescanRef.current >= 0) {
+      const idx = pendingRescanRef.current
+      pendingRescanRef.current = -1
+      busyRef.current = false
+
+      // Poll until the video element is in the DOM and stream is attached
+      // (showReview hides the entire scan UI so videoRef.current may be null briefly)
+      let attempts = 0
+      const attach = setInterval(() => {
+        attempts++
+        const v = videoRef.current
+        const s = streamRef.current
+        if (v && s) {
+          clearInterval(attach)
+          if (!v.srcObject || v.srcObject !== s) {
+            v.srcObject = s
+            v.muted = true
+            v.playsInline = true
+            v.play().catch(() => {})
+          }
+          // Wait for video to have real dimensions before starting countdown
+          let waited = 0
+          const waitDims = setInterval(() => {
+            waited += 50
+            if ((videoRef.current?.videoWidth ?? 0) > 0) {
+              clearInterval(waitDims)
+              goTo(idx)
+            }
+            if (waited > 2000) { clearInterval(waitDims); goTo(idx) }
+          }, 50)
+        }
+        if (attempts > 40) { clearInterval(attach); goTo(idx) }  // 2s safety
+      }, 50)
+    }
+  }, [showReview]) // eslint-disable-line
+
+  // ── Stage: position — countdown ticking + slide cycling ─────────────────
+  useEffect(() => {
+    if (stage !== 'position') return
+    if (countdown <= 0) {
+      setStage('ready')
+      return
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [stage, countdown])
+
+  // Slide cycle effect removed — intro slideshow handles all illustrations
+
+  // ── Stage: ready — waiting for user tap (no timer) ────────────────────────
+  // User taps "I'm Ready" → start hold countdown + warm-up timer
+  function handleReady() {
+    // Immediately hide illustration so camera gets full unobstructed view
+    // BEFORE we start the hold countdown — critical for auto-exposure
+    setCamWarm(false)
+    setStage('hold')          // illustration disappears immediately (showIllustration becomes false)
+    setCountdown(currentPos.holdSeconds)
+    // Camera warm-up: 2s — iOS autofocus/exposure takes longer than Android
+    setTimeout(() => setCamWarm(true), 2000)
+  }
+
+  // ── Stage: hold — camera live, hold-still countdown ───────────────────────
+  useEffect(() => {
+    if (stage !== 'hold') return
+    if (countdown <= 0) {
+      // Hold countdown done → show "Tap to Capture" prompt
+      setStage('capture')
+      return
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [stage, countdown])
+
+  // ── Stage: capture — user taps, save frame for report, then analyse ────────
+  function handleCapture() {
+    // Capture and store the frame for this position (used in email report)
+    const b64 = captureB64Small()  // smaller for email embedding
+    if (b64) capturedFrames.current[currentPos.id] = b64
+    busyRef.current = false
+    setStage('analysing')
+  }
+
+  // ── Stage: analysing — AI call ────────────────────────────────────────────
+  useEffect(() => {
+    if (stage !== 'analysing' || busyRef.current) return
+    busyRef.current = true
+
+    async function run() {
+      // iOS Safari: video frame may not be decoded on first call
+      // Retry up to 6 times with 250ms gap before giving up
+      let b64: string|null = null
+      for (let attempt = 0; attempt < 6; attempt++) {
+        b64 = captureB64()
+        if (b64) break
+        await new Promise(r => setTimeout(r, 250))
+      }
+      if (!b64) {
+        busyRef.current = false
+        setStage('capture')
+        return
+      }
+
+      // Read current results from ref (always fresh, no stale closure issue)
+      const priorSnap = { ...resultsRef.current }
+
+      // ── Try ARCore plane measurement first (Android only) ──────────────────
+      const modeMap: Record<string, import('@/lib/arcore-session').ARMeasurementMode> = {
+        riser_front: 'riser', tread_top: 'tread', alt_angle: 'width',
+        handrail: 'handrail', overview: 'headroom',
+      }
+      const arMode = modeMap[currentPos.id]
+      if (isARSessionActive() && arMode) {
+        const arResult = measureFromPlanes(arMode, priorSnap)
+        if (arResult) {
+          busyRef.current = false
+          // Inject as if it came from AI
+          const fakeR = {
+            estimatedMm: arResult.estimatedMm,
+            confidence:  arResult.confidence,
+            message:     arResult.message,
+            hasNosing:   undefined,
+          }
+          // Fall through to extraction with fakeR
+          extractMeasurements(fakeR)
+          setAiMessage(arResult.message)
+          setStage('result')
+          return
+        }
+      }
+
+      const raw = await callVision(b64, currentPos.aiPrompt(priorSnap))
+      busyRef.current = false
+      const r = parseJSON(raw)
+
+      if (!r) {
+        setAiMessage("Could not read the image clearly — tap Retry to try again.")
+        setStage('result')
+        return
+      }
+
+      extractMeasurements(r)
+      setAiMessage(r.message ?? null)
+      setStage('result')
+    }
+
+    run()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage])
+
+  // ── Shared measurement extraction (used by both AI Vision and ARCore) ─────
+  function extractMeasurements(r: any) {
+      // Extract measurements — coerce all values to numbers defensively
+      const mm = (v: any): number | null => {
+        if (v == null) return null
+        const n = typeof v === 'number' ? v : parseFloat(String(v))
+        return isNaN(n) || n <= 0 ? null : Math.round(n)
+      }
+      const p = currentPos.id
+
+      setResults(prev => {
+        const next = { ...prev }
+
+        if (p === 'overview') {
+          const sc = mm(r.stepCount)
+          if (sc)                      next.riserCount    = sc
+          if (r.headroom != null)      next.headroom      = r.headroom === 'clear' ? 'clear' : (mm(r.headroom) ?? 'clear')
+          if (r.isResidential != null) next.isResidential = r.isResidential ? 1 : 0
+        }
+
+        const est = mm(r.estimatedMm)
+        // Store scale reference used for this measurement (shown in UI)
+        if (r.scaleRef) next.scaleRef = r.scaleRef
+
+        if (p === 'riser_front') {
+          // Always store the estimate even if low confidence — user can adjust
+          next.rise = est ?? mm(r.estimated_mm) ?? 175  // fallback to typical value
+        }
+        if (p === 'riser_front') {
+          // Also extract nosing detected during riser measurement
+          const hasN = r.hasNosing === true || r.has_nosing === true
+          const nm = mm(r.nosingMm ?? r.nosing_mm)
+          next.nosing = hasN ? (nm ?? 25) : 'none'
+          if (nm) setNosingMm(nm)
+        }
+        if (p === 'handrail') {
+          next.guard        = est ?? mm(r.estimated_mm) ?? 900
+          const off = mm(r.offsetMm ?? r.offset_mm)
+          if (off) next.handrailOffset = off
+        }
+        if (p === 'alt_angle') {
+          next.width = est ?? mm(r.estimated_mm) ?? null
+        }
+        if (p === 'tread_top') {
+          next.run = est ?? mm(r.estimated_mm) ?? 250  // fallback to typical value
+        }
+
+        resultsRef.current = next
+        return next
+      })
+  }  // end extractMeasurements
+
+
+  // ── Finish early ──────────────────────────────────────────────────────────
+  function finishScan() {
+    clearTimer()
+    // Use resultsRef so this always has fresh data even inside stale closures
+    const final = { ...resultsRef.current }
+    if (!final.headroom) final.headroom = 'clear'
+    setResults(final)
+    resultsRef.current = final
+    setReviewVals(final)
     setShowReview(true)
-    setPhase('review')
   }
 
-  function finishReview() {
+  function submitReview() {
     Analytics.scanCompleted({ role: userRole, measurementCount: Object.keys(reviewVals).length, hasFailed: false })
-    onSuccess(reviewVals)
+    // Attach captured frames to measurements so report generation can embed them
+    const withFrames = { ...reviewVals, _frames: JSON.stringify(capturedFrames.current) }
+    onSuccess(withFrames)
   }
 
-  const profile = getProfile(userRole)
-  const GOLD = '#F0B429'
+  // ── Derived display state ─────────────────────────────────────────────────
+  // Show illustration: during position/ready/paused
+  const showIllustration = false  // images removed — intro slideshow handles all illustrations
+  // Show camera live: always — camera is always on in background
+  // During illustration stages, camera shows at reduced opacity behind the white-bg overlay
+  const showCamera = true
+  // Camera is ALWAYS full opacity — dimming it causes auto-exposure to recalibrate
+  // and produces dark/blurry frames when we need to capture
+  const cameraOpacity = 1
 
-  // ── Camera error ─────────────────────────────────────────────────────────
+  const progressPct   = (posIdx / POSITIONS.length) * 100
+  const IMAGE_TOP     = 88
+  const BOTTOM_PANEL  = 210  // slightly taller for larger tap targets
+
+  // ── Camera error ──────────────────────────────────────────────────────────
   if (camError) return (
-    <div style={{ position:'fixed', inset:0, background:NAVY, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', padding:'2rem' }}>
-      <div style={{ fontSize:'2rem' }}>📷</div>
-      <p style={{ color:WHITE, textAlign:'center' }}>Camera access required</p>
-      <button onClick={onBack} style={{ padding:'0.8rem 2rem', background:AMBER, border:'none', borderRadius:12, color:'#fff', fontWeight:700, cursor:'pointer' }}>← Back</button>
+    <div style={{position:'fixed',inset:0,background:NAVY,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+      <div style={{fontSize:'2rem'}}>📷</div>
+      <p style={{color:WHITE,textAlign:'center'}}>Camera access is required to scan stairs.</p>
+      <button onClick={onBack} style={{padding:'0.8rem 2rem',background:AMBER,border:'none',borderRadius:12,color:'#fff',fontWeight:700,cursor:'pointer'}}>Back</button>
     </div>
   )
 
-  const currentPhaseLabel = phase === 'detect' ? 'Detecting stairs…'
-    : phase === 'review' ? 'Review'
-    : PHASE_CONFIG[phase]?.label ?? phase
+  // ── Review screen ─────────────────────────────────────────────────────────
+  function rescanPosition(posId: Position) {
+    const idx = POSITIONS.findIndex(p => p.id === posId)
+    if (idx < 0) return
+    rescanReturnRef.current  = true
+    pendingRescanRef.current = idx
+    setShowReview(false)
+    // goTo is called by the showReview useEffect below (after review unmounts)
+  }
 
-  const phaseInstruction = phase === 'detect' ? 'Point your camera at the staircase'
-    : phase === 'review' ? 'Confirm your measurements'
-    : PHASE_CONFIG[phase]?.instruction ?? ''
-
-  const lastMsg = messages[messages.length - 1]
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'#000', overflow:'hidden' }}>
-      {/* Camera feed */}
-      <video ref={videoRef} autoPlay playsInline muted
-        style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', opacity: lockedMm ? 0.55 : 1, transition:'opacity 0.4s' }}
-      />
-      <canvas ref={captureRef} style={{ display:'none' }} />
-
-      {/* Top bar */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:50,
-        paddingTop:'max(env(safe-area-inset-top,0px),2.2rem)', paddingBottom:'0.6rem',
-        paddingLeft:'1rem', paddingRight:'1rem',
-        background:'linear-gradient(to bottom,rgba(0,0,0,0.8),transparent)',
-        display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <button onClick={onBack}
-          style={{ width:38, height:38, borderRadius:'50%', background:'rgba(0,0,0,0.5)',
-            border:'1px solid rgba(255,255,255,0.2)', color:WHITE, fontSize:'1rem', cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center' }}>←</button>
-
-        <div style={{ textAlign:'center' }}>
-          <div style={{ fontSize:'0.65rem', fontFamily:'monospace', letterSpacing:'0.15em', color:'rgba(255,255,255,0.5)' }}>
-            {PHASES.filter(p => p !== 'review').indexOf(phase as Exclude<Phase,'review'>) + 1} / {PHASES.length - 1}
-          </div>
-          <div style={{ fontSize:'0.75rem', fontWeight:700, color:WHITE }}>{currentPhaseLabel}</div>
+  // ── INTRO SLIDESHOW — shown before scan begins ─────────────────────────────
+  if (showIntro) {
+    const slide = INTRO_SLIDES[introSlide]
+    const isLast = introSlide === INTRO_SLIDES.length - 1
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>
+        {/* Header */}
+        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <button onClick={onBack} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.85rem',cursor:'pointer',fontFamily:'monospace',padding:'0.25rem 0'}}>← Exit</button>
+          <span style={{fontSize:'0.72rem',fontFamily:'monospace',color:'#9ca3af',letterSpacing:'0.1em'}}>HOW TO SCAN</span>
+          <button onClick={()=>setShowIntro(false)} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.75rem',cursor:'pointer',fontFamily:'monospace'}}>Skip →</button>
         </div>
 
-        <div style={{ display:'flex', alignItems:'center', gap:'0.3rem',
-          background: arActive ? 'rgba(39,169,107,0.2)' : arSupported ? 'rgba(74,144,226,0.15)' : 'rgba(242,147,55,0.15)',
-          border:`1px solid ${arActive ? 'rgba(39,169,107,0.5)' : arSupported ? 'rgba(74,144,226,0.4)' : 'rgba(242,147,55,0.4)'}`,
-          borderRadius:14, padding:'0.2rem 0.6rem' }}>
-          <div style={{ width:5, height:5, borderRadius:'50%',
-            background: arActive ? GREEN : arSupported ? BLUE : AMBER,
-            boxShadow:`0 0 5px ${arActive ? GREEN : arSupported ? BLUE : AMBER}` }}/>
-          <span style={{ fontSize:'0.52rem', fontFamily:'monospace', letterSpacing:'0.1em',
-            color: arActive ? GREEN : arSupported ? BLUE : AMBER, fontWeight:700 }}>
-            {arActive ? 'AR ACTIVE' : arSupported
-              ? (/iPad|iPhone|iPod/.test(typeof navigator !== 'undefined' ? navigator.userAgent : '') ? 'ARKit' : 'ARCore')
-              : 'AI'}
-          </span>
+        {/* Image — full white bg, fills most of screen */}
+        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
+          <img
+            key={slide.img}
+            src={slide.img}
+            alt={slide.title}
+            style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',display:'block',animation:'fadeSlide 0.3s ease'}}
+          />
+          {/* Left arrow */}
+          {introSlide > 0 && (
+            <button
+              onClick={()=>setIntroSlide(i=>i-1)}
+              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
+              ‹
+            </button>
+          )}
+          {/* Right arrow */}
+          <button
+            onClick={()=>{ if(isLast) setShowIntro(false); else setIntroSlide(i=>i+1) }}
+            style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background: isLast ? '#27A96B' : 'rgba(10,28,46,0.85)',border:`2px solid ${isLast ? '#27A96B' : 'rgba(255,255,255,0.25)'}`,color:'#fff',fontSize: isLast ? '1rem' : '1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)',fontFamily:'monospace'}}>
+            {isLast ? '✓' : '›'}
+          </button>
         </div>
-      </div>
 
-      {/* Phase instruction banner */}
-      <div style={{ position:'absolute', top:'5.5rem', right:'1rem', zIndex:45,
-        background:'rgba(10,28,46,0.96)', backdropFilter:'blur(10px)',
-        border:'1px solid rgba(255,255,255,0.18)', borderRadius:14,
-        padding:'0.65rem 0.95rem', maxWidth:220, textAlign:'right',
-        boxShadow:'0 4px 20px rgba(0,0,0,0.4)' }}>
-        <div style={{ fontSize:'0.82rem', color:'#FFFFFF', fontWeight:700, lineHeight:1.45 }}>{phaseInstruction}</div>
-      </div>
-
-      {/* AR reading indicator */}
-      {arMm && (
-        <div style={{ position:'absolute', top:'9rem', right:'1rem', zIndex:45,
-          background:'rgba(39,169,107,0.15)', border:'1px solid rgba(39,169,107,0.4)',
-          borderRadius:10, padding:'0.4rem 0.7rem', textAlign:'right' }}>
-          <div style={{ fontSize:'0.55rem', color:GREEN, fontFamily:'monospace', letterSpacing:'0.1em' }}>AR READING</div>
-          <div style={{ fontSize:'1rem', fontWeight:900, color:GREEN, fontFamily:'monospace' }}>{arMm}<span style={{ fontSize:'0.6rem' }}>mm</span></div>
-          {correction && <div style={{ fontSize:'0.55rem', color:'rgba(39,169,107,0.7)' }}>{correction}</div>}
+        {/* Text */}
+        <div style={{padding:'1rem 1.25rem',flexShrink:0}}>
+          <div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
+          <div style={{fontSize:'0.82rem',color:'#4b5563',lineHeight:1.6,fontFamily:'system-ui,sans-serif'}}>{slide.desc}</div>
         </div>
-      )}
 
-      {/* ══════════════════════════════════════════════════
-          DETECT PHASE UI
-      ══════════════════════════════════════════════════ */}
-      {phase === 'detect' && (
-        <div style={{ position:'absolute', bottom:'max(env(safe-area-inset-bottom,0px),2.5rem)',
-          left:'1rem', right:'1rem', zIndex:50,
-          display:'flex', flexDirection:'column', alignItems:'center', gap:'0.8rem' }}>
-
-          {/* Countdown ring */}
-          {!stairDetected && (
-            <>
-              <div style={{ position:'relative', width:72, height:72 }}>
-                <svg width="72" height="72" style={{ transform:'rotate(-90deg)' }}>
-                  <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5"/>
-                  <circle cx="36" cy="36" r="30" fill="none"
-                    stroke={countdown === 0 ? RED : AMBER} strokeWidth="5"
-                    strokeDasharray={`${2*Math.PI*30}`}
-                    strokeDashoffset={`${2*Math.PI*30*(1-countdown/5)}`}
-                    strokeLinecap="round"
-                    style={{ transition:'stroke-dashoffset 0.9s linear, stroke 0.3s' }}
-                  />
-                </svg>
-                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:'1.5rem', fontWeight:900, color: countdown===0 ? RED : WHITE, fontFamily:'monospace' }}>
-                  {countdown > 0 ? countdown : '!'}
-                </div>
-              </div>
-              <div style={{ background:'rgba(10,28,46,0.88)', backdropFilter:'blur(6px)',
-                border:`1px solid ${countdown===0 ? 'rgba(232,69,69,0.5)' : 'rgba(255,255,255,0.15)'}`,
-                borderRadius:14, padding:'0.6rem 1rem', textAlign:'center', maxWidth:280 }}>
-                {countdown > 0
-                  ? <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.7)', fontFamily:'monospace', letterSpacing:'0.08em' }}>DETECTING STAIRCASE…</div>
-                  : <>
-                      <div style={{ fontSize:'0.75rem', color:RED, fontFamily:'monospace', fontWeight:800, letterSpacing:'0.08em', marginBottom:'0.3rem' }}>✕ NO STAIRCASE DETECTED</div>
-                      <div style={{ fontSize:'0.68rem', color:WHITE, lineHeight:1.6 }}>Point camera directly at stairs. 2–3 steps must be visible.</div>
-                    </>
-                }
-              </div>
-            </>
-          )}
-
-          {/* Stair detected — show count */}
-          {stairDetected && !needsConfirmation && (
-            <div style={{ background:'rgba(10,28,46,0.92)', backdropFilter:'blur(8px)',
-              border:'1.5px solid rgba(39,169,107,0.5)', borderRadius:18,
-              padding:'1rem 1.25rem', textAlign:'center', maxWidth:300 }}>
-              <div style={{ fontSize:'1.5rem', marginBottom:'0.3rem' }}>✓</div>
-              <div style={{ fontSize:'0.85rem', fontWeight:800, color:GREEN, marginBottom:'0.2rem' }}>
-                {stepCount} steps detected
-              </div>
-              <div style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.7)' }}>
-                Starting measurements…
-              </div>
-            </div>
-          )}
-
-          {/* Non-residential confirmation */}
-          {needsConfirmation && (
-            <div style={{ background:'rgba(10,28,46,0.95)', backdropFilter:'blur(12px)',
-              border:`1.5px solid ${AMBER}44`, borderRadius:18,
-              padding:'1.1rem 1.25rem', textAlign:'center', maxWidth:300, width:'100%' }}>
-              <div style={{ fontSize:'0.85rem', fontWeight:700, color:AMBER, marginBottom:'0.4rem' }}>
-                ⚠ These may not be residential stairs
-              </div>
-              <div style={{ fontSize:'0.7rem', color:WHITE, lineHeight:1.6, marginBottom:'0.75rem' }}>
-                I detected {stepCount} steps but they look like they may be commercial or industrial.
-                Residential codes require different tolerances.
-              </div>
-              <div style={{ display:'flex', gap:'0.6rem' }}>
-                <button onClick={() => { setNeedsConfirmation(false); setPhase('riser') }}
-                  style={{ flex:1, padding:'0.7rem', background:GREEN, border:'none', borderRadius:10,
-                    color:'#fff', fontWeight:700, cursor:'pointer', fontFamily:'monospace', fontSize:'0.78rem' }}>
-                  ✓ Residential
-                </button>
-                <button onClick={() => { setNeedsConfirmation(false); setPhase('riser') }}
-                  style={{ flex:1, padding:'0.7rem', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)',
-                    borderRadius:10, color:WHITE, fontWeight:600, cursor:'pointer', fontFamily:'monospace', fontSize:'0.78rem' }}>
-                  Continue anyway
-                </button>
-              </div>
-            </div>
-          )}
+        {/* Dot indicators */}
+        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 0.75rem)',paddingTop:'0.25rem',flexShrink:0}}>
+          {INTRO_SLIDES.map((_,i)=>(
+            <div key={i} onClick={()=>setIntroSlide(i)} style={{
+              width: i===introSlide ? 22 : 8, height:8,
+              borderRadius: i===introSlide ? 4 : '50%',
+              background: i===introSlide ? '#0A1C2E' : '#d1d5db',
+              cursor:'pointer',transition:'all 0.25s ease',
+            }}/>
+          ))}
         </div>
-      )}
 
-      {/* ══════════════════════════════════════════════════
-          MEASUREMENT PHASES (riser / tread / width / handrail)
-      ══════════════════════════════════════════════════ */}
-      {(phase === 'riser' || phase === 'tread' || phase === 'width' || phase === 'handrail') && (
-        <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:50,
-          background:'linear-gradient(to top, rgba(10,28,46,0.98) 60%, transparent)',
-          paddingTop:'2rem', paddingLeft:'1.25rem', paddingRight:'1.25rem',
-          paddingBottom:'max(env(safe-area-inset-bottom,0px),2.2rem)',
-          display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-
-          {/* AI coach message */}
-          {lastMsg && (
-            <div style={{
-              background: 'rgba(10,28,46,0.95)',
-              borderRadius: 16,
-              padding: '0.85rem 1.1rem',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)',
-            }}>
-              <div style={{
-                fontSize: '1rem',
-                fontWeight: 600,
-                color: '#FFFFFF',
-                lineHeight: 1.55,
-                letterSpacing: '-0.01em',
-              }}>{lastMsg.text}</div>
-            </div>
-          )}
-
-          {thinking && (
-            <div style={{ display:'flex', alignItems:'center', gap:'0.6rem',
-              background:'rgba(10,28,46,0.85)', borderRadius:10, padding:'0.5rem 0.85rem',
-              border:'1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ width:8, height:8, borderRadius:'50%', background:AMBER, animation:'pulse 1s infinite', flexShrink:0 }}/>
-              <span style={{ fontSize:'0.82rem', fontWeight:600, color:'rgba(255,255,255,0.85)' }}>Analysing…</span>
-            </div>
-          )}
-
-          {/* Locked — confirm button */}
-          {lockedMm && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'3rem', fontWeight:900, color:WHITE, letterSpacing:'-0.04em', lineHeight:1 }}>{lockedMm}</div>
-                <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', fontFamily:'monospace' }}>mm</div>
-                {correction && <div style={{ fontSize:'0.62rem', color:GREEN, marginTop:'0.2rem' }}>📐 {correction}</div>}
-              </div>
-              <div style={{ display:'flex', gap:'0.6rem' }}>
-                <button onClick={() => { setLockedMm(null); schedule(() => {}, 100) }}
-                  style={{ flex:1, padding:'0.85rem', background:'rgba(255,255,255,0.08)',
-                    border:'1px solid rgba(255,255,255,0.2)', borderRadius:14,
-                    color:'rgba(255,255,255,0.6)', fontFamily:'monospace', cursor:'pointer', fontSize:'0.82rem' }}>
-                  ↺ Retry
-                </button>
-                <button onClick={() => phase === 'handrail' ? confirmHandrail(lockedMm) : confirmAndAdvance(lockedMm)}
-                  style={{ flex:2, padding:'0.85rem',
-                    background:`linear-gradient(135deg,${GREEN},#1A7A50)`,
-                    border:'none', borderRadius:14, color:'#fff',
-                    fontFamily:'monospace', fontWeight:800, cursor:'pointer',
-                    fontSize:'0.9rem', boxShadow:'0 4px 20px rgba(39,169,107,0.45)' }}>
-                  ✓ Confirm {lockedMm}mm →
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════
-          NOSING PHASE — Y/N
-      ══════════════════════════════════════════════════ */}
-      {phase === 'nosing' && (
-        <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:50,
-          background:'linear-gradient(to top, rgba(10,28,46,0.98) 60%, transparent)',
-          paddingTop:'2rem', paddingLeft:'1.25rem', paddingRight:'1.25rem',
-          paddingBottom:'max(env(safe-area-inset-bottom,0px),2.2rem)',
-          display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-
-          {lastMsg && (
-            <div style={{
-              background: 'rgba(10,28,46,0.95)',
-              borderRadius: 16,
-              padding: '0.85rem 1.1rem',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)',
-            }}>
-              <div style={{
-                fontSize: '1rem',
-                fontWeight: 600,
-                color: '#FFFFFF',
-                lineHeight: 1.55,
-                letterSpacing: '-0.01em',
-              }}>{lastMsg.text}</div>
-            </div>
-          )}
-
-          {thinking && (
-            <div style={{ display:'flex', alignItems:'center', gap:'0.6rem',
-              background:'rgba(10,28,46,0.85)', borderRadius:10, padding:'0.5rem 0.85rem',
-              border:'1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ width:8, height:8, borderRadius:'50%', background:AMBER, animation:'pulse 1s infinite', flexShrink:0 }}/>
-              <span style={{ fontSize:'0.82rem', fontWeight:600, color:'rgba(255,255,255,0.85)' }}>Checking for nosing…</span>
-            </div>
-          )}
-
-          {nosingResult !== null && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-              <div style={{ background:'rgba(255,255,255,0.06)', borderRadius:14, padding:'0.85rem 1rem', textAlign:'center' }}>
-                <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.6)', marginBottom:'0.25rem' }}>AI detects:</div>
-                <div style={{ fontSize:'1.1rem', fontWeight:800, color: nosingResult ? AMBER : GREEN }}>
-                  {nosingResult ? `Nosing present (~${nosingMm || 30}mm)` : 'No nosing detected'}
-                </div>
-              </div>
-              <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.5)', textAlign:'center' }}>Is this correct?</div>
-              <div style={{ display:'flex', gap:'0.6rem' }}>
-                <button onClick={() => confirmNosing(false)}
-                  style={{ flex:1, padding:'0.9rem', background:'rgba(39,169,107,0.15)',
-                    border:'1.5px solid rgba(39,169,107,0.4)', borderRadius:14,
-                    color:GREEN, fontWeight:700, cursor:'pointer', fontFamily:'monospace', fontSize:'0.85rem' }}>
-                  ✗ No nosing
-                </button>
-                <button onClick={() => confirmNosing(true)}
-                  style={{ flex:1, padding:'0.9rem', background:'rgba(250,116,31,0.15)',
-                    border:'1.5px solid rgba(250,116,31,0.4)', borderRadius:14,
-                    color:AMBER, fontWeight:700, cursor:'pointer', fontFamily:'monospace', fontSize:'0.85rem' }}>
-                  ✓ Has nosing
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════
-          REVIEW SCREEN
-      ══════════════════════════════════════════════════ */}
-      {showReview && (
-        <div style={{ position:'absolute', inset:0, zIndex:80,
-          background:'rgba(10,28,46,0.97)', backdropFilter:'blur(20px)',
-          overflowY:'auto', padding:'max(env(safe-area-inset-top,0px),3rem) 1.25rem 2rem' }}>
-          <div style={{ maxWidth:440, margin:'0 auto', display:'flex', flexDirection:'column', gap:'1rem' }}>
-            <div style={{ textAlign:'center' }}>
-              <div style={{ fontSize:'1.5rem', marginBottom:'0.3rem' }}>📐</div>
-              <div style={{ fontSize:'1.1rem', fontWeight:800, color:WHITE }}>Review Measurements</div>
-              <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.5)', marginTop:'0.2rem' }}>Tap any value to adjust</div>
-            </div>
-
-            {[
-              { key:'rise',   label:'Riser Height',   unit:'mm' },
-              { key:'run',    label:'Tread Depth',    unit:'mm' },
-              { key:'width',  label:'Stair Width',    unit:'mm' },
-              { key:'nosing', label:'Nosing',         unit:'' },
-              { key:'guard',  label:'Handrail Height', unit:'mm' },
-            ].map(({ key, label, unit }) => (
-              <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                background:'rgba(255,255,255,0.05)', borderRadius:12, padding:'0.75rem 1rem',
-                border:'1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.7)' }}>{label}</div>
-                <div style={{ fontSize:'1rem', fontWeight:700, color:WHITE, fontFamily:'monospace' }}>
-                  {reviewVals[key] == null ? '—'
-                    : key === 'nosing' ? (reviewVals[key] === 'none' ? 'None' : `${reviewVals[key]}mm`)
-                    : `${reviewVals[key]}${unit}`}
-                </div>
-              </div>
-            ))}
-
-            <button onClick={finishReview}
-              style={{ width:'100%', padding:'1.1rem',
-                background:`linear-gradient(135deg,${GOLD},#D97706)`,
-                border:'none', borderRadius:16, color:'#000',
-                fontFamily:'monospace', fontSize:'0.95rem', fontWeight:900,
-                letterSpacing:'0.08em', cursor:'pointer',
-                boxShadow:'0 4px 24px rgba(240,180,41,0.4)', marginTop:'0.5rem' }}>
-              Generate Report →
+        {/* Start scan button — only on last slide */}
+        {isLast && (
+          <div style={{padding:'0 1.25rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1rem)',flexShrink:0}}>
+            <button
+              onClick={()=>setShowIntro(false)}
+              style={{width:'100%',padding:'1.1rem',background:'linear-gradient(135deg,#0A1C2E,#1a3a5c)',border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'1rem',fontWeight:900,letterSpacing:'0.06em',cursor:'pointer',boxShadow:'0 6px 24px rgba(10,28,46,0.4)'}}>
+              📷 Start Scanning →
             </button>
           </div>
+        )}
+
+        <style>{`@keyframes fadeSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      </div>
+    )
+  }
+
+  // ── AI GUIDE OVERLAY — shown when user taps AI Guide during scan ────────────
+  if (showGuide) {
+    const slide = INTRO_SLIDES[introSlide]
+    const isLast = introSlide === INTRO_SLIDES.length - 1
+    return (
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>
+        {/* Header */}
+        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <span style={{fontSize:'0.85rem',fontWeight:700,color:'#0A1C2E',fontFamily:'system-ui,sans-serif'}}>📷 AI Guide</span>
+          <button
+            onClick={()=>setShowGuide(false)}
+            style={{background:'#0A1C2E',border:'none',borderRadius:10,color:'#fff',fontSize:'0.8rem',fontFamily:'monospace',fontWeight:700,cursor:'pointer',padding:'0.5rem 1rem',letterSpacing:'0.06em'}}>
+            ← Resume Scan
+          </button>
+        </div>
+
+        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
+          <img key={slide.img} src={slide.img} alt={slide.title}
+            style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',display:'block',animation:'fadeSlide 0.3s ease'}}/>
+          {introSlide > 0 && (
+            <button onClick={()=>setIntroSlide(i=>i-1)}
+              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
+              ‹
+            </button>
+          )}
+          {!isLast && (
+            <button onClick={()=>setIntroSlide(i=>i+1)}
+              style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
+              ›
+            </button>
+          )}
+        </div>
+
+        <div style={{padding:'1rem 1.25rem',flexShrink:0}}>
+          <div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
+          <div style={{fontSize:'0.82rem',color:'#4b5563',lineHeight:1.6,fontFamily:'system-ui,sans-serif'}}>{slide.desc}</div>
+        </div>
+
+        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1.5rem)',paddingTop:'0.25rem',flexShrink:0}}>
+          {INTRO_SLIDES.map((_,i)=>(
+            <div key={i} onClick={()=>setIntroSlide(i)} style={{
+              width: i===introSlide ? 22 : 8, height:8,
+              borderRadius: i===introSlide ? 4 : '50%',
+              background: i===introSlide ? '#0A1C2E' : '#d1d5db',
+              cursor:'pointer',transition:'all 0.25s ease',
+            }}/>
+          ))}
+        </div>
+        <style>{`@keyframes fadeSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}`}</style>
+      </div>
+    )
+  }
+
+  if (showReview) return (
+    <div style={{position:'fixed',inset:0,background:NAVY,overflowY:'auto',
+      padding:'max(env(safe-area-inset-top,0px),2.5rem) 1.25rem 3rem',
+      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+      <div style={{maxWidth:440,margin:'0 auto',display:'flex',flexDirection:'column',gap:'0.85rem'}}>
+
+        <div style={{textAlign:'center',marginBottom:'0.25rem'}}>
+          <div style={{fontSize:'1.5rem',marginBottom:'0.3rem'}}>📐</div>
+          <div style={{fontSize:'1.1rem',fontWeight:800,color:WHITE}}>Review Measurements</div>
+          <div style={{fontSize:'0.72rem',color:WHITE2,marginTop:'0.25rem',lineHeight:1.5}}>
+            Tap ↺ on any row to rescan that measurement. Tap a value to edit it manually.
+          </div>
+        </div>
+
+        {([
+          {key:'rise',     label:'Riser Height',    unit:'mm', type:'number',   posId:'riser_front' as Position},
+          {key:'run',      label:'Tread Depth',     unit:'mm', type:'number',   posId:'tread_top'   as Position},
+          {key:'width',    label:'Stair Width',     unit:'mm', type:'number',   posId:'alt_angle'   as Position},
+          {key:'guard',    label:'Handrail Height', unit:'mm', type:'number',   posId:'handrail'    as Position},
+          {key:'nosing',   label:'Nosing',          unit:'',   type:'nosing',   posId:'nosing'      as Position},
+          {key:'headroom', label:'Headroom',        unit:'',   type:'headroom', posId:'overview'    as Position},
+        ] as const).map(({key,label,unit,type,posId}) => {
+          const hasValue = reviewVals[key] != null
+          const isMissing = !hasValue
+          return (
+            <div key={key} style={{
+              borderRadius:14,
+              border:`1.5px solid ${isMissing ? 'rgba(250,116,31,0.35)' : BORDER}`,
+              background: isMissing ? 'rgba(250,116,31,0.06)' : 'rgba(255,255,255,0.04)',
+              overflow:'hidden',
+            }}>
+              {/* Row header */}
+              <div style={{display:'flex',alignItems:'center',padding:'0.7rem 0.9rem',gap:'0.6rem'}}>
+                {/* Status dot */}
+                <div style={{
+                  width:8,height:8,borderRadius:'50%',flexShrink:0,
+                  background: isMissing ? AMBER : GREEN,
+                  boxShadow: `0 0 6px ${isMissing ? AMBER : GREEN}`,
+                }}/>
+                {/* Label */}
+                <div style={{flex:1,fontSize:'0.85rem',fontWeight:700,color:WHITE}}>{label}</div>
+                {/* Rescan button */}
+                <button
+                  onClick={()=>rescanPosition(posId)}
+                  style={{
+                    padding:'0.28rem 0.7rem',
+                    background:'rgba(255,255,255,0.07)',
+                    border:`1px solid ${BORDER}`,
+                    borderRadius:8,color:WHITE2,
+                    fontFamily:'monospace',fontSize:'0.68rem',
+                    fontWeight:600,cursor:'pointer',
+                    letterSpacing:'0.05em',
+                    whiteSpace:'nowrap',
+                  }}
+                >↺ Rescan</button>
+              </div>
+
+              {/* Value area */}
+              <div style={{padding:'0 0.9rem 0.75rem'}}>
+                {type==='number' && (
+                  <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}>
+                    <input type="number" inputMode="numeric"
+                      value={reviewVals[key]!=null && reviewVals[key]!=='clear' && reviewVals[key]!=='none' ? String(reviewVals[key]) : ''}
+                      placeholder={isMissing ? 'Not captured — tap ↺ to rescan' : '—'}
+                      onChange={e=>{ const v=parseInt(e.target.value,10); if(!isNaN(v)&&v>0) setReviewVals(p=>({...p,[key]:v})) }}
+                      style={{
+                        flex:1,padding:'0.5rem 0.75rem',
+                        background:'rgba(255,255,255,0.06)',
+                        border:`1px solid ${isMissing ? 'rgba(250,116,31,0.3)' : BORDER}`,
+                        borderRadius:10,color: isMissing ? 'rgba(255,255,255,0.3)' : WHITE,
+                        fontFamily:'monospace',fontWeight:700,fontSize:'1rem',
+                      }}
+                    />
+                    <span style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.4)',fontFamily:'monospace',flexShrink:0}}>mm</span>
+                  </div>
+                )}
+                {type==='nosing' && (
+                  <div style={{display:'flex',gap:'0.4rem'}}>
+                    {(['none','yes'] as const).map(opt=>(
+                      <button key={opt} onClick={()=>setReviewVals(p=>({...p,nosing:opt==='yes'?(nosingMm||30):'none'}))}
+                        style={{padding:'0.45rem 1rem',borderRadius:10,border:'none',cursor:'pointer',fontFamily:'monospace',fontSize:'0.78rem',fontWeight:700,
+                          background:(opt==='none'?reviewVals[key]==='none':reviewVals[key]!=='none'&&reviewVals[key]!=null)?AMBER+'33':'rgba(255,255,255,0.06)',
+                          color:(opt==='none'?reviewVals[key]==='none':reviewVals[key]!=='none'&&reviewVals[key]!=null)?AMBER:WHITE2}}>
+                        {opt==='none'?'No nosing':'Has nosing'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {type==='headroom' && (
+                  <div style={{display:'flex',gap:'0.4rem'}}>
+                    {(['clear','low'] as const).map(opt=>(
+                      <button key={opt} onClick={()=>setReviewVals(p=>({...p,headroom:opt==='clear'?'clear':(p.headroom!=='clear'?p.headroom:1950)}))}
+                        style={{padding:'0.45rem 1rem',borderRadius:10,border:'none',cursor:'pointer',fontFamily:'monospace',fontSize:'0.78rem',fontWeight:700,
+                          background:(opt==='clear'?reviewVals[key]==='clear':reviewVals[key]!=='clear'&&reviewVals[key]!=null)?GREEN+'33':'rgba(255,255,255,0.06)',
+                          color:(opt==='clear'?reviewVals[key]==='clear':reviewVals[key]!=='clear'&&reviewVals[key]!=null)?GREEN:WHITE2}}>
+                        {opt==='clear'?'✓ Clear':'⚠ Low'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Missing items callout */}
+        {Object.values(reviewVals).filter(v=>v!=null).length < 4 && (
+          <div style={{background:'rgba(250,116,31,0.08)',border:'1px solid rgba(250,116,31,0.25)',borderRadius:12,padding:'0.65rem 0.9rem',fontSize:'0.72rem',color:WHITE2,lineHeight:1.6}}>
+            <strong style={{color:AMBER}}>Some measurements are missing.</strong> You can still generate a partial report,
+            or tap ↺ Rescan on any row to go back and capture it.
+          </div>
+        )}
+
+        <button onClick={submitReview} style={{width:'100%',padding:'1.1rem',background:`linear-gradient(135deg,${GREEN},#1A7A50)`,border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'0.95rem',fontWeight:900,letterSpacing:'0.08em',cursor:'pointer',boxShadow:'0 4px 24px rgba(39,169,107,0.4)',marginTop:'0.25rem'}}>
+          Generate Report →
+        </button>
+      </div>
+    </div>
+  )
+
+  // ── Main scan UI ──────────────────────────────────────────────────────────
+  return (
+    <div ref={arOverlayRef} style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+
+      {/* Live camera feed */}
+      {/* iOS Safari requires playsInline AND webkit-playsinline as HTML attributes */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        webkit-playsinline="true"
+        x-webkit-airplay="deny"
+        style={{
+          position:'absolute', inset:0,
+          width:'100%', height:'100%',
+          objectFit:'cover',
+          opacity:1,
+          willChange:'transform',
+          backfaceVisibility:'hidden',
+          WebkitBackfaceVisibility:'hidden',
+        }}
+      />
+      <canvas ref={captureRef} style={{display:'none'}}/>
+
+      {/* ── LIVE ARCORE PLANE OVERLAY — rendered every frame from WebXR render loop ── */}
+      {arPlanes.length > 0 && (stage === 'hold' || stage === 'capture' || stage === 'analysing') && (
+        <svg
+          width="100%" height="100%"
+          style={{ position:'absolute', inset:0, zIndex:18, pointerEvents:'none', overflow:'visible' }}
+        >
+          <defs>
+            <filter id="planeGlow">
+              <feGaussianBlur stdDeviation="0.5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <marker id="normalArrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+              <path d="M0,0 L5,2.5 L0,5 Z" fill="rgba(48,216,138,0.9)"/>
+            </marker>
+          </defs>
+          {arPlanes.map((plane, i) => {
+            const col = plane.orientation === 'horizontal' ? 'rgba(74,144,226,0.75)' : 'rgba(48,216,138,0.75)'
+            const fillCol = plane.orientation === 'horizontal' ? 'rgba(74,144,226,0.08)' : 'rgba(48,216,138,0.08)'
+            const pts = plane.screenPoly.filter(p => p.x >= 0 && p.x <= 100 && p.y >= 0 && p.y <= 100)
+            if (pts.length < 3) return null
+            const polyStr = pts.map(p => `${p.x},${p.y}`).join(' ')
+            return (
+              <g key={i} filter="url(#planeGlow)">
+                {/* Filled polygon — faint tint showing plane extent */}
+                <polygon points={polyStr} fill={fillCol} stroke={col} strokeWidth="0.4" strokeDasharray="1.5,1"/>
+                {/* Centroid dot */}
+                <circle cx={`${plane.cx}%`} cy={`${plane.cy}%`} r="0.8%" fill={col}/>
+                {/* Normal vector arrow — perpendicular to the detected surface */}
+                <line
+                  x1={`${plane.cx}%`} y1={`${plane.cy}%`}
+                  x2={`${plane.nx}%`} y2={`${plane.ny}%`}
+                  stroke="rgba(48,216,138,0.9)" strokeWidth="0.6" strokeDasharray="2,1"
+                  markerEnd="url(#normalArrow)"
+                />
+                {/* n̂ label at arrow tip */}
+                <text x={`${plane.nx}%`} y={`${plane.ny - 1}%`}
+                  textAnchor="middle" fill="rgba(48,216,138,0.85)"
+                  fontSize="11" fontFamily="monospace">n̂</text>
+                {/* Orientation label */}
+                <text x={`${plane.cx}%`} y={`${plane.cy + 2.5}%`}
+                  textAnchor="middle" fill={col}
+                  fontSize="10" fontFamily="monospace" fontWeight="bold">
+                  {plane.orientation === 'horizontal' ? '━━ H' : '┃ V'}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      )}
+
+      {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
+      {/* Countdown timer — top right, only during position stage */}
+      {showIllustration && stage === 'position' && (
+        <div style={{position:'absolute',top:IMAGE_TOP+10,right:12,background:'rgba(10,28,46,0.88)',backdropFilter:'blur(8px)',borderRadius:12,padding:'0.4rem 0.75rem',border:`1px solid ${AMBER}55`,display:'flex',alignItems:'center',gap:'0.5rem',zIndex:12}}>
+          <svg width="20" height="20" viewBox="0 0 36 36" style={{transform:'rotate(-90deg)',flexShrink:0}}>
+            <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3"/>
+            <circle cx="18" cy="18" r="14" fill="none" stroke={AMBER} strokeWidth="3"
+              strokeDasharray={`${2*Math.PI*14}`}
+              strokeDashoffset={`${2*Math.PI*14*(countdown/currentPos.positionTime)}`}
+              strokeLinecap="round" style={{transition:'stroke-dashoffset 0.9s linear'}}/>
+          </svg>
+          <span style={{fontSize:'0.8rem',fontFamily:'monospace',fontWeight:800,color:WHITE}}>{countdown}s</span>
         </div>
       )}
 
-      <style>{`@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }`}</style>
+      {/* No overlay during analyse — keep camera frame fully visible */}
+
+      {/* ── TOP BAR ── */}
+      <div style={{
+        position:'absolute',top:0,left:0,right:0,zIndex:50,
+        paddingTop:'max(env(safe-area-inset-top,0px),1.5rem)',
+        paddingBottom:'0.6rem',paddingLeft:'1rem',paddingRight:'1rem',
+        background: (stage==='hold'||stage==='capture')
+          ? 'linear-gradient(to bottom,rgba(0,0,0,0.7),transparent)'
+          : 'linear-gradient(to bottom,rgba(10,28,46,0.95),rgba(10,28,46,0.6))',
+        display:'flex',alignItems:'center',gap:'0.75rem',
+        height:IMAGE_TOP,boxSizing:'border-box',
+      }}>
+        {/* Back button → dropdown menu */}
+        <div style={{position:'relative',flexShrink:0}}>
+          <button
+            onClick={()=>setShowBackMenu(v=>!v)}
+            style={{width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.5)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}
+          >←</button>
+          {showBackMenu && (
+            <div style={{
+              position:'absolute',top:40,left:0,
+              background:'rgba(10,28,46,0.97)',backdropFilter:'blur(12px)',
+              border:`1px solid ${BORDER}`,borderRadius:14,
+              padding:'0.4rem',zIndex:200,
+              display:'flex',flexDirection:'column',gap:'0.25rem',
+              minWidth:160,boxShadow:'0 8px 32px rgba(0,0,0,0.6)',
+            }}>
+              {/* Go back one step */}
+              <button
+                onClick={()=>{ setShowBackMenu(false); if(posIdx>0) goTo(posIdx-1); else setShowBackMenu(false) }}
+                style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:WHITE,fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
+              >
+                <span style={{fontSize:'1rem'}}>←</span> Go back one step
+              </button>
+              {/* View report early */}
+              <button
+                onClick={()=>{ setShowBackMenu(false); finishScan() }}
+                style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:GREEN,fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
+              >
+                <span style={{fontSize:'1rem'}}>📋</span> View Report
+              </button>
+              {/* Divider */}
+              <div style={{height:1,background:BORDER,margin:'0.15rem 0'}}/>
+              {/* Sign out */}
+              <button
+                onClick={()=>{ setShowBackMenu(false); onBack() }}
+                style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:'rgba(255,100,100,0.85)',fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
+              >
+                <span style={{fontSize:'1rem'}}>🚪</span> Sign Out
+              </button>
+              {/* Dismiss */}
+              <button
+                onClick={()=>setShowBackMenu(false)}
+                style={{padding:'0.5rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:WHITE2,fontSize:'0.72rem',cursor:'pointer',textAlign:'center'}}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'0.25rem'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:'0.6rem',fontFamily:'monospace',letterSpacing:'0.1em',color:WHITE2}}>STEP {currentPos.step} / 5</span>
+            <span style={{fontSize:'0.72rem',fontWeight:700,color:WHITE}}>{currentPos.label}</span>
+          </div>
+          <div style={{height:3,background:'rgba(255,255,255,0.1)',borderRadius:2,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${progressPct}%`,background:`linear-gradient(90deg,${GREEN},${BLUE})`,borderRadius:2,transition:'width 0.4s ease'}}/>
+          </div>
+        </div>
+        {/* AI Guide button */}
+        <button
+          onClick={()=>{ setShowGuide(true); setIntroSlide(Math.max(0, Math.min(posIdx, INTRO_SLIDES.length-1))) }}
+          style={{background:'rgba(10,28,46,0.7)',border:`1px solid ${BORDER}`,borderRadius:10,padding:'0.28rem 0.65rem',color:WHITE2,fontFamily:'monospace',fontSize:'0.58rem',fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
+          <span>📷</span><span>Guide</span>
+        </button>
+        {/* AR / AI badge */}
+        <div
+          title={arSupported ? 'ARCore active' : 'AI Vision mode'}
+          style={{background:arSupported?'rgba(74,144,226,0.15)':'rgba(242,147,55,0.15)',border:`1px solid ${arSupported?'rgba(74,144,226,0.4)':'rgba(242,147,55,0.4)'}`,borderRadius:10,padding:'0.18rem 0.6rem',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
+          <div style={{width:5,height:5,borderRadius:'50%',background:arSupported?BLUE:AMBER,boxShadow:`0 0 4px ${arSupported?BLUE:AMBER}`}}/>
+          <span style={{fontSize:'0.5rem',fontFamily:'monospace',letterSpacing:'0.1em',color:arSupported?BLUE:AMBER,fontWeight:700}}>{arSupported?'AR·CORE':'AI·VISION'}</span>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          BOTTOM PANEL — fixed height, never overlaps image
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div style={{
+        position:'absolute',bottom:0,left:0,right:0,
+        height:BOTTOM_PANEL,zIndex:50,
+        background: (stage==='hold'||stage==='capture')
+          ? 'linear-gradient(to top,rgba(0,0,0,0.85) 60%,transparent)'
+          : 'linear-gradient(to top,rgba(10,28,46,0.99) 80%,rgba(10,28,46,0.6))',
+        paddingBottom:'max(env(safe-area-inset-bottom,0px),1.25rem)',
+        paddingLeft:'1.25rem',paddingRight:'1.25rem',paddingTop:'0.85rem',
+        display:'flex',flexDirection:'column',gap:'0.6rem',
+        boxSizing:'border-box',
+      }}>
+
+        {/* ══ POSITION — countdown ticking, dialogue instruction ══ */}
+        {stage==='position' && <>
+          {/* Instruction card */}
+          <div style={{background:'rgba(255,255,255,0.06)',borderRadius:14,padding:'0.9rem 1rem',border:`1px solid rgba(255,255,255,0.1)`}}>
+            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.45rem'}}>
+              <div style={{width:24,height:24,borderRadius:'50%',background:indicator.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.65rem',fontFamily:'monospace',fontWeight:900,color:'#000',flexShrink:0}}>{currentPos.step}</div>
+              <div style={{fontSize:'0.92rem',fontWeight:800,color:WHITE,lineHeight:1.2}}>{currentPos.label}</div>
+            </div>
+            <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.6}}>{currentPos.detail}</div>
+          </div>
+          <div style={{display:'flex',gap:'0.45rem'}}>
+            {currentPos.optional && (
+              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.75rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',cursor:'pointer'}}>Skip →</button>
+            )}
+            <button onClick={finishScan} style={{flex:currentPos.optional?1:2,padding:'0.75rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:13,color:AMBER,fontFamily:'monospace',fontSize:'0.75rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
+          </div>
+        </>}
+
+        {/* ══ READY — in position, tap to start ══ */}
+        {stage==='ready' && <>
+          <div style={{background:`${indicator.color}11`,borderRadius:14,padding:'0.75rem 1rem',border:`1px solid ${indicator.color}33`}}>
+            <div style={{fontSize:'0.72rem',fontFamily:'monospace',color:indicator.color,fontWeight:700,letterSpacing:'0.08em',marginBottom:'0.3rem'}}>STEP {currentPos.step} / 5 — {currentPos.label.toUpperCase()}</div>
+            <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.55}}>{currentPos.detail}</div>
+          </div>
+          <button onClick={handleReady} style={{
+            width:'100%',padding:'1.15rem',
+            background:`linear-gradient(135deg,${GREEN},#1A7A50)`,
+            border:'none',borderRadius:16,color:'#fff',
+            fontFamily:'monospace',fontSize:'1rem',fontWeight:900,
+            letterSpacing:'0.04em',cursor:'pointer',
+            boxShadow:'0 6px 28px rgba(39,169,107,0.5)',
+          }}>
+            ✓ {currentPos.readyLabel}
+          </button>
+          <div style={{display:'flex',gap:'0.45rem'}}>
+            {currentPos.optional && (
+              <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>Skip →</button>
+            )}
+            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
+          </div>
+        </>}
+
+        {/* ══ HOLD — camera live, hold-still countdown ══ */}
+        {stage==='hold' && <>
+          <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+            {/* Countdown ring */}
+            <div style={{position:'relative',width:64,height:64,flexShrink:0}}>
+              <svg width="64" height="64" style={{transform:'rotate(-90deg)'}}>
+                <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4.5"/>
+                <circle cx="32" cy="32" r="26" fill="none" stroke={GREEN} strokeWidth="4.5"
+                  strokeDasharray={`${2*Math.PI*26}`}
+                  strokeDashoffset={`${2*Math.PI*26*(countdown/currentPos.holdSeconds)}`}
+                  strokeLinecap="round" style={{transition:'stroke-dashoffset 0.9s linear'}}/>
+              </svg>
+              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',fontWeight:900,color:WHITE,fontFamily:'monospace'}}>{countdown}</div>
+            </div>
+            <div>
+              <div style={{fontSize:'0.88rem',fontWeight:800,color:GREEN,letterSpacing:'0.05em',marginBottom:'0.2rem'}}>HOLD STILL</div>
+              <div style={{fontSize:'0.72rem',color:WHITE2,lineHeight:1.4}}>Keep the phone steady — AI will read when ready to capture</div>
+            </div>
+          </div>
+          <button onClick={finishScan} style={{width:'100%',padding:'0.72rem',background:`linear-gradient(135deg,${AMBER},#C4721E)`,border:'none',borderRadius:13,color:'#fff',fontFamily:'monospace',fontSize:'0.82rem',fontWeight:700,cursor:'pointer'}}>View Report →</button>
+        </>}
+
+        {/* ══ CAPTURE — hold done, waiting for user to tap ══ */}
+        {stage==='capture' && <>
+          <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.5}}>
+            Phone is steady — tap the button below when you are ready to capture.
+          </div>
+          <button
+            onClick={camWarm ? handleCapture : undefined}
+            style={{
+              width:'100%',padding:'1.15rem',
+              background: camWarm ? `linear-gradient(135deg,${BLUE},#2C6FBF)` : 'rgba(255,255,255,0.07)',
+              border: camWarm ? 'none' : `1px solid ${BORDER}`,
+              borderRadius:16,
+              color: camWarm ? '#fff' : WHITE2,
+              fontFamily:'monospace',fontSize:'1rem',fontWeight:900,
+              letterSpacing:'0.06em',
+              cursor: camWarm ? 'pointer' : 'default',
+              boxShadow: camWarm ? '0 6px 28px rgba(74,144,226,0.5)' : 'none',
+              transition:'all 0.4s ease',
+            }}>
+            {camWarm ? `📸 ${currentPos.captureLabel}` : '⏳ Camera focusing…'}
+          </button>
+          <div style={{display:'flex',gap:'0.45rem'}}>
+            <button onClick={()=>{ busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
+              style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
+              ↺ Re-steady
+            </button>
+            <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
+          </div>
+        </>}
+
+        {/* ══ ANALYSING — spinner ══ */}
+        {stage==='analysing' && <>
+          <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
+            <div style={{width:40,height:40,borderRadius:'50%',border:'3px solid rgba(242,147,55,0.2)',borderTopColor:AMBER,animation:'spin 0.8s linear infinite',flexShrink:0}}/>
+            <div>
+              <div style={{fontSize:'0.88rem',color:WHITE,fontWeight:700,marginBottom:'0.15rem'}}>Reading image…</div>
+              <div style={{fontSize:'0.7rem',color:WHITE2}}>Measuring {indicator.label}</div>
+            </div>
+          </div>
+          <button onClick={finishScan} style={{width:'100%',padding:'0.72rem',background:'rgba(255,255,255,0.06)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
+            View Report →
+          </button>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+        </>}
+
+        {/* ══ RESULT — AI message, wait for user action ══ */}
+        {stage==='result' && (() => {
+          // Primary captured value for this position
+          const capKey   = currentPos.captures[0] as string
+          const rawVal   = results[capKey]
+          const numVal   = typeof rawVal === 'number' ? rawVal : null
+          const dispVal  = adjustVal ?? numVal
+          const indColor = indicator.color
+          const isMeasured = dispVal !== null
+
+          // Previously confirmed measurements — shown as badges top-right of camera
+          const confirmed = Object.entries(results).filter(([k,v]) =>
+            !currentPos.captures.includes(k) && typeof v === 'number' && k !== 'riserCount' && k !== 'isResidential'
+          ) as [string, number][]
+
+          const capLabels: Record<string,string> = {
+            rise:'RISER HEIGHT', run:'TREAD DEPTH', width:'STAIR WIDTH',
+            guard:'HANDRAIL', headroom:'HEADROOM', nosing:'NOSING',
+          }
+
+          return <>
+            {/* ── AR measurement line drawn over camera ── */}
+            {isMeasured && (
+              <div style={{
+                position:'absolute', top:IMAGE_TOP, left:0, right:0, bottom:BOTTOM_PANEL+8,
+                zIndex:20, pointerEvents:'none', overflow:'hidden',
+              }}>
+                {/* Confirmed badges — top right stack */}
+                <div style={{position:'absolute',top:8,right:8,display:'flex',flexDirection:'column',gap:'0.3rem',zIndex:25}}>
+                  {confirmed.slice(0,4).map(([k,v])=>(
+                    <div key={k} style={{
+                      background:'rgba(10,28,46,0.88)', backdropFilter:'blur(6px)',
+                      borderRadius:8, padding:'0.22rem 0.55rem',
+                      border:`1px solid rgba(39,169,107,0.45)`,
+                      display:'flex', alignItems:'center', gap:'0.35rem',
+                    }}>
+                      <span style={{fontSize:'0.55rem',fontFamily:'monospace',fontWeight:700,color:'rgba(39,169,107,0.7)',letterSpacing:'0.06em'}}>{capLabels[k]??k.toUpperCase()}</span>
+                      <span style={{fontSize:'0.72rem',fontFamily:'monospace',fontWeight:900,color:'#27A96B'}}>{v}mm</span>
+                      <span style={{fontSize:'0.65rem',color:'#27A96B'}}>✓</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ── Full AR measurement overlay ── */}
+                <ARMeasurementOverlay
+                  posId={currentPos.id}
+                  color={indColor}
+                  valueMm={dispVal ?? 0}
+                  label={capLabels[capKey] ?? currentPos.label.toUpperCase()}
+                />
+
+                {/* Measured label — bottom centre */}
+                <div style={{
+                  position:'absolute', bottom:10, left:'50%', transform:'translateX(-50%)',
+                  background:`rgba(10,28,46,0.88)`, backdropFilter:'blur(6px)',
+                  borderRadius:20, padding:'0.25rem 0.9rem',
+                  border:`1px solid ${indColor}66`,
+                  display:'flex', alignItems:'center', gap:'0.4rem',
+                  whiteSpace:'nowrap',
+                }}>
+                  <div style={{width:7,height:7,borderRadius:'50%',background:indColor,boxShadow:`0 0 5px ${indColor}`}}/>
+                  <span style={{fontSize:'0.62rem',fontFamily:'monospace',fontWeight:700,color:indColor,letterSpacing:'0.1em'}}>
+                    {capLabels[capKey]??currentPos.label.toUpperCase()} — MEASURED
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ── Bottom panel result content ── */}
+            {/* Big measurement number + ± adjustment */}
+            {isMeasured ? (
+              <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
+                  {/* − button */}
+                  <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - 5))}
+                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    −
+                  </button>
+                  {/* Big number */}
+                  <div style={{flex:1,textAlign:'center'}}>
+                    <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'0.2rem'}}>
+                      <span style={{fontSize:'3rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
+                      <span style={{fontSize:'1rem',color:WHITE2,fontFamily:'monospace'}}>mm</span>
+                    </div>
+                    {aiMessage && (
+                      <div style={{fontSize:'0.65rem',color:WHITE2,lineHeight:1.4,marginTop:'0.15rem'}}>{aiMessage}</div>
+                    )}
+                    {adjustVal !== null && (
+                      <div style={{fontSize:'0.58rem',color:AMBER,fontFamily:'monospace',marginTop:'0.1rem'}}>ADJUSTED</div>
+                    )}
+                    {results.scaleRef && (
+                      <div style={{fontSize:'0.58rem',color:WHITE2,fontFamily:'monospace',marginTop:'0.2rem',opacity:0.7}}>
+                        📐 {String(results.scaleRef)}
+                      </div>
+                    )}
+                  </div>
+                  {/* + button */}
+                  <button onClick={()=>setAdjustVal(v => (v ?? numVal ?? 0) + 5)}
+                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    +
+                  </button>
+                </div>
+                {adjustVal !== null && (
+                  <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>
+                    Adjust with − / + if needed · original: {numVal}mm
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{fontSize:'0.82rem',fontWeight:600,color:WHITE,textAlign:'center',padding:'0.5rem 0'}}>
+                {aiMessage ?? 'Could not read — tap Retry to try again.'}
+              </div>
+            )}
+
+            {/* Confirm & Next — primary */}
+            <button onClick={()=>{
+              if (adjustVal !== null && capKey) {
+                setResults(prev => {
+                  const next = { ...prev, [capKey]: adjustVal }
+                  resultsRef.current = next
+                  return next
+                })
+                setAdjustVal(null)
+              }
+              if (rescanReturnRef.current) { rescanReturnRef.current=false; finishScan() }
+              else goTo(posIdx+1)
+            }} style={{
+              width:'100%', padding:'1rem',
+              background: isMeasured ? `linear-gradient(135deg,${GREEN},#1A7A50)` : `linear-gradient(135deg,${AMBER},#C4721E)`,
+              border:'none', borderRadius:14, color:'#fff',
+              fontFamily:'monospace', fontSize:'0.9rem', fontWeight:900,
+              cursor:'pointer', letterSpacing:'0.04em',
+              boxShadow: isMeasured ? '0 4px 18px rgba(39,169,107,0.45)' : '0 4px 18px rgba(250,116,31,0.35)',
+            }}>
+              {rescanReturnRef.current ? '← Back to Report' : isMeasured ? '✓ Confirm & Next →' : 'Next Position →'}
+            </button>
+
+            {/* Retry / View Report */}
+            <div style={{display:'flex',gap:'0.45rem'}}>
+              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
+                style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
+                ↺ Retry
+              </button>
+              <button onClick={()=>{
+                if (adjustVal !== null && capKey) {
+                  setResults(prev => {
+                    const next = { ...prev, [capKey]: adjustVal }
+                    resultsRef.current = next
+                    return next
+                  })
+                }
+                finishScan()
+              }} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>
+                View Report →
+              </button>
+            </div>
+          </>
+        })()}
+
+
+      </div>
     </div>
   )
 }

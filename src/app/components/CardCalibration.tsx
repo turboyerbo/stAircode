@@ -355,7 +355,7 @@ export default function CardCalibration({ onCalibrated, onSkip, onBack }: Props)
         <IBtn onClick={() => { streamRef.current?.getTracks().forEach(t=>t.stop()); onBack() }}>←</IBtn>
         <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}>
           <div style={{width:7,height:7,borderRadius:'50%',background:aiDot,flexShrink:0}}/>
-          <span style={{color:'rgba(255,255,255,0.9)',fontSize:'0.82rem',fontWeight:600}}>Hold Card at Arm's Length</span>
+          <span style={{color:'rgba(255,255,255,0.9)',fontSize:'0.82rem',fontWeight:600}}>Hold Card at Arm&apos;s Length</span>
         </div>
         <button onClick={()=>setMode(m=>m==='auto'?'manual':'auto')}
           style={{background:mode==='manual'?'rgba(0,127,255,0.3)':'rgba(21,101,192,0.22)',border:'none',borderRadius:20,color:'rgba(255,255,255,0.85)',fontSize:'0.6rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.1em',padding:'0.3rem 0.75rem',cursor:'pointer'}}>
