@@ -261,7 +261,27 @@ export default function Home(){
     try{localStorage.removeItem('sc_user')}catch{}
   }
   function handleUpdateUser(u:AppUser){setUser(u);try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}}
-  // Show splash on first visit, then fade into auth
+  // ── Marketing redirect ────────────────────────────────────────────────────
+  // Unauthenticated visitors go to /marketing unless ?signin=1 is present.
+  // We use a state+useEffect pattern to avoid SSR/hydration mismatch.
+  const [redirectChecked, setRedirectChecked] = React.useState(false)
+  const [isSigninFlow,    setIsSigninFlow]    = React.useState(false)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const signin = params.get('signin') === '1'
+    setIsSigninFlow(signin)
+    setRedirectChecked(true)
+    if (!signin && !user) {
+      // Hard redirect to marketing — no flicker, no hydration issue
+      window.location.replace('/marketing')
+    }
+  }, []) // eslint-disable-line
+
+  // While checking (or while redirecting), render nothing to avoid flash
+  if (!redirectChecked) return null
+  if (!user && !isSigninFlow) return null  // redirect in progress
+
+  // Show splash on first visit (when coming from marketing via ?signin=1)
   if(!user && !splashDone) return (
     <SplashScreen onDone={() => setSplashDone(true)} />
   )

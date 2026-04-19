@@ -6,7 +6,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'stAIrcode — Stair Compliance',
-  description: 'Check your staircase against local building codes. Camera-based measurements, auto-detected jurisdiction (OBC, NBC, QBC, Bbl, RCNYS and more).',
+  description: 'Check your staircase against local building codes. Camera-based measurements, auto-detected jurisdiction (OBC, NBC, QBC, BCBC, IBC and more).',
   applicationName: 'stAIrcode',
   keywords: ['stair compliance', 'building code', 'OBC', 'staircase inspection', 'riser height', 'tread depth'],
   authors: [{ name: 'Just Open Technologies Inc.' }],
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'stAIrcode — Stair Compliance',
     description: 'Measure and check your staircase against local building codes using your phone camera.',
     url: 'https://staircode.app',
-    siteName: 'Staircode',
+    siteName: 'stAIrcode',
     type: 'website',
     images: [{ url: '/screenshots/feature-graphic.png', width: 1024, height: 500 }],
   },
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Staircode',
+    title: 'stAIrcode',
   },
 }
 
@@ -56,60 +56,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="stAIrcode" />
-        <link rel="apple-touch-icon" href="/logo_icon_blue.png" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+        {/* S-lettermark icons — cloud icon permanently removed */}
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#1565C0" />
+        <meta name="msapplication-TileColor" content="#0A1C2E" />
+        <meta name="msapplication-TileImage" content="/icons/icon-192.png" />
+        {/* Google Fonts: DM Sans */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,wght@0,700;0,900;1,700;1,900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap"
           rel="stylesheet"
         />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(reg) { console.log('[SW] Registered:', reg.scope); })
-                    .catch(function(err) { console.warn('[SW] Failed:', err); });
-                });
-              }
-            `,
-          }}
-        />
-        {/* PostHog analytics — initialised client-side only */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.__POSTHOG_KEY__  = '${process.env.NEXT_PUBLIC_POSTHOG_KEY ?? ''}';
-              window.__POSTHOG_HOST__ = '${process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://app.posthog.com'}';
-            `,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(r){ console.log('[SW] Registered:', r.scope); }).catch(function(e){ console.warn('[SW] Failed:', e); }); }); }` }} />
+        <script dangerouslySetInnerHTML={{ __html: `window.__POSTHOG_KEY__='${process.env.NEXT_PUBLIC_POSTHOG_KEY ?? ''}';window.__POSTHOG_HOST__='${process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://app.posthog.com'}';` }} />
       </head>
       <body>
         {children}
-
-        {/* ── Google Analytics 4 ── */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-SJSZV0KBFE"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-SJSZV0KBFE', {
-              page_path: window.location.pathname,
-            });
-          `}
-        </Script>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SJSZV0KBFE" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SJSZV0KBFE',{page_path:window.location.pathname});`}</Script>
       </body>
     </html>
   )

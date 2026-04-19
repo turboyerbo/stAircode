@@ -17,6 +17,8 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import MeasurementLineOverlay from './MeasurementLineOverlay'
+import CreditCardScalePrompt, { buildScaleContext, ScaleReference } from './CreditCardScalePrompt'
 import { checkXRSupport } from '@/lib/xr-measure'
 import {
   startARSession, stopARSession, measureFromPlanes,
@@ -604,6 +606,14 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [nosingMm,   setNosingMm]   = useState(0)
   const [adjustVal,  setAdjustVal]  = useState<number|null>(null)  // user-adjusted value for current result
   const [camWarm,    setCamWarm]    = useState(false)  // true once camera has had 1.5s to auto-expose
+  // ── Measurement line overlay state ────────────────────────────────────────
+  const [showMeasureLine,    setShowMeasureLine]    = useState(false)
+  const [measureLineValue,   setMeasureLineValue]   = useState<string|null>(null)
+  const [measureLineLabel,   setMeasureLineLabel]   = useState('MEASURING')
+  const [measureLineAxis,    setMeasureLineAxis]    = useState<'horizontal'|'vertical'>('horizontal')
+  // ── Credit card scale reference ───────────────────────────────────────────
+  const [scaleRef,           setScaleRef]           = useState<ScaleReference>('none')
+  const [showCardPrompt,     setShowCardPrompt]     = useState(true)
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
   // ── Intro slideshow state (shown before scan begins) ─────────────────────
@@ -779,6 +789,10 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     setAiMessage(null)
     setStage('position')
     setCountdown(POSITIONS[idx].positionTime)
+    setShowMeasureLine(false)
+    setMeasureLineValue(null)
+    // Show card prompt only on first position
+    if (idx === 0) setShowCardPrompt(true)
   }, []) // eslint-disable-line
 
   // Init on camera ready
@@ -928,7 +942,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         }
       }
 
-      const raw = await callVision(b64, currentPos.aiPrompt(priorSnap))
+      const raw = await callVision(b64, currentPos.aiPrompt(priorSnap) + buildScaleContext(scaleRef))
       busyRef.current = false
       const r = parseJSON(raw)
 
@@ -940,12 +954,37 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
       extractMeasurements(r)
       setAiMessage(r.message ?? null)
+      // ── Trigger animated measurement line ─────────────────────────────────
+      const lineInfo = getMeasureLineInfo(currentPos.id, r)
+      if (lineInfo) {
+        setMeasureLineLabel(lineInfo.label)
+        setMeasureLineAxis(lineInfo.axis)
+        setMeasureLineValue(lineInfo.value)
+        setShowMeasureLine(true)
+      }
       setStage('result')
     }
 
     run()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage])
+
+  // ── Measurement line: derive label + axis + display value from AI response ─
+  function getMeasureLineInfo(posId: string, r: any): { label: string; axis: 'horizontal'|'vertical'; value: string } | null {
+    const mm = (v: any) => { if (!v) return null; const n = parseFloat(String(v)); return isNaN(n)||n<=0?null:Math.round(n) }
+    const est = mm(r.estimatedMm ?? r.estimated_mm)
+    if (!est) return null
+    const map: Record<string, { label: string; axis: 'horizontal'|'vertical' }> = {
+      riser_front: { label: 'RISER HEIGHT',  axis: 'vertical'   },
+      tread_top:   { label: 'TREAD DEPTH',   axis: 'horizontal' },
+      alt_angle:   { label: 'STAIR WIDTH',   axis: 'horizontal' },
+      handrail:    { label: 'GUARDRAIL HT',  axis: 'vertical'   },
+      overview:    { label: 'HEADROOM',      axis: 'vertical'   },
+    }
+    const info = map[posId]
+    if (!info) return null
+    return { label: info.label, axis: info.axis, value: `${est}mm` }
+  }
 
   // ── Shared measurement extraction (used by both AI Vision and ARCore) ─────
   function extractMeasurements(r: any) {
@@ -1369,6 +1408,25 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             )
           })}
         </svg>
+      )}
+
+      {/* ── MEASUREMENT LINE OVERLAY — animated blue scan line ──────────── */}
+      <MeasurementLineOverlay
+        isActive={showMeasureLine && stage === 'result'}
+        measurement={measureLineValue}
+        label={measureLineLabel}
+        axis={measureLineAxis}
+        onComplete={() => setShowMeasureLine(false)}
+        sweepDuration={1600}
+      />
+
+      {/* ── CREDIT CARD SCALE PROMPT ─────────────────────────────────────── */}
+      {showCardPrompt && posIdx === 0 && stage === 'position' && (
+        <CreditCardScalePrompt
+          onCardPlaced={() => { setScaleRef('credit_card'); setShowCardPrompt(false) }}
+          onDismiss={() => { setScaleRef('none'); setShowCardPrompt(false) }}
+          compact
+        />
       )}
 
       {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
