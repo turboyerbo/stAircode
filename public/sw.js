@@ -56,6 +56,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
+  // 0. Ignore non-http(s) schemes (chrome-extension, data, blob, etc.)
+  if (!url.protocol.startsWith('http')) return
+
+  // 0b. Ignore cross-origin requests (Google Fonts, GTM, Stripe, etc.)
+  //     Only cache/intercept requests to our own origin
+  if (url.origin !== self.location.origin) return
+
   // 1. Never cache API calls
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(request))

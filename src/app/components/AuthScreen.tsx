@@ -50,15 +50,10 @@ type Screen = 'entry' | 'otp'
 // ── Supabase client (lazy) ────────────────────────────────────────────────────
 // Requires: npm install @supabase/supabase-js
 // Env vars: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
-import { createClient } from '@supabase/supabase-js'
+import { getSupabase } from '@/lib/supabase-client'
 import { Analytics, identifyUser } from '@/lib/analytics'
 import { BetaLogo } from '@/app/components/Logo'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL  ?? ''
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
-const supabase    = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey)
-  : null
 
 // ── Phone number normaliser → E.164 ──────────────────────────────────────────
 // Supabase requires +1xxxxxxxxxx format for SMS OTP.
@@ -81,6 +76,7 @@ function isPhone(contact: string): boolean {
 
 // ── OTP functions ─────────────────────────────────────────────────────────────
 async function sendOtp(contact: string): Promise<void> {
+  const supabase = getSupabase()
   if (!supabase) {
     // Stub — works without Supabase configured
     await new Promise(r => setTimeout(r, 800))
@@ -102,6 +98,7 @@ async function sendOtp(contact: string): Promise<void> {
 }
 
 async function verifyOtp(contact: string, code: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = getSupabase()
   if (!supabase) {
     await new Promise(r => setTimeout(r, 700))
     return { ok: true }
@@ -171,9 +168,11 @@ export default function AuthScreen({ onAuth }: Props) {
       setDigits(['', '', '', '', '', ''])
       setResent(false)
     } catch (err: any) {
-      // Surface the real Supabase error so it's actionable
-      const msg = err?.message ?? ''
-      if (msg.includes('rate') || msg.includes('limit')) {
+      const msg = (err?.message ?? '') as string
+      // Network failure — Supabase project may be paused or offline
+      if (msg.includes('fetch') || msg.includes('network') || msg.includes('resolve') || msg.toLowerCase().includes('failed to fetch')) {
+        setError('Could not reach the auth server. Check your internet connection or try again in a moment.')
+      } else if (msg.includes('rate') || msg.includes('limit')) {
         setError('Too many attempts. Please wait a minute and try again.')
       } else if (msg.includes('not confirmed') || msg.includes('signup')) {
         setError('Sign-up is currently restricted. Contact info@staircode.app for beta access.')
@@ -300,6 +299,7 @@ export default function AuthScreen({ onAuth }: Props) {
   async function handleOAuth(p: 'google' | 'apple') {
     setError('')
     setLoading(true)
+    const supabase = getSupabase()
     if (!supabase) {
       const u: AppUser = {
         email:      p === 'google' ? 'user@gmail.com' : 'user@icloud.com',
@@ -382,7 +382,7 @@ export default function AuthScreen({ onAuth }: Props) {
           name="email"
           type="text"
           inputMode="email"
-          autoComplete="email"
+          autoComplete="username"
           placeholder="Email address"
           value={contact}
           onChange={e => { setContact(e.target.value); setError('') }}
@@ -437,14 +437,6 @@ export default function AuthScreen({ onAuth }: Props) {
         >
           {sending ? 'Sending…' : 'Send code →'}
         </button>
-
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ flex: 1, height: 1, background: C.border }} />
-          <span style={{ fontSize: '0.7rem', color: 'rgba(28,64,88,0.55)' }}>or</span>
-          <div style={{ flex: 1, height: 1, background: C.border }} />
-        </div>
-
 
       </div>
 
@@ -519,7 +511,7 @@ export default function AuthScreen({ onAuth }: Props) {
 
       {/* Instagram link */}
       <a
-        href="https://www.instagram.com/staircode.app"
+        href="https://www.instagram.com/staircode/"
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -539,7 +531,7 @@ export default function AuthScreen({ onAuth }: Props) {
         }}
       >
         <span style={{ fontSize: '1.1rem' }}>📸</span>
-        <span>@staircode.app on Instagram</span>
+        <span>@staircode on Instagram</span>
         <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>→</span>
       </a>
 

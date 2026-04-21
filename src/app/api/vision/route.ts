@@ -3,7 +3,7 @@
  *
  * POST /api/vision
  * Accepts a base64 JPEG frame + text prompt.
- * Calls Claude claude-sonnet-4-20250514 vision API and returns AI measurement text.
+ * Calls Claude Sonnet 4.6 (claude-sonnet-4-6) vision API and returns AI measurement text.
  * Used as fallback when WebXR is unavailable.
  *
  * Body: { imageB64: string, prompt: string }

@@ -756,7 +756,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     c.width     = Math.round(srcW * ratio)
     c.height    = Math.round(srcH * ratio)
 
-    const ctx = c.getContext('2d')!
+    const ctx = c.getContext('2d', { willReadFrequently: true })!
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(v, 0, 0, c.width, c.height)
@@ -1070,7 +1070,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   const progressPct   = (posIdx / POSITIONS.length) * 100
   const IMAGE_TOP     = 88
-  const BOTTOM_PANEL  = 210  // slightly taller for larger tap targets
+  const BOTTOM_PANEL  = 240  // tall enough for result stage content
 
   // ── Camera error ──────────────────────────────────────────────────────────
   if (camError) return (
@@ -1534,7 +1534,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
       ══════════════════════════════════════════════════════════════════════ */}
       <div style={{
         position:'absolute',bottom:0,left:0,right:0,
-        height:BOTTOM_PANEL,zIndex:50,
+        minHeight:BOTTOM_PANEL,zIndex:50,
         background: (stage==='hold'||stage==='capture')
           ? 'linear-gradient(to top,rgba(0,0,0,0.85) 60%,transparent)'
           : 'linear-gradient(to top,rgba(10,28,46,0.99) 80%,rgba(10,28,46,0.6))',
@@ -1724,7 +1724,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             {/* ── Bottom panel result content ── */}
             {/* Big measurement number + ± adjustment */}
             {isMeasured ? (
-              <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
                   {/* − button */}
                   <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - 5))}
@@ -1734,7 +1734,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                   {/* Big number */}
                   <div style={{flex:1,textAlign:'center'}}>
                     <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'0.2rem'}}>
-                      <span style={{fontSize:'3rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
+                      <span style={{fontSize:'2.6rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
                       <span style={{fontSize:'1rem',color:WHITE2,fontFamily:'monospace'}}>mm</span>
                     </div>
                     {aiMessage && (
@@ -1780,7 +1780,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               if (rescanReturnRef.current) { rescanReturnRef.current=false; finishScan() }
               else goTo(posIdx+1)
             }} style={{
-              width:'100%', padding:'1rem',
+              width:'100%', padding:'0.85rem',
               background: isMeasured ? `linear-gradient(135deg,${GREEN},#1A7A50)` : `linear-gradient(135deg,${AMBER},#C4721E)`,
               border:'none', borderRadius:14, color:'#fff',
               fontFamily:'monospace', fontSize:'0.9rem', fontWeight:900,

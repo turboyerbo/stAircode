@@ -24,7 +24,7 @@ const hourBuckets   = new Map<string, BucketEntry>()
 
 const MINUTE_MS  = 60   * 1000
 const HOUR_MS    = 3600 * 1000
-const MINUTE_MAX = 10   // max requests per minute per IP
+const MINUTE_MAX = 15   // max requests per minute per IP
 const HOUR_MAX   = 50   // max requests per hour per IP
 
 // Purge stale entries every 5 minutes to prevent memory leaks

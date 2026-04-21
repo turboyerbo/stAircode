@@ -394,3 +394,4 @@ html, body {
 .light-page main {
   background: #ffffff !important;
 }
+html { scroll-behavior: smooth; }

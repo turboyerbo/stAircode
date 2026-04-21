@@ -1,0 +1,182 @@
+/* marketing/marketing.module.css
+   All styles for the /marketing landing page.
+   Extracted from inline <style> to eliminate React hydration mismatch.
+*/
+
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+.navLink {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.navLink:hover { color: #F29337; }
+
+.navCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F29337;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 10px 22px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.navCta:hover { background: #d97b1f; transform: translateY(-1px); }
+
+/* ── Hamburger ───────────────────────────────────────────────────────────── */
+.hamLine {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+.hamOpen .hamLine:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.hamOpen .hamLine:nth-child(2) { opacity: 0; }
+.hamOpen .hamLine:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+/* ── Mobile menu ─────────────────────────────────────────────────────────── */
+.desktopNav { display: flex; }
+.mobMenuBtn { display: none; }
+.mobMenuPanel { display: none; }
+
+@media (max-width: 860px) {
+  .desktopNav { display: none !important; }
+  .mobMenuBtn { display: flex !important; }
+}
+@media (min-width: 861px) {
+  .mobMenuPanel { display: none !important; }
+  .mobMenuBtn   { display: none !important; }
+}
+
+/* ── Feature cards ───────────────────────────────────────────────────────── */
+.featureCard {
+  background: #F7FAFC;
+  border: 1px solid #E2EAF0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.featureCard h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; color: #0D1E2E; }
+.featureCard p  { font-size: 0.875rem; color: #5E7D9B; line-height: 1.6; }
+
+/* ── Stats pills ─────────────────────────────────────────────────────────── */
+.statPill {
+  background: rgba(242, 147, 55, 0.1);
+  border: 1px solid rgba(242, 147, 55, 0.25);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+.statPill .num { font-size: 2rem; font-weight: 800; color: #F29337; letter-spacing: -0.03em; }
+.statPill .lbl { font-size: 0.78rem; color: #5E7D9B; margin-top: 2px; line-height: 1.4; }
+
+/* ── Pricing cards ───────────────────────────────────────────────────────── */
+.priceCard {
+  border: 1px solid #E2EAF0;
+  border-radius: 14px;
+  padding: 2rem;
+  flex: 1;
+  min-width: 260px;
+}
+.priceCardFeatured {
+  border-color: #F29337;
+  background: #FFF8F0;
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────────────────── */
+.faqItem { border-bottom: 1px solid #E2EAF0; }
+.faqQ {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 1.1rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0D1E2E;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-family: 'DM Sans', sans-serif;
+}
+.faqA { font-size: 0.88rem; color: #5E7D9B; line-height: 1.7; padding-bottom: 1rem; }
+
+/* ── Section helpers ─────────────────────────────────────────────────────── */
+.section { padding: 5rem 1.25rem; max-width: 1080px; margin: 0 auto; }
+.sectionLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #F29337;
+  margin-bottom: 0.75rem;
+}
+.sectionTitle {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #0D1E2E;
+  margin-bottom: 1rem;
+}
+
+/* ── Dark section ────────────────────────────────────────────────────────── */
+.darkSection { background: #0A1C2E; color: #fff; }
+.darkSection .sectionTitle { color: #fff; }
+
+/* ── Orange badge ────────────────────────────────────────────────────────── */
+.obadge {
+  display: inline-block;
+  background: #F29337;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* ── Step numbers ────────────────────────────────────────────────────────── */
+.stepNum {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F29337;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Testimonial ─────────────────────────────────────────────────────────── */
+.testimonial {
+  background: #F7FAFC;
+  border-left: 4px solid #F29337;
+  border-radius: 0 12px 12px 0;
+  padding: 1.5rem 1.75rem;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  background: #0A1C2E;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+.footer a { color: rgba(255, 255, 255, 0.5); text-decoration: none; }
+.footer a:hover { color: #F29337; }

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import Logo, { BetaLogo } from './components/Logo'
 import AuthScreen,      { AppUser, UserRole } from './components/AuthScreen'
 import { initAnalytics, identifyUser, resetUser, Analytics } from '@/lib/analytics'
+import { getSupabase } from '@/lib/supabase-client'
 import HelpScreen                            from './components/HelpScreen'
 import SettingsScreen                        from './components/SettingsScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
@@ -181,7 +182,6 @@ export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
   // Splash screen — shows the AR image on first load, fades into auth
   const [splashDone, setSplashDone] = useState(false)
-  const [splashFading, setSplashFading] = useState(false)
   // Legal disclaimer agreement — must be declared here (before any early returns)
   const [legalAgreed, setLegalAgreed] = useState<boolean>(()=>{
     try{ return typeof window !== 'undefined' && localStorage.getItem('sc_legal_agreed') === '1' }
@@ -193,30 +193,26 @@ export default function Home(){
     // 1. Restore from localStorage (instant — no flash)
     try{const s=localStorage.getItem('sc_user');if(s)setUser(JSON.parse(s))}catch{}
     // 2. Check live Supabase session (handles OAuth redirect return + token refresh)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (supabaseUrl && supabaseKey) {
-      import('@supabase/supabase-js').then(({ createClient }) => {
-        const sb = createClient(supabaseUrl, supabaseKey)
-        sb.auth.getSession().then(({ data }) => {
-          if (data.session?.user) {
-            const su = data.session.user
-            const u: AppUser = {
-              email: su.email ?? su.phone ?? '',
-              name:  su.user_metadata?.full_name ?? su.email?.split('@')[0] ?? 'User',
-              provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'],
-              membership: 'free',
-              units: 'mm',
-            }
-            setUser(u)
-            try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
+    const sb = getSupabase()
+    if (sb) {
+      sb.auth.getSession().then(({ data }) => {
+        if (data.session?.user) {
+          const su = data.session.user
+          const u: AppUser = {
+            email: su.email ?? su.phone ?? '',
+            name:  su.user_metadata?.full_name ?? su.email?.split('@')[0] ?? 'User',
+            provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'],
+            membership: 'free',
+            units: 'mm',
           }
-        })
-        // Listen for auth state changes (OAuth callback, sign-out)
-        sb.auth.onAuthStateChange((_event, session) => {
-          if (!session) { setUser(null); try { localStorage.removeItem('sc_user') } catch {} }
-        })
+          setUser(u)
+          try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
+        }
       }).catch(() => {})
+      // Listen for auth state changes (OAuth callback, sign-out)
+      sb.auth.onAuthStateChange((_event, session) => {
+        if (!session) { setUser(null); try { localStorage.removeItem('sc_user') } catch {} }
+      })
     }
   },[])
   function handleAuth(u:AppUser){

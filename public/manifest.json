@@ -47,5 +47,6 @@
       "label": "AR Stair Measurement",
       "form_factor": "narrow"
     }
-  ]
+  ],
+  "version": "2.0.1"
 }

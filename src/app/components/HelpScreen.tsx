@@ -271,7 +271,7 @@ export default function HelpScreen() {
           </div>
         </div>
         {/* Instagram card */}
-        <a href="https://www.instagram.com/staircode.app" target="_blank" rel="noopener noreferrer"
+        <a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
           style={{ display:'flex', alignItems:'center', gap:'1rem', background:'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', borderRadius:16, padding:'1.1rem 1.25rem', textDecoration:'none', boxShadow:'0 6px 24px rgba(131,58,180,0.35)' }}>
           <div style={{ width:48, height:48, borderRadius:14, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.8rem', flexShrink:0 }}>
             📸

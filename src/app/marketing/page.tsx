@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import styles from './marketing.module.css'
 
 export default function MarketingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -51,97 +52,13 @@ export default function MarketingPage() {
 
   return (
     <>
-      {/* ── Google Fonts ── */}
-      <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { font-family: 'DM Sans', sans-serif; background: #fff; color: #0D1E2E; -webkit-font-smoothing: antialiased; }
-
-        /* Nav */
-        .nav-link { font-size: 0.9rem; font-weight: 500; color: #0D1E2E; text-decoration: none; transition: color 0.15s; }
-        .nav-link:hover { color: #F29337; }
-        .nav-cta {
-          display: inline-flex; align-items: center; gap: 6px;
-          background: #F29337; color: #fff; font-weight: 700;
-          font-size: 0.88rem; padding: 10px 22px; border-radius: 6px;
-          text-decoration: none; transition: background 0.15s, transform 0.1s;
-          white-space: nowrap; letter-spacing: -0.01em;
-        }
-        .nav-cta:hover { background: #d97b1f; transform: translateY(-1px); }
-
-        /* Hamburger */
-        .ham-line { display: block; width: 22px; height: 2px; background: #0D1E2E; border-radius: 2px; transition: all 0.2s; }
-        .ham-open .ham-line:nth-child(1) { transform: translateY(8px) rotate(45deg); }
-        .ham-open .ham-line:nth-child(2) { opacity: 0; }
-        .ham-open .ham-line:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
-
-        /* Mobile menu */
-        .mob-menu { display: none; }
-        @media (max-width: 860px) {
-          .desktop-nav { display: none !important; }
-          .mob-menu { display: block; }
-        }
-        @media (min-width: 861px) {
-          .mob-menu-panel { display: none !important; }
-          .ham-btn { display: none !important; }
-        }
-
-        /* Hero */
-        .hero-stat { font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: #0D1E2E; }
-        .hero-stat span { color: #F29337; }
-
-        /* Cards */
-        .feature-card { background: #F7FAFC; border: 1px solid #E2EAF0; border-radius: 12px; padding: 1.5rem; }
-        .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; color: #0D1E2E; }
-        .feature-card p  { font-size: 0.875rem; color: #5E7D9B; line-height: 1.6; }
-
-        /* Stats bar */
-        .stat-pill { background: rgba(242,147,55,0.1); border: 1px solid rgba(242,147,55,0.25); border-radius: 10px; padding: 1.25rem 1.5rem; }
-        .stat-pill .num { font-size: 2rem; font-weight: 800; color: #F29337; letter-spacing: -0.03em; }
-        .stat-pill .lbl { font-size: 0.78rem; color: #5E7D9B; margin-top: 2px; line-height: 1.4; }
-
-        /* Pricing */
-        .price-card { border: 1px solid #E2EAF0; border-radius: 14px; padding: 2rem; flex: 1; min-width: 260px; }
-        .price-card.featured { border-color: #F29337; background: #FFF8F0; }
-
-        /* FAQ */
-        .faq-item { border-bottom: 1px solid #E2EAF0; }
-        .faq-q { width: 100%; background: none; border: none; text-align: left; padding: 1.1rem 0; font-size: 0.95rem; font-weight: 600; color: #0D1E2E; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-family: 'DM Sans', sans-serif; }
-        .faq-a { font-size: 0.88rem; color: #5E7D9B; line-height: 1.7; padding-bottom: 1rem; }
-
-        /* Section */
-        .section { padding: 5rem 1.25rem; max-width: 1080px; margin: 0 auto; }
-        .section-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #F29337; margin-bottom: 0.75rem; }
-        .section-title { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; color: #0D1E2E; margin-bottom: 1rem; }
-        .section-sub { font-size: 1rem; color: #5E7D9B; line-height: 1.6; max-width: 600px; }
-
-        /* Dark section */
-        .dark-section { background: #0A1C2E; color: #fff; }
-        .dark-section .section-title { color: #fff; }
-        .dark-section .section-sub   { color: rgba(255,255,255,0.65); }
-
-        /* Orange badge */
-        .obadge { display: inline-block; background: #F29337; color: #fff; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; margin-bottom: 1rem; }
-
-        /* Step numbers */
-        .step-num { width: 40px; height: 40px; border-radius: 50%; background: #F29337; color: #fff; font-size: 1rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-        /* Testimonial */
-        .testimonial { background: #F7FAFC; border-left: 4px solid #F29337; border-radius: 0 12px 12px 0; padding: 1.5rem 1.75rem; }
-
-        /* Footer */
-        footer { background: #0A1C2E; color: rgba(255,255,255,0.5); font-size: 0.8rem; padding: 2rem 1.25rem; text-align: center; }
-        footer a { color: rgba(255,255,255,0.5); text-decoration: none; }
-        footer a:hover { color: #F29337; }
-      `}</style>
-
       {/* ══════════════════════════════════════════════
           NAV
       ══════════════════════════════════════════════ */}
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-        background: scrolled ? 'rgba(255,255,255,0.97)' : '#fff',
-        borderBottom: '1px solid #E2EAF0',
+        background: scrolled ? 'rgba(10,28,46,0.98)' : '#0A1C2E',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         backdropFilter: 'blur(8px)',
         transition: 'box-shadow 0.2s',
         boxShadow: scrolled ? '0 2px 16px rgba(0,0,0,0.06)' : 'none',
@@ -150,46 +67,46 @@ export default function MarketingPage() {
           {/* Logo */}
           <a href="/marketing" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <img src="/logo_icon_blue.png" alt="stAIrcode" style={{ height: 30, width: 'auto' }} />
-            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0D1E2E', letterSpacing: '-0.02em' }}>
+            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF', letterSpacing: '-0.02em' }}>
               st<span style={{ color: '#F29337' }}>AI</span>rcode
             </span>
           </a>
 
           {/* Desktop nav */}
-          <nav className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
+          <nav className={styles.desktopNav} style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
             {navLinks.slice(0, 4).map(l => (
-              <a key={l.label} href={l.href} className="nav-link">{l.label}</a>
+              <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
-            <a href="/?signin=1" className="nav-link">Sign In</a>
-            <a href="/?signin=1" className="nav-cta">Try stAIrcode FREE →</a>
+            <a href="/?signin=1" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
+            <a href="/?signin=1" className={styles.navCta}>Try stAIrcode FREE →</a>
           </nav>
 
           {/* Hamburger */}
           <button
-            className={`ham-btn mob-menu${menuOpen ? ' ham-open' : ''}`}
+            className={`${styles.mobMenuBtn}${menuOpen ? ' ' + styles.hamOpen : ''}`}
             onClick={() => setMenuOpen(o => !o)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, padding: 4 }}
             aria-label="Menu"
           >
-            <span className="ham-line" />
-            <span className="ham-line" />
-            <span className="ham-line" />
+            <span className={styles.hamLine} />
+            <span className={styles.hamLine} />
+            <span className={styles.hamLine} />
           </button>
         </div>
 
         {/* Mobile dropdown */}
         {menuOpen && (
-          <div className="mob-menu-panel" style={{
-            background: '#fff', borderTop: '1px solid #E2EAF0',
+          <div className={styles.mobMenuPanel} style={{
+            background: '#0A1C2E', borderTop: '1px solid rgba(255,255,255,0.08)',
             padding: '1rem 1.25rem 1.5rem',
             display: 'flex', flexDirection: 'column', gap: '0.25rem',
           }}>
             {navLinks.map(l => (
               <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
-                style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 500, color: '#0D1E2E', textDecoration: 'none', borderBottom: '1px solid #F0F5FA' }}
+                style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 500, color: 'rgba(255,255,255,0.85)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
               >{l.label}</a>
             ))}
-            <a href="/?signin=1" className="nav-cta" style={{ marginTop: '1rem', justifyContent: 'center' }}>
+            <a href="/?signin=1" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>
               Try stAIrcode FREE →
             </a>
           </div>
@@ -199,30 +116,29 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════ */}
-      <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4rem', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
+      <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#0A1C2E' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className="obadge">AI-Powered Stair Compliance</div>
-          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 800, marginBottom: '1.5rem' }}>
-            Know if your stairs are safe.<br />
-            <span style={{ color: '#F29337' }}>Before someone gets hurt.</span>
+          <div className={styles.obadge}>AI-Powered Stair Compliance</div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 800, marginBottom: '1.5rem', color: '#FFFFFF' }}>
+  Check your stairs in just a minute.
           </h1>
 
           {/* Problem statement */}
           <div style={{ maxWidth: 720, marginBottom: '2rem' }}>
-            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: '#2C4A68', marginBottom: '1rem' }}>
+            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', marginBottom: '1rem' }}>
               The direct medical costs of non-fatal stair fall injuries in the US are estimated at{' '}
-              <strong>over $92 billion annually.</strong>
+              <strong style={{ color: '#FFFFFF', fontWeight: 700 }}>over $92 billion annually.</strong>
             </p>
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: '#2C4A68', marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', marginBottom: '0.75rem' }}>
               Unintentional falls result in almost <strong>1,800 emergency department visits</strong> and{' '}
               <strong>417 hospital admissions every day</strong> in Canada alone.
             </p>
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: '#2C4A68', marginBottom: '0.75rem' }}>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', marginBottom: '0.75rem' }}>
               Falls on stairs account for roughly{' '}
               <strong>20% of fall-related injury hospitalizations</strong> among seniors. Dimensional inconsistency in risers larger than 3/8 inch{' '}
               <strong>increases trip risk by over 50%.</strong>
             </p>
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: '#2C4A68' }}>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)' }}>
               Non-compliant stairs injure and kill people. The regulatory requirement to check stairs against building codes is real.{' '}
               The gap between <em>&ldquo;I have stairs&rdquo;</em> and <em>&ldquo;I know if they&apos;re compliant&rdquo;</em> is real.{' '}
               <strong>stAIrcode addresses that gap.</strong>
@@ -231,45 +147,34 @@ export default function MarketingPage() {
 
           {/* CTA */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '2.5rem' }}>
-            <a href="/?signin=1" className="nav-cta" style={{ fontSize: '1rem', padding: '13px 28px' }}>
+            <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>
               Try stAIrcode FREE →
             </a>
-            <a href="#how-it-works" style={{ fontSize: '0.9rem', color: '#5E7D9B', textDecoration: 'none', fontWeight: 500 }}>
+            <a href="#how-it-works" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontWeight: 500 }}>
               See how it works ↓
             </a>
           </div>
 
-          {/* ── Video placeholder ── */}
+          {/* ── YouTube demo video ── */}
           <div style={{
             width: '100%', maxWidth: 800,
             aspectRatio: '16 / 9',
-            background: '#0A1C2E',
             borderRadius: 14,
+            overflow: 'hidden',
             border: '1px solid rgba(65,124,164,0.25)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16,
-            position: 'relative', overflow: 'hidden',
-            backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.06) 27px,rgba(65,124,164,0.06) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.06) 27px,rgba(65,124,164,0.06) 28px)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
           }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: '50%',
-              background: '#F29337',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 24px rgba(242,147,55,0.4)',
-              cursor: 'pointer',
-            }}>
-              {/* Play triangle */}
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M7 4L18 11L7 18V4Z" fill="white"/>
-              </svg>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Demo Video
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', marginTop: 4, letterSpacing: '0.1em' }}>
-                COMING SOON
-              </div>
-            </div>
+            <iframe
+              src="https://www.youtube.com/embed/dYRmQMASyXo?rel=0&modestbranding=1&color=white"
+              title="stAIrcode demo — AI stair compliance scan"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+              style={{
+                width: '100%', height: '100%',
+                border: 'none', display: 'block',
+              }}
+            />
           </div>
         </div>
       </section>
@@ -277,7 +182,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           AS SEEN IN / TRUST BAR
       ══════════════════════════════════════════════ */}
-      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid #E2EAF0', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}>
+      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
           <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5E7D9B', flexShrink: 0 }}>Checks compliance against</span>
           {['OBC 2024', 'NBC 2020', 'BCBC 2024', 'QBC 2020', 'IBC 2021', 'IRC 2021'].map(code => (
@@ -291,9 +196,9 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           TESTIMONIAL
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '4rem 1.25rem', background: '#fff' }}>
+      <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div className="testimonial">
+          <div className={styles.testimonial}>
             <div style={{ fontSize: '1.4rem', color: '#F29337', marginBottom: '0.75rem' }}>★★★★★</div>
             <blockquote style={{ fontSize: '1.05rem', lineHeight: 1.7, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1rem' }}>
               &ldquo;I scanned the staircase at a listing I was about to put an offer on. stAIrcode flagged two risers with a 12mm height inconsistency — well above the 9.5mm (3/8 inch) threshold. I brought it to my building inspector, who confirmed it. It saved me from waiving an inspection on a compliance issue that would&apos;ve cost $6,000 to fix.&rdquo;
@@ -313,10 +218,10 @@ export default function MarketingPage() {
           WHY CHOOSE
       ══════════════════════════════════════════════ */}
       <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}>
-        <div className="section" style={{ padding: 0 }}>
+        <div className={styles.section} style={{ padding: 0 }}>
           <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-            <div className="section-label">Why stAIrcode</div>
-            <h2 className="section-title" style={{ marginBottom: '2.5rem' }}>Why teams choose stAIrcode</h2>
+            <div className={styles.sectionLabel}>Why stAIrcode</div>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Why teams choose stAIrcode</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
               {[
                 { icon: '📐', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
@@ -324,7 +229,7 @@ export default function MarketingPage() {
                 { icon: '📄', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for real estate disclosure, pre-inspection screening, or contractor briefings.' },
                 { icon: '🔵', title: 'AR Measurement Line', body: 'A blue measurement line animates across the screen as the AI reads each dimension — clear visual feedback showing exactly what\'s being measured.' },
               ].map(f => (
-                <div key={f.title} className="feature-card">
+                <div key={f.title} className={styles.featureCard}>
                   <div style={{ fontSize: '1.6rem', marginBottom: '0.6rem' }}>{f.icon}</div>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
@@ -338,10 +243,10 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           STATS
       ══════════════════════════════════════════════ */}
-      <section className="dark-section" style={{ padding: '4.5rem 1.25rem' }}>
+      <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className="section-label" style={{ color: '#F29337' }}>The Data</div>
-          <h2 className="section-title" style={{ marginBottom: '2rem', color: '#fff' }}>The problem is real</h2>
+          <div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>The problem is real</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
             {[
               { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
@@ -349,7 +254,7 @@ export default function MarketingPage() {
               { num: '20%',   lbl: 'Of senior fall hospitalizations involve stairs' },
               { num: '+50%',  lbl: 'Increased trip risk from riser inconsistency >3/8"' },
             ].map(s => (
-              <div key={s.num} className="stat-pill">
+              <div key={s.num} className={styles.statPill}>
                 <div className="num">{s.num}</div>
                 <div className="lbl">{s.lbl}</div>
               </div>
@@ -364,10 +269,10 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
-      <section id="how-it-works" style={{ padding: '5rem 1.25rem' }}>
+      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#ffffff' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className="section-label">How It Works</div>
-          <h2 className="section-title" style={{ marginBottom: '3rem' }}>Three steps to a compliance scan</h2>
+          <div className={styles.sectionLabel}>How It Works</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '3rem' }}>Three steps to a compliance scan</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: 680 }}>
             {[
               { n: '1', title: 'Sign up — free, no credit card', body: 'Create your account with just an email. stAIrcode is free to scan. A full PDF compliance report is available for a one-time purchase.' },
@@ -375,7 +280,7 @@ export default function MarketingPage() {
               { n: '3', title: 'Get your results', body: 'Each dimension is checked against your local building code and shown as pass/fail. Download your report or share it with your inspector, agent, or contractor.' },
             ].map(s => (
               <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
-                <div className="step-num">{s.n}</div>
+                <div className={styles.stepNum}>{s.n}</div>
                 <div>
                   <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0D1E2E' }}>{s.title}</h3>
                   <p style={{ fontSize: '0.88rem', color: '#5E7D9B', lineHeight: 1.65 }}>{s.body}</p>
@@ -391,11 +296,11 @@ export default function MarketingPage() {
       ══════════════════════════════════════════════ */}
       <section id="pricing" style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className="section-label">Pricing</div>
-          <h2 className="section-title" style={{ marginBottom: '2.5rem' }}>Simple, transparent pricing</h2>
+          <div className={styles.sectionLabel}>Pricing</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Simple, transparent pricing</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
             {/* Free */}
-            <div className="price-card">
+            <div className={styles.priceCard}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5E7D9B', marginBottom: '0.5rem' }}>Free</div>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E', marginBottom: '0.25rem' }}>$0</div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>No credit card required</div>
@@ -412,7 +317,7 @@ export default function MarketingPage() {
             </div>
 
             {/* Pro Report */}
-            <div className="price-card featured">
+            <div className={`${styles.priceCard} ${styles.priceCardFeatured}`}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Report</div>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E', marginBottom: '0.25rem' }}>$12.99</div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report</div>
@@ -423,7 +328,7 @@ export default function MarketingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" className="nav-cta" style={{ display: 'block', textAlign: 'center', padding: '11px' }}>
+              <a href="/?signin=1" className={styles.navCta} style={{ display: 'block', textAlign: 'center', padding: '11px' }}>
                 Get Full Report →
               </a>
             </div>
@@ -434,17 +339,17 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FAQ
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '5rem 1.25rem' }}>
+      <section style={{ padding: '5rem 1.25rem', background: '#ffffff' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div className="section-label">FAQ</div>
-          <h2 className="section-title" style={{ marginBottom: '2rem' }}>Frequently asked questions</h2>
+          <div className={styles.sectionLabel}>FAQ</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem' }}>Frequently asked questions</h2>
           {faqs.map((f, i) => (
-            <div key={i} className="faq-item">
-              <button className="faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+            <div key={i} className={styles.faqItem}>
+              <button className={styles.faqQ} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                 {f.q}
                 <span style={{ fontSize: '1.1rem', color: '#F29337', flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
               </button>
-              {openFaq === i && <p className="faq-a">{f.a}</p>}
+              {openFaq === i && <p className={styles.faqA}>{f.a}</p>}
             </div>
           ))}
         </div>
@@ -453,7 +358,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FINAL CTA
       ══════════════════════════════════════════════ */}
-      <section id="about" className="dark-section" style={{ padding: '5rem 1.25rem', textAlign: 'center' }}>
+      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem' }}>
             Ready to check your stairs?
@@ -462,7 +367,7 @@ export default function MarketingPage() {
             Scan for free in under 5 minutes. No app download. No tape measure.<br />
             Just your phone and the stairs in question.
           </p>
-          <a href="/?signin=1" className="nav-cta" style={{ fontSize: '1rem', padding: '14px 32px' }}>
+          <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>
             Try stAIrcode FREE →
           </a>
           <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>
