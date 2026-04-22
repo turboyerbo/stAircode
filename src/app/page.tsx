@@ -24,6 +24,8 @@ interface StairMeasurements {
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
   confidence?: number; calibrated?: boolean
   riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
+  riserInconsistent?: number   // 1=inconsistent, 0=consistent, -1=could not assess
+  riserVariationMm?: number    // max variation detected between risers
 }
 
 type CodeKey= 'NBC'|'OBC'|'QBC'|'NEN'|'IRC'|'IBC'|'BCBC'
@@ -96,9 +98,20 @@ function detectCode(l:Loc):Code{
 
 function check(m:StairMeasurements,code:Code){
   const L=code.limits
+  // Riser consistency: pass=variation ≤9.5mm, fail=>9.5mm, null=not assessed
+  const riserConsistencyPass =
+    m.riserInconsistent === 0 ? true
+    : m.riserInconsistent === 1 ? false
+    : null  // -1 or undefined = not assessed
+  const riserVariationDisplay = m.riserVariationMm != null ? m.riserVariationMm : null
+
   return[
     {label:'Rise',    icon:'↕',value:m.rise,   min:L.riserMin,max:L.riserMax,
      pass:m.rise?m.rise>=L.riserMin&&m.rise<=L.riserMax:null},
+    {label:'Rise Consistency', icon:'≈', value: riserVariationDisplay, max: 9.5,
+     pass: riserConsistencyPass,
+     note: m.riserInconsistent === -1 ? 'Could not assess — professional inspection required' : undefined,
+    } as any,
     {label:'Run',     icon:'↔',value:m.run,    min:L.runMin,
      pass:m.run?m.run>=L.runMin:null},
     {label:'Nosing',  icon:'⌐',value:m.nosing, min:L.nosingMin,max:L.nosingMax,
@@ -436,6 +449,8 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
       confidence: 0.88,
       calibrated: true,
       riserCount: n('riserCount') ?? undefined,
+      riserInconsistent: n('riserInconsistent') ?? undefined,
+      riserVariationMm:  n('riserVariationMm')  ?? undefined,
     }
     const measurementCount = (['rise','run','width','guard'] as const).filter(k => n(k) !== null).length
     Analytics.scanCompleted({ role: user?.role ?? 'diy', measurementCount, hasFailed: false })

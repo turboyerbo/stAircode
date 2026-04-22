@@ -155,17 +155,17 @@ export default function MarketingPage() {
             </a>
           </div>
 
-          {/* ── YouTube demo video ── */}
+          {/* ── YouTube demo video (portrait Shorts) ── */}
           <div style={{
-            width: '100%', maxWidth: 800,
-            aspectRatio: '16 / 9',
-            borderRadius: 14,
+            width: '100%', maxWidth: 380,
+            aspectRatio: '9 / 16',
+            borderRadius: 18,
             overflow: 'hidden',
             border: '1px solid rgba(65,124,164,0.25)',
             boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
           }}>
             <iframe
-              src="https://www.youtube.com/embed/dYRmQMASyXo?rel=0&modestbranding=1&color=white"
+              src="https://www.youtube.com/embed/3L6c9sbGpmI?rel=0&modestbranding=1&color=white"
               title="stAIrcode demo — AI stair compliance scan"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

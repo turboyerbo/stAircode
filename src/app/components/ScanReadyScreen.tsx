@@ -163,7 +163,7 @@ Reply ONLY with valid JSON:
     captureLabel: 'Tap to measure riser height',
     holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['rise'],
-    aiPrompt: (_p) => `Measure RISER HEIGHT. Phone is upright on the tread nosing, camera facing the riser face.
+    aiPrompt: (_p) => `Measure RISER HEIGHT and CHECK FOR DIMENSIONAL INCONSISTENCY. Phone is upright on the tread nosing, camera facing the riser face.
 
 SCALE CALIBRATION — scan the scene for reference objects in this priority order:
 1. Phone body edges visible at frame border: smartphone width is 68–80mm (typical 72mm)
@@ -176,19 +176,49 @@ SCALE CALIBRATION — scan the scene for reference objects in this priority orde
 
 USE THE BEST REFERENCE FOUND. State which one in your message.
 
+TASK 1 — PRIMARY RISER HEIGHT:
 Measure the vertical distance from tread nosing top to the tread above (= riser height).
 The riser face fills most of the frame — the full height is visible.
 
-ALSO detect NOSING while you have this view:
+TASK 2 — INCONSISTENCY CHECK (critical safety check):
+Building codes (OBC, NBC, IBC) require that no two adjacent risers vary by more than 9.5mm (3/8 inch).
+Variation >9.5mm significantly increases trip and fall risk.
+
+If multiple risers are visible in the frame:
+- Estimate the height of the bottom riser, one middle riser, and the top riser
+- Calculate the maximum variation between any two of these
+- Flag if variation exceeds 9.5mm
+
+If only one riser is clearly visible:
+- Note that only a single riser was measurable from this position
+- Set inconsistencyFlag to null (cannot assess) rather than false
+
+Do NOT fabricate riser heights you cannot see. If you cannot assess consistency, say so honestly.
+
+TASK 3 — NOSING DETECTION:
 Look at the front edge of the tread the phone is resting on. Is there a physical overhang
 (nosing projection) where the tread lip extends beyond the riser face below it?
 Estimate the horizontal projection in mm if visible. No nosing = square-edge tread (also valid).
 
-Reply ONLY with valid JSON — ALWAYS provide estimatedMm for the riser:
-{"estimatedMm":number,"confidence":0.0-1.0,"scaleRef":"object used","hasNosing":true|false,"nosingMm":number|null,"message":"one sentence"}
+Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+{
+  "estimatedMm": number,
+  "confidence": 0.0-1.0,
+  "scaleRef": "object used for scale",
+  "hasNosing": true|false,
+  "nosingMm": number|null,
+  "riserHeights": [number, ...] | null,
+  "maxVariationMm": number|null,
+  "inconsistencyFlag": true|false|null,
+  "message": "one sentence for the user — mention inconsistency if found"
+}
 
-Riser range: 125–220mm residential. Default 175mm if uncertain.
-Nosing range: 15–38mm if present. null if square-edge or not visible.`,
+Rules:
+- estimatedMm: the riser height closest to the camera. Range 125–220mm. Default 175mm if uncertain.
+- riserHeights: array of individual riser heights measured (2–5 values). null if only one visible.
+- maxVariationMm: max difference between any two riser heights. null if only one measured.
+- inconsistencyFlag: true if maxVariationMm > 9.5mm, false if ≤ 9.5mm, null if cannot assess.
+- message: if inconsistencyFlag is true, say "Riser height variation of Xmm detected — exceeds 9.5mm code limit". If null, say "Only one riser visible — full consistency check requires a professional inspection."`,
   },
 
   {
@@ -1013,8 +1043,16 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         if (p === 'riser_front') {
           // Always store the estimate even if low confidence — user can adjust
           next.rise = est ?? mm(r.estimated_mm) ?? 175  // fallback to typical value
-        }
-        if (p === 'riser_front') {
+
+          // Store inconsistency data
+          const maxVar = r.maxVariationMm != null ? parseFloat(String(r.maxVariationMm)) : null
+          const flag   = r.inconsistencyFlag  // true | false | null
+          if (maxVar != null && !isNaN(maxVar)) next.riserVariationMm = Math.round(maxVar)
+          // inconsistencyFlag: 1=inconsistent, 0=consistent, -1=could not assess
+          if (flag === true)       next.riserInconsistent = 1
+          else if (flag === false) next.riserInconsistent = 0
+          else                     next.riserInconsistent = -1  // null = unknown
+
           // Also extract nosing detected during riser measurement
           const hasN = r.hasNosing === true || r.has_nosing === true
           const nm = mm(r.nosingMm ?? r.nosing_mm)
@@ -1739,6 +1777,29 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                     </div>
                     {aiMessage && (
                       <div style={{fontSize:'0.65rem',color:WHITE2,lineHeight:1.4,marginTop:'0.15rem'}}>{aiMessage}</div>
+                    )}
+                    {/* ── Riser inconsistency warning ── */}
+                    {currentPos.id === 'riser_front' && results.riserInconsistent === 1 && (
+                      <div style={{
+                        marginTop:'0.4rem', padding:'0.4rem 0.65rem',
+                        background:'rgba(232,85,85,0.15)', border:'1px solid rgba(232,85,85,0.4)',
+                        borderRadius:8, fontSize:'0.62rem', lineHeight:1.5, color:'#ff9999',
+                        fontFamily:'monospace',
+                      }}>
+                        ⚠ RISER INCONSISTENCY DETECTED
+                        {results.riserVariationMm != null && ` — ${results.riserVariationMm}mm variation`}
+                        {' '}(code limit: 9.5mm). Professional inspection required.
+                      </div>
+                    )}
+                    {currentPos.id === 'riser_front' && results.riserInconsistent === -1 && (
+                      <div style={{
+                        marginTop:'0.4rem', padding:'0.4rem 0.65rem',
+                        background:'rgba(242,147,55,0.12)', border:'1px solid rgba(242,147,55,0.3)',
+                        borderRadius:8, fontSize:'0.62rem', lineHeight:1.5, color:AMBER,
+                        fontFamily:'monospace',
+                      }}>
+                        ℹ Only one riser visible — consistency across all risers cannot be confirmed. Professional inspection recommended.
+                      </div>
                     )}
                     {adjustVal !== null && (
                       <div style={{fontSize:'0.58rem',color:AMBER,fontFamily:'monospace',marginTop:'0.1rem'}}>ADJUSTED</div>
