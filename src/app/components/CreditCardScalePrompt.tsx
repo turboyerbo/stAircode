@@ -62,10 +62,10 @@ export default function CreditCardScalePrompt({
     <div
       style={{
         position: 'absolute',
-        bottom: compact ? 100 : 120,
+        bottom: compact ? 90 : 110,
         left: 12,
         right: 12,
-        zIndex: 30,
+        zIndex: 60,
         background: 'rgba(10,18,40,0.92)',
         border: '1px solid rgba(59,170,255,0.35)',
         borderRadius: 14,
@@ -128,7 +128,7 @@ export default function CreditCardScalePrompt({
               lineHeight: 1.2,
             }}
           >
-            Place a credit card in the scene
+            Optional: place a card in the scene
           </p>
           <p
             style={{
@@ -138,11 +138,11 @@ export default function CreditCardScalePrompt({
               lineHeight: 1.4,
             }}
           >
-            A standard card is{' '}
-            <span style={{ color: '#3BAAFF', fontWeight: 600 }}>85.6 × 54 mm</span> — a known size the AI
-            uses as a scale reference. This can improve measurement accuracy to{' '}
-            <span style={{ color: '#3BAAFF', fontWeight: 600 }}>±10–15 mm</span>, compared to ±30–50 mm
-            without a reference object.
+            Not required — but it helps. A standard card is{' '}
+            <span style={{ color: '#3BAAFF', fontWeight: 600 }}>85.6 × 54 mm</span>. When the AI can
+            see a known-size object, it improves accuracy from ±30–50 mm to{' '}
+            <span style={{ color: '#3BAAFF', fontWeight: 600 }}>±10–15 mm</span>.
+            Any flat card works — loyalty card, library card, ID.
           </p>
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function CreditCardScalePrompt({
               lineHeight: 1.4,
             }}
           >
-            Lay the card flat on the tread or step nosing, parallel to the edge, fully visible in frame.
+            Lay any flat card on the tread, fully visible. Loyalty cards, IDs, and transit cards all work.
           </p>
         </div>
       )}
@@ -191,7 +191,7 @@ export default function CreditCardScalePrompt({
             cursor: 'pointer',
           }}
         >
-          Skip
+          Scan without card
         </button>
         <button
           onClick={() => dismiss(true)}
@@ -208,7 +208,7 @@ export default function CreditCardScalePrompt({
             boxShadow: '0 2px 10px rgba(29,106,255,0.4)',
           }}
         >
-          Card is in frame ✓
+          Card placed — scan with it ✓
         </button>
       </div>
 

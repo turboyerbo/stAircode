@@ -100,7 +100,7 @@ const ARCHITECT: ProfileTheme = {
   },
   copy: {
     reportTitle: 'Pre-Inspection Report', reportSubtitle: 'Compliance assessment against applicable building code',
-    reportPrice: 'Generate Full Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $11.99',
+    reportPrice: 'Generate Full Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Pro — Unlimited Reports', proPrice: '$38.99 / month', proNote: 'Unlimited scans, AR plane detection, all codes.',
     enterpriseTitle: 'Enterprise / Studio', enterpriseNote: 'Team seats, API access, BIM export.',
     findInspector: '📍 Find Architect / Inspector',
@@ -136,7 +136,7 @@ const BUILDING_MANAGER: ProfileTheme = {
   },
   copy: {
     reportTitle: 'Building Compliance Report', reportSubtitle: 'Stair assessment for building management records',
-    reportPrice: 'Get Compliance Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $11.99',
+    reportPrice: 'Get Compliance Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Pro — Unlimited Assessments', proPrice: '$38.99 / month', proNote: 'Scan all staircases in your building portfolio.',
     enterpriseTitle: 'Enterprise', enterpriseNote: 'Multi-site management, team access, audit trail.',
     findInspector: '📍 Find a Certified Inspector',
@@ -173,7 +173,7 @@ const CONTRACTOR: ProfileTheme = {
   },
   copy: {
     reportTitle: 'Site Compliance Check', reportSubtitle: 'Stair dimensions vs code — pass/fail per item',
-    reportPrice: 'Get Site Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $11.99',
+    reportPrice: 'Get Site Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Pro — Unlimited Checks', proPrice: '$38.99 / month', proNote: 'Unlimited scans across all your sites.',
     enterpriseTitle: 'Enterprise', enterpriseNote: 'Team access, project management integration.',
     findInspector: '📍 Find Inspector',
@@ -209,7 +209,7 @@ const DIY: ProfileTheme = {
   },
   copy: {
     reportTitle: 'Your Stair Check', reportSubtitle: "Here's what we found about your stairs",
-    reportPrice: 'Get the Full Report — $11.99', reportPriceNote: 'FREE during beta · Normally $11.99',
+    reportPrice: 'Get the Full Report — $2.99', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Unlimited Scans', proPrice: '$38.99 / month', proNote: 'Scan as many staircases as you want. Cancel anytime.',
     enterpriseTitle: 'Need professional help?', enterpriseNote: 'Talk to our team — we can connect you with a local inspector.',
     findInspector: '📍 Find a Local Inspector',

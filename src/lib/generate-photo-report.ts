@@ -1,11 +1,14 @@
 /**
  * src/lib/generate-photo-report.ts
  *
- * Generates a professional PDF compliance report with embedded photos
- * using jsPDF (client-side, no server required).
+ * CLIENT-SIDE ONLY — never import this from a server component or API route.
+ * Uses jsPDF which requires browser APIs (window, document, canvas).
  *
+ * Generates a professional PDF compliance report with embedded photos.
  * Called after Stripe payment for the $2.99 photo report.
  */
+
+'use client'
 
 import type { jsPDF as JsPDFType } from 'jspdf'
 

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       <ul style="padding-left:1.25rem; margin-bottom:1.5rem;">
         <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">📐 &nbsp;Measure riser height, tread depth, handrail height, clear width, and headroom</li>
         <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">✅ &nbsp;Get an instant pass/fail against your local building code</li>
-        <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">📄 &nbsp;Generate a full compliance report for $11.99 — emailed as a PDF</li>
+        <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">📄 &nbsp;Generate a full compliance report for $2.99 — emailed as a PDF</li>
         <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8;">🏗️ &nbsp;The AI adapts its language to your background — architect to DIY renovator</li>
       </ul>
 

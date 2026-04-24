@@ -78,7 +78,7 @@ export default function MarketingPage() {
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
             <a href="/?signin=1" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
-            <a href="/?signin=1" className={styles.navCta}>Try stAIrcode FREE →</a>
+            <a href="/?signin=1" className={styles.navCta}>Check my stairs for free →</a>
           </nav>
 
           {/* Hamburger */}
@@ -107,7 +107,7 @@ export default function MarketingPage() {
               >{l.label}</a>
             ))}
             <a href="/?signin=1" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>
-              Try stAIrcode FREE →
+              Check my stairs for free →
             </a>
           </div>
         )}
@@ -120,7 +120,7 @@ export default function MarketingPage() {
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div className={styles.obadge}>AI-Powered Stair Compliance</div>
           <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 800, marginBottom: '1.5rem', color: '#FFFFFF' }}>
-  Check your stairs in just a minute.
+  It takes a few minutes to check your stairs.
           </h1>
 
           {/* Problem statement */}
@@ -130,7 +130,7 @@ export default function MarketingPage() {
               <strong style={{ color: '#FFFFFF', fontWeight: 700 }}>over $92 billion annually.</strong>
             </p>
             <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', marginBottom: '0.75rem' }}>
-              Unintentional falls result in almost <strong>1,800 emergency department visits</strong> and{' '}
+              Falls result in almost <strong>1,800 emergency department visits</strong> and{' '}
               <strong>417 hospital admissions every day</strong> in Canada alone.
             </p>
             <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', marginBottom: '0.75rem' }}>
@@ -148,7 +148,7 @@ export default function MarketingPage() {
           {/* CTA */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '2.5rem' }}>
             <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>
-              Try stAIrcode FREE →
+              Check my stairs for free →
             </a>
             <a href="#how-it-works" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontWeight: 500 }}>
               See how it works ↓
@@ -368,7 +368,7 @@ export default function MarketingPage() {
             Just your phone and the stairs in question.
           </p>
           <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>
-            Try stAIrcode FREE →
+            Check my stairs for free →
           </a>
           <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>
             Pre-screening tool. Always confirm with a licensed inspector before renovation or real estate transaction.

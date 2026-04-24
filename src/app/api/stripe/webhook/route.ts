@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
           await trackServer(email, 'purchase_completed_server', {
             product,
             stripe_session: session.id,
-            amount_cents:   product === 'report' ? 1199 : 3899,
+            amount_cents:   product === 'report' ? 299 : 3899,
           })
         }
 
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
               email,
               product:        'report',
               stripe_session: session.id,
-              amount_cents:   1199,
+              amount_cents:   299,
               used:           false,
               created_at:     new Date().toISOString(),
             }).then(({ error }) => {

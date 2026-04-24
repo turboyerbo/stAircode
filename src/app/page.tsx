@@ -619,13 +619,13 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
           onClick={atLimit ? undefined : onStartScan}
           style={{
             width:'100%', padding:'1.15rem',
-            background: atLimit ? 'rgba(232,69,69,0.15)' : '#F29337',
+            background: atLimit ? 'rgba(232,69,69,0.15)' : 'linear-gradient(135deg,#27A96B,#1A8A55)',
             border: atLimit ? '1.5px solid rgba(232,69,69,0.3)' : 'none',
             borderRadius:16, color: atLimit ? '#E84545' : '#fff',
             fontSize:'1rem', fontFamily:"'Inter',sans-serif",
             fontWeight:800, letterSpacing:'0.06em',
             cursor: atLimit ? 'default' : 'pointer',
-            boxShadow: atLimit ? 'none' : '0 6px 32px rgba(242,147,55,0.45)',
+            boxShadow: atLimit ? 'none' : '0 6px 32px rgba(39,169,107,0.45)',
             transition:'all 0.2s',
           }}
         >

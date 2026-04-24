@@ -4,7 +4,7 @@
  * GET /api/report/status?email=user@example.com
  *
  * Returns whether the user has a paid report credit available.
- * Pro users have unlimited reports. Free users get 0 — each costs $11.99.
+ * Pro users have unlimited reports. Free users get 0 — each costs $2.99.
  *
  * Response:
  *   { canGenerate: boolean, reason: 'pro' | 'credit' | 'none', creditsUsed: number }
