@@ -19,6 +19,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import MeasurementLineOverlay from './MeasurementLineOverlay'
 import CreditCardScalePrompt, { buildScaleContext, ScaleReference } from './CreditCardScalePrompt'
+import AngleGuidanceOverlay from './AngleGuidanceOverlay'
+import { applyPerspectiveCorrection, getDeviceOrientation } from '@/lib/pose-validator'
 import { checkXRSupport } from '@/lib/xr-measure'
 import {
   startARSession, stopARSession, measureFromPlanes,
@@ -210,60 +212,100 @@ Reply ONLY with valid JSON:
     captures: ['rise'],
     aiPrompt: (_p) => `Measure RISER HEIGHT and CHECK FOR DIMENSIONAL INCONSISTENCY. Phone is upright on the tread nosing, camera facing the riser face.
 
-SCALE CALIBRATION — scan the scene for reference objects in this priority order:
-1. Phone body edges visible at frame border: smartphone width is 68–80mm (typical 72mm)
-2. Skirting/baseboard beside the stair: typically 90–120mm tall — look for it at the wall base
-3. Tread nosing depth visible at bottom of frame: typically 25–38mm overhang
-4. Standard timber stringer: typically 235–286mm deep (visible as side board)
-5. Tile/hardwood flooring planks: standard 90mm or 120mm wide boards
-6. Electrical outlet on nearby wall: 86mm square face plate
-7. If none visible: use typical residential riser (175mm) as working assumption
+═══════════════════════════════════════════════════════
+STEP 0 — TAPE MEASURE DETECTION (highest priority)
+═══════════════════════════════════════════════════════
+Before anything else: is a tape measure or ruler visible in the image?
+- If YES: READ THE MARKINGS DIRECTLY. Do not estimate — read the actual numbers on the tape.
+  The riser height = the distance from tread nosing (0 point) to the top of the riser.
+  If the tape is showing ~190mm, report 190mm. Trust the tape above all other methods.
+  State: "Tape measure read directly: Xmm"
+- If NO: proceed to Step 1.
 
-USE THE BEST REFERENCE FOUND. State which one in your message.
+═══════════════════════════════════════════════════════
+STEP 1 — PERSPECTIVE CORRECTION (critical)
+═══════════════════════════════════════════════════════
+DIAGNOSE THE CAMERA ANGLE before measuring:
 
-TASK 1 — PRIMARY RISER HEIGHT:
-Measure the vertical distance from tread nosing top to the tread above (= riser height).
-The riser face fills most of the frame — the full height is visible.
+A) FRONTAL VIEW (ideal): Camera is level, facing the riser face straight-on.
+   The tread surface is NOT visible. The riser face fills the frame vertically.
+   → No correction needed. Measure directly.
 
-TASK 2 — INCONSISTENCY CHECK (critical safety check):
-Building codes (OBC, NBC, IBC) require that no two adjacent risers vary by more than 9.5mm (3/8 inch).
-Variation >9.5mm significantly increases trip and fall risk.
+B) TOP-DOWN TILT (most common error source): Camera is angled downward.
+   Signs: You can see the TOP SURFACE of the tread(s). The riser face appears
+   foreshortened (shorter than it really is) due to perspective compression.
+   → APPLY TILT CORRECTION: estimate tilt angle θ from how much tread is visible.
+     If ~10% of tread depth is visible → θ ≈ 10° → multiply pixel height by 1/cos(10°) = 1.015
+     If ~25% of tread visible → θ ≈ 20° → multiply by 1/cos(20°) = 1.064
+     If ~50% of tread visible → θ ≈ 35° → multiply by 1/cos(35°) = 1.221
+     If tread fills ~same as riser → θ ≈ 45° → multiply by 1/cos(45°) = 1.414
+   In the screenshot example: tape shows ~190mm but naive pixel measurement gives ~178mm
+   — that 12mm gap is exactly a ~10-15° downward tilt. Always correct upward when tread is visible.
 
-If multiple risers are visible in the frame:
-- Estimate the height of the bottom riser, one middle riser, and the top riser
-- Calculate the maximum variation between any two of these
-- Flag if variation exceeds 9.5mm
+C) LATERAL TILT: Phone is rotated slightly sideways.
+   Signs: Vertical lines in scene are not perfectly vertical.
+   → Apply similar cosine correction to the axis of tilt.
 
-If only one riser is clearly visible:
-- Note that only a single riser was measurable from this position
-- Set inconsistencyFlag to null (cannot assess) rather than false
+STATE WHICH CASE APPLIES and what correction factor you used.
 
-Do NOT fabricate riser heights you cannot see. If you cannot assess consistency, say so honestly.
+═══════════════════════════════════════════════════════
+STEP 2 — SCALE CALIBRATION (if tape not present)
+═══════════════════════════════════════════════════════
+Scan the scene for reference objects in this priority order:
+1. Credit/debit card (85.6 × 54mm ISO standard) — if visible, use as primary reference
+2. Phone body edges at frame border: smartphone width 68–80mm (typical 72mm)
+3. Skirting/baseboard beside stair: typically 90–120mm tall
+4. Tread nosing depth: typically 25–38mm overhang
+5. Standard timber stringer: typically 235–286mm deep
+6. Flooring planks: standard 90mm or 120mm wide
+7. Electrical outlet plate: 86×86mm
+8. Default: use typical residential riser (175mm) as last resort
 
-TASK 3 — NOSING DETECTION:
-Look at the front edge of the tread the phone is resting on. Is there a physical overhang
-(nosing projection) where the tread lip extends beyond the riser face below it?
-Estimate the horizontal projection in mm if visible. No nosing = square-edge tread (also valid).
+USE THE BEST REFERENCE FOUND. State which one and the correction factor applied.
 
-Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
+═══════════════════════════════════════════════════════
+TASK A — PRIMARY RISER HEIGHT (after correction)
+═══════════════════════════════════════════════════════
+Report the CORRECTED vertical distance from tread nosing top to the tread above.
+If you applied perspective correction, show your work:
+  raw_px_height → scale_factor → corrected_mm → tilt_correction → final_mm
+
+═══════════════════════════════════════════════════════
+TASK B — INCONSISTENCY CHECK
+═══════════════════════════════════════════════════════
+Building codes (OBC, NBC, IBC) require no two adjacent risers vary by more than 9.5mm (3/8 inch).
+If multiple risers visible: measure each, calculate max variation, flag if >9.5mm.
+If only one riser visible: set inconsistencyFlag to null.
+
+═══════════════════════════════════════════════════════
+TASK C — NOSING DETECTION
+═══════════════════════════════════════════════════════
+Is there a nosing overhang? Estimate horizontal projection in mm if visible.
+
+Reply ONLY with valid JSON:
 {
   "estimatedMm": number,
+  "rawEstimateMm": number,
+  "tiltCorrected": true|false,
+  "tiltAngleDeg": number|null,
+  "tiltCorrectionFactor": number|null,
+  "tapeMeasureRead": true|false,
   "confidence": 0.0-1.0,
-  "scaleRef": "object used for scale",
+  "scaleRef": "what was used — tape/card/phone/baseboard/etc",
   "hasNosing": true|false,
   "nosingMm": number|null,
   "riserHeights": [number, ...] | null,
   "maxVariationMm": number|null,
   "inconsistencyFlag": true|false|null,
-  "message": "one sentence for the user — mention inconsistency if found"
+  "message": "one sentence — mention if tape read directly or tilt correction applied"
 }
 
 Rules:
-- estimatedMm: the riser height closest to the camera. Range 125–220mm. Default 175mm if uncertain.
-- riserHeights: array of individual riser heights measured (2–5 values). null if only one visible.
-- maxVariationMm: max difference between any two riser heights. null if only one measured.
-- inconsistencyFlag: true if maxVariationMm > 9.5mm, false if ≤ 9.5mm, null if cannot assess.
-- message: if inconsistencyFlag is true, say "Riser height variation of Xmm detected — exceeds 9.5mm code limit". If null, say "Only one riser visible — full consistency check requires a professional inspection."`,
+- estimatedMm: the FINAL corrected value. Range 125–220mm. Default 175mm if uncertain.
+- rawEstimateMm: the uncorrected pixel-based estimate before tilt correction.
+- tiltCorrected: true if you applied cosine correction for camera angle.
+- tapeMeasureRead: true if you could read actual markings from a tape in the image.
+- message: e.g. "Tape measure read directly: 190mm" or "178mm raw corrected to 191mm for 15° downward tilt"`,
   },
 
   {
@@ -694,6 +736,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // ── Credit card scale reference ───────────────────────────────────────────
   const [scaleRef,           setScaleRef]           = useState<ScaleReference>('none')
   const [showCardPrompt,     setShowCardPrompt]     = useState(true)
+  // ── Device orientation for perspective correction ─────────────────────────
+  const [deviceBeta,  setDeviceBeta]  = useState<number|null>(null)
+  const [deviceGamma, setDeviceGamma] = useState<number|null>(null)
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
   // ── Intro slideshow state (shown before scan begins) ─────────────────────
@@ -875,6 +920,18 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     if (idx === 0) setShowCardPrompt(true)
   }, []) // eslint-disable-line
 
+  // ── Device orientation listener (for perspective correction) ───────────────
+  useEffect(() => {
+    const handler = (e: DeviceOrientationEvent) => {
+      setDeviceBeta(e.beta)
+      setDeviceGamma(e.gamma)
+    }
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handler)
+    }
+    return () => window.removeEventListener('deviceorientation', handler)
+  }, [])
+
   // Init on camera ready
   useEffect(() => { if (camReady) goTo(0) }, [camReady]) // eslint-disable-line
 
@@ -1043,6 +1100,31 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
       extractMeasurements(r)
       setAiMessage(r.message ?? null)
+
+      // ── Apply device-sensor perspective correction if AI didn't already ──
+      // Only for riser — most affected by tilt. If AI already corrected (tiltCorrected=true)
+      // or read a tape directly, skip sensor correction to avoid double-applying.
+      if (currentPos.id === 'riser_front' && r.estimatedMm &&
+          !r.tiltCorrected && !r.tapeMeasureRead &&
+          (deviceBeta != null || deviceGamma != null)) {
+        const modeMap: Record<string, import('@/lib/pose-validator').MeasurementMode> = {
+          riser_front: 'riser', tread_top: 'tread', alt_angle: 'width',
+          handrail: 'handrail', overview: 'headroom',
+        }
+        const pvMode = modeMap[currentPos.id] as import('@/lib/pose-validator').MeasurementMode
+        const validated = applyPerspectiveCorrection(
+          parseFloat(String(r.estimatedMm)),
+          pvMode,
+          deviceGamma,
+          deviceBeta,
+          r.tiltAngleDeg ?? null
+        )
+        // Only override if correction is meaningful (>5mm change) and angle is not too extreme
+        if (Math.abs(validated.correctedMm - validated.rawMm) > 5 && validated.pose.score > 0.4) {
+          setResultsKey('rise', validated.correctedMm)
+          setAiMessage(`${r.message ?? ''} · Sensor: ${Math.round(validated.pose.angleDeg)}° tilt corrected (${validated.rawMm}→${validated.correctedMm}mm)`.trim())
+        }
+      }
       // ── Trigger animated measurement line ─────────────────────────────────
       const lineInfo = getMeasureLineInfo(currentPos.id, r)
       if (lineInfo) {
@@ -1057,6 +1139,15 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     run()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage])
+
+  // ── Helper: update a single field in results + resultsRef ─────────────────
+  function setResultsKey(key: string, value: any) {
+    setResults(prev => {
+      const next = { ...prev, [key]: value }
+      resultsRef.current = next
+      return next
+    })
+  }
 
   // ── Measurement line: derive label + axis + display value from AI response ─
   function getMeasureLineInfo(posId: string, r: any): { label: string; axis: 'horizontal'|'vertical'; value: string } | null {
@@ -1106,7 +1197,13 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
         if (p === 'riser_front') {
           // Always store the estimate even if low confidence — user can adjust
-          next.rise = est ?? mm(r.estimated_mm) ?? 175  // fallback to typical value
+          next.rise = est ?? mm(r.estimated_mm) ?? 175
+
+          // Store perspective correction metadata
+          if (r.tiltCorrected)           next.tiltCorrected       = 1
+          if (r.tiltAngleDeg != null)    next.tiltAngleDeg        = parseFloat(String(r.tiltAngleDeg))
+          if (r.tapeMeasureRead)         next.tapeMeasureRead     = 1
+          if (r.rawEstimateMm != null)   next.rawEstimateMm       = mm(r.rawEstimateMm) ?? undefined  // fallback to typical value
 
           // Store inconsistency data
           const maxVar = r.maxVariationMm != null ? parseFloat(String(r.maxVariationMm)) : null
@@ -1524,6 +1621,14 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         </svg>
       )}
 
+      {/* ── ANGLE GUIDANCE OVERLAY — real-time phone positioning ───────────── */}
+      <AngleGuidanceOverlay
+        mode={(['riser_front','tread_top','alt_angle','handrail','overview'].includes(currentPos?.id)
+          ? { riser_front: 'riser', tread_top: 'tread', alt_angle: 'width', handrail: 'handrail', overview: 'headroom' }[currentPos.id as string] ?? 'riser'
+          : 'riser') as import('@/lib/pose-validator').MeasurementMode}
+        isActive={stage === 'position' && !arSupported}
+      />
+
       {/* ── MEASUREMENT LINE OVERLAY — animated blue scan line ──────────── */}
       <MeasurementLineOverlay
         isActive={showMeasureLine && stage === 'result'}
@@ -1851,6 +1956,17 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                       <span style={{fontSize:'2.6rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
                       <span style={{fontSize:'1rem',color:WHITE2,fontFamily:'monospace'}}>mm</span>
                     </div>
+                    {currentPos.id === 'riser_front' && results.tapeMeasureRead === 1 && (
+                      <div style={{ marginTop:'0.3rem', fontSize:'0.6rem', fontFamily:'monospace', color:'#4ade80', letterSpacing:'0.06em' }}>
+                        📏 TAPE MEASURE READ DIRECTLY
+                      </div>
+                    )}
+                    {currentPos.id === 'riser_front' && results.tiltCorrected === 1 && results.tapeMeasureRead !== 1 && (
+                      <div style={{ marginTop:'0.3rem', fontSize:'0.6rem', fontFamily:'monospace', color:AMBER, letterSpacing:'0.06em' }}>
+                        📐 PERSPECTIVE CORRECTED{results.tiltAngleDeg ? ` (~${Math.round(Number(results.tiltAngleDeg))}° tilt)` : ''}
+                        {results.rawEstimateMm ? ` · raw ${Math.round(Number(results.rawEstimateMm))}mm` : ''}
+                      </div>
+                    )}
                     {aiMessage && (
                       <div style={{fontSize:'0.65rem',color:WHITE2,lineHeight:1.4,marginTop:'0.15rem'}}>{aiMessage}</div>
                     )}

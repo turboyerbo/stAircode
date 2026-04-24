@@ -30,29 +30,51 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export type ScaleReference = 'credit_card' | 'coin' | 'hand' | 'none';
 
 interface Props {
-  /** Called when user taps "Got it" (card is placed) */
+  /** Called when user taps "Card placed" (card is in frame) */
   onCardPlaced?: () => void;
-  /** Called when user explicitly dismisses without placing a card */
+  /** Called when user dismisses without placing a card */
   onDismiss?: () => void;
   /** If true, shows a more compact version for smaller screens */
   compact?: boolean;
+  /** Minimum seconds before dismiss buttons become active (default 12) */
+  minReadSeconds?: number;
 }
 
 export default function CreditCardScalePrompt({
   onCardPlaced,
   onDismiss,
   compact = false,
+  minReadSeconds = 12,
 }: Props) {
-  const [visible, setVisible] = useState(true);
+  const [visible,    setVisible]    = useState(true);
+  const [canDismiss, setCanDismiss] = useState(false);
+  const [countdown,  setCountdown]  = useState(minReadSeconds);
+
+  // Count down — buttons unlock after minReadSeconds
+  useEffect(() => {
+    if (!visible) return;
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCanDismiss(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [visible, minReadSeconds]);
 
   if (!visible) return null;
 
   const dismiss = (placed: boolean) => {
+    if (!canDismiss) return;
     setVisible(false);
     if (placed) onCardPlaced?.();
     else onDismiss?.();
@@ -72,7 +94,7 @@ export default function CreditCardScalePrompt({
         padding: compact ? '12px 14px' : '14px 16px',
         backdropFilter: 'blur(10px)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.45)',
-        animation: 'scalePromptSlideUp 0.3s ease-out',
+        animation: 'scalePromptSlideUp 1.2s ease-out',  /* slow, gentle fade-in */
       }}
     >
       {/* Header row */}
@@ -179,42 +201,48 @@ export default function CreditCardScalePrompt({
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button
           onClick={() => dismiss(false)}
+          disabled={!canDismiss}
           style={{
             flex: 1,
             padding: '9px 0',
             background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.18)',
+            border: `1px solid ${canDismiss ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)'}`,
             borderRadius: 8,
-            color: 'rgba(255,255,255,0.55)',
+            color: canDismiss ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.25)',
             fontSize: 12,
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: canDismiss ? 'pointer' : 'default',
+            transition: 'all 0.3s',
           }}
         >
-          Scan without card
+          {canDismiss ? 'Scan without card' : `${countdown}s…`}
         </button>
         <button
           onClick={() => dismiss(true)}
+          disabled={!canDismiss}
           style={{
             flex: 2,
             padding: '9px 0',
-            background: 'linear-gradient(135deg, #1d6aff 0%, #0a4fe8 100%)',
+            background: canDismiss
+              ? 'linear-gradient(135deg, #1d6aff 0%, #0a4fe8 100%)'
+              : 'rgba(29,106,255,0.35)',
             border: 'none',
             borderRadius: 8,
-            color: '#fff',
+            color: canDismiss ? '#fff' : 'rgba(255,255,255,0.4)',
             fontSize: 13,
             fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(29,106,255,0.4)',
+            cursor: canDismiss ? 'pointer' : 'default',
+            boxShadow: canDismiss ? '0 2px 10px rgba(29,106,255,0.4)' : 'none',
+            transition: 'all 0.3s',
           }}
         >
-          Card placed — scan with it ✓
+          {canDismiss ? 'Card is in frame ✓' : `Reading… ${countdown}s`}
         </button>
       </div>
 
       <style>{`
         @keyframes scalePromptSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
+          from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>

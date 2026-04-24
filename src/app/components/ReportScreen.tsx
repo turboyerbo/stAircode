@@ -33,6 +33,10 @@ interface StairMeasurements {
   riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
   riserInconsistent?: number
   riserVariationMm?: number
+  tiltCorrected?: number
+  tiltAngleDeg?: number
+  tapeMeasureRead?: number
+  rawEstimateMm?: number
   guardrailAbsent?: number
   guardrailLikelyRequired?: number
   occupancyType?: string

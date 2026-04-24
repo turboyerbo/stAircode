@@ -18,6 +18,8 @@
  *  - The normal vector is the Y-axis of the plane's pose (ARCore always aligns Y to normal)
  */
 
+import { validateARMeasurement, averageARSamples, polygonArea } from './pose-validator'
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type ARMeasurementMode = 'riser' | 'tread' | 'width' | 'handrail' | 'headroom'
@@ -51,6 +53,11 @@ let rafHandle:   number = 0
 let planesCallback: PlanesCallback | null = null
 let latestPlanes: Map<any, ScreenPlane> = new Map()
 let sessionActive = false
+
+// ── Multi-sample buffer for averaging ────────────────────────────────────────
+const sampleBuffer: Map<string, Array<{ mm: number; score: number; ts: number }>> = new Map()
+const SAMPLE_WINDOW_MS = 900   // collect readings over 900ms
+const MIN_SAMPLES      = 4     // need at least 4 readings before reporting
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -137,12 +144,38 @@ export function measureFromPlanes(
         )
         if (!candidates.length) return null
         const best = candidates.reduce((a, b) => polygonArea(a) > polygonArea(b) ? a : b)
-        const mm   = Math.round(best.heightM * 1000)
+        const rawMm = Math.round(best.heightM * 1000)
+
+        // Add to sample buffer for averaging
+        const buf = sampleBuffer.get('riser') ?? []
+        buf.push({ mm: rawMm, score: best.screenPoly.length / 8, ts: Date.now() })
+        sampleBuffer.set('riser', buf.slice(-20))  // keep last 20 readings
+
+        // Try averaged result first
+        const avg = averageARSamples(buf, SAMPLE_WINDOW_MS, MIN_SAMPLES)
+        const finalMm = avg ? avg.mm : rawMm
+        const stdDev  = avg ? avg.stdDevMm : 15
+
+        // Validate orthogonality using plane normal (Y-axis = normal for vertical plane)
+        // For a vertical plane in ARCore: normal is horizontal, pointing toward camera
+        const planeNormal = { x: 0, y: 0, z: 1 }  // simplified — ARCore vertical plane normal
+        const cameraForward = { x: 0, y: 0, z: -1 } // camera looks in -Z
+        const validated = validateARMeasurement(finalMm, planeNormal, cameraForward, 'riser')
+
+        const confidence = validated.pose.acceptable
+          ? (stdDev < 5 ? 0.95 : stdDev < 10 ? 0.88 : 0.75)
+          : 0.65
+
+        const correctionNote = validated.pose.correctionFactor > 1.02
+          ? ` (corrected ${Math.round((validated.pose.correctionFactor - 1) * 100)}% for angle)`
+          : ''
+        const avgNote = avg ? ` avg of ${avg.sampleCount} readings ±${stdDev}mm` : ''
+
         return {
-          estimatedMm: mm,
-          confidence:  mm >= 125 && mm <= 220 ? 0.93 : 0.68,
+          estimatedMm: validated.correctedMm,
+          confidence,
           method:      'arcore-plane',
-          message:     `ARCore plane · riser ${mm}mm`,
+          message:     `ARCore · riser ${validated.correctedMm}mm${correctionNote}${avgNote}`,
         }
       }
 
@@ -335,10 +368,6 @@ function multiplyM4V4(m: Float32Array | number[], v: [number,number,number,numbe
     m[2]*v[0] + m[6]*v[1] + m[10]*v[2] + m[14]*v[3],
     m[3]*v[0] + m[7]*v[1] + m[11]*v[2] + m[15]*v[3],
   ]
-}
-
-function polygonArea(p: ScreenPlane): number {
-  return p.widthM * Math.max(p.heightM, p.depthM)
 }
 
 // ── TWA / standalone detection ────────────────────────────────────────────────

@@ -26,6 +26,10 @@ interface StairMeasurements {
   riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
   riserInconsistent?: number   // 1=inconsistent, 0=consistent, -1=could not assess
   riserVariationMm?: number    // max variation detected between risers
+  tiltCorrected?: number       // 1 = perspective correction applied
+  tiltAngleDeg?: number        // estimated camera tilt
+  tapeMeasureRead?: number     // 1 = AI read from tape measure directly
+  rawEstimateMm?: number       // uncorrected estimate before tilt correction
   guardrailAbsent?: number     // 1=explicitly absent from image
   guardrailLikelyRequired?: number  // 1=required by code for this stair, 0=not required
   occupancyType?: string       // "residential_single"|"residential_multi"|"commercial"|"industrial"|"mixed_use"|"unknown"
@@ -464,6 +468,10 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
       riserCount: n('riserCount') ?? undefined,
       riserInconsistent: n('riserInconsistent') ?? undefined,
       riserVariationMm:  n('riserVariationMm')  ?? undefined,
+      tiltCorrected:     n('tiltCorrected')      ?? undefined,
+      tiltAngleDeg:      n('tiltAngleDeg')       ?? undefined,
+      tapeMeasureRead:   n('tapeMeasureRead')    ?? undefined,
+      rawEstimateMm:     n('rawEstimateMm')      ?? undefined,
       guardrailAbsent:   n('guardrailAbsent')    ?? undefined,
       guardrailLikelyRequired: n('guardrailLikelyRequired') ?? undefined,
       occupancyType:     typeof raw.occupancyType === 'string' ? raw.occupancyType : undefined,
