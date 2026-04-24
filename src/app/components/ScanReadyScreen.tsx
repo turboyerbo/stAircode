@@ -482,10 +482,16 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
       ],
     },
     overview: {
-      x1:18, y1:22,  x2:82, y2:72,
-      nx:-1, ny:0.4, nLen:30,         // angled normal
+      x1:15, y1:75,  x2:85, y2:20,   // diagonal from bottom-left to top-right (stair direction)
+      nx:0,  ny:-1,  nLen:20,
       ticks:'v',
-      guides:[],
+      guides:[
+        // Horizontal lines suggesting individual risers (evenly spaced)
+        {x1:15,y1:75,x2:45,y2:75},
+        {x1:30,y1:60,x2:60,y2:60},
+        {x1:45,y1:45,x2:75,y2:45},
+        {x1:60,y1:30,x2:85,y2:30},
+      ],
     },
   }
 
@@ -1570,6 +1576,62 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         }}
       />
       <canvas ref={captureRef} style={{display:'none'}}/>
+
+      {/* ── MEASUREMENT LINE — AI Vision mode (position → analysing → result) ──
+           Clipped to the camera zone (between top bar and bottom panel).       */}
+      {!arSupported && currentPos && (
+        stage === 'position' || stage === 'hold' || stage === 'capture' ||
+        stage === 'analysing' || stage === 'result'
+      ) && (() => {
+        const isOverview = currentPos.id === 'overview'
+        const color =
+          stage === 'analysing' ? '#3BAAFF' :
+          stage === 'result'    ? '#4ade80' :
+          '#3BAAFF'
+        const label =
+          stage === 'analysing' ? (isOverview ? 'COUNTING…' : 'MEASURING…') :
+          stage === 'result'    ? currentPos.label.toUpperCase() :
+          currentPos.label.toUpperCase()
+
+        // Overview step: show step count (not mm), all other steps show mm value
+        const valueMm =
+          stage === 'result' && !isOverview ? (() => {
+            const r = results
+            const map: Record<string, number|null|undefined> = {
+              riser_front: typeof r.rise  === 'number' ? r.rise  : null,
+              handrail:    typeof r.guard === 'number' ? r.guard : null,
+              alt_angle:   typeof r.width === 'number' ? r.width : null,
+              tread_top:   typeof r.run   === 'number' ? r.run   : null,
+            }
+            return map[currentPos.id] ?? null
+          })() : null
+
+        // For overview, show step count as a separate label (not mm)
+        const overviewLabel =
+          isOverview && stage === 'result' && results.riserCount
+            ? `${results.riserCount} STEPS`
+            : label
+
+        return (
+          <div style={{
+            position: 'absolute',
+            top:    IMAGE_TOP,
+            left:   0,
+            right:  0,
+            bottom: BOTTOM_PANEL + 8,
+            overflow: 'hidden',   // ← clips SVG to camera zone only
+            pointerEvents: 'none',
+            zIndex: 18,
+          }}>
+            <ARMeasurementOverlay
+              posId={currentPos.id}
+              color={color}
+              valueMm={valueMm}
+              label={isOverview ? overviewLabel : label}
+            />
+          </div>
+        )
+      })()}
 
       {/* ── LIVE ARCORE PLANE OVERLAY — rendered every frame from WebXR render loop ── */}
       {arPlanes.length > 0 && (stage === 'hold' || stage === 'capture' || stage === 'analysing') && (
