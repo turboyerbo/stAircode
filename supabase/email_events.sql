@@ -90,3 +90,75 @@ begin
         last_at = now();
 end;
 $$;
+
+
+-- ── Scan Usage Tracking ────────────────────────────────────────────────────────
+-- Tracks how many free scans each authenticated user has run.
+-- A "scan" = one complete vision API call sequence (1 scan = up to 6 AI calls).
+-- We count completed scans (when the user reaches the report screen), not raw API calls.
+
+create table if not exists scan_usage (
+  id           uuid primary key default gen_random_uuid(),
+  email        text not null,
+  scan_count   integer not null default 1,
+  first_at     timestamptz not null default now(),
+  last_at      timestamptz not null default now(),
+  is_pro       boolean not null default false   -- true after Pro purchase
+);
+
+-- Unique index — one row per email
+create unique index if not exists scan_usage_email_idx on scan_usage (lower(email));
+
+-- ── increment_scan_usage RPC ──────────────────────────────────────────────────
+-- Called server-side after every completed scan (when report is generated).
+-- Upserts atomically.
+
+create or replace function increment_scan_usage(user_email text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  insert into scan_usage (email, scan_count, first_at, last_at)
+  values (lower(user_email), 1, now(), now())
+  on conflict (lower(email)) do update
+    set scan_count = scan_usage.scan_count + 1,
+        last_at = now();
+end;
+$$;
+
+-- ── get_scan_usage RPC ────────────────────────────────────────────────────────
+-- Returns the current scan count for an email, or 0 if not found.
+
+create or replace function get_scan_usage(user_email text)
+returns integer
+language plpgsql
+security definer
+as $$
+declare
+  v_count integer;
+begin
+  select scan_count into v_count
+  from scan_usage
+  where lower(email) = lower(user_email);
+  return coalesce(v_count, 0);
+end;
+$$;
+
+-- ── unlock_pro_scans RPC ──────────────────────────────────────────────────────
+-- Called by the Stripe webhook after a Pro subscription payment succeeds.
+-- Sets is_pro=true so the scan limit check is bypassed for this user.
+
+create or replace function unlock_pro_scans(user_email text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  insert into scan_usage (email, scan_count, first_at, last_at, is_pro)
+  values (lower(user_email), 0, now(), now(), true)
+  on conflict (lower(email)) do update
+    set is_pro = true,
+        last_at = now();
+end;
+$$;

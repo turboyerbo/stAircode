@@ -25,6 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe                        from 'stripe'
 import { trackServer }               from '@/lib/analytics-server'
+import { unlockProScans }            from '@/lib/scan-usage'
 
 async function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -189,6 +190,8 @@ export async function POST(req: NextRequest) {
               .upsert({ email, membership: 'pro', updated_at: new Date().toISOString() }, { onConflict: 'email' })
               .then(({ error }) => { if (error) console.error('[webhook] Failed to update membership:', error) })
           }
+          // Unlock unlimited scans in scan_usage table
+          await unlockProScans(email)
           await sendReportEmail(email, '', 'pro')
         }
 

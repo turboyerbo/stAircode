@@ -148,12 +148,57 @@ Scan the entire scene for any of these known-dimension objects and use the BEST 
 STEP 2 — MEASUREMENTS:
 1. Count visible steps/risers precisely
 2. Headroom: "clear" (open above) or number in mm (ceiling/soffit visible)
-3. Residential (stair width ≤1000mm) or commercial?
 
-Explain briefly which scale reference you used.
+STEP 3 — OCCUPANCY CLASSIFICATION (important for code selection):
+Examine all visible visual cues to determine the most likely occupancy type.
+This is NOT just about stair width — look at the entire scene context:
+
+Visual cues suggesting RESIDENTIAL (Part 9 / IRC):
+• Carpet, wood, or laminate treads; painted risers; domestic trim and baseboards
+• Single-family interior finish; closet doors, residential light switches, house paint
+• Narrow stair (≤900mm), wood construction, domestic handrail profile
+
+Visual cues suggesting MULTI-UNIT RESIDENTIAL (Part 3 / IBC Group R):
+• Fire exit signage, painted concrete or tile, common corridor, suite numbers on doors
+• Corridor-width stairs (900–1500mm), painted steel handrails, fire-rated doors
+• Apartment-style finish with carpet tiles or vinyl
+
+Visual cues suggesting COMMERCIAL / RETAIL (Part 3 / IBC Group A or M):
+• Terrazzo, polished concrete, or stone treads; commercial lighting; storefront signage
+• Wide stairs (>1200mm), nosing edge strips (aluminium or contrasting), open atrium
+• Retail fixtures, signage, display cases visible
+
+Visual cues suggesting INDUSTRIAL / INSTITUTIONAL (Part 3 / IBC Group B, F, or I):
+• Open-riser metal grating, steel checker-plate treads, factory or warehouse finishes
+• Safety yellow paint on nosings, industrial handrail pipe, concrete masonry walls
+• Exposed mechanical/electrical in background
+
+Visual cues suggesting MIXED-USE (Part 3 with residential component):
+• Ground floor commercial finish transitioning to residential above
+• Lobby-style entrance with mail slots or intercoms
+
+Set occupancyType to one of: "residential_single", "residential_multi", "commercial", "industrial", "mixed_use", "unknown"
+Set occupancyConfidence to 0.0–1.0 (your certainty)
+Set applicableCodePart to: "Part 9" (residential ≤3 storeys) or "Part 3" (all others)
+
+STEP 4 — GUARDRAIL REQUIREMENT NOTE:
+Under Part 9 (OBC/NBC), guardrails are required where a stair has more than 2 risers OR total rise exceeds 600mm.
+Under Part 3, guardrails are required where total rise exceeds 600mm.
+Indicate whether a guardrail is likely required based on step count.
 
 Reply ONLY with valid JSON:
-{"stepCount":number|null,"headroom":"clear"|number,"isResidential":true|false|null,"scaleRef":"what you used for scale","confident":true|false,"message":"one sentence for the user"}`,
+{
+  "stepCount": number|null,
+  "headroom": "clear"|number,
+  "isResidential": true|false|null,
+  "occupancyType": "residential_single"|"residential_multi"|"commercial"|"industrial"|"mixed_use"|"unknown",
+  "occupancyConfidence": number,
+  "applicableCodePart": "Part 9"|"Part 3",
+  "guardrailLikelyRequired": true|false|null,
+  "scaleRef": "what you used for scale",
+  "confident": true|false,
+  "message": "one sentence for the user"
+}`,
   },
   {
     id: 'riser_front', step: 2, label: 'Riser Height',
@@ -229,25 +274,30 @@ Rules:
     captureLabel: 'Tap to measure handrail height',
     holdSeconds: 3, positionTime: 4, optional: false,
     captures: ['guard'],
-    aiPrompt: (_p) => `Measure HANDRAIL HEIGHT — vertical distance from tread nosing surface to the top of the handrail gripping surface.
+    aiPrompt: (_p) => `Measure HANDRAIL / GUARDRAIL HEIGHT — or confirm if none is present.
 
-SCALE CALIBRATION — look for these in the scene:
-1. Handrail tube/profile diameter: round tube typically 38–50mm, square profile 40–50mm
+FIRST: Is there a handrail or guardrail visible in this image?
+- If YES: measure vertical height from tread nosing to the top of the gripping surface.
+- If NO handrail or guardrail exists: set noGuardrail: true and estimatedMm: null.
+  Do NOT invent a measurement. Absence of a guardrail is a separate compliance issue
+  that depends on stair height and occupancy — do not default to any number.
+
+SCALE CALIBRATION (if measuring):
+1. Handrail tube/profile diameter: round tube 38–50mm, square profile 40–50mm
 2. Wall tiles or brick: standard brick 65mm + 10mm mortar = 75mm per course
 3. Baluster/spindle spacing: typically 100mm clear gap (code maximum)
-4. Baluster diameter: typically 32–44mm round or 25–38mm square
-5. Skirting board at stair base: typically 90–120mm tall
-6. Door or window visible in background: door height ~2032mm, width ~838mm
-7. Riser height (known from prior scan): use to count courses up to rail height
-8. Wall switch/outlet plate: 86×86mm if visible on adjacent wall
+4. Baluster diameter: 32–44mm round or 25–38mm square
+5. Skirting board at stair base: 90–120mm tall
+6. Door or window in background: door height ~2032mm, width ~838mm
+7. Wall switch/outlet plate: 86×86mm if visible
 
-Measure vertical height from tread nosing to handrail top.
-Also measure HORIZONTAL OFFSET: distance from stringer face or wall to handrail centreline.
+Also measure HORIZONTAL OFFSET if handrail present: distance from stringer/wall to handrail centreline.
 
-Reply ONLY with valid JSON — ALWAYS provide estimatedMm:
-{"estimatedMm":number,"offsetMm":number|null,"confidence":0.0-1.0,"scaleRef":"object used","message":"one sentence"}
+Reply ONLY with valid JSON:
+{"estimatedMm":number|null,"noGuardrail":true|false,"offsetMm":number|null,"confidence":0.0-1.0,"scaleRef":"object used","message":"one sentence"}
 
-Range: 865–1070mm. Default 915mm if uncertain.`,
+If no guardrail: {"estimatedMm":null,"noGuardrail":true,"offsetMm":null,"confidence":1.0,"scaleRef":"direct observation","message":"No handrail or guardrail visible in this image."}
+If present: estimatedMm range 865–1070mm.`,
   },
   {
     id: 'alt_angle', step: 4, label: 'Stair Width',
@@ -917,9 +967,18 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // ── Stage: capture — user taps, save frame for report, then analyse ────────
   function handleCapture() {
-    // Capture and store the frame for this position (used in email report)
-    const b64 = captureB64Small()  // smaller for email embedding
-    if (b64) capturedFrames.current[currentPos.id] = b64
+    // Store FULL-res frame for photo PDF report
+    const b64Full = captureB64(1.0)
+    if (b64Full) {
+      capturedFrames.current[currentPos.id] = b64Full
+      // Persist to sessionStorage so it survives the payment redirect flow
+      // sessionStorage is per-tab and up to ~5–10MB — safe for ~6 phone photos
+      try {
+        const existing = JSON.parse(sessionStorage.getItem('sc_frames') || '{}')
+        existing[currentPos.id] = b64Full
+        sessionStorage.setItem('sc_frames', JSON.stringify(existing))
+      } catch { /* quota exceeded — in-memory fallback still works */ }
+    }
     busyRef.current = false
     setStage('analysing')
   }
@@ -1034,6 +1093,11 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           if (sc)                      next.riserCount    = sc
           if (r.headroom != null)      next.headroom      = r.headroom === 'clear' ? 'clear' : (mm(r.headroom) ?? 'clear')
           if (r.isResidential != null) next.isResidential = r.isResidential ? 1 : 0
+          // Occupancy classification from visual context
+          if (r.occupancyType)        next.occupancyType        = r.occupancyType
+          if (r.occupancyConfidence != null) next.occupancyConfidence = parseFloat(String(r.occupancyConfidence))
+          if (r.applicableCodePart)   next.applicableCodePart   = r.applicableCodePart
+          if (r.guardrailLikelyRequired != null) next.guardrailLikelyRequired = r.guardrailLikelyRequired ? 1 : 0
         }
 
         const est = mm(r.estimatedMm)
@@ -1056,11 +1120,17 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
           // Also extract nosing detected during riser measurement
           const hasN = r.hasNosing === true || r.has_nosing === true
           const nm = mm(r.nosingMm ?? r.nosing_mm)
-          next.nosing = hasN ? (nm ?? 25) : 'none'
-          if (nm) setNosingMm(nm)
+          // Nosing < 15mm is effectively flush — treat as no nosing (not a fail)
+          const nosingValid = nm != null && nm >= 15
+          next.nosing = (hasN && nosingValid) ? nm! : 'none'
+          if (nosingValid && nm) setNosingMm(nm)
         }
         if (p === 'handrail') {
-          next.guard        = est ?? mm(r.estimated_mm) ?? 900
+          // No guardrail = null (not auto-fail; may not be required for this stair)
+          // Respect explicit "no guardrail" signal — store null, not a default
+          const noGuardrail = r.noGuardrail === true || r.no_guardrail === true
+          next.guard = noGuardrail ? null : (est ?? mm(r.estimated_mm) ?? null)
+          if (noGuardrail) next.guardrailAbsent = 1
           const off = mm(r.offsetMm ?? r.offset_mm)
           if (off) next.handrailOffset = off
         }
@@ -1091,6 +1161,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   function submitReview() {
     Analytics.scanCompleted({ role: userRole, measurementCount: Object.keys(reviewVals).length, hasFailed: false })
+    // Ensure sessionStorage has all frames (supplement any that were stored during capture)
+    try {
+      const stored = JSON.parse(sessionStorage.getItem('sc_frames') || '{}')
+      const merged = { ...stored, ...capturedFrames.current }
+      sessionStorage.setItem('sc_frames', JSON.stringify(merged))
+    } catch {}
     // Attach captured frames to measurements so report generation can embed them
     const withFrames = { ...reviewVals, _frames: JSON.stringify(capturedFrames.current) }
     onSuccess(withFrames)

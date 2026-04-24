@@ -26,6 +26,11 @@ interface StairMeasurements {
   riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
   riserInconsistent?: number   // 1=inconsistent, 0=consistent, -1=could not assess
   riserVariationMm?: number    // max variation detected between risers
+  guardrailAbsent?: number     // 1=explicitly absent from image
+  guardrailLikelyRequired?: number  // 1=required by code for this stair, 0=not required
+  occupancyType?: string       // "residential_single"|"residential_multi"|"commercial"|"industrial"|"mixed_use"|"unknown"
+  occupancyConfidence?: number
+  applicableCodePart?: string  // "Part 9" | "Part 3"
 }
 
 type CodeKey= 'NBC'|'OBC'|'QBC'|'NEN'|'IRC'|'IBC'|'BCBC'
@@ -121,7 +126,16 @@ function check(m:StairMeasurements,code:Code){
     {label:'Headroom',icon:'⇳',value:m.headroom==='clear'?null:m.headroom,min:L.headMin,clearAbove:m.headroom==='clear',
      pass:m.headroom==='clear'?true:m.headroom?(+m.headroom)>=L.headMin:null} as any,
     {label:'Guard Ht',icon:'⊤',value:m.guard,  min:L.guardMin,
-     pass:m.guard?m.guard>=L.guardMin:null},
+     // Absent guardrail: fail only if it's likely required; N/A if not required
+     pass: m.guardrailAbsent === 1
+       ? (m.guardrailLikelyRequired === 0 ? null : false)  // null=N/A, false=FAIL
+       : m.guard ? m.guard >= L.guardMin : null,
+     note: m.guardrailAbsent === 1
+       ? (m.guardrailLikelyRequired === 0
+           ? 'No guardrail — not required for this stair height'
+           : 'No guardrail detected — required where total rise > 600mm')
+       : undefined,
+    } as any,
   ]
 }
 
@@ -243,20 +257,19 @@ export default function Home(){
     const product = params.get('product')
     if(payment==='success'){
       Analytics.purchaseCompleted(product as 'report'|'pro')
-      // Clean URL
-      window.history.replaceState({}, '', '/')
       if(product==='pro' && user){
-        // Upgrade user membership in state + localStorage
         const upgraded = {...user, membership:'pro' as const}
         setUser(upgraded)
         try{localStorage.setItem('sc_user', JSON.stringify(upgraded))}catch{}
       }
-      // Show success toast (brief alert — replace with a toast component if desired)
       if(product==='report'){
+        window.history.replaceState({}, '', '/')
         setTimeout(()=>alert('✅ Payment successful! Your full compliance report has been sent to your email.'), 500)
       } else if(product==='pro'){
+        window.history.replaceState({}, '', '/')
         setTimeout(()=>alert('🎉 Welcome to Staircode Pro! Your subscription is now active.'), 500)
       }
+      // photo_report: leave URL params for ReportScreen's PhotoReportUpsell to detect
     }
     if(payment==='cancelled'){
       if(product) Analytics.purchaseCancelled(product as 'report'|'pro')
@@ -451,6 +464,11 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
       riserCount: n('riserCount') ?? undefined,
       riserInconsistent: n('riserInconsistent') ?? undefined,
       riserVariationMm:  n('riserVariationMm')  ?? undefined,
+      guardrailAbsent:   n('guardrailAbsent')    ?? undefined,
+      guardrailLikelyRequired: n('guardrailLikelyRequired') ?? undefined,
+      occupancyType:     typeof raw.occupancyType === 'string' ? raw.occupancyType : undefined,
+      occupancyConfidence: n('occupancyConfidence') ?? undefined,
+      applicableCodePart: typeof raw.applicableCodePart === 'string' ? raw.applicableCodePart : undefined,
     }
     const measurementCount = (['rise','run','width','guard'] as const).filter(k => n(k) !== null).length
     Analytics.scanCompleted({ role: user?.role ?? 'diy', measurementCount, hasFailed: false })
@@ -498,6 +516,26 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:()=>void;onLogout:()=>void}){
   const confirmed=!locLoading&&loc!=null&&isOntario(loc)
   const locStr=loc?`${loc.city}${loc.province?', '+loc.province:''}`:locLoading?'Detecting location…':'Location unavailable'
+
+  // ── Scan usage counter ────────────────────────────────────────────────
+  const FREE_LIMIT = 3
+  const [scansUsed,  setScansUsed]  = React.useState<number|null>(null)
+  const [isPro,      setIsPro]      = React.useState(user.membership === 'pro')
+
+  React.useEffect(() => {
+    if (!user.email || user.membership === 'pro') return
+    // Fetch usage count from API
+    fetch(`/api/scan-usage?email=${encodeURIComponent(user.email)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.scanCount != null) setScansUsed(d.scanCount)
+        if (d?.isPro) setIsPro(true)
+      })
+      .catch(() => {}) // fail silently — don't block the UI
+  }, [user.email, user.membership])
+
+  const scansLeft  = isPro ? Infinity : Math.max(0, FREE_LIMIT - (scansUsed ?? 0))
+  const atLimit    = !isPro && scansUsed != null && scansUsed >= FREE_LIMIT
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column'}}>
       {/* Hero */}
@@ -539,19 +577,59 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
           ))}
         </div>
 
-        {/* Membership badge */}
+        {/* Membership + scan counter */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.65rem 0.9rem',background:'#EBF2FF',border:'1.5px solid rgba(44,90,122,0.22)',borderRadius:10}}>
           <span style={{fontSize:'0.75rem',color:'#2C5A7A',fontWeight:500}}>
-            ⭐ &nbsp;{user.membership==='free'?'Beta':user.membership==='pro'?'Pro plan':'Enterprise'}
+            ⭐ &nbsp;{isPro?'Pro plan — unlimited scans':user.membership==='free'?'Beta':'Enterprise'}
           </span>
-          <span style={{fontSize:'0.65rem',color:'#2C4A6E',fontWeight:500}}>{user.units==='mm'?'mm':'ft/in'}</span>
+          {!isPro && scansUsed != null && (
+            <span style={{
+              fontSize:'0.65rem', fontFamily:'monospace', fontWeight:700,
+              letterSpacing:'0.06em',
+              color: atLimit ? '#E84545' : scansLeft === 1 ? '#F29337' : '#0D7A5F',
+              background: atLimit ? 'rgba(232,69,69,0.1)' : scansLeft === 1 ? 'rgba(242,147,55,0.12)' : 'rgba(13,122,95,0.1)',
+              padding:'0.22rem 0.65rem', borderRadius:8,
+              border:`1px solid ${atLimit?'rgba(232,69,69,0.3)':scansLeft===1?'rgba(242,147,55,0.35)':'rgba(13,122,95,0.25)'}`,
+            }}>
+              {atLimit ? '🔒 0 scans left' : `${scansLeft} scan${scansLeft===1?'':'s'} left`}
+            </span>
+          )}
+          {isPro && (
+            <span style={{fontSize:'0.65rem',fontFamily:'monospace',fontWeight:600,letterSpacing:'0.08em',color:'#0D7A5F',background:'rgba(13,122,95,0.1)',padding:'0.22rem 0.65rem',borderRadius:8,border:'1px solid rgba(13,122,95,0.25)'}}>∞ Unlimited</span>
+          )}
         </div>
+
+        {/* Limit warning */}
+        {atLimit && (
+          <div style={{background:'rgba(232,69,69,0.08)',border:'1.5px solid rgba(232,69,69,0.3)',borderRadius:12,padding:'0.75rem 1rem',display:'flex',gap:'0.65rem',alignItems:'flex-start'}}>
+            <span style={{fontSize:'1rem',flexShrink:0}}>🔒</span>
+            <div>
+              <div style={{fontSize:'0.82rem',fontWeight:800,color:'#E84545',marginBottom:'0.2rem'}}>Free scans used up</div>
+              <div style={{fontSize:'0.68rem',color:'#2C4A6E',lineHeight:1.55}}>
+                You&apos;ve used all 3 free scans. Upgrade to Pro for unlimited inspections, or complete one more scan to generate a report first.
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{flex:1}}/>
 
         {/* CTA */}
-        <button onClick={onStartScan} style={{width:'100%',padding:'1.15rem',background:'#F29337',border:'none',borderRadius:16,color:'#fff',fontSize:'1rem',fontFamily:"'Inter',sans-serif",fontWeight:800,letterSpacing:'0.06em',cursor:'pointer',boxShadow:'0 6px 32px rgba(242,147,55,0.45)',transition:'all 0.2s'}}>
-          ● Start Scan
+        <button
+          onClick={atLimit ? undefined : onStartScan}
+          style={{
+            width:'100%', padding:'1.15rem',
+            background: atLimit ? 'rgba(232,69,69,0.15)' : '#F29337',
+            border: atLimit ? '1.5px solid rgba(232,69,69,0.3)' : 'none',
+            borderRadius:16, color: atLimit ? '#E84545' : '#fff',
+            fontSize:'1rem', fontFamily:"'Inter',sans-serif",
+            fontWeight:800, letterSpacing:'0.06em',
+            cursor: atLimit ? 'default' : 'pointer',
+            boxShadow: atLimit ? 'none' : '0 6px 32px rgba(242,147,55,0.45)',
+            transition:'all 0.2s',
+          }}
+        >
+          {atLimit ? '🔒 Upgrade to Scan Again' : '● Start Scan'}
         </button>
 
         <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>

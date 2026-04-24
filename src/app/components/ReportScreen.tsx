@@ -31,6 +31,13 @@ interface StairMeasurements {
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
   confidence?: number; calibrated?: boolean
   riserCount?: number; handrailOneSide?: boolean; handrailBothSides?: boolean
+  riserInconsistent?: number
+  riserVariationMm?: number
+  guardrailAbsent?: number
+  guardrailLikelyRequired?: number
+  occupancyType?: string
+  occupancyConfidence?: number
+  applicableCodePart?: string
 }
 
 // ── Design tokens — static (non-profile-specific) ────────────────────────────
@@ -148,6 +155,155 @@ function GeneratingSlideshow({
         @keyframes fadeInSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin        { to   { transform: rotate(360deg); } }
       `}</style>
+    </div>
+  )
+}
+
+// ── PhotoReportUpsell ─────────────────────────────────────────────────────────
+// Shown in the report-ready sheet. Lets the user buy a $2.99 photo PDF download.
+interface PhotoUpsellProps {
+  fields:     any[]
+  reportText: string
+  codeLabel:  string
+  location:   string
+  userEmail:  string
+  profile:    ReturnType<typeof getProfile>
+}
+
+function PhotoReportUpsell({ fields, reportText, codeLabel, location, userEmail, profile }: PhotoUpsellProps) {
+  const [buying,       setBuying]       = useState(false)
+  const [downloading,  setDownloading]  = useState(false)
+  const [paid,         setPaid]         = useState(false)
+  const [error,        setError]        = useState('')
+
+  // Check if user is returning from successful payment
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') === 'success' && params.get('product') === 'photo_report') {
+      setPaid(true)
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
+
+  async function handleBuy() {
+    setBuying(true)
+    setError('')
+    try {
+      const res  = await fetch('/api/stripe/checkout', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ product: 'photo_report', userEmail }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error ?? 'Could not start checkout. Please try again.')
+        setBuying(false)
+      }
+    } catch {
+      setError('Network error. Please try again.')
+      setBuying(false)
+    }
+  }
+
+  async function handleDownload() {
+    setDownloading(true)
+    setError('')
+    try {
+      // Retrieve frames from sessionStorage
+      let frames: Record<string, string> = {}
+      try {
+        frames = JSON.parse(sessionStorage.getItem('sc_frames') || '{}')
+      } catch {}
+
+      const { generatePhotoReport } = await import('@/lib/generate-photo-report')
+      await generatePhotoReport({ reportText, fields, codeLabel, location, frames })
+    } catch (e: any) {
+      setError('PDF generation failed — please try again or contact info@staircode.app.')
+      console.error('[photo-report]', e)
+    }
+    setDownloading(false)
+  }
+
+  if (paid) {
+    return (
+      <div style={{ background: 'rgba(39,169,107,0.08)', border: '1.5px solid rgba(39,169,107,0.3)', borderRadius: 16, padding: '1.1rem 1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.6rem' }}>
+          <span style={{ fontSize: '1.3rem' }}>🖼️</span>
+          <div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#27A96B' }}>Photo report unlocked</div>
+            <div style={{ fontSize: '0.68rem', color: profile.text2 }}>Your PDF with all measurement photos is ready to download</div>
+          </div>
+        </div>
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          style={{
+            width: '100%', padding: '0.9rem',
+            background: downloading ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg,#27A96B,#1A7A50)',
+            border: 'none', borderRadius: 12,
+            color: downloading ? profile.text3 : '#fff',
+            fontSize: '0.9rem', fontWeight: 800, fontFamily: 'monospace',
+            letterSpacing: '0.06em', cursor: downloading ? 'wait' : 'pointer',
+          }}
+        >
+          {downloading ? '⏳ Generating PDF…' : '⬇️  Download Photo Report PDF'}
+        </button>
+        {error && <p style={{ fontSize: '0.65rem', color: '#ff8080', margin: '0.5rem 0 0', textAlign: 'center' }}>{error}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ background: 'rgba(242,147,55,0.06)', border: '1.5px solid rgba(242,147,55,0.25)', borderRadius: 16, padding: '1.1rem 1.25rem' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>📸</span>
+        <div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: profile.text, marginBottom: '0.2rem' }}>
+            Photo Report — $2.99
+          </div>
+          <div style={{ fontSize: '0.7rem', color: profile.text2, lineHeight: 1.55 }}>
+            Get a professional PDF with all your measurement photos embedded — one photo per scan position, with pass/fail table, full compliance analysis, and cited code sections.
+          </div>
+        </div>
+      </div>
+
+      {/* What's included */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.85rem' }}>
+        {[
+          '📷  Photos from every scan position',
+          '📋  Full pass/fail measurement table',
+          '⚖️  Compliance analysis with code citations',
+          '📄  Downloadable PDF — keep or share',
+        ].map(item => (
+          <div key={item} style={{ fontSize: '0.7rem', color: profile.text2, display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+            <span style={{ color: ORANGE, fontSize: '0.65rem' }}>✓</span> {item}
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={handleBuy}
+        disabled={buying}
+        style={{
+          width: '100%', padding: '0.9rem',
+          background: buying ? 'rgba(255,255,255,0.06)' : `linear-gradient(135deg,${ORANGE},#C4721E)`,
+          border: 'none', borderRadius: 12,
+          color: buying ? profile.text3 : '#fff',
+          fontSize: '0.9rem', fontWeight: 800, fontFamily: 'monospace',
+          letterSpacing: '0.06em', cursor: buying ? 'wait' : 'pointer',
+          boxShadow: buying ? 'none' : '0 4px 16px rgba(242,147,55,0.35)',
+        }}
+      >
+        {buying ? '⏳  Opening checkout…' : '💳  Get Photo Report — $2.99 →'}
+      </button>
+      <p style={{ fontSize: '0.58rem', color: profile.text3, textAlign: 'center', margin: '0.5rem 0 0', lineHeight: 1.5 }}>
+        One-time payment · Instant download · Secure checkout via Stripe
+      </p>
+      {error && <p style={{ fontSize: '0.65rem', color: '#ff8080', margin: '0.35rem 0 0', textAlign: 'center' }}>{error}</p>}
     </div>
   )
 }
@@ -319,7 +475,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
       const data = await res.json()
 
-      if (res.status === 402 || data.error === 'trial_exhausted') {
+      if (res.status === 402 || data.error === 'trial_exhausted' || data.error === 'scan_limit_reached') {
         setGenerating(false)
         setTrialExhausted(true)
         setSheet('plans')
@@ -459,6 +615,37 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             </div>
           ))}
         </div>
+
+        {/* ── Occupancy classification banner ── */}
+        {measurements.occupancyType && measurements.occupancyType !== 'unknown' && (() => {
+          const oMap: Record<string, { icon: string; label: string; codePart: string; note: string }> = {
+            residential_single: { icon: '🏠', label: 'Single-Family Residential', codePart: 'Part 9', note: 'Analysed under residential construction requirements (Part 9 / IRC Section R311).' },
+            residential_multi:  { icon: '🏢', label: 'Multi-Unit Residential',    codePart: 'Part 3', note: 'Analysed under large building requirements (Part 3 / IBC Group R). Stricter tolerances apply.' },
+            commercial:         { icon: '🏪', label: 'Commercial / Assembly',     codePart: 'Part 3', note: 'Analysed under commercial occupancy requirements (Part 3 / IBC Group A or M). Wider stair and guardrail heights required.' },
+            industrial:         { icon: '🏭', label: 'Industrial / Institutional', codePart: 'Part 3', note: 'Analysed under industrial/institutional requirements (Part 3 / IBC Group B, F, or I).' },
+            mixed_use:          { icon: '🏗️', label: 'Mixed-Use',                 codePart: 'Part 3', note: 'Mixed-use occupancy — Part 3 requirements apply. Consult authority having jurisdiction for applicable division.' },
+          }
+          const o = oMap[measurements.occupancyType!]
+          if (!o) return null
+          const conf = measurements.occupancyConfidence ?? 0
+          const confTxt = conf >= 0.8 ? 'High confidence' : conf >= 0.5 ? 'Moderate confidence' : 'Low confidence'
+          const appliedPart = measurements.applicableCodePart ?? o.codePart
+          return (
+            <div style={{ borderRadius: 12, padding: '0.75rem 0.9rem', marginBottom: '0.75rem', background: 'rgba(65,124,164,0.08)', border: '1px solid rgba(65,124,164,0.22)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                <span style={{ fontSize: '1rem' }}>{o.icon}</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: profile.text }}>{o.label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.58rem', fontFamily: 'monospace', color: ORANGE, fontWeight: 700, background: 'rgba(242,147,55,0.12)', padding: '0.15rem 0.5rem', borderRadius: 4 }}>{appliedPart}</span>
+              </div>
+              <div style={{ fontSize: '0.68rem', color: profile.text2, lineHeight: 1.55 }}>{o.note}</div>
+              <div style={{ fontSize: '0.58rem', color: profile.text3, marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                {confTxt} · Based on visual context in scan image
+                {measurements.guardrailLikelyRequired === 0 && ' · Guardrail not required for stair height'}
+                {measurements.guardrailLikelyRequired === 1 && ' · Guardrail required (total rise likely >600mm)'}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Measurement rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.75rem' }}>
@@ -676,14 +863,15 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
             {/* ── PLANS SHEET ── */}
             {sheet === 'plans' && <>
-              {/* ── Trial exhausted banner ── */}
+              {/* ── Trial / scan limit banner ── */}
               {trialExhausted && (
                 <div style={{ background: 'rgba(232,69,69,0.1)', border: '1.5px solid rgba(232,69,69,0.4)', borderRadius: 14, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔒</span>
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#E84545', marginBottom: '0.25rem' }}>Free trial used</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#E84545', marginBottom: '0.25rem' }}>Free scans used up</div>
                     <div style={{ fontSize: '0.72rem', color: profile.text2, lineHeight: 1.6 }}>
-                      Your free report has already been sent to your email. To generate another report, upgrade to Pro or purchase a single report below.
+                      You&apos;ve used all <strong style={{ color: profile.text }}>3 free scans</strong> on this account.
+                      Upgrade to Pro for unlimited inspections, or purchase a single report below.
                     </div>
                   </div>
                 </div>
@@ -929,6 +1117,16 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     </div>
                   </div>
                 )}
+
+                {/* ── PHOTO PDF UPSELL ── */}
+                <PhotoReportUpsell
+                  fields={fields}
+                  reportText={reportText}
+                  codeLabel={codeLabel}
+                  location={location}
+                  userEmail={emailInput || userEmail}
+                  profile={profile}
+                />
 
                 {/* ── Report preview (scrollable) ── */}
                 <div style={{ background: profile.bg2, border: `1px solid ${profile.bg3}`, borderRadius: 14, padding: '1rem', maxHeight: '32dvh', overflowY: 'auto' }}>

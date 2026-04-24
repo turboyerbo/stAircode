@@ -27,6 +27,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getClientIp }    from '@/lib/rate-limit'
+import { checkScanUsage, incrementScanUsage } from '@/lib/scan-usage'
 import { trackServer }               from '@/lib/analytics-server'
 import { PostHog }                    from 'posthog-node'
 
@@ -282,6 +283,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Scan usage limit ─────────────────────────────────────────────────────────
+  // Free tier: FREE_SCAN_LIMIT (3) scans per email. Pro = unlimited.
+  // Check BEFORE calling Claude to avoid wasting API credits.
+  if (!isPaid && reportEmail) {
+    const usage = await checkScanUsage(reportEmail)
+    if (!usage.allowed) {
+      return NextResponse.json(
+        {
+          error:      'scan_limit_reached',
+          scanCount:  usage.scanCount,
+          limit:      usage.limit,
+          message:    `You've used all ${usage.limit} free scans. Upgrade to Pro for unlimited inspections.`,
+        },
+        { status: 402 }
+      )
+    }
+  }
+
   const prompt = buildPrompt(fields, codeLabel || 'Building Code', codeRef || '', location || '', isOntario || false)
 
   // ── Call Claude ──────────────────────────────────────────────────────────────
@@ -355,8 +374,11 @@ export async function POST(req: NextRequest) {
     experiment_variant: experimentVariant,
   })
 
-  // ── Increment usage counter in Supabase ──────────────────────────────────────
+  // ── Increment scan + report usage counters ──────────────────────────────────
   if (!isPaid && reportEmail) {
+    // Increment scan count (non-blocking — fire and forget)
+    incrementScanUsage(reportEmail).catch(() => {})
+
     const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (sbUrl && sbKey) {

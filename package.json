@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "jspdf": "^4.2.1",
     "next": "14.2.35",
     "posthog-js": "^1.170.0",
     "posthog-node": "^5.28.6",
