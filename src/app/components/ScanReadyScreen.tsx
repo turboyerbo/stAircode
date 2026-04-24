@@ -18,7 +18,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import MeasurementLineOverlay from './MeasurementLineOverlay'
-import CreditCardScalePrompt, { buildScaleContext, ScaleReference } from './CreditCardScalePrompt'
 import AngleGuidanceOverlay from './AngleGuidanceOverlay'
 import { applyPerspectiveCorrection, getDeviceOrientation } from '@/lib/pose-validator'
 import { checkXRSupport } from '@/lib/xr-measure'
@@ -121,6 +120,11 @@ const INTRO_SLIDES = [
     img:     '/Instr_09_nosing.png',
     title:   'Nosing — Auto Detected',
     desc:    'Nosing is detected automatically during the riser scan. No extra step needed.',
+  },
+  {
+    img:     '/Instr_10_card.jpg',
+    title:   'Optional — Improve Accuracy',
+    desc:    'Place any flat card (credit card, ID, transit card, loyalty card) on the tread before scanning. A standard card is 85.6 × 54mm — a known size the AI uses as a scale reference. This can improve accuracy from ±30mm to ±10–15mm. Any card works. No card? The scan still works — it just uses other visual cues.',
   },
 ]
 
@@ -734,8 +738,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [measureLineLabel,   setMeasureLineLabel]   = useState('MEASURING')
   const [measureLineAxis,    setMeasureLineAxis]    = useState<'horizontal'|'vertical'>('horizontal')
   // ── Credit card scale reference ───────────────────────────────────────────
-  const [scaleRef,           setScaleRef]           = useState<ScaleReference>('none')
-  const [showCardPrompt,     setShowCardPrompt]     = useState(true)
   // ── Device orientation for perspective correction ─────────────────────────
   const [deviceBeta,  setDeviceBeta]  = useState<number|null>(null)
   const [deviceGamma, setDeviceGamma] = useState<number|null>(null)
@@ -916,8 +918,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
     setCountdown(POSITIONS[idx].positionTime)
     setShowMeasureLine(false)
     setMeasureLineValue(null)
-    // Show card prompt only on first position
-    if (idx === 0) setShowCardPrompt(true)
   }, []) // eslint-disable-line
 
   // ── Device orientation listener (for perspective correction) ───────────────
@@ -1088,7 +1088,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         }
       }
 
-      const raw = await callVision(b64, currentPos.aiPrompt(priorSnap) + buildScaleContext(scaleRef))
+      const raw = await callVision(b64, currentPos.aiPrompt(priorSnap))
       busyRef.current = false
       const r = parseJSON(raw)
 
@@ -1638,15 +1638,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         onComplete={() => setShowMeasureLine(false)}
         sweepDuration={1600}
       />
-
-      {/* ── CREDIT CARD SCALE PROMPT ─────────────────────────────────────── */}
-      {showCardPrompt && posIdx === 0 && stage === 'position' && (
-        <CreditCardScalePrompt
-          onCardPlaced={() => { setScaleRef('credit_card'); setShowCardPrompt(false) }}
-          onDismiss={() => { setScaleRef('none'); setShowCardPrompt(false) }}
-          compact
-        />
-      )}
 
       {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
       {/* Countdown timer — top right, only during position stage */}
