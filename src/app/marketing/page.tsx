@@ -120,19 +120,8 @@ export default function MarketingPage() {
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div className={styles.obadge}>AI-Powered Stair Compliance</div>
           <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 800, marginBottom: '1.5rem', color: '#FFFFFF' }}>
-  It takes a few minutes to check your stairs.
+  Check stairs for code-compliance with your phone.
           </h1>
-
-          {/* Hero description */}
-          <p style={{ fontSize: '1.1rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.88)', maxWidth: 700, marginBottom: '2rem' }}>
-            Check if your stairs will pass the next inspection using the camera on your phone.
-            {' '}stAIrcode guides you through a few simple photos, automatically captures key
-            measurements using either AI-Vision or AR-Raytracing, and flags potential code
-            violations—in just a few minutes you can share a detailed report about your stairs
-            with an architect, contractor, or building inspector. The process takes just minutes
-            and requires no technical knowledge. For higher accuracy, you can include a reference
-            object or use LiDAR to achieve results within approximately 3/8&quot; (10mm).
-          </p>
 
           {/* Problem statement */}
           <div style={{ maxWidth: 720, marginBottom: '2rem' }}>
