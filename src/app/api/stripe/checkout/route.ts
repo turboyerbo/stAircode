@@ -22,6 +22,12 @@
  *   STRIPE_REPORT_PRICE_ID     price_xxx  (one-time $2.99 price in Stripe)
  *   STRIPE_PRO_PRICE_ID        price_xxx  (recurring $38.99/mo price in Stripe)
  *   NEXT_PUBLIC_APP_URL        https://staircode.app
+ *
+ * Optional env vars:
+ *   STRIPE_BETA_COUPON         Stripe coupon ID to auto-apply (e.g. "BETA")
+ *                              When set, all checkout sessions get this coupon
+ *                              applied automatically — no code entry needed.
+ *                              Remove or unset this var to end the beta period.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -114,8 +120,13 @@ export async function POST(req: NextRequest) {
         ...chunks,
       },
 
-      // Allow promotion codes
-      allow_promotion_codes: true,
+      // Beta coupon — auto-applied when STRIPE_BETA_COUPON env var is set.
+      // Users get 100% off without entering a code.
+      // To end beta: remove STRIPE_BETA_COUPON from Netlify env vars.
+      ...(process.env.STRIPE_BETA_COUPON
+        ? { discounts: [{ coupon: process.env.STRIPE_BETA_COUPON }] }
+        : { allow_promotion_codes: true }
+      ),
 
       // One-time report: don't save card
       ...((isReport || isPhotoReport) ? {} : {

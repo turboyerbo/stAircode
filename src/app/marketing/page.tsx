@@ -123,6 +123,17 @@ export default function MarketingPage() {
   It takes a few minutes to check your stairs.
           </h1>
 
+          {/* Hero description */}
+          <p style={{ fontSize: '1.1rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.88)', maxWidth: 700, marginBottom: '2rem' }}>
+            Check if your stairs will pass the next inspection using the camera on your phone.
+            {' '}stAIrcode guides you through a few simple photos, automatically captures key
+            measurements using either AI-Vision or AR-Raytracing, and flags potential code
+            violations—in just a few minutes you can share a detailed report about your stairs
+            with an architect, contractor, or building inspector. The process takes just minutes
+            and requires no technical knowledge. For higher accuracy, you can include a reference
+            object or use LiDAR to achieve results within approximately 3/8&quot; (10mm).
+          </p>
+
           {/* Problem statement */}
           <div style={{ maxWidth: 720, marginBottom: '2rem' }}>
             <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', marginBottom: '1rem' }}>
@@ -323,7 +334,7 @@ export default function MarketingPage() {
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>$2.99</div>
                 <span style={{ fontSize: '0.7rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.12)', padding: '0.15rem 0.55rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>FREE IN BETA</span>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Free during beta</div>
+              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Free until June 2026</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
                 {['Everything in Free', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
                   <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>

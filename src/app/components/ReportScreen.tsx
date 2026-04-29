@@ -240,7 +240,7 @@ function PhotoReportUpsell({ fields, reportText, codeLabel, location, userEmail,
               <span style={{ fontSize: '0.62rem', color: profile.text3, textDecoration: 'line-through', fontFamily: 'monospace' }}>$2.99</span>
             </div>
             <div style={{ fontSize: '0.7rem', color: profile.text2, lineHeight: 1.55 }}>
-              A professional PDF with your measurement photos, pass/fail table, and compliance analysis — yours free during the beta.
+              A professional PDF with your measurement photos, pass/fail table, and compliance analysis — free during beta until June 2026.
             </div>
           </div>
         </div>
@@ -275,7 +275,7 @@ function PhotoReportUpsell({ fields, reportText, codeLabel, location, userEmail,
           {downloading ? '⏳  Generating PDF…' : '⬇️  Download Free Photo Report →'}
         </button>
         <p style={{ fontSize: '0.58rem', color: profile.text3, textAlign: 'center', margin: '0.5rem 0 0', lineHeight: 1.5 }}>
-          Free during beta · Will be $2.99 after launch
+          Free during beta until June 2026 · Will be $2.99 after
         </p>
         {error && <p style={{ fontSize: '0.65rem', color: '#ff8080', margin: '0.35rem 0 0', textAlign: 'center' }}>{error}</p>}
       </div>
@@ -925,7 +925,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                       </div>
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
-                        <span style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>✓ FREE during beta</span>
+                        <span style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>✓ FREE until June 2026</span>
                         <span style={{ fontSize:'0.6rem', color: profile.text3 }}>· Normally $2.99 · Emailed instantly</span>
                       </div>
                     )}
@@ -938,7 +938,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                       ✉️  Email Me My Report →
                     </button>
                     <div style={{ fontSize:'0.6rem', color: profile.text3, textAlign:'center', marginTop:'0.3rem', fontFamily:'monospace' }}>
-                      Free during beta · Normally $2.99
+                      Free until June 2026 · Normally $2.99
                     </div>
                   </div>
                 )}
