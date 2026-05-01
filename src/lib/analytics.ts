@@ -92,7 +92,7 @@ export const Analytics = {
   // ── Auth ────────────────────────────────────────────────────────────────────
 
   /** User completes sign-in (OTP verified, Google, Apple, or beta skip) */
-  userSignedIn: (method: 'otp' | 'google' | 'apple' | 'beta') =>
+  userSignedIn: (method: 'otp' | 'google' | 'apple' | 'facebook' | 'beta') =>
     track('user_signed_in', { method }),
 
   /** User selects their role on the role picker screen */
