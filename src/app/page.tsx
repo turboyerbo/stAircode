@@ -3,6 +3,7 @@
  * page.tsx — StairCode authenticated app shell
  */
 import React, { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import Logo, { BetaLogo } from './components/Logo'
 import AuthScreen,      { AppUser, UserRole } from './components/AuthScreen'
 import { initAnalytics, identifyUser, resetUser, Analytics } from '@/lib/analytics'
@@ -11,6 +12,7 @@ import HelpScreen                            from './components/HelpScreen'
 import SettingsScreen                        from './components/SettingsScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ReportScreen                          from './components/ReportScreen'
+import PaymentSuccessScreen                  from './components/PaymentSuccessScreen'
 
 const C = {
   dark:'#EEF3F9', card:'#FFFFFF', blue:'#007FFF', orange:'#FF7F00',
@@ -115,21 +117,21 @@ function check(m:StairMeasurements,code:Code){
   const riserVariationDisplay = m.riserVariationMm != null ? m.riserVariationMm : null
 
   return[
-    {label:'Rise',    icon:'↕',value:m.rise,   min:L.riserMin,max:L.riserMax,
+    {label:'Riser Height',    icon:'',value:m.rise,   min:L.riserMin,max:L.riserMax,
      pass:m.rise?m.rise>=L.riserMin&&m.rise<=L.riserMax:null},
-    {label:'Rise Consistency', icon:'≈', value: riserVariationDisplay, max: 9.5,
+    {label:'Rise Consistency', icon:'', value: riserVariationDisplay, max: 9.5,
      pass: riserConsistencyPass,
      note: m.riserInconsistent === -1 ? 'Could not assess — professional inspection required' : undefined,
     } as any,
-    {label:'Run',     icon:'↔',value:m.run,    min:L.runMin,
+    {label:'Tread Depth',     icon:'',value:m.run,    min:L.runMin,
      pass:m.run?m.run>=L.runMin:null},
-    {label:'Nosing',  icon:'⌐',value:m.nosing, min:L.nosingMin,max:L.nosingMax,
+    {label:'Nosing',          icon:'',value:m.nosing, min:L.nosingMin,max:L.nosingMax,
      pass:m.nosing&&L.nosingMin?(+m.nosing)>=(L.nosingMin||0)&&(+m.nosing)<=(L.nosingMax||99):null},
-    {label:'Width',   icon:'⟺',value:m.width,  min:L.widthMin,
+    {label:'Stair Width',     icon:'',value:m.width,  min:L.widthMin,
      pass:m.width?m.width>=L.widthMin:null},
-    {label:'Headroom',icon:'⇳',value:m.headroom==='clear'?null:m.headroom,min:L.headMin,clearAbove:m.headroom==='clear',
+    {label:'Headroom',        icon:'',value:m.headroom==='clear'?null:m.headroom,min:L.headMin,clearAbove:m.headroom==='clear',
      pass:m.headroom==='clear'?true:m.headroom?(+m.headroom)>=L.headMin:null} as any,
-    {label:'Guard Ht',icon:'⊤',value:m.guard,  min:L.guardMin,
+    {label:'Guardrail Height',icon:'',value:m.guard,  min:L.guardMin,
      // Absent guardrail: fail only if it's likely required; N/A if not required
      pass: m.guardrailAbsent === 1
        ? (m.guardrailLikelyRequired === 0 ? null : false)  // null=N/A, false=FAIL
@@ -266,14 +268,13 @@ export default function Home(){
         setUser(upgraded)
         try{localStorage.setItem('sc_user', JSON.stringify(upgraded))}catch{}
       }
-      if(product==='report'){
-        window.history.replaceState({}, '', '/')
-        setTimeout(()=>alert('✅ Payment successful! Your full compliance report has been sent to your email.'), 500)
-      } else if(product==='pro'){
-        window.history.replaceState({}, '', '/')
-        setTimeout(()=>alert('🎉 Welcome to Staircode Pro! Your subscription is now active.'), 500)
-      }
+      // Show payment success screen for all products — handled by PaymentSuccessScreen below
       // photo_report: leave URL params for ReportScreen's PhotoReportUpsell to detect
+      if(product === 'pro' && user){
+        const upgraded = {...user, membership:'pro' as const}
+        setUser(upgraded)
+        try{localStorage.setItem('sc_user', JSON.stringify(upgraded))}catch{}
+      }
     }
     if(payment==='cancelled'){
       if(product) Analytics.purchaseCancelled(product as 'report'|'pro')
@@ -295,9 +296,12 @@ export default function Home(){
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const signin = params.get('signin') === '1'
-    setIsSigninFlow(signin)
+    const payment = params.get('payment')
+    // Never redirect away if returning from Stripe payment
+    const isPaymentReturn = payment === 'success' || payment === 'cancelled'
+    setIsSigninFlow(signin || isPaymentReturn)
     setRedirectChecked(true)
-    if (!signin && !user) {
+    if (!signin && !isPaymentReturn && !user) {
       // Hard redirect to marketing — no flicker, no hydration issue
       window.location.replace('/marketing')
     }
@@ -306,6 +310,16 @@ export default function Home(){
   // While checking (or while redirecting), render nothing to avoid flash
   if (!redirectChecked) return null
   if (!user && !isSigninFlow) return null  // redirect in progress
+
+  // ── Payment success screen ────────────────────────────────────────────────
+  if (typeof window !== 'undefined') {
+    const _params = new URLSearchParams(window.location.search)
+    const _payment = _params.get('payment')
+    const _product = _params.get('product')
+    if (_payment === 'success' && (_product === 'report' || _product === 'photo_report')) {
+      return <PaymentSuccessScreen />
+    }
+  }
 
   // Show splash on first visit (when coming from marketing via ?signin=1)
   if(!user && !splashDone) return (

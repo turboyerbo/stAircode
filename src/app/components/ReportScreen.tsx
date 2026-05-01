@@ -20,6 +20,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { Analytics } from '@/lib/analytics'
 import posthog from 'posthog-js'
 import { BetaLogo } from '@/app/components/Logo'
@@ -165,7 +166,7 @@ function GeneratingSlideshow({
 
 // ── PhotoReportUpsell ─────────────────────────────────────────────────────────
 // ── BETA FLAG — set to false when ready to charge ────────────────────────────
-const BETA_FREE_REPORT = true
+const BETA_FREE_REPORT = false
 
 // Shown in the report-ready sheet.
 interface PhotoUpsellProps {
@@ -240,7 +241,7 @@ function PhotoReportUpsell({ fields, reportText, codeLabel, location, userEmail,
               <span style={{ fontSize: '0.62rem', color: profile.text3, textDecoration: 'line-through', fontFamily: 'monospace' }}>$2.99</span>
             </div>
             <div style={{ fontSize: '0.7rem', color: profile.text2, lineHeight: 1.55 }}>
-              A professional PDF with your measurement photos, pass/fail table, and compliance analysis — free during beta until June 2026.
+              A professional PDF with your measurement photos, pass/fail table, and compliance analysis.
             </div>
           </div>
         </div>
@@ -781,14 +782,19 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             <div style={{ width:36, height:4, borderRadius:2, background:'rgba(147,186,212,0.25)', margin:'0 auto 1.25rem' }} />
 
             {/* Icon + heading */}
-            <div style={{ textAlign:'center', marginBottom:'1.25rem' }}>
-              <div style={{ fontSize:'2rem', marginBottom:'0.4rem' }}>📧</div>
-              <div style={{ fontSize:'1.1rem', fontWeight:900, color:profile.text, marginBottom:'0.3rem', letterSpacing:'-0.01em' }}>
+            <div style={{ textAlign:'center', marginBottom:'1.1rem' }}>
+              <div style={{ fontSize:'2rem', marginBottom:'0.4rem' }}>📋</div>
+              <div style={{ fontSize:'1.15rem', fontWeight:900, color:profile.text, marginBottom:'0.3rem', letterSpacing:'-0.01em' }}>
                 Where should we send your report?
               </div>
               <div style={{ fontSize:'0.75rem', color:profile.text2, lineHeight:1.6 }}>
-                Your full compliance report will be emailed as a PDF instantly after generation.
+                Enter your email — your report will be ready to download after a quick $2.99 payment.
               </div>
+            </div>
+
+            {/* Price pill */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginBottom:'1rem' }}>
+              <span style={{ fontSize:'0.72rem', color:'#F29337', fontWeight:700, background:'rgba(242,147,55,0.1)', border:'1px solid rgba(242,147,55,0.3)', borderRadius:20, padding:'0.25rem 0.75rem' }}>One-time payment · $2.99</span>
             </div>
 
             {/* Email input */}
@@ -819,7 +825,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               }}
             />
 
-            {/* CTA */}
+            {/* CTA — goes to Stripe after saving email */}
             <button
               onClick={() => {
                 if (!emailInput.includes('@')) return
@@ -830,18 +836,25 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               style={{
                 width:'100%', padding:'1rem',
                 background: emailInput.includes('@')
-                  ? 'linear-gradient(135deg,#27A96B,#1A7A50)'
+                  ? 'linear-gradient(135deg,#F29337,#C4721E)'
                   : 'rgba(255,255,255,0.06)',
                 border:'none', borderRadius:14,
                 color: emailInput.includes('@') ? '#fff' : profile.text3,
-                fontSize:'0.95rem', fontWeight:800, fontFamily:'monospace',
-                letterSpacing:'0.06em', cursor: emailInput.includes('@') ? 'pointer' : 'not-allowed',
-                boxShadow: emailInput.includes('@') ? '0 4px 20px rgba(39,169,107,0.4)' : 'none',
-                transition:'all 0.15s', marginBottom:'0.75rem',
+                fontSize:'1rem', fontWeight:800, fontFamily:'monospace',
+                letterSpacing:'0.04em', cursor: emailInput.includes('@') ? 'pointer' : 'not-allowed',
+                boxShadow: emailInput.includes('@') ? '0 4px 24px rgba(242,147,55,0.45)' : 'none',
+                transition:'all 0.15s', marginBottom:'0.6rem',
               }}
             >
-              ✓ Send Report to This Email →
+              Get My Report — $2.99 →
             </button>
+
+            {/* What you get */}
+            <div style={{ background:'rgba(65,124,164,0.08)', border:'1px solid rgba(65,124,164,0.2)', borderRadius:10, padding:'0.65rem 0.85rem', marginBottom:'0.6rem' }}>
+              <div style={{ fontSize:'0.65rem', color:profile.text2, lineHeight:1.6 }}>
+                📋 Full pass/fail compliance report · 🏛️ Building code citations · 📄 Downloadable PDF emailed instantly
+              </div>
+            </div>
 
             <button
               onClick={() => setShowEmailPrompt(false)}
@@ -850,8 +863,8 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               ← Cancel
             </button>
 
-            <div style={{ textAlign:'center', marginTop:'0.75rem', fontSize:'0.6rem', color:profile.text3, lineHeight:1.6 }}>
-              Your email is only used to send this report. We never share it.
+            <div style={{ textAlign:'center', marginTop:'0.5rem', fontSize:'0.58rem', color:profile.text3, lineHeight:1.6 }}>
+              Secure checkout via Stripe · Your email is only used to send your report
             </div>
           </div>
         </>
@@ -893,10 +906,10 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     <div style={{ fontSize: '0.65rem', color: profile.text2 }}>This inspection only · Instant PDF</div>
                   </div>
                   <div style={{ display:'flex', alignItems:'baseline', gap:'0.5rem' }}>
-                    <div style={{ fontWeight: 900, fontSize: '1.5rem', color: GOLD }}>FREE</div>
-                    <div style={{ fontSize:'0.75rem', fontFamily:'monospace', color: profile.pass || '#27A96B', fontWeight:700 }}>DURING BETA</div>
+                    <div style={{ fontWeight: 900, fontSize: '1.5rem', color: GOLD }}>$2.99</div>
+                    <div style={{ fontSize:'0.75rem', fontFamily:'monospace', color: profile.text3, fontWeight:400 }}>one-time</div>
                   </div>
-                  <div style={{ fontSize:'0.62rem', color: profile.text3, fontFamily:'monospace', marginTop:'0.15rem', textDecoration:'line-through' }}>normally $2.99</div>
+                  <div style={{ fontSize:'0.62rem', color: profile.text3, fontFamily:'monospace', marginTop:'0.15rem', textDecoration:'line-through' }}>instant download</div>
                 </div>
                 {[
                   '📋  Full stair description & dimensions',
@@ -925,7 +938,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                       </div>
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
-                        <span style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>✓ FREE until June 2026</span>
+                        <span style={{ fontSize:'0.65rem', color:'#F29337', fontWeight:700 }}>$2.99 · one-time</span>
                         <span style={{ fontSize:'0.6rem', color: profile.text3 }}>· Normally $2.99 · Emailed instantly</span>
                       </div>
                     )}

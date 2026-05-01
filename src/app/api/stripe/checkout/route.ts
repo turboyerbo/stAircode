@@ -78,13 +78,12 @@ export async function POST(req: NextRequest) {
   const isPhotoReport = product === 'photo_report'
   const isPro         = product === 'pro'
 
-  // Both 'report' and 'photo_report' are $2.99 — they share the same price ID
-  // STRIPE_REPORT_PRICE_ID falls back to STRIPE_PHOTO_REPORT_PRICE_ID if not set separately
-  const priceId = isReport      ? (process.env.STRIPE_REPORT_PRICE_ID ?? process.env.STRIPE_PHOTO_REPORT_PRICE_ID)
-                : isPhotoReport ? process.env.STRIPE_PHOTO_REPORT_PRICE_ID
-                :                 process.env.STRIPE_PRO_PRICE_ID
+  // Both 'report' and 'photo_report' use the same $2.99 price — STRIPE_REPORT_PRICE_ID
+  const priceId = (isReport || isPhotoReport)
+                ? (process.env.STRIPE_REPORT_PRICE_ID ?? process.env.STRIPE_PHOTO_REPORT_PRICE_ID)
+                : process.env.STRIPE_PRO_PRICE_ID
 
-  const priceLabel = isReport ? 'REPORT' : isPhotoReport ? 'PHOTO_REPORT' : 'PRO'
+  const priceLabel = (isReport || isPhotoReport) ? 'REPORT' : 'PRO'
   if (!priceId) {
     return NextResponse.json({
       error: `STRIPE_${priceLabel}_PRICE_ID not set`,
@@ -120,13 +119,7 @@ export async function POST(req: NextRequest) {
         ...chunks,
       },
 
-      // Beta coupon — auto-applied when STRIPE_BETA_COUPON env var is set.
-      // Users get 100% off without entering a code.
-      // To end beta: remove STRIPE_BETA_COUPON from Netlify env vars.
-      ...(process.env.STRIPE_BETA_COUPON
-        ? { discounts: [{ coupon: process.env.STRIPE_BETA_COUPON }] }
-        : { allow_promotion_codes: true }
-      ),
+      allow_promotion_codes: true,
 
       // One-time report: don't save card
       ...((isReport || isPhotoReport) ? {} : {

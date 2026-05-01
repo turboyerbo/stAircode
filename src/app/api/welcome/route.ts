@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   }
 
   const from    = process.env.EMAIL_FROM ?? 'info@staircode.app'
-  const subject = 'Welcome to Staircode — your stair intelligence app'
+  const subject = 'Your stAIrcode results are ready — get your report free during Beta'
 
   const html = `
 <!DOCTYPE html>
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     <!-- Header -->
     <div style="background: #0A1C2E; border-radius: 16px 16px 0 0; padding: 2rem 2rem 1.5rem; text-align:center; background-image: repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px), repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px);">
-      <div style="font-size:0.6rem; letter-spacing:0.32em; color:#F29337; font-family:monospace; margin-bottom:0.5rem;"><img src="https://staircode.app/logo_orange_transparent.png" alt="stAIrcode" style="height:40px;object-fit:contain;display:block;margin:0 auto;" /></div>
+      <div style="font-size:0.6rem; letter-spacing:0.32em; color:#F29337; font-family:monospace; margin-bottom:0.5rem;"><img src="https://staircode.app/staircode_logo.png" alt="stAIrcode" style="height:44px;object-fit:contain;display:block;margin:0 auto;" /></div>
       <h1 style="font-size:1.6rem; font-weight:900; color:#E8F4FF; letter-spacing:-0.02em; line-height:1.2; margin-bottom:0.5rem;">
         Welcome to Staircode
       </h1>
@@ -78,30 +78,40 @@ export async function POST(req: NextRequest) {
         Hi ${name},
       </p>
       <p style="font-size:0.92rem; color:#2C4A66; line-height:1.7; margin-bottom:1.25rem;">
-        You're in. Staircode uses your phone's camera and AI to measure staircases and check them against building codes — OBC, NBC, IBC, IRC, and more.
+        Hi ${name}, thanks for scanning with stAIrcode. Your pass/fail results are ready — and your full compliance report is waiting for you.
       </p>
 
-      <p style="font-size:0.9rem; color:#2C4A66; line-height:1.7; margin-bottom:0.5rem; font-weight:600;">
-        Here's what you can do:
-      </p>
-      <ul style="padding-left:1.25rem; margin-bottom:1.5rem;">
-        <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">📐 &nbsp;Measure riser height, tread depth, handrail height, clear width, and headroom</li>
-        <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">✅ &nbsp;Get an instant pass/fail against your local building code</li>
-        <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8; margin-bottom:0.25rem;">📄 &nbsp;Generate a full compliance report for $2.99 — emailed as a PDF</li>
-        <li style="font-size:0.88rem; color:#2C4A66; line-height:1.8;">🏗️ &nbsp;The AI adapts its language to your background — architect to DIY renovator</li>
-      </ul>
-
-      <!-- CTA -->
-      <div style="text-align:center; margin: 2rem 0 1.5rem;">
-        <a href="${APP_URL}" style="display:inline-block; background: linear-gradient(135deg, #F29337, #C4721E); color:#fff; font-weight:800; font-size:0.95rem; text-decoration:none; padding:0.95rem 2.5rem; border-radius:14px; letter-spacing:0.04em; box-shadow:0 4px 20px rgba(242,147,55,0.35);">
-          Open Staircode →
+      <!-- Beta free callout -->
+      <div style="background:linear-gradient(135deg,rgba(39,169,107,0.08),rgba(39,169,107,0.04)); border:1.5px solid rgba(39,169,107,0.3); border-radius:14px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; text-align:center;">
+        <div style="font-size:1.1rem; font-weight:900; color:#27A96B; margin-bottom:0.4rem;">🎉 Your report is FREE during Beta</div>
+        <p style="font-size:0.85rem; color:#2C4A66; line-height:1.6; margin-bottom:1rem;">
+          During our beta period (until June 2026), full PDF compliance reports are completely free. Your report includes all measurements, building code citations, and a pre-inspection summary.
+        </p>
+        <a href="${APP_URL}" style="display:inline-block; background:linear-gradient(135deg,#F29337,#C4721E); color:#fff; font-weight:800; font-size:1rem; text-decoration:none; padding:0.95rem 2.5rem; border-radius:14px; letter-spacing:0.04em; box-shadow:0 4px 20px rgba(242,147,55,0.4);">
+          Get My Free Report →
         </a>
+        <div style="font-size:0.72rem; color:#5E7D9B; margin-top:0.75rem;">Your coupon is applied automatically at checkout · No credit card required during beta</div>
       </div>
 
-      <p style="font-size:0.82rem; color:#417CA4; line-height:1.65; text-align:center;">
-        You're currently on the <strong>free beta plan</strong>.<br>
-        Upgrade to Pro ($38.99/mo) for 20 scans/month and full reports.
-      </p>
+      <!-- What's in the report -->
+      <p style="font-size:0.9rem; color:#2C4A66; line-height:1.7; margin-bottom:0.5rem; font-weight:700;">Your PDF compliance report includes:</p>
+      <ul style="padding-left:1.25rem; margin-bottom:1.5rem;">
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;">📋 &nbsp;Full stair description with all captured dimensions</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;">⚖️ &nbsp;Detailed pass/fail compliance analysis per item</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;">🏛️ &nbsp;Applicable building code sections cited by reference</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8;">🔍 &nbsp;Pre-inspection summary — ready to share with your inspector or contractor</li>
+      </ul>
+
+      <!-- Subscription option -->
+      <div style="background:#F0F5FA; border-radius:12px; padding:1rem 1.25rem; margin-bottom:0.5rem;">
+        <p style="font-size:0.82rem; color:#0A1C2E; font-weight:700; margin-bottom:0.3rem;">Want unlimited reports?</p>
+        <p style="font-size:0.78rem; color:#417CA4; line-height:1.6;">
+          Try <strong>stAIrcode Pro</strong> free for one month — unlimited scans and reports for building managers, condo boards, and real estate professionals. <strong>$38.99/mo after your free month. Cancel anytime.</strong>
+        </p>
+        <a href="${APP_URL}/pro" style="display:inline-block; margin-top:0.75rem; font-size:0.8rem; color:#F29337; font-weight:700; text-decoration:none;">
+          Learn about Pro →
+        </a>
+      </div>
     </div>
 
     <!-- Footer -->

@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import Image from 'next/image'
 import MeasurementLineOverlay from './MeasurementLineOverlay'
 import AngleGuidanceOverlay from './AngleGuidanceOverlay'
 import { applyPerspectiveCorrection, getDeviceOrientation } from '@/lib/pose-validator'
@@ -1396,7 +1397,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
         </div>
 
         <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
-          <img key={slide.img} src={slide.img} alt={slide.title}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img key={slide.img} src={slide.img} alt={slide.title}
             style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',display:'block',animation:'fadeSlide 0.3s ease'}}/>
           {introSlide > 0 && (
             <button onClick={()=>setIntroSlide(i=>i-1)}

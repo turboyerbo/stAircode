@@ -143,7 +143,7 @@ export async function generatePhotoReport(input: PhotoReportInput): Promise<void
     doc.setFontSize(7.5)
     doc.setTextColor(NAVY[0], NAVY[1], NAVY[2])
     cx = ML + 2
-    doc.text(`${f.icon} ${f.label}`, cx, y + 5);  cx += colW[0]
+    doc.text(f.icon ? `${f.icon} ${f.label}` : f.label, cx, y + 5);  cx += colW[0]
     doc.text(val, cx, y + 5);                      cx += colW[1]
     doc.text(range, cx, y + 5);                    cx += colW[2]
     doc.setTextColor(rColor[0], rColor[1], rColor[2])
@@ -240,16 +240,12 @@ export async function generatePhotoReport(input: PhotoReportInput): Promise<void
     doc.setFillColor(ORANGE[0], ORANGE[1], ORANGE[2])
     doc.rect(ML, 14, CW, 1.5, 'F')
 
-    frameEntries.forEach(([posId, b64], idx) => {
+    for (let idx = 0; idx < frameEntries.length; idx++) {
+      const [posId, b64] = frameEntries[idx]
       const label   = FRAME_LABELS[posId] ?? posId
-      const isFirst = idx === 0
-
-      // Each photo gets a labelled box — 2 per page (portrait photos) or 1 (landscape)
-      // Detect orientation from base64 header if possible; assume portrait for phone captures
-      const photoH = 100   // mm — phone portrait photo height
       const photoW = CW    // full width
 
-      checkPage(photoH + 20)
+      checkPage(120)
 
       // Label bar
       doc.setFillColor(20, 40, 65)
@@ -266,30 +262,47 @@ export async function generatePhotoReport(input: PhotoReportInput): Promise<void
       doc.text(`Position: ${posId}`, PW - MR - doc.getTextWidth(`Position: ${posId}`), y + 5.5)
       y += 10
 
-      // Photo — embed base64 JPEG
+      // Photo — embed base64 JPEG preserving native aspect ratio
       try {
         const imgData = b64.startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`
-        doc.addImage(imgData, 'JPEG', ML, y, photoW, photoH, undefined, 'MEDIUM')
-        // Border around photo
+
+        // Detect natural dimensions via Image element so we never stretch/squash
+        // for...of allows await here (forEach callbacks cannot be async)
+        const naturalDims = await new Promise<{ w: number; h: number }>(resolve => {
+          const img = new window.Image()
+          img.onload  = () => resolve({ w: img.naturalWidth,  h: img.naturalHeight })
+          img.onerror = () => resolve({ w: 4, h: 3 }) // fallback 4:3
+          img.src = imgData
+        })
+
+        const aspectRatio = naturalDims.h / naturalDims.w  // e.g. 16/9 for portrait phone
+        const drawW = photoW                               // fill page width
+        const drawH = Math.min(drawW * aspectRatio, 160)  // cap height at 160mm
+
+        checkPage(drawH + 14)
+
+        doc.addImage(imgData, 'JPEG', ML, y, drawW, drawH, undefined, 'MEDIUM')
         doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2])
         doc.setLineWidth(0.4)
-        doc.rect(ML, y, photoW, photoH)
+        doc.rect(ML, y, drawW, drawH)
+
+        y += drawH + 8
       } catch (e) {
         // If image fails, show placeholder
+        const fallbackH = 80
         doc.setFillColor(LGREY[0], LGREY[1], LGREY[2])
-        doc.rect(ML, y, photoW, photoH, 'F')
+        doc.rect(ML, y, photoW, fallbackH, 'F')
         doc.setFontSize(8)
         doc.setTextColor(GREY[0], GREY[1], GREY[2])
-        doc.text('Image could not be embedded', ML + CW/2 - 20, y + photoH/2)
+        doc.text('Image could not be embedded', ML + CW/2 - 20, y + fallbackH/2)
+        y += fallbackH + 8
       }
-
-      y += photoH + 8
 
       // Add new page between photos if running low
       if (idx < frameEntries.length - 1) {
-        checkPage(photoH + 30)
+        checkPage(120)
       }
-    })
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════

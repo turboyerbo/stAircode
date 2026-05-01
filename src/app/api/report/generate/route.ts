@@ -90,7 +90,7 @@ ${rows}
 
 ${failed ? `FAILED ITEMS:\n${failed}` : 'All measured items passed.'}
 
-Write a professional report with these 5 sections. Plain text only, no markdown, no asterisks.
+Write a professional report with these 5 sections. Plain text only — no markdown, no asterisks, no bullet symbols. Use proper grammar, correct spelling, and complete sentences throughout. Every sentence must be grammatically correct and read naturally.
 
 1. STAIR DESCRIPTION
 Brief description of the staircase based on the measurements (2-3 sentences).
@@ -107,7 +107,7 @@ Most likely occupancy type based on the location and dimensions. Key compliance 
 5. RECOMMENDATION
 One clear recommendation: whether a formal inspection is needed, what to fix first, and next steps.
 
-Keep the total report under 600 words. Be direct and professional.`
+Keep the total report under 600 words. Be direct and professional. Proofread carefully — no spelling errors, no incomplete sentences, no run-on sentences.`
 }
 
 // ── Send email via Resend ──────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
 
   <div style="background:#0A1C2E;border-radius:16px 16px 0 0;padding:1.5rem 2rem;text-align:center;background-image:repeating-linear-gradient(-45deg,#F29337 0px,#F29337 3px,transparent 3px,transparent 14px);background-size:20px 20px;">
     <div style="background:#0A1C2E;padding:1.25rem;border-radius:10px;">
-      <img src="https://staircode.app/logo_orange_transparent.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 0.5rem;" />
+      <img src="https://staircode.app/staircode_logo.png" alt="stAIrcode" style="height:40px;object-fit:contain;display:block;margin:0 auto 0.5rem;" />
       <h1 style="font-size:1.3rem;font-weight:900;color:#E8F4FF;margin:0 0 0.3rem;letter-spacing:-0.02em;">Stair Compliance Report</h1>
       <p style="font-size:0.78rem;color:#93BAD4;margin:0;">${codeLabel}${location ? ' · ' + location : ''} · ${date}</p>
     </div>

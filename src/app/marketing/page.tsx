@@ -6,7 +6,9 @@
  */
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import styles from './marketing.module.css'
+import { NavLogo } from '@/app/components/Logo'
 
 export default function MarketingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -65,11 +67,9 @@ export default function MarketingPage() {
       }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 1.25rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Logo */}
-          <a href="/marketing" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/logo_icon_blue.png" alt="stAIrcode" style={{ height: 30, width: 'auto' }} />
-            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF', letterSpacing: '-0.02em' }}>
-              st<span style={{ color: '#F29337' }}>AI</span>rcode
-            </span>
+          <a href="/marketing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <NavLogo height={28} />
           </a>
 
           {/* Desktop nav */}
@@ -78,7 +78,7 @@ export default function MarketingPage() {
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
             <a href="/?signin=1" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
-            <a href="/?signin=1" className={styles.navCta}>Check my stairs for free →</a>
+            <a href="/?signin=1" className={styles.navCta}>Get a compliance report →</a>
           </nav>
 
           {/* Hamburger */}
@@ -107,7 +107,7 @@ export default function MarketingPage() {
               >{l.label}</a>
             ))}
             <a href="/?signin=1" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>
-              Check my stairs for free →
+              Get a compliance report →
             </a>
           </div>
         )}
@@ -118,37 +118,36 @@ export default function MarketingPage() {
       ══════════════════════════════════════════════ */}
       <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#0A1C2E' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className={styles.obadge}>AI-Powered Stair Compliance</div>
+          <div className={styles.obadge}>Stair Compliance for Building Professionals</div>
           <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 800, marginBottom: '1.5rem', color: '#FFFFFF' }}>
-  Check stairs for code-compliance with your phone.
+  Check your stairs with live building code guidance — using any phone.
           </h1>
 
-          {/* Problem statement */}
-          <div style={{ maxWidth: 720, marginBottom: '2rem' }}>
-            <p style={{ fontSize: '1.05rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', marginBottom: '1rem' }}>
-              The direct medical costs of non-fatal stair fall injuries in the US are estimated at{' '}
-              <strong style={{ color: '#FFFFFF', fontWeight: 700 }}>over $92 billion annually.</strong>
-            </p>
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', marginBottom: '0.75rem' }}>
-              Falls result in almost <strong>1,800 emergency department visits</strong> and{' '}
-              <strong>417 hospital admissions every day</strong> in Canada alone.
-            </p>
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)', marginBottom: '0.75rem' }}>
-              Falls on stairs account for roughly{' '}
-              <strong>20% of fall-related injury hospitalizations</strong> among seniors. Dimensional inconsistency in risers larger than 3/8 inch{' '}
-              <strong>increases trip risk by over 50%.</strong>
-            </p>
-            <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.72)' }}>
-              Non-compliant stairs injure and kill people. The regulatory requirement to check stairs against building codes is real.{' '}
-              The gap between <em>&ldquo;I have stairs&rdquo;</em> and <em>&ldquo;I know if they&apos;re compliant&rdquo;</em> is real.{' '}
-              <strong>stAIrcode addresses that gap.</strong>
-            </p>
+          {/* Hero description */}
+          <p style={{ fontSize: '1.15rem', lineHeight: 1.75, color: 'rgba(255,255,255,0.88)', maxWidth: 680, marginBottom: '1.5rem' }}>
+            stAIrcode gives building managers, condo boards, and real estate agents a fast,
+            documented stair compliance check — before the inspector shows up.
+            No tape measure. No technical knowledge. Just your phone and a few minutes.
+          </p>
+
+          {/* Proof points */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '2rem' }}>
+            {[
+              'OBC · NBC · IBC · BCBC supported',
+              'Pass/fail in under 5 minutes',
+              'Shareable PDF with code citations',
+              'No app download required',
+            ].map(pt => (
+              <span key={pt} style={{ fontSize: '0.82rem', fontWeight: 600, color: 'rgba(255,255,255,0.85)', background: 'rgba(65,124,164,0.18)', border: '1px solid rgba(65,124,164,0.3)', borderRadius: 20, padding: '0.35rem 0.9rem' }}>
+                ✓ {pt}
+              </span>
+            ))}
           </div>
 
           {/* CTA */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '2.5rem' }}>
             <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>
-              Check my stairs for free →
+              Get a compliance report →
             </a>
             <a href="#how-it-works" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.55)', textDecoration: 'none', fontWeight: 500 }}>
               See how it works ↓
@@ -199,15 +198,14 @@ export default function MarketingPage() {
       <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <div className={styles.testimonial}>
-            <div style={{ fontSize: '1.4rem', color: '#F29337', marginBottom: '0.75rem' }}>★★★★★</div>
-            <blockquote style={{ fontSize: '1.05rem', lineHeight: 1.7, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1rem' }}>
-              &ldquo;I scanned the staircase at a listing I was about to put an offer on. stAIrcode flagged two risers with a 12mm height inconsistency — well above the 9.5mm (3/8 inch) threshold. I brought it to my building inspector, who confirmed it. It saved me from waiving an inspection on a compliance issue that would&apos;ve cost $6,000 to fix.&rdquo;
+            <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>
+              &ldquo;stAIrcode flagged two inconsistent risers during a quick scan. The building inspector later confirmed it — and that was enough for our client to move forward with a renovation they would have otherwise avoided.&rdquo;
             </blockquote>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F29337', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '1rem', flexShrink: 0 }}>J</div>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Jordan M.</div>
-                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Real Estate Agent, Toronto — RE/MAX</div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Licensed Architect</div>
+                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Toronto, Ontario</div>
               </div>
             </div>
           </div>
@@ -221,7 +219,7 @@ export default function MarketingPage() {
         <div className={styles.section} style={{ padding: 0 }}>
           <div style={{ maxWidth: 1080, margin: '0 auto' }}>
             <div className={styles.sectionLabel}>Why stAIrcode</div>
-            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Why teams choose stAIrcode</h2>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>See why building professionals choose stAIrcode</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
               {[
                 { icon: '📐', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
@@ -246,7 +244,7 @@ export default function MarketingPage() {
       <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>The problem is real</h2>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Non-compliant stairs are a liability</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
             {[
               { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
@@ -276,7 +274,7 @@ export default function MarketingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: 680 }}>
             {[
               { n: '1', title: 'Sign up — free, no credit card', body: 'Create your account with just an email. stAIrcode is free to scan. A full PDF compliance report is available for a one-time purchase.' },
-              { n: '2', title: 'Photograph your stairs', body: 'Follow the guided positions on screen. Place a credit card in frame for ±10mm accuracy. stAIrcode walks you through riser, tread, width, headroom, nosing, and guardrail.' },
+              { n: '2', title: 'Photograph your stairs', body: 'Follow the on-screen guided positions. stAIrcode walks you through each measurement automatically — riser, tread, width, headroom, nosing, and guardrail.' },
               { n: '3', title: 'Get your results', body: 'Each dimension is checked against your local building code and shown as pass/fail. Download your report or share it with your inspector, agent, or contractor.' },
             ].map(s => (
               <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
@@ -371,7 +369,7 @@ export default function MarketingPage() {
             Just your phone and the stairs in question.
           </p>
           <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>
-            Check my stairs for free →
+            Get a compliance report →
           </a>
           <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>
             Pre-screening tool. Always confirm with a licensed inspector before renovation or real estate transaction.
@@ -385,9 +383,10 @@ export default function MarketingPage() {
       <footer>
         <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src="/logo_icon_blue.png" alt="stAIrcode" style={{ height: 22, opacity: 0.6 }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <NavLogo height={20} style={{ opacity: 0.75 }} />
             <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>stAIrcode</span>
-            <span style={{ color: 'rgba(255,255,255,0.2)' }}>— Just Open Technologies Inc.</span>
+            <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.8em' }}>staircode.app</span>
           </div>
           <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <a href="/research">Research</a>

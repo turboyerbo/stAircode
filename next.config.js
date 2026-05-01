@@ -17,7 +17,10 @@ console.log('[next.config] Cache version:', BUILD_VERSION)
 
 const nextConfig = {
   // jsPDF is browser-only — never bundle it for server/edge runtimes
-  serverExternalPackages: ['jspdf', 'html2canvas'],
+  // serverExternalPackages is Next.js 15+; use experimental key for Next.js 14.x
+  experimental: {
+    serverComponentsExternalPackages: ['jspdf', 'html2canvas'],
+  },
 
   // Production domain — used by Next.js for absolute URL generation
   // Set NEXT_PUBLIC_APP_URL=https://staircode.app in Netlify env vars
