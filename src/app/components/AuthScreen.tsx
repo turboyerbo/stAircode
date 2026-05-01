@@ -118,8 +118,8 @@ export default function AuthScreen({ onAuth }: Props) {
         provider,
         options: {
           redirectTo: typeof window !== 'undefined'
-            ? window.location.origin
-            : 'https://staircode.app',
+            ? `${window.location.origin}/?signin=1`
+            : 'https://staircode.app/?signin=1',
         },
       })
       if (error) throw error
