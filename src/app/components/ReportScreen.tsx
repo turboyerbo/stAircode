@@ -289,7 +289,12 @@ function PhotoReportUpsell({ fields, reportText, codeLabel, location, userEmail,
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', marginBottom: '0.75rem' }}>
         <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>📸</span>
         <div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: profile.text, marginBottom: '0.2rem' }}>Photo Report — $2.99</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: profile.text, marginBottom: '0.2rem' }}>
+            Photo Report —{' '}
+            <span style={{ textDecoration: 'line-through', opacity: 0.5, fontWeight: 400 }}>$7.99</span>
+            {' '}<span style={{ color: '#F29337' }}>$2.99</span>
+            <span style={{ fontSize: '0.65rem', color: '#27A96B', marginLeft: '0.4rem' }}>Beta price</span>
+          </div>
           <div style={{ fontSize: '0.7rem', color: profile.text2, lineHeight: 1.55 }}>Professional PDF with all measurement photos, pass/fail table, and compliance analysis.</div>
         </div>
       </div>
@@ -304,7 +309,7 @@ function PhotoReportUpsell({ fields, reportText, codeLabel, location, userEmail,
         }}
         style={{ width: '100%', padding: '0.9rem', background: `linear-gradient(135deg,${ORANGE},#C4721E)`, border: 'none', borderRadius: 12, color: '#fff', fontSize: '0.9rem', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.06em', cursor: 'pointer', boxShadow: '0 4px 16px rgba(242,147,55,0.35)' }}
       >
-        💳  Get Photo Report — $2.99 →
+        💳  Get Photo Report — $2.99 →  (reg. $7.99)
       </button>
       <p style={{ fontSize: '0.58rem', color: profile.text3, textAlign: 'center', margin: '0.5rem 0 0' }}>One-time payment · Instant download · Secure checkout via Stripe</p>
       {error && <p style={{ fontSize: '0.65rem', color: '#ff8080', margin: '0.35rem 0 0', textAlign: 'center' }}>{error}</p>}
@@ -788,13 +793,16 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 Where should we send your report?
               </div>
               <div style={{ fontSize:'0.75rem', color:profile.text2, lineHeight:1.6 }}>
-                Enter your email — your report will be ready to download after a quick $2.99 payment.
+                Enter your email — your full compliance report is $2.99 during beta testing (regular price $7.99).
               </div>
             </div>
 
             {/* Price pill */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginBottom:'1rem' }}>
-              <span style={{ fontSize:'0.72rem', color:'#F29337', fontWeight:700, background:'rgba(242,147,55,0.1)', border:'1px solid rgba(242,147,55,0.3)', borderRadius:20, padding:'0.25rem 0.75rem' }}>One-time payment · $2.99</span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', fontSize:'0.72rem', fontWeight:700, background:'rgba(242,147,55,0.1)', border:'1px solid rgba(242,147,55,0.3)', borderRadius:20, padding:'0.25rem 0.85rem' }}>
+                <span style={{ color:'rgba(255,255,255,0.4)', textDecoration:'line-through', fontWeight:400 }}>$7.99</span>
+                <span style={{ color:'#F29337' }}>$2.99 · Beta discount</span>
+              </span>
             </div>
 
             {/* Email input */}
@@ -846,7 +854,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 transition:'all 0.15s', marginBottom:'0.6rem',
               }}
             >
-              Get My Report — $2.99 →
+              Get Full Report — $2.99 →
             </button>
 
             {/* What you get */}
@@ -906,8 +914,11 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     <div style={{ fontSize: '0.65rem', color: profile.text2 }}>This inspection only · Instant PDF</div>
                   </div>
                   <div style={{ display:'flex', alignItems:'baseline', gap:'0.5rem' }}>
-                    <div style={{ fontWeight: 900, fontSize: '1.5rem', color: GOLD }}>$2.99</div>
-                    <div style={{ fontSize:'0.75rem', fontFamily:'monospace', color: profile.text3, fontWeight:400 }}>one-time</div>
+                    <div style={{ display:'flex', alignItems:'baseline', gap:'0.4rem' }}>
+                      <div style={{ fontWeight: 400, fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', textDecoration:'line-through' }}>$7.99</div>
+                      <div style={{ fontWeight: 900, fontSize: '1.5rem', color: GOLD }}>$2.99</div>
+                    </div>
+                    <div style={{ fontSize:'0.65rem', fontFamily:'monospace', color:'#27A96B', fontWeight:700 }}>BETA PRICE</div>
                   </div>
                   <div style={{ fontSize:'0.62rem', color: profile.text3, fontFamily:'monospace', marginTop:'0.15rem', textDecoration:'line-through' }}>instant download</div>
                 </div>
@@ -938,8 +949,9 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                       </div>
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
-                        <span style={{ fontSize:'0.65rem', color:'#F29337', fontWeight:700 }}>$2.99 · one-time</span>
-                        <span style={{ fontSize:'0.6rem', color: profile.text3 }}>· Normally $2.99 · Emailed instantly</span>
+                        <span style={{ fontSize:'0.65rem', color:'#F29337', fontWeight:700 }}>$2.99 beta</span>
+                        <span style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.3)', textDecoration:'line-through', marginLeft:'0.25rem' }}>$7.99</span>
+                        <span style={{ fontSize:'0.6rem', color: profile.text3 }}> · Emailed instantly</span>
                       </div>
                     )}
                   </div>

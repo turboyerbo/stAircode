@@ -104,6 +104,13 @@ export default function PaymentSuccessScreen() {
             Payment complete
           </h1>
 
+          {/* Beta pricing confirmation */}
+          <div style={{ background: 'rgba(242,147,55,0.08)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', color: C.text2 }}>Beta testing price paid:</span>
+            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>.99</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: C.orange }}>.99 ✓</span>
+          </div>
+
           <p style={{
             fontSize: '0.9rem', color: C.text2,
             lineHeight: 1.7, marginBottom: '1.75rem',

@@ -130,7 +130,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       <SettingsRow icon="💳" label="Payment Method" value="None added" onTap={() => setShowPayment(v => !v)} />
       {showPayment && (
         <OptionGroup>
-          {['Apple Pay', 'Google Pay', 'Credit Card', 'PayPal'].map(p => (
+          {['Credit Card'].map(p => (
             <OptionRow key={p} label={p} selected={false} onSelect={() => setShowPayment(false)} />
           ))}
         </OptionGroup>

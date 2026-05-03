@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
   const subject = `Your Staircode Compliance Report — ${location || codeLabel}`
   const dateStr = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 
+  // Build teaser — show first ~30% of report, blur/block the rest
+  const lines      = reportText.split('\n').filter(Boolean)
+  const teaserLines = lines.slice(0, Math.max(4, Math.floor(lines.length * 0.3)))
+  const teaserText  = teaserLines.join('\n')
+  const blockedCount = lines.length - teaserLines.length
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -73,23 +79,77 @@ export async function POST(req: NextRequest) {
   <!-- Header -->
   <div style="background:#0A1C2E;border-radius:16px 16px 0 0;padding:1.75rem 2rem;text-align:center;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(147,186,212,0.06) 39px,rgba(147,186,212,0.06) 40px);">
     <img src="https://staircode.app/staircode_logo.png" alt="stAIrcode" style="height:40px;object-fit:contain;display:block;margin:0 auto 0.5rem;" />
-    <h1 style="font-size:1.4rem;font-weight:900;color:#E8F4FF;margin:0 0 0.3rem;letter-spacing:-0.02em;">Stair Compliance Report</h1>
+    <h1 style="font-size:1.4rem;font-weight:900;color:#E8F4FF;margin:0 0 0.3rem;letter-spacing:-0.02em;">Your Stair Compliance Preview</h1>
     <p style="font-size:0.78rem;color:#93BAD4;margin:0;">${codeLabel}${location ? ' · ' + location : ''} · ${dateStr}</p>
   </div>
 
-  <!-- Report body -->
-  <div style="background:#ffffff;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:2rem;">
-    <pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:10.5pt;line-height:1.75;color:#0A1C2E;margin:0;">${reportText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+  <!-- Beta pricing banner -->
+  <div style="background:linear-gradient(135deg,#F29337,#C4721E);padding:0.9rem 2rem;text-align:center;">
+    <p style="margin:0;font-size:0.88rem;font-weight:800;color:#fff;letter-spacing:0.02em;">
+      🎉 Beta Testing Special — Get the full report for
+      <span style="text-decoration:line-through;opacity:0.7;font-weight:400;">$7.99</span>
+      &nbsp;<span style="font-size:1.1rem;">$2.99</span>
+    </p>
+  </div>
+
+  <!-- Teaser body -->
+  <div style="background:#ffffff;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:2rem 2rem 0;">
+    <p style="font-size:0.72rem;font-weight:700;color:#F29337;letter-spacing:0.1em;margin:0 0 1rem;">COMPLIANCE PREVIEW — PARTIAL RESULTS</p>
+    <pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:10.5pt;line-height:1.75;color:#0A1C2E;margin:0 0 1.5rem;">${teaserText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+  </div>
+
+  <!-- Blurred/blocked section -->
+  <div style="background:#ffffff;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:0 2rem 0;position:relative;">
+    <div style="filter:blur(4px);user-select:none;pointer-events:none;opacity:0.4;padding-bottom:1.5rem;">
+      <pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:10.5pt;line-height:1.75;color:#0A1C2E;margin:0;">Building code analysis results and dimensional compliance summary with specific measurements for riser height consistency, tread depth variance, stair width clearance, headroom measurement, nosing projection details, and guardrail height assessment follow below. Full citation references to applicable code sections are included along with the pre-inspection summary and recommendations for your contractor or building inspector.</pre>
+    </div>
+    <!-- Lock overlay -->
+    <div style="background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,0.97));height:80px;margin-top:-80px;position:relative;z-index:1;"></div>
+    <div style="background:#fff;padding:1.5rem 0 2rem;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">🔒</div>
+      <p style="font-size:1rem;font-weight:800;color:#0A1C2E;margin:0 0 0.35rem;">
+        ${blockedCount > 0 ? blockedCount + ' more lines in your full report' : 'Full compliance analysis available'}
+      </p>
+      <p style="font-size:0.82rem;color:#5E7D9B;margin:0 0 1.25rem;line-height:1.6;">
+        Your full report includes detailed measurements, building code citations,<br>pass/fail analysis, measurement photos, and a pre-inspection summary.
+      </p>
+      <!-- CTA button -->
+      <a href="${APP_URL}/?signin=1" style="display:inline-block;background:linear-gradient(135deg,#F29337,#C4721E);color:#fff;font-weight:800;font-size:0.95rem;text-decoration:none;padding:0.9rem 2.25rem;border-radius:14px;letter-spacing:0.04em;box-shadow:0 4px 20px rgba(242,147,55,0.4);margin-bottom:0.75rem;">
+        Get Full Report — $2.99 →
+      </a>
+      <p style="font-size:0.72rem;color:#9BB5C8;margin:0.5rem 0 0;">
+        <span style="text-decoration:line-through;opacity:0.6;">Regular price $7.99</span> · Beta testing discount applied automatically
+      </p>
+    </div>
+  </div>
+
+  <!-- What's included -->
+  <div style="background:#F0F7FF;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:1.25rem 2rem;">
+    <p style="font-size:0.78rem;font-weight:700;color:#0A1C2E;margin:0 0 0.6rem;letter-spacing:0.06em;">YOUR FULL REPORT INCLUDES:</p>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr>
+        <td style="padding:0.25rem 0.5rem 0.25rem 0;font-size:0.8rem;color:#2C4A66;width:50%;">✓ All 7 measurement results</td>
+        <td style="padding:0.25rem 0;font-size:0.8rem;color:#2C4A66;">✓ Building code citations</td>
+      </tr>
+      <tr>
+        <td style="padding:0.25rem 0.5rem 0.25rem 0;font-size:0.8rem;color:#2C4A66;">✓ Measurement photographs</td>
+        <td style="padding:0.25rem 0;font-size:0.8rem;color:#2C4A66;">✓ Pass/fail analysis</td>
+      </tr>
+      <tr>
+        <td style="padding:0.25rem 0.5rem 0.25rem 0;font-size:0.8rem;color:#2C4A66;">✓ Pre-inspection summary</td>
+        <td style="padding:0.25rem 0;font-size:0.8rem;color:#2C4A66;">✓ Downloadable PDF</td>
+      </tr>
+    </table>
   </div>
 
   <!-- Footer -->
   <div style="background:#0F2438;border-radius:0 0 16px 16px;padding:1.25rem 2rem;text-align:center;">
     <p style="font-size:0.7rem;color:#4E7A9B;margin:0 0 0.4rem;line-height:1.6;">
-      This report is a pre-inspection AI analysis only.<br>
-      It does not constitute a certified inspection and should not be used as evidence of building code compliance.
+      This preview is an AI-assisted pre-inspection analysis only.<br>
+      It does not constitute a certified inspection or evidence of building code compliance.
     </p>
     <p style="font-size:0.65rem;color:#2C4A66;margin:0;">
-      Staircode · <a href="${APP_URL}" style="color:#417CA4;">staircode.app</a> · © ${new Date().getFullYear()} Just Open Technologies Inc.
+      stAIrcode · <a href="${APP_URL}" style="color:#417CA4;">staircode.app</a>
     </p>
   </div>
 

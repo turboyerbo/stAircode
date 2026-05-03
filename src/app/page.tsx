@@ -657,7 +657,20 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
         <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>
           Pre-analysis only · Not a substitute for professional inspection
         </p>
-        <button onClick={onLogout} style={{display:'block',margin:'0.75rem auto 0',background:'rgba(65,124,164,0.10)',border:'1px solid rgba(65,124,164,0.25)',color:'#2C5A7A',fontSize:'0.65rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 1rem',borderRadius:20,fontWeight:600}}>
+
+        {/* Social + marketing links */}
+        <div style={{display:'flex',gap:'0.5rem',justifyContent:'center',marginTop:'0.75rem'}}>
+          <a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.45rem 0.9rem',background:'linear-gradient(135deg,rgba(131,58,180,0.15),rgba(253,29,29,0.15),rgba(252,176,69,0.15))',border:'1px solid rgba(131,58,180,0.25)',borderRadius:20,textDecoration:'none',color:'#2C5A7A',fontSize:'0.65rem',fontWeight:600}}>
+            <span style={{fontSize:'0.85rem'}}>📸</span> Instagram
+          </a>
+          <a href="/marketing"
+            style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.45rem 0.9rem',background:'rgba(65,124,164,0.08)',border:'1px solid rgba(65,124,164,0.2)',borderRadius:20,textDecoration:'none',color:'#2C5A7A',fontSize:'0.65rem',fontWeight:600}}>
+            <span style={{fontSize:'0.85rem'}}>🌐</span> About stAIrcode
+          </a>
+        </div>
+
+        <button onClick={onLogout} style={{display:'block',margin:'0.6rem auto 0',background:'rgba(65,124,164,0.10)',border:'1px solid rgba(65,124,164,0.25)',color:'#2C5A7A',fontSize:'0.65rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 1rem',borderRadius:20,fontWeight:600}}>
           ↩ Sign out
         </button>
       </div>

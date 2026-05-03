@@ -483,15 +483,13 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
       ],
     },
     overview: {
-      x1:15, y1:75,  x2:85, y2:20,   // diagonal from bottom-left to top-right (stair direction)
-      nx:0,  ny:-1,  nLen:20,
-      ticks:'v',
+      x1:50, y1:15,  x2:50, y2:85,   // vertical centre line — top to bottom of flight
+      nx:1,  ny:0,   nLen:30,
+      ticks:'h',
       guides:[
-        // Horizontal lines suggesting individual risers (evenly spaced)
-        {x1:15,y1:75,x2:45,y2:75},
-        {x1:30,y1:60,x2:60,y2:60},
-        {x1:45,y1:45,x2:75,y2:45},
-        {x1:60,y1:30,x2:85,y2:30},
+        // Horizontal lines at top and bottom of flight
+        {x1:15,y1:15,x2:85,y2:15},   // top of flight
+        {x1:15,y1:85,x2:85,y2:85},   // bottom step
       ],
     },
   }

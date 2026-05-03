@@ -323,7 +323,68 @@ export function analyzeFrame(
 }
 
 // ── Draw overlay onto canvas ──────────────────────────────────────────────────
-// Draws detected lines + measurement annotation on top of the video feed.
+// Position-aware overlay: each scan step gets a tailored visual guide.
+//
+// Positions:
+//   overview / riser_front  → two snapping horizontal lines (top + bottom of flight)
+//   tread_top / run         → two snapping horizontal lines (tread front + back edge)
+//   alt_angle / guard       → diagonal handrail guide + bottom step line
+//   width                   → vertical span guide
+//   default                 → standard detected lines
+
+// Internal smoothing state (module-level so it persists across frames)
+const _smooth = { topY: -1, botY: -1 }
+
+function drawHLine(
+  ctx: CanvasRenderingContext2D, w: number, y: number,
+  color: string, label: string, labelSide: 'left' | 'right' = 'right'
+) {
+  ctx.beginPath()
+  ctx.moveTo(w * 0.04, y)
+  ctx.lineTo(w * 0.96, y)
+  ctx.strokeStyle = color
+  ctx.lineWidth   = 2.5
+  ctx.setLineDash([10, 5])
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // End ticks
+  for (const tx of [w * 0.04, w * 0.96]) {
+    ctx.beginPath()
+    ctx.moveTo(tx, y - 7); ctx.lineTo(tx, y + 7)
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke()
+  }
+
+  // Label pill
+  if (label) {
+    ctx.font = 'bold 12px system-ui'
+    const tw  = ctx.measureText(label).width
+    const lx  = labelSide === 'right' ? w * 0.96 - tw - 10 : w * 0.04 + 4
+    const ly  = y - 18
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'
+    ctx.beginPath()
+    ctx.roundRect(lx - 4, ly - 2, tw + 12, 20, 5)
+    ctx.fill()
+    ctx.fillStyle = color
+    ctx.fillText(label, lx + 2, ly + 13)
+  }
+}
+
+function getSnapLines(
+  result: VisionResult, h: number, fallbackTop: number, fallbackBot: number
+): { topY: number; botY: number } {
+  const sorted = [...result.staircaseLines].sort((a, b) => a.y - b.y)
+  const rawTop = sorted.length > 0 ? sorted[0].y               : fallbackTop
+  const rawBot = sorted.length > 1 ? sorted[sorted.length-1].y : fallbackBot
+
+  // Exponential smoothing to avoid jitter
+  const alpha = 0.25
+  if (_smooth.topY < 0) { _smooth.topY = rawTop; _smooth.botY = rawBot }
+  _smooth.topY = _smooth.topY * (1 - alpha) + rawTop * alpha
+  _smooth.botY = _smooth.botY * (1 - alpha) + rawBot * alpha
+
+  return { topY: _smooth.topY, botY: _smooth.botY }
+}
 
 export function drawOverlay(
   ctx:           CanvasRenderingContext2D,
@@ -332,97 +393,161 @@ export function drawOverlay(
   result:        VisionResult,
   suggestedMm:   number | null,
   confidence:    number,
-  currentField:  string
+  currentField:  string,
+  cardDetected?: boolean
 ): void {
   ctx.clearRect(0, 0, w, h)
 
-  // Draw all detected edge lines (faint)
-  result.lines.forEach(line => {
-    ctx.beginPath()
-    ctx.moveTo(0, line.y)
-    ctx.lineTo(w, line.y)
-    ctx.strokeStyle = `rgba(255,255,255,${0.15 * line.strength})`
-    ctx.lineWidth   = 1
-    ctx.stroke()
-  })
+  const locked  = confidence > 0.6
+  const hiColor = locked ? '#4ade80' : '#38bdf8'   // green locked, cyan scanning
+  const dimColor = locked ? 'rgba(74,222,128,0.5)' : 'rgba(56,189,248,0.45)'
+  const t = Date.now()
 
-  // Draw stair candidate lines (bright)
-  result.staircaseLines.forEach((line, i) => {
-    const alpha = 0.4 + line.strength * 0.6
-    ctx.beginPath()
-    ctx.moveTo(w * 0.1, line.y)
-    ctx.lineTo(w * 0.9, line.y)
-    ctx.strokeStyle = confidence > 0.5
-      ? `rgba(102,187,106,${alpha})`    // green when confident
-      : `rgba(255,183,77,${alpha})`     // amber when uncertain
-    ctx.lineWidth   = 2
-    ctx.setLineDash([8, 4])
-    ctx.stroke()
-    ctx.setLineDash([])
+  // ── 1. OVERVIEW / RISER FRONT — snap horizontal lines to top + bottom of flight ──
+  if (currentField === 'overview' || currentField === 'riser_front' || currentField === 'rise') {
+    const { topY, botY } = getSnapLines(result, h, h * 0.15, h * 0.82)
+    const topLabel = currentField === 'overview' ? 'Top of flight' : 'Top of riser'
+    const botLabel = currentField === 'overview' ? 'Bottom step'   : 'Riser base'
 
-    // Small tick marks
-    ctx.beginPath()
-    ctx.moveTo(w * 0.1 - 8, line.y)
-    ctx.lineTo(w * 0.1 + 8, line.y)
-    ctx.strokeStyle = `rgba(255,255,255,${alpha})`
-    ctx.lineWidth   = 2
-    ctx.stroke()
-  })
+    // Faint fill between lines
+    ctx.fillStyle = `rgba(56,189,248,${locked ? 0.07 : 0.04})`
+    ctx.fillRect(0, topY, w, botY - topY)
 
-  // Draw measurement bracket between first two stair lines
-  if (result.staircaseLines.length >= 2) {
-    const sorted = [...result.staircaseLines].sort((a,b) => a.y - b.y)
-    const y1 = sorted[0].y
-    const y2 = sorted[1].y
-    const mx = w * 0.85
+    drawHLine(ctx, w, topY, hiColor, topLabel, 'right')
+    drawHLine(ctx, w, botY, hiColor, botLabel, 'left')
 
-    const color = confidence > 0.5 ? '#66bb6a' : '#ffb74d'
+    // Animated scan bar between lines
+    const scanY = topY + ((t / 18) % (botY - topY))
+    const grad  = ctx.createLinearGradient(0, scanY - 12, 0, scanY + 12)
+    grad.addColorStop(0,   'rgba(56,189,248,0)')
+    grad.addColorStop(0.5, `rgba(56,189,248,${0.08 + confidence * 0.1})`)
+    grad.addColorStop(1,   'rgba(56,189,248,0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, scanY - 12, w, 24)
+  }
 
-    // Vertical bracket line
-    ctx.beginPath()
-    ctx.moveTo(mx, y1)
-    ctx.lineTo(mx, y2)
-    ctx.strokeStyle = color
-    ctx.lineWidth   = 2.5
-    ctx.stroke()
+  // ── 2. TREAD TOP / RUN — snap two lines to tread front and back nosing ───────────
+  else if (currentField === 'tread_top' || currentField === 'run') {
+    const { topY, botY } = getSnapLines(result, h, h * 0.3, h * 0.65)
 
-    // Bracket end caps
-    ;[y1, y2].forEach(y => {
-      ctx.beginPath()
-      ctx.moveTo(mx - 10, y)
-      ctx.lineTo(mx + 10, y)
-      ctx.strokeStyle = color
-      ctx.lineWidth   = 2.5
-      ctx.stroke()
-    })
+    drawHLine(ctx, w, topY, hiColor, 'Tread back edge', 'right')
+    drawHLine(ctx, w, botY, hiColor, 'Tread front nosing', 'left')
 
-    // Dimension label
+    // Bracket on right side
+    const bx = w * 0.88
+    ctx.beginPath(); ctx.moveTo(bx, topY); ctx.lineTo(bx, botY)
+    ctx.strokeStyle = hiColor; ctx.lineWidth = 2; ctx.stroke()
+    for (const by of [topY, botY]) {
+      ctx.beginPath(); ctx.moveTo(bx - 8, by); ctx.lineTo(bx + 8, by)
+      ctx.strokeStyle = hiColor; ctx.lineWidth = 2; ctx.stroke()
+    }
     if (suggestedMm) {
-      const midY   = (y1 + y2) / 2
-      const label  = `~${suggestedMm} mm`
-      ctx.font     = 'bold 16px system-ui'
-      const tw     = ctx.measureText(label).width
-      const bx     = mx + 16
-      const by     = midY - 12
-
-      // Background pill
-      ctx.fillStyle   = confidence > 0.5 ? 'rgba(46,125,50,0.85)' : 'rgba(230,81,0,0.85)'
-      ctx.beginPath()
-      ctx.roundRect(bx - 4, by - 4, tw + 16, 26, 6)
-      ctx.fill()
-
-      // Label text
-      ctx.fillStyle = '#ffffff'
-      ctx.fillText(label, bx + 4, by + 14)
+      const label = `~${suggestedMm} mm`
+      ctx.font = 'bold 13px system-ui'
+      const tw = ctx.measureText(label).width
+      const lx = bx + 10; const ly = (topY + botY) / 2 - 10
+      ctx.fillStyle = locked ? 'rgba(46,125,50,0.88)' : 'rgba(2,60,110,0.88)'
+      ctx.beginPath(); ctx.roundRect(lx - 4, ly - 2, tw + 14, 22, 5); ctx.fill()
+      ctx.fillStyle = '#fff'; ctx.fillText(label, lx + 3, ly + 14)
     }
   }
 
-  // Scanning animation — moving horizontal bar
-  const scanY = ((Date.now() / 20) % h)
-  const grad  = ctx.createLinearGradient(0, scanY - 20, 0, scanY + 20)
-  grad.addColorStop(0,   'rgba(102,187,106,0)')
-  grad.addColorStop(0.5, `rgba(102,187,106,${0.06 + confidence * 0.08})`)
-  grad.addColorStop(1,   'rgba(102,187,106,0)')
-  ctx.fillStyle = grad
-  ctx.fillRect(0, scanY - 20, w, 40)
+  // ── 3. HANDRAIL / GUARD — diagonal line tracing railing + bottom step line ───────
+  else if (currentField === 'alt_angle' || currentField === 'guard' || currentField === 'handrail') {
+    // Reset smoothing for this position
+    _smooth.topY = -1; _smooth.botY = -1
+
+    // Diagonal guide — traces expected railing angle (ascending left-to-right)
+    // Animate subtle pulse on the diagonal
+    const pulse = 0.6 + 0.4 * Math.sin(t / 400)
+    const diagColor = locked ? `rgba(74,222,128,${pulse})` : `rgba(56,189,248,${pulse})`
+
+    // Main diagonal — from bottom-left to upper-right (standard stair railing angle ~35°)
+    const diagX1 = w * 0.08;  const diagY1 = h * 0.78
+    const diagX2 = w * 0.92;  const diagY2 = h * 0.12
+    ctx.beginPath()
+    ctx.moveTo(diagX1, diagY1)
+    ctx.lineTo(diagX2, diagY2)
+    ctx.strokeStyle = diagColor
+    ctx.lineWidth   = 3
+    ctx.setLineDash([14, 6])
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Arrow head at upper-right end
+    const angle = Math.atan2(diagY2 - diagY1, diagX2 - diagX1)
+    const aLen = 14
+    ctx.beginPath()
+    ctx.moveTo(diagX2, diagY2)
+    ctx.lineTo(diagX2 - aLen * Math.cos(angle - 0.4), diagY2 - aLen * Math.sin(angle - 0.4))
+    ctx.moveTo(diagX2, diagY2)
+    ctx.lineTo(diagX2 - aLen * Math.cos(angle + 0.4), diagY2 - aLen * Math.sin(angle + 0.4))
+    ctx.strokeStyle = diagColor; ctx.lineWidth = 2.5; ctx.stroke()
+
+    // Label on diagonal
+    ctx.save(); ctx.translate(w * 0.5, h * 0.42)
+    ctx.rotate(Math.atan2(diagY2 - diagY1, diagX2 - diagX1))
+    ctx.font = 'bold 12px system-ui'
+    const dLabel = 'Align railing with this line'
+    const dtw = ctx.measureText(dLabel).width
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'
+    ctx.beginPath(); ctx.roundRect(-dtw/2 - 6, -16, dtw + 14, 20, 5); ctx.fill()
+    ctx.fillStyle = diagColor; ctx.fillText(dLabel, -dtw/2, -1)
+    ctx.restore()
+
+    // Bottom step line — snap to lowest detected stair line or fallback
+    const sorted = [...result.staircaseLines].sort((a, b) => b.y - a.y)
+    const stepY  = sorted.length > 0 ? sorted[0].y : h * 0.82
+    drawHLine(ctx, w, stepY, 'rgba(255,183,77,0.9)', 'First step', 'right')
+
+    // Measurement bracket on left
+    if (suggestedMm) {
+      const bx = w * 0.08
+      ctx.beginPath(); ctx.moveTo(bx, stepY); ctx.lineTo(bx, h * 0.12)
+      ctx.strokeStyle = locked ? '#4ade80' : '#ffb74d'; ctx.lineWidth = 2; ctx.stroke()
+      const label = `~${suggestedMm} mm`
+      ctx.font = 'bold 13px system-ui'
+      const tw = ctx.measureText(label).width
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'
+      ctx.beginPath(); ctx.roundRect(bx - 4, h * 0.42 - 11, tw + 14, 22, 5); ctx.fill()
+      ctx.fillStyle = locked ? '#4ade80' : '#ffb74d'
+      ctx.fillText(label, bx + 3, h * 0.42 + 5)
+    }
+  }
+
+  // ── 4. DEFAULT — generic stair line detection overlay ────────────────────────────
+  else {
+    result.staircaseLines.forEach(line => {
+      const alpha = 0.4 + line.strength * 0.5
+      ctx.beginPath()
+      ctx.moveTo(w * 0.08, line.y); ctx.lineTo(w * 0.92, line.y)
+      ctx.strokeStyle = confidence > 0.5 ? `rgba(74,222,128,${alpha})` : `rgba(56,189,248,${alpha})`
+      ctx.lineWidth = 2; ctx.setLineDash([8, 4]); ctx.stroke(); ctx.setLineDash([])
+    })
+  }
+
+  // ── Card detected indicator ───────────────────────────────────────────────────────
+  if (cardDetected) {
+    const cx = 16; const cy = h - 36
+    // Mini card rectangle
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'
+    ctx.beginPath(); ctx.roundRect(cx, cy, 88, 22, 4); ctx.fill()
+    // Card outline icon
+    ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5
+    ctx.beginPath(); ctx.roundRect(cx + 4, cy + 4, 22, 14, 2); ctx.stroke()
+    ctx.fillStyle = '#4ade80'
+    ctx.font = '10px system-ui'
+    ctx.fillText('✓ Card detected', cx + 30, cy + 14)
+  }
+
+  // ── Confidence arc (top-right corner) ────────────────────────────────────────────
+  const arcR = 18; const arcX = w - arcR - 12; const arcY = arcR + 10
+  ctx.beginPath()
+  ctx.arc(arcX, arcY, arcR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * confidence)
+  ctx.strokeStyle = locked ? '#4ade80' : '#38bdf8'
+  ctx.lineWidth = 3; ctx.stroke()
+  ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#fff'
+  ctx.fillText(`${Math.round(confidence * 100)}%`, arcX, arcY)
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
 }

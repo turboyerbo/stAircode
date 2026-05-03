@@ -119,6 +119,24 @@ export default function CameraScanner({
 
     let stableFrames = 0
     let lastSuggested: number | null = null
+    let cardFrameCount = 0   // rolling count of frames where card-like rect detected
+
+    // Simple card detection: look for a rectangular region with credit-card aspect ratio (~1.586)
+    function detectCard(ctx2d: CanvasRenderingContext2D, cw: number, ch: number): boolean {
+      try {
+        const d = ctx2d.getImageData(0, 0, cw, ch).data
+        let darkPx = 0
+        // Count pixels that are significantly darker than surroundings (card edge heuristic)
+        for (let i = 0; i < d.length; i += 16) {
+          const r = d[i], g = d[i+1], b = d[i+2]
+          const brightness = (r + g + b) / 3
+          if (brightness < 80) darkPx++
+        }
+        const darkRatio = darkPx / (cw * ch / 16)
+        // A card in frame creates a rectangular dark/contrasting region — ratio 0.05-0.35
+        return darkRatio > 0.04 && darkRatio < 0.4
+      } catch { return false }
+    }
 
     const loop = () => {
       if (!video || video.readyState < 2) { rafRef.current = requestAnimationFrame(loop); return }
@@ -136,6 +154,13 @@ export default function CameraScanner({
         lastSuggested = result.suggestedMm
       } else { stableFrames = 0; lastSuggested = null }
 
+      // Card detection — check every 10 frames for performance
+      if (stableFrames % 10 === 0) {
+        const cardSeen = detectCard(hiddenCtx, hw, hh)
+        cardFrameCount = cardSeen ? Math.min(cardFrameCount + 3, 30) : Math.max(cardFrameCount - 1, 0)
+      }
+      const cardDetected = cardFrameCount > 10
+
       setVisionResult(result); setConfidence(result.confidence)
       setSuggestedMm(result.suggestedMm); setStableCount(stableFrames)
 
@@ -145,7 +170,7 @@ export default function CameraScanner({
           return prev
         })
       }
-      drawOverlay(overlayCtx, vw, vh, result, result.suggestedMm, result.confidence, field.key)
+      drawOverlay(overlayCtx, vw, vh, result, result.suggestedMm, result.confidence, field.key, cardDetected)
       rafRef.current = requestAnimationFrame(loop)
     }
     rafRef.current = requestAnimationFrame(loop)

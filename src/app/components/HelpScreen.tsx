@@ -194,6 +194,24 @@ export default function HelpScreen() {
       </div>
       <div style={{ height:5, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px' }} />
 
+      {/* ══ AR + AI INTERACTION EXPLAINER IMAGE ══ */}
+      <div style={{ margin:'1rem 1rem 0.5rem', borderRadius:16, overflow:'hidden', border:'1.5px solid rgba(147,186,212,0.12)', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/AR_AI_guide_interaction.jpg"
+          alt="AR and AI working together to measure stair dimensions"
+          style={{ width:'100%', display:'block', objectFit:'cover' }}
+        />
+        <div style={{ background:BG2, padding:'0.75rem 1rem', borderTop:'1px solid rgba(147,186,212,0.12)' }}>
+          <div style={{ fontSize:'0.72rem', fontWeight:700, color:ORANGE, marginBottom:'0.25rem', letterSpacing:'0.04em' }}>
+            How AR + AI work together
+          </div>
+          <div style={{ fontSize:'0.72rem', color:TEXT2, lineHeight:1.6 }}>
+            The phone fires an AR ray at the stair (red line). The AI Vision layer (orange atom) checks your camera angle before confirming the reading. When both agree, the measurement locks in blue. This dual-layer approach catches angle errors that either system would miss alone.
+          </div>
+        </div>
+      </div>
+
       {/* ══ HOW YOUR PHONE MEASURES ══ */}
       <SectionHeader label="How Your Phone Measures" />
 

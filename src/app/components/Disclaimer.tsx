@@ -47,6 +47,12 @@ export default function Disclaimer() {
         accepts no liability for any loss, injury, or damage arising from reliance
         on this report.
       </p>
+      <p style={{ marginTop: '0.4rem' }}>
+        <strong>Data collection:</strong> Usage data is collected solely to improve app functionality
+        and service quality. It is never intentionally shared for marketing purposes or sold to
+        third parties. Any camera images captured that do not contain staircase content are treated
+        as unrelated data and are deleted from our servers immediately and automatically.
+      </p>
       <p style={{ marginTop: '0.5rem', fontSize: '0.6rem', color: '#8a6a00' }}>
         © {new Date().getFullYear()} Just Open Technologies Inc. · By using this app you agree to
         our{' '}
