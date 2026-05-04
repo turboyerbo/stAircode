@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   <!-- Beta pricing banner -->
   <div style="background:linear-gradient(135deg,#F29337,#C4721E);padding:0.75rem 2rem;text-align:center;">
     <p style="margin:0;font-size:0.85rem;font-weight:800;color:#fff;">
-      🎉 Get your full report for <span style="text-decoration:line-through;opacity:0.65;font-weight:400;">$399.99</span> &nbsp;<strong>$2.99</strong> — Beta testing discount
+      🎉 Get your full report for <span style="text-decoration:line-through;opacity:0.65;font-weight:400;">$38.99</span> &nbsp;<strong>$2.99</strong> — Beta testing discount
     </p>
   </div>
 

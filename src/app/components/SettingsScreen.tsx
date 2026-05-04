@@ -146,7 +146,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
         <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.borderHi}`, borderRadius: 14, overflow: 'hidden' }}>
           {([
             { id: 'free',       label: 'Free',       desc: 'Basic scanning, limited reports',       price: '$0/mo'  },
-            { id: 'pro',        label: 'Pro',         desc: '60 scans/month, PDF exports',          price: '$129.99/mo' },
+            { id: 'pro',        label: 'Pro',         desc: '20 scans/month, PDF exports',          price: '$199/mo' },
             { id: 'enterprise', label: 'Enterprise',  desc: 'Team access, API, priority support',    price: '$79/mo' },
           ] as const).map(({ id, label, desc, price }) => (
             <button key={id}
@@ -177,7 +177,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
           <SectionHeader label="Subscription" />
           <SettingsRow
             icon="💳" label="Manage Subscription"
-            value={user.membership === 'pro' ? '$129.99/mo · Active' : 'Enterprise'}
+            value={user.membership === 'pro' ? '$199/mo · Active' : 'Enterprise — Contact us'}
             valueColor={T.pass}
             onTap={async () => {
               try {

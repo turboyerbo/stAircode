@@ -83,7 +83,7 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
       <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:2rem;color:#1a2b3c">
         <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 1rem;" />
         <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro 🎉</h1>
-        <p style="color:#555;line-height:1.6">Your Pro subscription is now active. You have 60 scans/month, full compliance reports, and access to all supported building codes.</p>
+        <p style="color:#555;line-height:1.6">Your Pro subscription is now active. You have 20 scans/month, full compliance reports, and access to all supported building codes.</p>
         <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#1565C0;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Open Staircode →</a>
         <p style="margin-top:2rem;font-size:0.8rem;color:#999">Manage your subscription at staircode.app/settings · Cancel anytime.</p>
       </div>
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
               .upsert({ email, membership: 'pro', updated_at: new Date().toISOString() }, { onConflict: 'email' })
               .then(({ error }) => { if (error) console.error('[webhook] Failed to update membership:', error) })
           }
-          // Unlock 60 scans/month in scan_usage table
+          // Unlock 20 scans/month in scan_usage table
           await unlockProScans(email)
           await sendReportEmail(email, '', 'pro')
         }

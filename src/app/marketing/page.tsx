@@ -144,27 +144,7 @@ export default function MarketingPage() {
           <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
             <PhoneMockup />
           </div>
-          {/* ── YouTube demo video (portrait Shorts) ── */}
-          <div style={{
-            width: '100%', maxWidth: 380,
-            aspectRatio: '9 / 16',
-            borderRadius: 18,
-            overflow: 'hidden',
-            border: '1px solid rgba(65,124,164,0.25)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
-          }}>
-            <iframe
-              src="https://www.youtube.com/embed/3L6c9sbGpmI?rel=0&modestbranding=1&color=white"
-              title="stAIrcode demo — AI stair compliance scan"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-              style={{
-                width: '100%', height: '100%',
-                border: 'none', display: 'block',
-              }}
-            />
-          </div>
+
         </div>
       </section>
 
@@ -320,7 +300,7 @@ export default function MarketingPage() {
             <div className={`${styles.priceCard} ${styles.priceCardFeatured}`}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Report</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$399.99</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$38.99</div>
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>$2.99</div>
               </div>
               <div style={{ marginBottom: '1rem' }}>
@@ -343,21 +323,21 @@ export default function MarketingPage() {
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#27A96B', marginBottom: '0.5rem' }}>Pro Subscription</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
                 <div style={{ fontSize: '1.4rem', fontWeight: 400, color: '#9BA8B4', textDecoration: 'line-through' }}>8.99</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>FREE</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#5E7D9B' }}>Coming Soon</div>
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>FREE DURING BETA</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>COMING SOON</span>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>60 stair flights/month · $399.99/mo after beta · Cancel anytime</div>
+              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>20 stair reports/month · $199/mo after beta · Cancel anytime</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
-                {['Everything in Full Report', '60 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
+                {['Everything in Full Report', '20 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
                   <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
                     <span style={{ color: '#27A96B', fontWeight: 700 }}>✓</span> {f}
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: '#27A96B', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>
-                Start Free →
+              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: 'rgba(94,125,155,0.15)', color: '#5E7D9B', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(94,125,155,0.3)', cursor: 'default' }}>
+                Notify Me →
               </a>
             </div>
           </div>
@@ -557,9 +537,17 @@ export default function MarketingPage() {
             {/* New to stAIrcode? */}
             <div style={{ flex: '1 1 160px', minWidth: 140 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>New to stAIrcode?</div>
-              {['What is stAIrcode?', 'Platform Overview', 'Product Updates', 'Resource Center', 'Trust & Security', 'App Marketplace', 'Developers / API'].map(l => (
-                <div key={l} style={{ marginBottom: '0.55rem' }}>
-                  <a href="#" style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l}</a>
+                  {[
+                { label: 'What is stAIrcode?',  href: '/what-is-staircode' },
+                { label: 'Platform Overview',    href: '/platform-overview' },
+                { label: 'Product Updates',      href: '#' },
+                { label: 'Resource Center',      href: '/research' },
+                { label: 'Trust & Security',     href: '/privacy' },
+                { label: 'App Marketplace',      href: '#' },
+                { label: 'Developers / API',     href: '#' },
+              ].map(l => (
+                <div key={l.label} style={{ marginBottom: '0.55rem' }}>
+                  <a href={l.href} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l.label}</a>
                 </div>
               ))}
             </div>
@@ -567,9 +555,18 @@ export default function MarketingPage() {
             {/* About */}
             <div style={{ flex: '1 1 160px', minWidth: 140 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>About stAIrcode</div>
-              {['Our Story', 'Blog', 'Careers', 'Contact Us', 'Legal', 'Privacy Policy', 'Terms of Service', 'Unsubscribe'].map(l => (
-                <div key={l} style={{ marginBottom: '0.55rem' }}>
-                  <a href={l === 'Privacy Policy' ? '/privacy' : l === 'Terms of Service' ? '/terms' : l === 'Contact Us' ? 'mailto:info@staircode.app' : '#'} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l}</a>
+                  {[
+                { label: 'Our Story',         href: '/our-story' },
+                { label: 'Blog',              href: '#' },
+                { label: 'Careers',           href: '#' },
+                { label: 'Contact Us',        href: 'mailto:info@staircode.app' },
+                { label: 'Legal',             href: '#' },
+                { label: 'Privacy Policy',    href: '/privacy' },
+                { label: 'Terms of Service',  href: '/terms' },
+                { label: 'Unsubscribe',       href: 'mailto:info@staircode.app?subject=Unsubscribe' },
+              ].map(l => (
+                <div key={l.label} style={{ marginBottom: '0.55rem' }}>
+                  <a href={l.href} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l.label}</a>
                 </div>
               ))}
             </div>

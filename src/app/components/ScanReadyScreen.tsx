@@ -78,47 +78,47 @@ interface PosConfig {
 // Shown ONCE before the scan sequence begins. Fully dismounted after user starts.
 const INTRO_SLIDES = [
   {
-    img:     '/Instr_01_overview.png',
+    img:     '/Instr_01_overview.jpg',
     title:   'Step 1 — Full Stair View',
     desc:    'Stand back so the entire staircase fits in frame. Hold the phone level at chest height.',
   },
   {
-    img:     '/Instr_02_headroom.png',
+    img:     '/Instr_02_headroom.jpg',
     title:   'Step 1b — Headroom Check',
     desc:    'If there is a ceiling or soffit above the stair, step back to include it. This checks clearance compliance.',
   },
   {
-    img:     '/Instr_03_riser.png',
+    img:     '/Instr_03_riser.jpg',
     title:   'Step 2 — Riser Height',
     desc:    'Place the phone upright on the tread nosing with the camera pointing directly at the riser face.',
   },
   {
-    img:     '/Instr_04_handrail.png',
+    img:     '/Instr_04_handrail.jpg',
     title:   'Step 3 — Handrail Height',
     desc:    'Stand beside the stair. Frame both the tread surface and the top of the handrail in the same shot.',
   },
   {
-    img:     '/Instr_05_tread_side.png',
+    img:     '/Instr_05_tread_side.jpg',
     title:   'Step 4 — Tread Depth (side view)',
     desc:    'Hold the phone level beside the stair so the full tread depth is visible from nosing to riser.',
   },
   {
-    img:     '/Instr_06_tread_top.png',
+    img:     '/Instr_06_tread_top.jpg',
     title:   'Step 4b — Tread Depth (top view)',
     desc:    'Place the phone flat above the tread with the camera facing straight down. This gives the most accurate depth reading.',
   },
   {
-    img:     '/Instr_07_riser_steady.png',
+    img:     '/Instr_07_riser_steady.jpg',
     title:   'Tip — Steady Your Phone',
     desc:    'Rest the phone against the riser or on the tread for a sharp, stable image. Motion blur reduces accuracy.',
   },
   {
-    img:     '/Instr_08_width.png',
+    img:     '/Instr_08_width.jpg',
     title:   'Step 5 — Stair Width',
     desc:    'Step back until both left and right edges of the staircase are visible. The AI measures wall to wall.',
   },
   {
-    img:     '/Instr_09_nosing.png',
+    img:     '/Instr_09_nosing.jpg',
     title:   'Nosing — Auto Detected',
     desc:    'Nosing is detected automatically during the riser scan. No extra step needed.',
   },

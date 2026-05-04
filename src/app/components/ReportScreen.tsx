@@ -4,7 +4,7 @@
  *
  * Three purchase options:
  *   $2.99  — Full professional report (one-time, this inspection)
- *   $129.99/mo — Pro (60 scans/month + reports, AR mode)
+ *   $199/mo — Pro (20 scans/month + reports, AR mode)
  *   Enterprise — Contact Sales
  *
  * Plus: Find Architect (free), Retake, Start Over.
@@ -401,7 +401,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     setEmailSending(false)
   }
 
-  // ── $129.99/mo Pro: redirect to Stripe subscription checkout ──────────────────
+  // ── $199/mo Pro: redirect to Stripe subscription checkout ──────────────────
   async function handleProCheckout() {
     setProLoading(true)
     try {
@@ -704,12 +704,13 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               <div style={{ fontSize: '0.65rem', color: profile.text2, marginTop: '0.1rem' }}>One-time purchase · Instant download</div>
             </div>
             <div style={{ marginLeft: 'auto', textAlign:'right' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#27A96B' }}>FREE</div>
-              <div style={{ fontSize: '0.55rem', color: profile.text3, fontFamily:'monospace' }}>BETA</div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: GOLD }}>.99</div>
+              <div style={{ fontSize: '0.55rem', color: profile.text3, fontFamily:'monospace' }}>BETA PRICE</div>
             </div>
           </div>
           <div style={{ fontSize: '0.72rem', color: profile.text2, lineHeight: 1.65, marginBottom: '0.75rem' }}>
             Includes full stair description, detailed code analysis, occupancy classification, applicable bylaw notes, and a pre-inspection summary suitable for a building official.
+            Want it free? Email <a href="mailto:info@staircode.app" style={{ color: GOLD, textDecoration: 'none' }}>info@staircode.app</a> — we&apos;ll send a discount code in exchange for your honest feedback.
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.8rem' }}>
             {['Stair description', 'Code analysis', 'Occupancy type', 'Bylaw notes', 'Inspector summary'].map(tag => (
@@ -877,7 +878,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                   </div>
                   <div style={{ display:'flex', alignItems:'baseline', gap:'0.5rem' }}>
                     <div style={{ display:'flex', alignItems:'baseline', gap:'0.4rem' }}>
-                      <div style={{ fontWeight: 400, fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', textDecoration:'line-through' }}>$399.99</div>
+                      <div style={{ fontWeight: 400, fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', textDecoration:'line-through' }}>$199</div>
                       <div style={{ fontWeight: 900, fontSize: '1.5rem', color: GOLD }}>$2.99</div>
                     </div>
                     <div style={{ fontSize:'0.65rem', fontFamily:'monospace', color:'#27A96B', fontWeight:700 }}>BETA PRICE</div>
@@ -912,7 +913,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     ) : (
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem', marginTop:'0.45rem' }}>
                         <span style={{ fontSize:'0.65rem', color:'#F29337', fontWeight:700 }}>$2.99 beta</span>
-                        <span style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.3)', textDecoration:'line-through', marginLeft:'0.25rem' }}>$399.99</span>
+                        <span style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.3)', textDecoration:'line-through', marginLeft:'0.25rem' }}>$38.99</span>
                         <span style={{ fontSize:'0.6rem', color: profile.text3 }}> · Emailed instantly</span>
                       </div>
                     )}
@@ -940,10 +941,10 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.text }}>Pro</div>
                     <div style={{ fontSize: '0.63rem', color: profile.text2 }}>Real Estate Companies · Construction · Building Management</div>
                   </div>
-                  <div style={{ color: profile.accent, fontWeight: 900, fontSize: '1.2rem' }}>$399.99<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
+                  <div style={{ color: profile.accent, fontWeight: 900, fontSize: '1.2rem' }}>$199<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
                 </div>
                 {[
-                  '60 scans/month · Full PDF reports included',
+                  '20 scans/month · Full PDF reports included',
                   'AI Vision measurement on all devices',
                   'Covers entire buildings with dozens of flights',
                   'OBC 2024, NBC, BCBC, IBC, IRC + more',
@@ -956,7 +957,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 <button
                   onClick={() => { Analytics.purchaseInitiated('pro'); handleProCheckout() }}
                   style={{ width: '100%', marginTop: '0.85rem', padding: '0.95rem', background: `linear-gradient(135deg, ${profile.accent}, #2C6FBF)`, border: 'none', borderRadius: 13, cursor: 'pointer', color: '#fff', fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.06em', boxShadow: `0 4px 18px rgba(65,124,164,0.45)` }}>
-                  {proLoading ? 'Redirecting…' : 'Start Pro — $129.99/mo →'}
+                  Coming Soon
                 </button>
               </div>
 

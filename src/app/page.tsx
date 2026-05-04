@@ -603,7 +603,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
         {/* Membership + scan counter */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.65rem 0.9rem',background:'#EBF2FF',border:'1.5px solid rgba(44,90,122,0.22)',borderRadius:10}}>
           <span style={{fontSize:'0.75rem',color:'#2C5A7A',fontWeight:500}}>
-            ⭐ &nbsp;{isPro?'Pro plan — 60 scans/month':user.membership==='free'?'Beta':'Enterprise'}
+            ⭐ &nbsp;{isPro?'Pro plan — 20 scans/month':user.membership==='free'?'Beta':'Enterprise'}
           </span>
           {!isPro && scansUsed != null && (
             <span style={{
