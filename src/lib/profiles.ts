@@ -101,7 +101,7 @@ const ARCHITECT: ProfileTheme = {
   copy: {
     reportTitle: 'Pre-Inspection Report', reportSubtitle: 'Compliance assessment against applicable building code',
     reportPrice: 'Generate Full Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
-    proTitle: 'Pro — Unlimited Reports', proPrice: '$38.99 / month', proNote: 'Unlimited scans, AR plane detection, all codes.',
+    proTitle: 'Pro — 60 Reports/month', proPrice: '$129.99 / month', proNote: '60 scans/month, AR plane detection, all codes.',
     enterpriseTitle: 'Enterprise / Studio', enterpriseNote: 'Team seats, API access, BIM export.',
     findInspector: '📍 Find Architect / Inspector',
     scanIntro: "Ready to survey. Starting with riser height — face the riser, phone upright, ~1m distance.",
@@ -137,7 +137,7 @@ const BUILDING_MANAGER: ProfileTheme = {
   copy: {
     reportTitle: 'Building Compliance Report', reportSubtitle: 'Stair assessment for building management records',
     reportPrice: 'Get Compliance Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
-    proTitle: 'Pro — Unlimited Assessments', proPrice: '$38.99 / month', proNote: 'Scan all staircases in your building portfolio.',
+    proTitle: 'Pro — 60 Assessments/month', proPrice: '$129.99 / month', proNote: '60 scans/month — ideal for multi-unit buildings.',
     enterpriseTitle: 'Enterprise', enterpriseNote: 'Multi-site management, team access, audit trail.',
     findInspector: '📍 Find a Certified Inspector',
     scanIntro: "Let's assess this staircase for compliance. I'll check each dimension against the applicable building code. Starting with step height — hold your phone upright facing the steps.",
@@ -174,7 +174,7 @@ const CONTRACTOR: ProfileTheme = {
   copy: {
     reportTitle: 'Site Compliance Check', reportSubtitle: 'Stair dimensions vs code — pass/fail per item',
     reportPrice: 'Get Site Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
-    proTitle: 'Pro — Unlimited Checks', proPrice: '$38.99 / month', proNote: 'Unlimited scans across all your sites.',
+    proTitle: 'Pro — 60 Checks/month', proPrice: '$129.99 / month', proNote: '60 scans/month across all your sites.',
     enterpriseTitle: 'Enterprise', enterpriseNote: 'Team access, project management integration.',
     findInspector: '📍 Find Inspector',
     scanIntro: "Starting riser measurement. Phone upright, face-on to the riser, about 1m back. Hold steady.",
@@ -210,7 +210,7 @@ const DIY: ProfileTheme = {
   copy: {
     reportTitle: 'Your Stair Check', reportSubtitle: "Here's what we found about your stairs",
     reportPrice: 'Get the Full Report — $2.99', reportPriceNote: 'FREE during beta · Normally $2.99',
-    proTitle: 'Unlimited Scans', proPrice: '$38.99 / month', proNote: 'Scan as many staircases as you want. Cancel anytime.',
+    proTitle: 'Unlimited Scans', proPrice: '$129.99 / month', proNote: 'Scan as many staircases as you want. Cancel anytime.',
     enterpriseTitle: 'Need professional help?', enterpriseNote: 'Talk to our team — we can connect you with a local inspector.',
     findInspector: '📍 Find a Local Inspector',
     scanIntro: "Hi! I'm going to help you check your stairs. We'll start by measuring the step height — that's how tall each step is. Hold your phone upright and point it at the front of the steps.",
@@ -251,7 +251,7 @@ const REALESTATE: ProfileTheme = {
   copy: {
     reportTitle: 'Stair Compliance Assessment', reportSubtitle: 'Pre-listing compliance check for disclosure purposes',
     reportPrice: 'Get Property Report — FREE during Beta', reportPriceNote: 'One-time · Suitable for disclosure file · Instant PDF',
-    proTitle: 'Pro — Unlimited Properties', proPrice: '$38.99 / month', proNote: 'Assess every property in your portfolio.',
+    proTitle: 'Pro — Unlimited Properties', proPrice: '$129.99 / month', proNote: 'Assess every property in your portfolio.',
     enterpriseTitle: 'Brokerage / Team Plan', enterpriseNote: 'Team access, branded reports, portfolio management.',
     findInspector: '📍 Find a Certified Inspector',
     scanIntro: "I'll assess this staircase for code compliance — useful for disclosure and pre-listing purposes. Starting with step height. Hold your phone upright facing the stairs.",

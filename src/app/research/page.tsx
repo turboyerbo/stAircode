@@ -24,7 +24,8 @@ export default function ResearchPage() {
       {/* Nav */}
       <header style={{ background: '#fff', borderBottom: '1px solid #E2EAF0', padding: '0 1.25rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
         <a href="/marketing" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/staircode_header.png" alt="stAIrcode" style={{ height: 28 }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/staircode_header.jpg" alt="stAIrcode" style={{ height: 28 }} />
           <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0D1E2E', letterSpacing: '-0.02em' }}>
             st<span style={{ color: '#F29337' }}>AI</span>rcode
           </span>

@@ -320,13 +320,13 @@ export default function MarketingPage() {
             <div className={`${styles.priceCard} ${styles.priceCardFeatured}`}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Report</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$7.99</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$399.99</div>
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>$2.99</div>
               </div>
               <div style={{ marginBottom: '1rem' }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $7.99</div>
+              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $38.99</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
                 {['Everything in Free', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
                   <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
@@ -348,9 +348,9 @@ export default function MarketingPage() {
               <div style={{ marginBottom: '1rem' }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>FREE DURING BETA</span>
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>Unlimited scans · 8.99/mo after beta · Cancel anytime</div>
+              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>60 stair flights/month · $399.99/mo after beta · Cancel anytime</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
-                {['Everything in Full Report', 'Unlimited scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
+                {['Everything in Full Report', '60 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
                   <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
                     <span style={{ color: '#27A96B', fontWeight: 700 }}>✓</span> {f}
                   </li>

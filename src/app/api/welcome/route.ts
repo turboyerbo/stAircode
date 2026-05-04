@@ -104,9 +104,9 @@ export async function POST(req: NextRequest) {
 
       <!-- Subscription option -->
       <div style="background:#F0F5FA; border-radius:12px; padding:1rem 1.25rem; margin-bottom:0.5rem;">
-        <p style="font-size:0.82rem; color:#0A1C2E; font-weight:700; margin-bottom:0.3rem;">Want unlimited reports?</p>
+        <p style="font-size:0.82rem; color:#0A1C2E; font-weight:700; margin-bottom:0.3rem;">Want 60 reports/month?</p>
         <p style="font-size:0.78rem; color:#417CA4; line-height:1.6;">
-          Try <strong>stAIrcode Pro</strong> free for one month — unlimited scans and reports for building managers, condo boards, and real estate professionals. <strong>$38.99/mo after your free month. Cancel anytime.</strong>
+          Try <strong>stAIrcode Pro</strong> free for one month — 60 scans/month and reports for building managers, condo boards, and real estate professionals. <strong>$129.99/mo after your free month. Cancel anytime.</strong>
         </p>
         <a href="${APP_URL}/pro" style="display:inline-block; margin-top:0.75rem; font-size:0.8rem; color:#F29337; font-weight:700; text-decoration:none;">
           Learn about Pro →

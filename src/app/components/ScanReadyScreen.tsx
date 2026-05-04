@@ -424,11 +424,13 @@ Range: 220–420mm. Default 280mm if uncertain.`,
 interface AROverlayProps {
   posId:   string
   color:   string
-  valueMm: number
-  label:   string
+  valueMm:  number
+  label:    string
+  snapTop?: number   // 0-100 percent — live detected top edge of stair
+  snapBot?: number   // 0-100 percent — live detected bottom edge of stair
 }
 
-function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) {
+function ARMeasurementOverlay({ posId, color, valueMm, label, snapTop, snapBot }: AROverlayProps) {
   // All coordinates are percentages of the overlay container (0–100)
   // The overlay sits between top bar and bottom panel — portrait phone viewport
 
@@ -573,15 +575,31 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
         </marker>
       </defs>
 
-      {/* ── Guide lines (faint parallel lines showing the measured face) ── */}
-      {cfg.guides.map((g, i) => (
-        <line key={i}
-          className="ar-guide"
-          x1={`${g.x1}%`} y1={`${g.y1}%`}
-          x2={`${g.x2}%`} y2={`${g.y2}%`}
-          stroke={color} strokeWidth="0.4" strokeDasharray="2,2" opacity="0.45"
-        />
-      ))}
+      {/* ── Guide lines — snap dynamically to detected stair edges when available ── */}
+      {cfg.guides.map((g, i) => {
+        // For overview/riser: snap top guide to snapTop, bottom guide to snapBot
+        const isTopGuide = i === 0
+        const isBotGuide = i === cfg.guides.length - 1
+        const snapY = (posId === 'overview' || posId === 'riser_front')
+          ? (isTopGuide && snapTop != null ? snapTop : isBotGuide && snapBot != null ? snapBot : null)
+          : (posId === 'tread_top')
+            ? (isTopGuide && snapTop != null ? snapTop : isBotGuide && snapBot != null ? snapBot : null)
+            : null
+        const y1 = snapY != null ? snapY : g.y1
+        const y2 = snapY != null ? snapY : g.y2
+        const snapColor = snapY != null ? color : color  // could differentiate
+        const snapOpacity = snapY != null ? 0.85 : 0.45
+        return (
+          <line key={i}
+            x1={`${g.x1}%`} y1={`${y1}%`}
+            x2={`${g.x2}%`} y2={`${y2}%`}
+            stroke={snapColor} strokeWidth={snapY != null ? "1.5" : "0.4"}
+            strokeDasharray={snapY != null ? "none" : "2,2"}
+            opacity={snapOpacity}
+            style={{ transition: 'y1 0.2s, y2 0.2s' }}
+          />
+        )
+      })}
 
       {/* ── Main measurement line ── */}
       <line
@@ -648,22 +666,23 @@ function ARMeasurementOverlay({ posId, color, valueMm, label }: AROverlayProps) 
         fontFamily="monospace"
       >n̂</text>
 
-      {/* ── Dimension label ── centred on line ── */}
-      <g className="ar-label">
-        {/* Background pill — inline rect avoids calc() which is invalid SVG */}
-        <rect
-          x={`${mid.x - 8}%`} y={`${mid.y - 3}%`}
-          width="16%" height="6%"
-          rx="3"
-          fill="rgba(10,28,46,0.92)"
-          stroke={color} strokeWidth="0.5"
-        />
-        <text
-          x={`${mid.x}%`} y={`${mid.y + 1.8}%`}
-          textAnchor="middle"
-          fill="white" fontSize="14" fontFamily="monospace" fontWeight="bold"
-        >{valueMm}mm</text>
-      </g>
+      {/* ── Dimension label — only shown when a real measurement exists ── */}
+      {valueMm > 0 && (
+        <g className="ar-label">
+          <rect
+            x={`${mid.x - 8}%`} y={`${mid.y - 3}%`}
+            width="16%" height="6%"
+            rx="3"
+            fill="rgba(10,28,46,0.92)"
+            stroke={color} strokeWidth="0.5"
+          />
+          <text
+            x={`${mid.x}%`} y={`${mid.y + 1.8}%`}
+            textAnchor="middle"
+            fill="white" fontSize="14" fontFamily="monospace" fontWeight="bold"
+          >{valueMm}mm</text>
+        </g>
+      )}
 
       {/* ── Measurement type label ── top of overlay ── */}
       <g className="ar-label">
@@ -723,6 +742,10 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const busyRef    = useRef(false)
   const timerRef   = useRef<ReturnType<typeof setTimeout>|null>(null)
   const rescanReturnRef   = useRef(false)   // when true, result 'Next' returns to review
+  // ── Live edge detection for guide line snapping ──────────────────────────
+  // Runs a fast horizontal edge scan on the video every 200ms.
+  // Finds the topmost and bottommost strong horizontal edges and
+  // maps them to percentage coordinates for the SVG overlay.
   const pendingRescanRef  = useRef(-1)         // position index to jump to after review closes
 
   const [posIdx,     setPosIdx]     = useState(0)
@@ -739,6 +762,10 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [camWarm,    setCamWarm]    = useState(false)  // true once camera has had 1.5s to auto-expose
   // ── Measurement line overlay state ────────────────────────────────────────
   const [showMeasureLine,    setShowMeasureLine]    = useState(false)
+  // Live snap positions for guide lines (0-100 %)
+  const [snapTop,  setSnapTop]  = useState<number | undefined>(undefined)
+  const [snapBot,  setSnapBot]  = useState<number | undefined>(undefined)
+  const snapSmoothRef = useRef({ top: -1, bot: -1 })
   const [measureLineValue,   setMeasureLineValue]   = useState<string|null>(null)
   const [measureLineLabel,   setMeasureLineLabel]   = useState('MEASURING')
   const [measureLineAxis,    setMeasureLineAxis]    = useState<'horizontal'|'vertical'>('horizontal')
@@ -939,6 +966,63 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
   // Init on camera ready
   useEffect(() => { if (camReady) goTo(0) }, [camReady]) // eslint-disable-line
+
+  // ── Live edge detection — runs every 200ms to snap guide lines ────────────
+  useEffect(() => {
+    const id = setInterval(() => {
+      const v = videoRef.current
+      if (!v || v.readyState < 2 || v.videoWidth === 0) return
+
+      // Downscale to tiny canvas for fast processing
+      const W = 40, H = 60
+      const tmp = document.createElement('canvas')
+      tmp.width = W; tmp.height = H
+      const ctx = tmp.getContext('2d')
+      if (!ctx) return
+      ctx.drawImage(v, 0, 0, W, H)
+
+      try {
+        const d = ctx.getImageData(0, 0, W, H).data
+        // Compute row brightness
+        const bright: number[] = []
+        for (let y = 0; y < H; y++) {
+          let sum = 0
+          for (let x = 0; x < W; x++) {
+            const i = (y * W + x) * 4
+            sum += (d[i] + d[i+1] + d[i+2]) / 3
+          }
+          bright.push(sum / W)
+        }
+        // Find horizontal edges (brightness delta between adjacent rows)
+        const edges: { y: number; strength: number }[] = []
+        for (let y = 2; y < H - 2; y++) {
+          const delta = Math.abs(bright[y] - bright[y-1]) + Math.abs(bright[y+1] - bright[y])
+          if (delta > 12) edges.push({ y, strength: delta })
+        }
+        if (edges.length < 2) return
+        edges.sort((a, b) => b.strength - a.strength)
+        // Top edge = highest y strong edge in top 40% of frame
+        // Bot edge = lowest y strong edge in bottom 40% of frame
+        const topEdge = edges.filter(e => e.y < H * 0.45).sort((a,b) => a.y - b.y)[0]
+        const botEdge = edges.filter(e => e.y > H * 0.55).sort((a,b) => b.y - a.y)[0]
+        if (!topEdge || !botEdge) return
+
+        const rawTop = (topEdge.y / H) * 100
+        const rawBot = (botEdge.y / H) * 100
+        const s = snapSmoothRef.current
+        const alpha = 0.2
+        if (s.top < 0) { s.top = rawTop; s.bot = rawBot }
+        s.top = s.top * (1 - alpha) + rawTop * alpha
+        s.bot = s.bot * (1 - alpha) + rawBot * alpha
+        // Clamp to reasonable range (5%-45% top, 55%-95% bottom)
+        const clampedTop = Math.max(5, Math.min(45, s.top))
+        const clampedBot = Math.max(55, Math.min(95, s.bot))
+        setSnapTop(clampedTop)
+        setSnapBot(clampedBot)
+      } catch {}
+    }, 200)
+    return () => clearInterval(id)
+  }, [camReady]) // eslint-disable-line
 
   // Re-attach stream whenever we enter camera-active stages (prevents black screen)
   useEffect(() => {
@@ -1322,6 +1406,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
 
         {/* Image — full white bg, fills most of screen */}
         <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={slide.img}
             src={slide.img}
@@ -1628,6 +1713,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               color={color}
               valueMm={valueMm}
               label={isOverview ? overviewLabel : label}
+              snapTop={snapTop}
+              snapBot={snapBot}
             />
           </div>
         )

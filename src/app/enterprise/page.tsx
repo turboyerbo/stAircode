@@ -16,7 +16,7 @@ export default function EnterprisePage() {
       <nav style={{ padding: '1.2rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <a href="/" style={{ fontSize: '0.55rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: C.orange, textDecoration: 'none' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src='/staircode_header.png' alt='stAIrcode' style={{height:24,objectFit:'contain'}} /></a>
+              <img src='/staircode_header.jpg' alt='stAIrcode' style={{height:24,objectFit:'contain'}} /></a>
         <a href="/" style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none' }}>← Back to app</a>
       </nav>
 

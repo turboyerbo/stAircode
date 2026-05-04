@@ -5,7 +5,7 @@
  * Uses new 2025 brand assets:
  *   /staircode_logo.png      — horizontal logo (st[AI]rcode wordmark, 1047×341)
  *   /staircode_icon.png      — S lettermark icon (643×643)
- *   /staircode_header.png    — header/nav logo (835×159)
+ *   /staircode_header.jpg    — header/nav logo (835×159)
  *
  * Brand colours:
  *   Orange:    #F29337
@@ -49,7 +49,7 @@ export function NavLogo({ height = 32, style }: { height?: number; style?: React
   const w = Math.round(height * (835 / 159))
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/staircode_header.png" alt="stAIrcode" width={w} height={height}
+    <img src="/staircode_header.jpg" alt="stAIrcode" width={w} height={height}
       style={{ display:'block', objectFit:'contain', flexShrink:0, ...style }} />
   )
 }
