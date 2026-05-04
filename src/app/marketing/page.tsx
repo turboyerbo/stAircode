@@ -308,7 +308,7 @@ export default function MarketingPage() {
               </div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $38.99</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
-                {['Everything in Free', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
+                {['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
                   <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
                     <span style={{ color: '#F29337', fontWeight: 700 }}>✓</span> {f}
                   </li>
@@ -322,7 +322,7 @@ export default function MarketingPage() {
             <div className={styles.priceCard}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#27A96B', marginBottom: '0.5rem' }}>Pro Subscription</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 400, color: '#9BA8B4', textDecoration: 'line-through' }}>8.99</div>
+                
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#5E7D9B' }}>Coming Soon</div>
               </div>
               <div style={{ marginBottom: '1rem' }}>
@@ -395,7 +395,7 @@ export default function MarketingPage() {
           </h2>
 
           {/* Scrollable article cards */}
-          <div style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', WebkitOverflowScrolling: 'touch' as any, scrollbarWidth: 'none' } as any}>
+          <div style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', WebkitOverflowScrolling: 'touch', msOverflowStyle: 'none', scrollbarWidth: 'none' } as any}>
 
             {/* Article 1 — CTV News */}
             <a href="https://www.ctvnews.ca/ottawa/video/2026/03/02/ask-the-expert-stairway-safety-and-homeowner-liability/" target="_blank" rel="noopener noreferrer"

@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
 
       // Where to send the user after payment
-      success_url: `${APP_URL}/?payment=success&product=${product}&session_id={CHECKOUT_SESSION_ID}${isPhotoReport ? '&download=1' : ''}`,
+      success_url: product === 'report' || product === 'photo_report' ? `${APP_URL}/unlock?payment=success&session_id={CHECKOUT_SESSION_ID}` : `${APP_URL}/?payment=success&product=${product}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${APP_URL}/?payment=cancelled`,
 
       metadata: {

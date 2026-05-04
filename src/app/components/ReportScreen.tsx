@@ -323,6 +323,9 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
       sessionStorage.setItem('sc_code_label', codeLabel)
       sessionStorage.setItem('sc_location', location || '')
       sessionStorage.setItem('sc_report_text', '')  // cleared — generated after payment
+      // Also save frames (stored in localStorage._frames by page.tsx)
+      const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
+      if (u._frames) sessionStorage.setItem('sc_frames', JSON.stringify(u._frames))
     } catch {}
 
     // Send teaser email (pass/fail only, no full report)
@@ -532,7 +535,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               Unlock Full Report — $2.99 →
             </button>
 
-            <div style={{ fontSize: '0.62rem', color: profile.text3, textAlign: 'center', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', textAlign: 'center' as const, lineHeight: 1.6 }}>
               One-time payment · Secure checkout via Stripe · PDF emailed instantly
             </div>
           </div>
@@ -558,6 +561,26 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               </div>
             </div>
           )}
+
+          {/* Find professionals */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <div style={{ fontSize: '0.62rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', textAlign: 'center' as const, marginBottom: '0.25rem' }}>FIND A PROFESSIONAL</div>
+            {([
+              { type: 'inspector'  as const, icon: '🔍', label: 'Find a Building Inspector' },
+              { type: 'architect'  as const, icon: '📐', label: 'Find a Licensed Architect'  },
+              { type: 'contractor' as const, icon: '🔨', label: 'Find a Stair Contractor'    },
+            ]).map(({ type, icon, label }) => (
+              <button
+                key={type}
+                onClick={() => openMap(type)}
+                style={{ width: '100%', padding: '0.72rem 1rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(147,186,212,0.15)', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.55rem', color: profile.text2, fontSize: '0.8rem', fontWeight: 600 }}
+              >
+                <span>{icon}</span>
+                <span>{label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: profile.text3 }}>↗ Maps</span>
+              </button>
+            ))}
+          </div>
 
           {/* Back */}
           <button
@@ -658,7 +681,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 <span style={{ fontSize: '0.9rem', width: 20, textAlign: 'center', flexShrink: 0 }}>{f.icon}</span>
                 <span style={{ flex: 1, fontSize: '0.8rem', color: profile.text, fontWeight: 500 }}>{f.label}</span>
                 <span style={{ fontFamily: 'monospace', fontSize: isFail ? '1rem' : '0.88rem', fontWeight: 700, color: isFail ? FAIL : f.value != null ? TEXT : TEXT3, letterSpacing: isFail ? '0.15em' : 'normal' }}>{displayVal}</span>
-                <span style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: profile.text3, width: 62, textAlign: 'right' }}>{fmtRange(f)}</span>
+                <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)', width: 62, textAlign: 'right' }}>{fmtRange(f)}</span>
                 <span style={{ fontSize: '0.68rem', fontWeight: 700, width: 46, textAlign: 'right', color: passCol, flexShrink: 0, fontFamily: 'monospace' }}>{passIcon}</span>
               </div>
             )
@@ -704,8 +727,9 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               <div style={{ fontSize: '0.65rem', color: profile.text2, marginTop: '0.1rem' }}>One-time purchase · Instant download</div>
             </div>
             <div style={{ marginLeft: 'auto', textAlign:'right' }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: GOLD }}>.99</div>
-              <div style={{ fontSize: '0.55rem', color: profile.text3, fontFamily:'monospace' }}>BETA PRICE</div>
+              <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through', fontWeight: 400 }}>$38.99</div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 900, color: GOLD }}>$2.99</div>
+              <div style={{ fontSize: '0.52rem', color: profile.pass, fontFamily:'monospace', letterSpacing:'0.04em' }}>BETA</div>
             </div>
           </div>
           <div style={{ fontSize: '0.72rem', color: profile.text2, lineHeight: 1.65, marginBottom: '0.75rem' }}>
@@ -930,7 +954,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     </div>
                   </div>
                 )}
-                <div style={{ fontSize: '0.6rem', color: profile.text3, textAlign: 'center', marginTop: '0.5rem' }}>Secure payment · Instant download · No subscription</div>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: '0.5rem' }}>Secure payment · Instant download · No subscription</div>
               </div>
 
               {/* ── PRO ── */}

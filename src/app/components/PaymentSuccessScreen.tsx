@@ -33,14 +33,43 @@ export default function PaymentSuccessScreen() {
     try {
       const { generatePhotoReport } = await import('@/lib/generate-photo-report')
 
-      // Retrieve report data saved to sessionStorage before Stripe redirect
+      // Retrieve scan data saved to sessionStorage before Stripe redirect
       let frames: Record<string, string> = {}
       try { frames = JSON.parse(sessionStorage.getItem('sc_frames') || '{}') } catch {}
-      const reportText  = sessionStorage.getItem('sc_report_text') || ''
-      const fields      = (() => { try { return JSON.parse(sessionStorage.getItem('sc_fields') || '[]') } catch { return [] } })()
-      const codeLabel   = sessionStorage.getItem('sc_code_label') || 'Building Code Compliance'
-      const location    = sessionStorage.getItem('sc_location')   || ''
+      const fields    = (() => { try { return JSON.parse(sessionStorage.getItem('sc_fields') || '[]') } catch { return [] } })()
+      const codeLabel = sessionStorage.getItem('sc_code_label') || 'Building Code Compliance'
+      const location  = sessionStorage.getItem('sc_location')   || ''
 
+      // Get user email for the report API call
+      const userEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
+
+      // ── Generate the full AI report text now (post-payment) ──────────────
+      let reportText = sessionStorage.getItem('sc_report_text') || ''
+      if (!reportText && fields.length > 0) {
+        try {
+          const res = await fetch('/api/report/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: userEmail,
+              fields,
+              codeLabel,
+              location,
+              isOntario: location?.toLowerCase().includes('ontario') || location?.toLowerCase().includes('toronto'),
+              frames: JSON.stringify(frames),
+            }),
+          })
+          const data = await res.json()
+          if (data.ok && data.reportText) {
+            reportText = data.reportText
+            try { sessionStorage.setItem('sc_report_text', reportText) } catch {}
+          }
+        } catch (e) {
+          console.warn('[PaymentSuccess] Report generate failed, using blank text:', e)
+        }
+      }
+
+      // ── Build and download the PDF ───────────────────────────────────────
       await generatePhotoReport({ reportText, fields, codeLabel, location, frames })
       setDone(true)
     } catch (err: any) {
@@ -107,8 +136,8 @@ export default function PaymentSuccessScreen() {
           {/* Beta pricing confirmation */}
           <div style={{ background: 'rgba(242,147,55,0.08)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.78rem', color: C.text2 }}>Beta testing price paid:</span>
-            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>.99</span>
-            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: C.orange }}>.99 ✓</span>
+            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>$38.99</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: C.orange }}>$2.99 ✓</span>
           </div>
 
           <p style={{
@@ -139,7 +168,7 @@ export default function PaymentSuccessScreen() {
                 marginBottom: '0.75rem',
               }}
             >
-              {generating ? '⏳  Preparing your PDF…' : '⬇  Download My Report'}
+              {generating ? '⏳  Generating compliance analysis…' : '⬇  Download Full Report'}
             </button>
           ) : (
             <div style={{

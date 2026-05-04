@@ -2086,7 +2086,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
               <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
                   {/* − button */}
-                  <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - 5))}
+                  <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - (currentPos.id === 'overview' ? 1 : 5)))}
                     style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     −
                   </button>
@@ -2143,14 +2143,14 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
                     )}
                   </div>
                   {/* + button */}
-                  <button onClick={()=>setAdjustVal(v => (v ?? numVal ?? 0) + 5)}
+                  <button onClick={()=>setAdjustVal(v => (v ?? numVal ?? 0) + (currentPos.id === 'overview' ? 1 : 5))}
                     style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     +
                   </button>
                 </div>
                 {adjustVal !== null && (
                   <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>
-                    Adjust with − / + if needed · original: {numVal}mm
+                    {currentPos.id === "overview" ? "Adjust step count with − / +" : "Adjust with − / + if needed"} · original: {numVal}{currentPos.id === "overview" ? "" : "mm"}
                   </div>
                 )}
               </div>

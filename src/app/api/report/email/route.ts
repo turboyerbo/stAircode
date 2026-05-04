@@ -80,6 +80,20 @@ export async function POST(req: NextRequest) {
       </tr>`
   }).join('')
 
+  // Build unlock URL — try to save fields server-side for cross-device access
+  let unlockUrl = `${APP_URL}/unlock?email=${encodeURIComponent(email)}&code=${encodeURIComponent(codeLabel)}&loc=${encodeURIComponent(location)}`
+  try {
+    const saveRes = await fetch(`${APP_URL}/api/report/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, fields: measuredFields, codeLabel, location }),
+    })
+    const saveData = await saveRes.json()
+    if (saveData.token && saveData.token !== 'fallback') {
+      unlockUrl = `${APP_URL}/unlock?token=${saveData.token}`
+    }
+  } catch { /* fallback to URL params */ }
+
   const passCount = measuredFields.filter((f: any) => f.pass === true || f.clearAbove).length
   const failCount = measuredFields.filter((f: any) => f.pass === false).length
   const overallPass = failCount === 0 && measuredFields.length > 0
@@ -154,7 +168,7 @@ export async function POST(req: NextRequest) {
         Your full report includes detailed code citations, measurement photos,<br>and a pre-inspection summary — ready to share with your inspector.
       </p>
       <!-- CTA -->
-      <a href="${APP_URL}/?signin=1" style="display:inline-block;background:linear-gradient(135deg,#F29337,#C4721E);color:#fff;font-weight:800;font-size:1rem;text-decoration:none;padding:0.85rem 2.5rem;border-radius:14px;letter-spacing:0.04em;box-shadow:0 4px 20px rgba(242,147,55,0.4);">
+      <a href="${unlockUrl}" style="display:inline-block;background:linear-gradient(135deg,#F29337,#C4721E);color:#fff;font-weight:800;font-size:1rem;text-decoration:none;padding:0.85rem 2.5rem;border-radius:14px;letter-spacing:0.04em;box-shadow:0 4px 20px rgba(242,147,55,0.4);">
         Get Full Report — $2.99 →
       </a>
       <p style="font-size:0.68rem;color:#9BB5C8;margin:0.6rem 0 0;">
