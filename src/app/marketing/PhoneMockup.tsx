@@ -3,7 +3,6 @@ import { useState, useEffect } from "react"
 
 // ── Animated Phone Mockup ─────────────────────────────────────────────────────
 const PHONE_SCREENS = [
-  { src: '/screen_width.jpg',   alt: 'AI measuring stair width — 1127mm detected',      label: 'Stair Width' },
   { src: '/screen_tread.jpg',   alt: 'AI measuring tread depth — 267mm confirmed',       label: 'Tread Depth' },
   { src: '/screen_nosing.jpg',  alt: 'Checking for nosing — front edge of tread',        label: 'Nosing Check' },
   { src: '/screen_review.jpg',  alt: 'Review measurements before generating report',     label: 'Review' },
@@ -52,6 +51,7 @@ function PhoneMockup() {
             style={{
               width: '100%', height: '100%',
               objectFit: 'cover',
+              objectPosition: '50% 10%',
               display: 'block',
               opacity: fading ? 0 : 1,
               transition: 'opacity 0.35s ease',

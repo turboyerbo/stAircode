@@ -1873,6 +1873,20 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
             <div style={{height:'100%',width:`${progressPct}%`,background:`linear-gradient(90deg,${GREEN},${BLUE})`,borderRadius:2,transition:'width 0.4s ease'}}/>
           </div>
         </div>
+        {/* Forward arrow — skip to next step */}
+        <button
+          onClick={() => { if (posIdx < POSITIONS.length - 1) goTo(posIdx + 1) }}
+          disabled={posIdx >= POSITIONS.length - 1}
+          title="Skip to next step"
+          style={{
+            width:34,height:34,borderRadius:'50%',
+            background: posIdx < POSITIONS.length - 1 ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)',
+            border:`1px solid ${posIdx < POSITIONS.length - 1 ? BORDER : 'rgba(255,255,255,0.08)'}`,
+            color: posIdx < POSITIONS.length - 1 ? WHITE : 'rgba(255,255,255,0.25)',
+            fontSize:'1rem',cursor: posIdx < POSITIONS.length - 1 ? 'pointer' : 'default',
+            display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+          }}
+        >→</button>
         {/* AI Guide button */}
         <button
           onClick={()=>{ setShowGuide(true); setIntroSlide(Math.max(0, Math.min(posIdx, INTRO_SLIDES.length-1))) }}

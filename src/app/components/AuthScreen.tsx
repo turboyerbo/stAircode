@@ -491,12 +491,19 @@ export default function AuthScreen({ onAuth }: Props) {
         </div>
       </div>
 
-      {/* Instagram */}
-      <a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
-        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', padding: '0.55rem 1.1rem', background: 'linear-gradient(135deg,rgba(131,58,180,0.15),rgba(253,29,29,0.15),rgba(252,176,69,0.15))', border: '1px solid rgba(253,29,29,0.25)', borderRadius: 12, textDecoration: 'none', color: C.navy, fontSize: '0.72rem', fontWeight: 600 }}>
-        <span style={{ fontSize: '1rem' }}>📸</span>
-        <span>@staircode on Instagram →</span>
-      </a>
+      {/* Instagram + Facebook */}
+      <div style={{ display: 'flex', gap: '0.65rem', marginTop: '1rem', justifyContent: 'center' }}>
+        <a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 1rem', background: 'linear-gradient(135deg,rgba(131,58,180,0.15),rgba(253,29,29,0.15),rgba(252,176,69,0.15))', border: '1px solid rgba(253,29,29,0.25)', borderRadius: 12, textDecoration: 'none', color: C.navy, fontSize: '0.72rem', fontWeight: 600 }}>
+          <span style={{ fontSize: '1rem' }}>📸</span>
+          <span>Instagram</span>
+        </a>
+        <a href="https://www.facebook.com/people/Staircode/61589350702805/" target="_blank" rel="noopener noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 1rem', background: 'rgba(24,119,242,0.1)', border: '1px solid rgba(24,119,242,0.25)', borderRadius: 12, textDecoration: 'none', color: '#1877F2', fontSize: '0.72rem', fontWeight: 600 }}>
+          <span style={{ fontSize: '1rem' }}>👥</span>
+          <span>Facebook</span>
+        </a>
+      </div>
 
       <p style={{ fontSize: '0.6rem', color: C.navy2, textAlign: 'center', marginTop: '0.75rem', lineHeight: 1.7, maxWidth: 300 }}>
         By continuing you agree to our{' '}

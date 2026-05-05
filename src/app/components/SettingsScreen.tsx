@@ -127,14 +127,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
 
       <SettingsRow icon="👤" label="Account" value={user.email} sub={`Signed in with ${user.provider}`} />
 
-      <SettingsRow icon="💳" label="Payment Method" value="None added" onTap={() => setShowPayment(v => !v)} />
-      {showPayment && (
-        <OptionGroup>
-          {['Credit Card'].map(p => (
-            <OptionRow key={p} label={p} selected={false} onSelect={() => setShowPayment(false)} />
-          ))}
-        </OptionGroup>
-      )}
+      {/* Payment Method — hidden until Pro subscription launches */}
 
       <SettingsRow
         icon="⭐" label="Membership"

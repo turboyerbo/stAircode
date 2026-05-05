@@ -253,8 +253,10 @@ export async function POST(req: NextRequest) {
 
   // ── Free trial limit: 1 free report per email ─────────────────────────────
   // Pro members bypass this check (paid: true in body)
+  // Beta testimonial contributors also bypass (testimonialToken in body)
   const FREE_REPORT_LIMIT = 1
-  const isPaid = body.paid === true
+  const hasTestimonialToken = !!body.testimonialToken
+  const isPaid = body.paid === true || hasTestimonialToken
 
   if (!isPaid && reportEmail) {
     const sbUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL

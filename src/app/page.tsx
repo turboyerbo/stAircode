@@ -600,27 +600,6 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
           ))}
         </div>
 
-        {/* Membership + scan counter */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.65rem 0.9rem',background:'#EBF2FF',border:'1.5px solid rgba(44,90,122,0.22)',borderRadius:10}}>
-          <span style={{fontSize:'0.75rem',color:'#2C5A7A',fontWeight:500}}>
-            ⭐ &nbsp;{isPro?'Pro plan — 20 scans/month':user.membership==='free'?'Beta':'Enterprise'}
-          </span>
-          {!isPro && scansUsed != null && (
-            <span style={{
-              fontSize:'0.65rem', fontFamily:'monospace', fontWeight:700,
-              letterSpacing:'0.06em',
-              color: atLimit ? '#E84545' : scansLeft === 1 ? '#F29337' : '#0D7A5F',
-              background: atLimit ? 'rgba(232,69,69,0.1)' : scansLeft === 1 ? 'rgba(242,147,55,0.12)' : 'rgba(13,122,95,0.1)',
-              padding:'0.22rem 0.65rem', borderRadius:8,
-              border:`1px solid ${atLimit?'rgba(232,69,69,0.3)':scansLeft===1?'rgba(242,147,55,0.35)':'rgba(13,122,95,0.25)'}`,
-            }}>
-              {atLimit ? '🔒 0 scans left' : `${scansLeft} scan${scansLeft===1?'':'s'} left`}
-            </span>
-          )}
-          {isPro && (
-            <span style={{fontSize:'0.65rem',fontFamily:'monospace',fontWeight:600,letterSpacing:'0.08em',color:'#0D7A5F',background:'rgba(13,122,95,0.1)',padding:'0.22rem 0.65rem',borderRadius:8,border:'1px solid rgba(13,122,95,0.25)'}}>∞ Unlimited</span>
-          )}
-        </div>
 
         {/* Limit warning */}
         {atLimit && (
@@ -660,10 +639,14 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
         </p>
 
         {/* Social + marketing links */}
-        <div style={{display:'flex',gap:'0.5rem',justifyContent:'center',marginTop:'0.75rem'}}>
+        <div style={{display:'flex',gap:'0.5rem',justifyContent:'center',marginTop:'0.75rem',flexWrap:'wrap'}}>
           <a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
             style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.45rem 0.9rem',background:'linear-gradient(135deg,rgba(131,58,180,0.15),rgba(253,29,29,0.15),rgba(252,176,69,0.15))',border:'1px solid rgba(131,58,180,0.25)',borderRadius:20,textDecoration:'none',color:'#2C5A7A',fontSize:'0.65rem',fontWeight:600}}>
             <span style={{fontSize:'0.85rem'}}>📸</span> Instagram
+          </a>
+          <a href="https://www.facebook.com/people/Staircode/61589350702805/" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.45rem 0.9rem',background:'rgba(24,119,242,0.1)',border:'1px solid rgba(24,119,242,0.25)',borderRadius:20,textDecoration:'none',color:'#1877F2',fontSize:'0.65rem',fontWeight:600}}>
+            <span style={{fontSize:'0.85rem'}}>👥</span> Facebook
           </a>
           <a href="/marketing"
             style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.45rem 0.9rem',background:'rgba(65,124,164,0.08)',border:'1px solid rgba(65,124,164,0.2)',borderRadius:20,textDecoration:'none',color:'#2C5A7A',fontSize:'0.65rem',fontWeight:600}}>

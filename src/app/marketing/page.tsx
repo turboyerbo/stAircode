@@ -5,7 +5,7 @@
  * Font: DM Sans (Google Fonts) — same as Chrono
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
@@ -16,6 +16,20 @@ export default function MarketingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled,  setScrolled] = useState(false)
   const [openFaq,   setOpenFaq]  = useState(null as number | null)
+  const articlesRef = useRef<HTMLDivElement>(null)
+
+  // Convert vertical wheel scroll → horizontal on the articles row (PC fix)
+  useEffect(() => {
+    const el = articlesRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return // already horizontal
+      e.preventDefault()
+      el.scrollLeft += e.deltaY * 2
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -152,35 +166,13 @@ export default function MarketingPage() {
           AS SEEN IN / TRUST BAR
       ══════════════════════════════════════════════ */}
       <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5E7D9B', flexShrink: 0 }}>Checks compliance against</span>
-          {['OBC 2024', 'NBC 2020', 'BCBC 2024', 'QBC 2020', 'IBC 2021', 'IRC 2021'].map(code => (
-            <span key={code} style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E', background: '#fff', border: '1px solid #E2EAF0', borderRadius: 6, padding: '5px 12px' }}>
-              {code}
-            </span>
-          ))}
+        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.1rem' }}>📍</span>
+          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0D1E2E' }}>
+            Checks compliance with local building codes specific to your location
+          </span>
         </div>
       </div>
-
-      {/* ══════════════════════════════════════════════
-          TESTIMONIAL
-      ══════════════════════════════════════════════ */}
-      <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div className={styles.testimonial}>
-            <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>
-              &ldquo;stAIrcode flagged two inconsistent risers during a quick scan. The building inspector later confirmed it — and that was enough for our client to move forward with a renovation they would have otherwise avoided.&rdquo;
-            </blockquote>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Licensed Architect</div>
-                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Toronto, Ontario</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════════════════════════════════
           WHY CHOOSE
@@ -205,32 +197,6 @@ export default function MarketingPage() {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
-          STATS
-      ══════════════════════════════════════════════ */}
-      <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Non-compliant stairs are a liability</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
-            {[
-              { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
-              { num: '1,800', lbl: 'ER visits per day from falls in Canada' },
-              { num: '20%',   lbl: 'Of senior fall hospitalizations involve stairs' },
-              { num: '+50%',  lbl: 'Increased trip risk from riser inconsistency >3/8"' },
-            ].map(s => (
-              <div key={s.num} className={styles.statPill}>
-                <div className="num">{s.num}</div>
-                <div className="lbl">{s.lbl}</div>
-              </div>
-            ))}
-          </div>
-          <a href="/research" style={{ fontSize: '0.85rem', color: '#F29337', fontWeight: 600, textDecoration: 'none' }}>
-            View full research with sources →
-          </a>
         </div>
       </section>
 
@@ -266,6 +232,52 @@ export default function MarketingPage() {
                 alt="stAIrcode app scanning stairs — live measurement in progress"
                 style={{ width: '100%', borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 32px rgba(44,74,110,0.18)', border: '1px solid rgba(44,90,122,0.15)' }}
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          STATS
+      ══════════════════════════════════════════════ */}
+      <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Non-compliant stairs are a liability</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+            {[
+              { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
+              { num: '1,800', lbl: 'ER visits per day from falls in Canada' },
+              { num: '20%',   lbl: 'Of senior fall hospitalizations involve stairs' },
+              { num: '+50%',  lbl: 'Increased trip risk from riser inconsistency >3/8"' },
+            ].map(s => (
+              <div key={s.num} className={styles.statPill}>
+                <div className="num">{s.num}</div>
+                <div className="lbl">{s.lbl}</div>
+              </div>
+            ))}
+          </div>
+          <a href="/research" style={{ fontSize: '0.85rem', color: '#F29337', fontWeight: 600, textDecoration: 'none' }}>
+            View full research with sources →
+          </a>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          TESTIMONIAL
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div className={styles.testimonial}>
+            <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>
+              &ldquo;The app flagged inconsistent risers, and the building inspector later confirmed it. A quick check was all we needed, and this got things moving in the right direction.&rdquo;
+            </blockquote>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Licensed Architect</div>
+                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Toronto, Ontario</div>
+              </div>
             </div>
           </div>
         </div>
@@ -394,8 +406,33 @@ export default function MarketingPage() {
             Stair safety matters
           </h2>
 
-          {/* Scrollable article cards */}
-          <div style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', WebkitOverflowScrolling: 'touch', msOverflowStyle: 'none', scrollbarWidth: 'none' } as any}>
+          {/* Scrollable article cards — with PC scroll support */}
+          <div style={{ position: 'relative' }}>
+            {/* Left arrow */}
+            <button
+              onClick={() => articlesRef.current && (articlesRef.current.scrollLeft -= 320)}
+              aria-label="Scroll left"
+              style={{ position: 'absolute', left: -20, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 40, height: 40, borderRadius: '50%', background: '#fff', border: '1.5px solid #E2EAF0', boxShadow: '0 2px 12px rgba(44,74,110,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', color: '#0D1E2E', transition: 'box-shadow 0.2s' }}
+            >‹</button>
+            {/* Right arrow */}
+            <button
+              onClick={() => articlesRef.current && (articlesRef.current.scrollLeft += 320)}
+              aria-label="Scroll right"
+              style={{ position: 'absolute', right: -20, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 40, height: 40, borderRadius: '50%', background: '#fff', border: '1.5px solid #E2EAF0', boxShadow: '0 2px 12px rgba(44,74,110,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', color: '#0D1E2E', transition: 'box-shadow 0.2s' }}
+            >›</button>
+
+          <div ref={articlesRef} style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', cursor: 'grab' } as any}
+            onMouseDown={e => {
+              const el = articlesRef.current; if (!el) return
+              el.style.cursor = 'grabbing'
+              const startX = e.pageX - el.offsetLeft
+              const scrollLeft = el.scrollLeft
+              const onMove = (me: MouseEvent) => { el.scrollLeft = scrollLeft - (me.pageX - el.offsetLeft - startX) }
+              const onUp   = () => { el.style.cursor = 'grab'; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+              window.addEventListener('mousemove', onMove)
+              window.addEventListener('mouseup', onUp)
+            }}
+          >
 
             {/* Article 1 — CTV News */}
             <a href="https://www.ctvnews.ca/ottawa/video/2026/03/02/ask-the-expert-stairway-safety-and-homeowner-liability/" target="_blank" rel="noopener noreferrer"
@@ -425,40 +462,6 @@ export default function MarketingPage() {
                 <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY UPDATE</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Firefighters raise concerns about B.C.&apos;s new single-stairwell apartment rules</div>
                 <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>Safety advocates question changes to stairwell requirements in new residential construction across British Columbia.</p>
-              </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
-              </div>
-            </a>
-
-            {/* Article 3 — Academic */}
-            <a href="https://www.sciencedirect.com/science/article/abs/pii/S0003687012001524" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a1a3a,#2a2a5c)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🔬</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>APPLIED ERGONOMICS · PEER-REVIEWED</span>
-              </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>ACADEMIC RESEARCH</div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Riser height variability and stair-fall risk: biomechanical analysis</div>
-                <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>Research demonstrates that riser height inconsistencies exceeding 9.5mm significantly increase trip and fall probability on residential staircases.</p>
-              </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
-              </div>
-            </a>
-
-            {/* Article 4 — CMHC */}
-            <a href="https://www.cmhc-schl.gc.ca/en/professionals/industry-innovation-and-leadership/industry-expertise/housingresearch" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a0a0a,#3a1a1a)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🏠</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>CMHC · HOUSING RESEARCH</span>
-              </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>REGULATORY</div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Housing accessibility and stair design guidelines for aging-in-place</div>
-                <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>CMHC guidelines on universal design for residential staircases, focusing on safety for occupants of all ages and abilities.</p>
               </div>
               <div style={{ padding: '0 1rem 1rem' }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
@@ -500,8 +503,9 @@ export default function MarketingPage() {
             </a>
 
           </div>
-          <p style={{ fontSize: '0.72rem', color: '#5E7D9B', marginTop: '1rem', textAlign: 'center' }}>
-            Scroll to see more articles · Updated regularly
+          </div>{/* end scroll wrapper */}
+          <p style={{ fontSize: '0.72rem', color: '#5E7D9B', marginTop: '1.5rem', textAlign: 'center' }}>
+            Use scroll wheel, drag, or the arrows to browse · Updated regularly
           </p>
         </div>
       </section>
@@ -522,11 +526,12 @@ export default function MarketingPage() {
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 {[
-                  { href: 'https://www.instagram.com/staircode/', label: '📸' },
-                  { href: 'https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share', label: '▶' },
-                  { href: 'mailto:info@staircode.app', label: '✉' },
+                  { href: 'https://www.instagram.com/staircode/', label: '📸', title: 'Instagram' },
+                  { href: 'https://www.facebook.com/people/Staircode/61589350702805/', label: '👥', title: 'Facebook' },
+                  { href: 'https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share', label: '▶', title: 'Google Play' },
+                  { href: 'mailto:info@staircode.app', label: '✉', title: 'Email us' },
                 ].map(s => (
-                  <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer"
+                  <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer" title={s.title}
                     style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F5FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', textDecoration: 'none', color: '#0D1E2E' }}>
                     {s.label}
                   </a>
