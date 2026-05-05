@@ -16,6 +16,7 @@ const BUILD_VERSION = getBuildVersion()
 console.log('[next.config] Cache version:', BUILD_VERSION)
 
 const nextConfig = {
+  reactStrictMode: false,   // Extensions like Honey override window.open — strict mode turns that into a crash
   // jsPDF is browser-only — never bundle it for server/edge runtimes
   // serverExternalPackages is Next.js 15+; use experimental key for Next.js 14.x
   experimental: {

@@ -9,8 +9,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
-
 import PhoneMockup from "./PhoneMockup"
+
 
 export default function MarketingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -39,6 +39,7 @@ export default function MarketingPage() {
 
   const navLinks = [
     { label: 'How It Works', href: '#how-it-works' },
+    { label: 'Sample Report', href: '/sample-report' },
     { label: 'Research',     href: '/research' },
     { label: 'Pricing',      href: '#pricing' },
     { label: 'About',        href: '#about' },
@@ -90,7 +91,7 @@ export default function MarketingPage() {
 
           {/* Desktop nav */}
           <nav className={styles.desktopNav} style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-            {navLinks.slice(0, 4).map(l => (
+            {navLinks.slice(0, 5).map(l => (
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
             <a href="/?signin=1" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
@@ -155,7 +156,7 @@ export default function MarketingPage() {
           </div>
 
           {/* ── Right: animated phone mockup ── */}
-          <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <PhoneMockup />
           </div>
 
@@ -579,15 +580,36 @@ export default function MarketingPage() {
             {/* Downloads */}
             <div style={{ flex: '1 1 160px', minWidth: 140 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>Downloads</div>
+
+              {/* Google Play badge */}
               <a href="https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#000', borderRadius: 8, padding: '0.5rem 0.85rem', textDecoration: 'none', marginBottom: '0.75rem', width: 'fit-content' }}>
-                <span style={{ fontSize: '0.85rem' }}>▶</span>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', background: '#000', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.55rem 1rem', textDecoration: 'none', marginBottom: '0.65rem', minWidth: 155 }}>
+                {/* Google Play triangle logo */}
+                <svg width="20" height="22" viewBox="0 0 20 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0.5 1.33L11.14 11L0.5 20.67V1.33Z" fill="#4285F4"/>
+                  <path d="M14.5 7.5L2.5 0.5L11.14 11L14.5 7.5Z" fill="#34A853"/>
+                  <path d="M14.5 14.5L11.14 11L2.5 21.5L14.5 14.5Z" fill="#FBBC04"/>
+                  <path d="M19.5 11C19.5 10.17 19.07 9.43 18.41 9L14.5 7.5L11.14 11L14.5 14.5L18.41 13C19.07 12.57 19.5 11.83 19.5 11Z" fill="#EA4335"/>
+                </svg>
                 <div>
-                  <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1 }}>GET IT ON</div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Google Play</div>
+                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Get it on</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>Google Play</div>
                 </div>
               </a>
-              <div style={{ fontSize: '0.75rem', color: '#9BB5C8', fontStyle: 'italic' }}>iOS — Coming soon</div>
+
+              {/* App Store badge */}
+              <a href="#" aria-disabled="true"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', background: '#000', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.55rem 1rem', textDecoration: 'none', minWidth: 155, opacity: 0.55, cursor: 'default', pointerEvents: 'none' }}>
+                {/* Apple logo */}
+                <svg width="18" height="22" viewBox="0 0 18 22" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.93 11.62c-.02-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.9-3.54-1.93-1.51-.15-2.96.89-3.73.89-.78 0-1.97-.87-3.24-.85C4.79 6.07 3.2 7 2.35 8.43.59 11.33 1.89 15.63 3.59 18c.85 1.17 1.85 2.48 3.16 2.43 1.27-.05 1.75-.82 3.28-.82s1.97.82 3.3.79c1.36-.02 2.22-1.19 3.05-2.37.97-1.36 1.36-2.69 1.38-2.76-.03-.01-2.64-1.01-2.67-4.02l.04.37zM12.51 3.91c.7-.86 1.17-2.05 1.04-3.25-1.01.04-2.23.67-2.95 1.52-.65.74-1.22 1.94-1.07 3.08 1.13.09 2.28-.58 2.98-1.35z"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Download on the</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>App Store</div>
+                </div>
+              </a>
+              <div style={{ fontSize: '0.68rem', color: '#9BB5C8', marginTop: '0.4rem' }}>iOS — Launching May 2025</div>
             </div>
 
           </div>

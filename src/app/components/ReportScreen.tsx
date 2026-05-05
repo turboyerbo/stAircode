@@ -654,6 +654,31 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               One-time payment · Secure checkout via Stripe · PDF emailed instantly
             </div>
 
+            {/* Sample report preview */}
+            <a href="/sample-report" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'block', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(147,186,212,0.2)', textDecoration: 'none', position: 'relative' as const }}>
+              <div style={{ background: 'rgba(147,186,212,0.06)', padding: '0.55rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.68rem', color: profile.text2, fontWeight: 600 }}>📄 Preview what your report looks like</span>
+                <span style={{ fontSize: '0.65rem', color: GOLD, fontWeight: 700 }}>View sample →</span>
+              </div>
+              {/* Mini report mockup */}
+              <div style={{ background: '#0A1C2E', padding: '0.75rem 0.85rem', display: 'flex', flexDirection: 'column' as const, gap: '0.45rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.62rem', fontWeight: 900, color: GOLD, letterSpacing: '0.04em' }}>stAIrcode</div>
+                  <div style={{ fontSize: '0.55rem', color: profile.text3, fontFamily: 'monospace' }}>OBC 2024 · Toronto</div>
+                </div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: profile.text }}>Stair Compliance Report</div>
+                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' as const }}>
+                  {[['Rise 195mm','pass'],['Run 250mm','pass'],['Width 1100mm','pass'],['Handrail 900mm','pass']].map(([label, status]) => (
+                    <div key={label} style={{ fontSize: '0.55rem', padding: '0.15rem 0.5rem', borderRadius: 6, background: status === 'pass' ? 'rgba(39,169,107,0.15)' : 'rgba(232,85,85,0.15)', color: status === 'pass' ? profile.pass : profile.fail, fontFamily: 'monospace', fontWeight: 700, border: `1px solid ${status === 'pass' ? 'rgba(39,169,107,0.3)' : 'rgba(232,85,85,0.3)'}` }}>
+                      ✓ {label}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: '0.6rem', color: profile.text3, lineHeight: 1.5 }}>Full stair description · Code citations · Pre-inspection summary · Measurement photos</div>
+              </div>
+            </a>
+
             {/* ── Discount code entry ─────────────────────────────────────── */}
             {!discountApplied ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>

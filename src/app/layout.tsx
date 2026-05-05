@@ -73,6 +73,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script dangerouslySetInnerHTML={{ __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(r){ console.log('[SW] Registered:', r.scope); }).catch(function(e){ console.warn('[SW] Failed:', e); }); }); }` }} />
         <script dangerouslySetInnerHTML={{ __html: `window.__POSTHOG_KEY__='${process.env.NEXT_PUBLIC_POSTHOG_KEY ?? ''}';window.__POSTHOG_HOST__='${process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://app.posthog.com'}';` }} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Silently suppress Chrome/Firefox extension injection errors so they
+          // never crash the app UI (e.g. Honey, Grammarly overriding window.open)
+          window.addEventListener('error', function(e) {
+            var src = (e.filename || '') + (e.error && e.error.stack ? e.error.stack : '');
+            if (src.indexOf('chrome-extension://') !== -1 ||
+                src.indexOf('moz-extension://') !== -1 ||
+                src.indexOf('safari-extension://') !== -1 ||
+                src.indexOf('injectScript') !== -1) {
+              e.preventDefault(); e.stopPropagation(); return true;
+            }
+          }, true);
+          window.addEventListener('unhandledrejection', function(e) {
+            var msg = e.reason && (e.reason.message || e.reason.stack || String(e.reason));
+            if (msg && (msg.indexOf('chrome-extension://') !== -1 ||
+                        msg.indexOf('moz-extension://') !== -1 ||
+                        msg.indexOf('injectScript') !== -1 ||
+                        msg.indexOf('read only property') !== -1)) {
+              e.preventDefault(); return;
+            }
+          });
+        `}} />
       </head>
       <body>
         {children}
