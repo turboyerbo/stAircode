@@ -723,6 +723,7 @@ interface Props {
   userRole?: UserRole
   onSuccess: (m: Record<string,number|string>) => void
   onBack: () => void
+  startAtReview?: boolean  // skip intro & go directly to Review Measurements
 }
 
 // Stage: what is happening right now
@@ -735,7 +736,7 @@ interface Props {
 // paused    = everything frozen
 type Stage = 'position'|'ready'|'hold'|'capture'|'analysing'|'result'
 
-export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: Props) {
+export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, startAtReview=false }: Props) {
   const videoRef   = useRef<HTMLVideoElement>(null)
   const captureRef = useRef<HTMLCanvasElement>(null)
   const streamRef  = useRef<MediaStream|null>(null)
@@ -776,7 +777,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   // Captured frames: positionId → base64 JPEG (for report images)
   const capturedFrames = useRef<Record<string,string>>({})
   // ── Intro slideshow state (shown before scan begins) ─────────────────────
-  const [showIntro,    setShowIntro]    = useState(true)   // true = show slideshow
+  const [showIntro,    setShowIntro]    = useState(!startAtReview)   // false if startAtReview
+  const [showReview, setShowReview] = useState(startAtReview)        // true if startAtReview
   const [introSlide,   setIntroSlide]   = useState(0)      // current slide index
   // ── Back-to-guide state ────────────────────────────────────────────────────
   const [showGuide,    setShowGuide]    = useState(false)  // AI Guide overlay during scan
@@ -784,7 +786,6 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack }: P
   const [arSupported,  setArSupported]  = useState(false)
   const [arPlanes,     setArPlanes]     = useState<ScreenPlane[]>([])
   const arOverlayRef = useRef<HTMLDivElement>(null)  // dom-overlay root for WebXR
-  const [showReview, setShowReview] = useState(false)
   const [showBackMenu, setShowBackMenu] = useState(false)
 
   const currentPos = POSITIONS[posIdx] ?? POSITIONS[0]

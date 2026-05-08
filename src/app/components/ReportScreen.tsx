@@ -73,7 +73,7 @@ interface Props {
   onStartOver:  () => void
 }
 
-type Sheet = 'hidden' | 'generate-prompt' | 'scan-incomplete-warning' | 'plans' | 'report-ready' | 'free-confirm' | 'blurred-preview'
+type Sheet = 'hidden' | 'generate-prompt' | 'scan-incomplete-warning' | 'plans' | 'report-ready' | 'free-confirm' | 'blurred-preview' | 'testimonial-only'
 
 // (generateFullReport removed — report is generated server-side via /api/report/generate)
 
@@ -263,7 +263,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
   // ── Step 1: Show "Generate Report" screen on mount ──────────────────────────
   // Do NOT auto-generate. User must confirm via button press.
-  // We check scan completeness and warn if < 25% measured.
+  // We check scan completeness and warn if < 50% measured.
   useEffect(() => {
     if (autoGenRef.current) return
     autoGenRef.current = true
@@ -297,7 +297,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     const measuredCount = measured.length
     const pct = totalFields > 0 ? measuredCount / totalFields : 0
 
-    if (!force && pct < 0.25) {
+    if (!force && pct < 0.5) {
       setSheet('scan-incomplete-warning')
       return
     }
@@ -367,20 +367,39 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     setSheet('report-ready')
   }
 
-  // ── Step 3: Go to Stripe checkout ────────────────────────────────────────────
+  // ── Step 3: Save scan data then go to Stripe checkout ───────────────────────
   async function handlePayForReport() {
     const storedEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
-    const userEmail = emailInput || storedEmail
+    const userEmail   = emailInput || storedEmail
+
+    setGenError(null)
+
+    // 1. Save fields to server so the webhook can retrieve them after payment
+    //    (sessionStorage is lost when Stripe opens on a new tab/context)
+    let saveToken = ''
+    try {
+      const saveRes = await fetch('/api/report/save', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: userEmail, fields, codeLabel, location, isOntario }),
+      })
+      const saveData = await saveRes.json()
+      if (saveData.token && saveData.token !== 'fallback') saveToken = saveData.token
+    } catch { /* non-fatal — continue without server token */ }
+
+    // 2. Open Stripe checkout, pass saveToken so the webhook can look up the scan
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product: 'report', userEmail }),
+        body: JSON.stringify({ product: 'report', userEmail, saveToken }),
       })
       const data = await res.json()
       if (data.url) {
         Analytics.purchaseInitiated('report')
         window.location.href = data.url
+      } else {
+        setGenError(data.error ?? 'Could not start checkout. Please try again.')
       }
     } catch {
       setGenError('Could not connect to payment. Please try again.')
@@ -448,6 +467,12 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   // ── Testimonial: submit feedback → receive unlock token → free report ────────
   async function handleTestimonialSubmit() {
     setTestimError(null)
+    const storedEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
+    const effectiveEmail = emailInput || storedEmail
+    if (!effectiveEmail || !effectiveEmail.includes('@')) {
+      setTestimError('Please enter your email address so we can send the report.')
+      return
+    }
     if (!testimName.trim() || !testimTitle.trim() || !testimBusiness.trim()) {
       setTestimError('Please fill in your name, title, and business name.')
       return
@@ -604,7 +629,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           {/* Email confirmation */}
           {emailSent ? (
             <div style={{ background: 'rgba(39,169,107,0.08)', border: '1.5px solid rgba(39,169,107,0.3)', borderRadius: 14, padding: '1rem 1.25rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: '0.4rem' }}>📬</div>
+              <div style={{ fontSize: '1.8rem', marginBottom: '0.4rem' }}></div>
               <div style={{ fontSize: '1rem', fontWeight: 900, color: profile.pass, marginBottom: '0.25rem' }}>Results sent to your inbox</div>
               <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}>
                 Check <strong style={{ color: profile.text }}>{emailInput}</strong> for your pass/fail summary.<br/>
@@ -648,7 +673,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           {/* Lock icon + paywall */}
           <div style={{ background: 'rgba(242,147,55,0.06)', border: '1.5px solid rgba(242,147,55,0.35)', borderRadius: 16, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span style={{ fontSize: '1.4rem' }}>🔒</span>
+              <span style={{ fontSize: '1.4rem' }}></span>
               <div>
                 <div style={{ fontSize: '0.88rem', fontWeight: 900, color: profile.text }}>Full report locked</div>
                 <div style={{ fontSize: '0.7rem', color: profile.text2 }}>Measurement photos · Code citations · Pre-inspection summary</div>
@@ -677,7 +702,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             <a href="/sample-report" target="_blank" rel="noopener noreferrer"
               style={{ display: 'block', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(147,186,212,0.2)', textDecoration: 'none', position: 'relative' as const }}>
               <div style={{ background: 'rgba(147,186,212,0.06)', padding: '0.55rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.68rem', color: profile.text2, fontWeight: 600 }}>📄 Preview what your report looks like</span>
+                <span style={{ fontSize: '0.68rem', color: profile.text2, fontWeight: 600 }}>Preview what your report looks like</span>
                 <span style={{ fontSize: '0.65rem', color: GOLD, fontWeight: 700 }}>View sample →</span>
               </div>
               {/* Mini report mockup */}
@@ -748,7 +773,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                   style={{ width: '100%', padding: '0.9rem', background: freeGenLoading ? 'rgba(39,169,107,0.1)' : 'rgba(39,169,107,0.15)', border: `1.5px solid ${profile.pass}`, borderRadius: 12, color: profile.pass, fontSize: '0.9rem', fontWeight: 900, fontFamily: 'monospace', cursor: freeGenLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                   {freeGenLoading ? (
                     <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(39,169,107,0.25)', borderTopColor: profile.pass, animation: 'spin 0.8s linear infinite' }} /> Sending report…</>
-                  ) : unlockToken === '__done__' ? '📬 Report sent — check your email' : '📋  Email My Free Report →'}
+                  ) : unlockToken === '__done__' ? ' Report sent — check your email' : 'Email My Free Report →'}
                 </button>
               </div>
             )}
@@ -759,7 +784,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span style={{ fontSize: '1.3rem' }}>💬</span>
+              <span style={{ fontSize: '1.3rem' }}></span>
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 900, color: profile.text }}>Get it free — leave a testimonial</div>
                 <div style={{ fontSize: '0.7rem', color: profile.text2, marginTop: '0.1rem' }}>We&apos;re in beta. Your feedback unlocks the report at no cost.</div>
@@ -770,7 +795,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               /* ── Report delivered successfully ─────────────────────────── */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ background: 'rgba(39,169,107,0.1)', border: '1.5px solid rgba(39,169,107,0.35)', borderRadius: 14, padding: '1.25rem', textAlign: 'center' as const }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}>📬</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}></div>
                   <div style={{ fontSize: '0.95rem', fontWeight: 800, color: profile.pass, marginBottom: '0.35rem' }}>Report sent!</div>
                   <div style={{ fontSize: '0.78rem', color: profile.text2, lineHeight: 1.6 }}>
                     Your full compliance report has been emailed to{' '}
@@ -788,7 +813,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
               /* ── Testimonial accepted — show email + free generate button ─ */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 <div style={{ background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '0.75rem 1rem', textAlign: 'center' as const }}>
-                  <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>🎉</div>
+                  <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}></div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: profile.pass }}>Thank you for your feedback!</div>
                   <div style={{ fontSize: '0.72rem', color: profile.text2, marginTop: '0.25rem', lineHeight: 1.55 }}>
                     Your report is unlocked. Enter your email and press the button below — it will be sent instantly.
@@ -817,7 +842,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                   {freeGenLoading ? (
                     <><div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(39,169,107,0.3)', borderTopColor: profile.pass, animation: 'spin 0.8s linear infinite' }} /> Generating &amp; sending…</>
                   ) : (
-                    '📋  Email My Free Report →'
+                    'Email My Free Report →'
                   )}
                 </button>
               </div>
@@ -917,7 +942,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             <div style={{ fontSize: '0.7rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', textAlign: 'center' as const, marginBottom: '0.25rem', fontWeight: 700 }}>FIND A PROFESSIONAL</div>
             {([
               { type: 'inspector'  as const, icon: '🔍', label: 'Find a Building Inspector' },
-              { type: 'architect'  as const, icon: '📐', label: 'Find a Licensed Architect'  },
+              { type: 'architect'  as const, icon: '', label: 'Find a Licensed Architect'  },
               { type: 'contractor' as const, icon: '🔨', label: 'Find a Stair Contractor'    },
             ]).map(({ type, icon, label }) => (
               <button
@@ -977,7 +1002,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           {[
             { label: confLabel + ' CONFIDENCE', color: confColor, bg: confColor + '22' },
             { label: codeLabel, color: profile.accent, bg: 'rgba(65,124,164,0.12)' },
-            ...(measurements.calibrated ? [{ label: '📏 CALIBRATED', color: ORANGE, bg: 'rgba(242,147,55,0.15)' }] : []),
+            ...(measurements.calibrated ? [{ label: ' CALIBRATED', color: ORANGE, bg: 'rgba(242,147,55,0.15)' }] : []),
           ].map(({ label, color, bg }) => (
             <div key={label} style={{ padding: '0.25rem 0.7rem', borderRadius: 20, background: bg, border: `1px solid ${color}44`, fontSize: '0.6rem', fontFamily: 'monospace', letterSpacing: '0.07em', color, fontWeight: 700 }}>
               {label}
@@ -1050,7 +1075,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                 </div>
               ))}
               <div style={{ fontSize: '0.68rem', color: profile.text2, marginTop: '0.6rem', lineHeight: 1.6 }}>
-                🔒 Exact measurements and code citations are in the full report.
+                 Exact measurements and code citations are in the full report.
                 Your inspector or contractor will ask for this documentation.
               </div>
             </div>
@@ -1103,7 +1128,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           onClick={() => { if (trialExhausted) { setSheet('plans'); Analytics.pricingViewed() } else { handleGeneratePressed(); Analytics.pricingViewed() } }}
           style={{ flex: 1, padding: '1rem', background: trialExhausted ? 'rgba(232,69,69,0.15)' : `linear-gradient(135deg, ${GOLD}, #D97706)`, border: trialExhausted ? '1.5px solid rgba(232,69,69,0.45)' : 'none', borderRadius: 14, cursor: 'pointer', color: trialExhausted ? '#E84545' : '#000', fontSize: '0.92rem', fontFamily: 'monospace', fontWeight: 900, letterSpacing: '0.08em', boxShadow: trialExhausted ? 'none' : `0 4px 24px rgba(242,147,55,0.45)` }}
         >
-          {trialExhausted ? '🔒 Free Trial Used — Upgrade for More' : '✉️  Get Report →'}
+          {trialExhausted ? ' Free Trial Used — Upgrade for More' : '✉️  Get Report →'}
         </button>
         <button
           onClick={async () => {
@@ -1121,7 +1146,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           {([
             { type: 'inspector'  as const, icon: '🔍', label: 'Find a Building Inspector' },
-            { type: 'architect'  as const, icon: '📐', label: 'Find a Licensed Architect'  },
+            { type: 'architect'  as const, icon: '', label: 'Find a Licensed Architect'  },
             { type: 'contractor' as const, icon: '🔨', label: 'Find a Stair Contractor'    },
           ]).map(({ type, icon, label }) => (
             <button
@@ -1276,12 +1301,12 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                         setSheet('report-ready')
                       }}
                       style={{ width: '100%', padding: '1rem 1.5rem', background: `linear-gradient(135deg, ${GOLD}, #C4721E)`, border: 'none', borderRadius: 16, color: '#000', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.05em', cursor: 'pointer', boxShadow: `0 4px 24px rgba(242,147,55,0.45)`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      🔓 &nbsp;Unlock Full Report — $2.99 →
+                      Unlock Full Report — $2.99 →
                     </button>
 
                     {/* Secondary free option */}
                     <button
-                      onClick={() => setSheet('report-ready')}
+                      onClick={() => setSheet('testimonial-only')}
                       style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', cursor: 'pointer', fontFamily: 'monospace', letterSpacing: '0.06em', padding: '0.15rem' }}>
                       or leave a testimonial to get it free →
                     </button>
@@ -1291,6 +1316,70 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             })()}
 
             {/* ── GENERATE PROMPT SHEET ── */}
+            {/* ── TESTIMONIAL-ONLY SHEET ── */}
+            {sheet === 'testimonial-only' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div>
+                  <div style={{ fontSize: '1rem', fontWeight: 900, color: profile.text, marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>
+                    Leave a testimonial — get the report free
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: profile.text2, lineHeight: 1.6 }}>
+                    We are in beta. Your feedback unlocks the full report at no cost.
+                  </div>
+                </div>
+                <input type="text" placeholder="Your full name *" value={testimName} onChange={e => setTestimName(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimName.trim() ? 'rgba(147,186,212,0.4)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }} />
+                <input type="email" placeholder="Your email — required to receive report *" value={emailInput} onChange={e => { setEmailInput(e.target.value); setTestimError(null) }}
+                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${emailInput.includes('@') ? profile.pass : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }} />
+                <input type="text" placeholder="Your title or role (e.g. Building Inspector) *" value={testimTitle} onChange={e => setTestimTitle(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimTitle.trim() ? 'rgba(147,186,212,0.4)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }} />
+                <input type="text" placeholder="Business or organisation name *" value={testimBusiness} onChange={e => setTestimBusiness(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimBusiness.trim() ? 'rgba(147,186,212,0.4)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }} />
+                <div style={{ position: 'relative' }}>
+                  <textarea placeholder="Share your honest experience — what did you use stAIrcode for? What worked, what could be better? (min 50 characters) *"
+                    value={testimComment} onChange={e => { setTestimComment(e.target.value); setTestimError(null) }} rows={4}
+                    style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.8rem 1rem', paddingBottom: '1.75rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimComment.trim().length >= 50 ? profile.pass : testimComment.length > 0 ? 'rgba(242,147,55,0.35)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical' as const, lineHeight: 1.6 }} />
+                  <span style={{ position: 'absolute', bottom: 9, right: 12, fontSize: '0.65rem', fontFamily: 'monospace', color: testimComment.trim().length >= 50 ? profile.pass : profile.text3 }}>{testimComment.trim().length}/50 min</span>
+                </div>
+                {testimError && <div style={{ fontSize: '0.74rem', color: profile.fail, padding: '0.5rem 0.8rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)', lineHeight: 1.5 }}>{testimError}</div>}
+                {unlockToken === '__done__' ? (
+                  <div style={{ background: 'rgba(39,169,107,0.1)', border: '1.5px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '1rem', textAlign: 'center' as const }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: profile.pass, marginBottom: '0.3rem' }}>Report sent to your inbox</div>
+                    <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.55 }}>Check <strong style={{ color: profile.text }}>{emailInput}</strong> — the full report is on its way. Check your spam folder if needed.</div>
+                  </div>
+                ) : unlockToken && unlockToken !== '__done__' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                    <div style={{ fontSize: '0.78rem', color: profile.pass, fontWeight: 700, textAlign: 'center' as const }}>Feedback received — generating your report</div>
+                    <button onClick={handleFreeGenerate} disabled={freeGenLoading}
+                      style={{ width: '100%', padding: '0.95rem', background: freeGenLoading ? 'rgba(39,169,107,0.1)' : 'rgba(39,169,107,0.18)', border: `1.5px solid ${profile.pass}`, borderRadius: 13, color: profile.pass, fontSize: '0.9rem', fontWeight: 900, fontFamily: 'monospace', cursor: freeGenLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      {freeGenLoading ? <><div style={{ width: 13, height: 13, borderRadius: '50%', border: `2px solid rgba(39,169,107,0.25)`, borderTopColor: profile.pass, animation: 'spin 0.8s linear infinite' }} /> Sending report...</> : 'Email My Free Report →'}
+                    </button>
+                    {genError && <div style={{ fontSize: '0.72rem', color: profile.fail, textAlign: 'center' as const }}>{genError}</div>}
+                  </div>
+                ) : (
+                  <button onClick={handleTestimonialSubmit} disabled={testimSending}
+                    style={{ width: '100%', padding: '0.95rem', background: testimSending ? 'rgba(147,186,212,0.08)' : `linear-gradient(135deg,${GOLD},#C4721E)`, border: 'none', borderRadius: 13, color: testimSending ? profile.text3 : '#000', fontSize: '0.92rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.05em', cursor: testimSending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                    {testimSending ? <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', animation: 'spin 0.8s linear infinite' }} /> Submitting...</> : 'Submit Feedback & Unlock Free Report'}
+                  </button>
+                )}
+                <div style={{ fontSize: '0.68rem', color: profile.text3, lineHeight: 1.6 }}>
+                  By submitting, you agree that your feedback may be featured on staircode.app. Your email is never published.
+                  To request removal, email <a href="mailto:info@staircode.app" style={{ color: GOLD, textDecoration: 'none' }}>info@staircode.app</a>.
+                </div>
+                <div style={{ borderTop: '1px solid rgba(147,186,212,0.12)', paddingTop: '0.75rem' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: profile.text, letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: '0.7rem' }}>Find a Professional</div>
+                  {(['inspector', 'architect', 'contractor'] as const).map((type, i) => (
+                    <button key={type} onClick={() => openMap(type)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1rem', background: 'rgba(147,186,212,0.06)', border: '1px solid rgba(147,186,212,0.15)', borderRadius: 12, color: profile.text, fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer', marginBottom: i < 2 ? '0.5rem' : 0, textAlign: 'left' as const }}>
+                      <span>{['Find a Building Inspector', 'Find a Licensed Architect', 'Find a Stair Contractor'][i]}</span>
+                      <span style={{ fontSize: '0.75rem', color: profile.text2, fontWeight: 700 }}>Maps</span>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setSheet('blurred-preview')} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.72rem', cursor: 'pointer', padding: '0.2rem', fontFamily: 'monospace' }}>Back</button>
+              </div>
+            )}
+
             {sheet === 'generate-prompt' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ textAlign: 'center' }}>
@@ -1323,36 +1412,65 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             )}
 
             {/* ── SCAN INCOMPLETE WARNING SHEET ── */}
-            {sheet === 'scan-incomplete-warning' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}>⚠️</div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#F29337', marginBottom: '0.3rem' }}>Most measurements missing</div>
-                  <div style={{ fontSize: '0.8rem', color: profile.text2, lineHeight: 1.65 }}>
-                    Only <strong style={{ color: profile.text }}>{measured.length} of {fields.length}</strong> dimensions were captured.
-                    Your report will have limited accuracy and may not reflect the full compliance picture.
+            {sheet === 'scan-incomplete-warning' && (() => {
+              const pct         = measured.length / Math.max(fields.length, 1)
+              const hasMinimum  = measured.length >= 2
+              const missingList = fields.filter((f: any) => f.value == null && !f.clearAbove)
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ textAlign: 'center' as const }}>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#F29337', marginBottom: '0.3rem' }}>Not enough measurements</div>
+                    <div style={{ fontSize: '0.8rem', color: profile.text2, lineHeight: 1.65 }}>
+                      Only <strong style={{ color: profile.text }}>{measured.length} of {fields.length}</strong> dimensions captured.
+                      At least 50% is required for a meaningful compliance result.
+                    </div>
                   </div>
+                  <div>
+                    <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 8, height: 10, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 8, width: `${Math.min(100, Math.round(pct * 100))}%`, background: pct >= 0.5 ? profile.pass : GOLD, transition: 'width 0.4s' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.3rem' }}>
+                      <span style={{ fontSize: '0.65rem', color: profile.text3, fontFamily: 'monospace' }}>{Math.round(pct * 100)}% captured</span>
+                      <span style={{ fontSize: '0.65rem', color: GOLD, fontFamily: 'monospace' }}>50% minimum required</span>
+                    </div>
+                  </div>
+                  {missingList.length > 0 && (
+                    <div style={{ background: 'rgba(232,85,85,0.07)', border: '1px solid rgba(232,85,85,0.2)', borderRadius: 12, padding: '0.75rem 1rem' }}>
+                      <div style={{ fontSize: '0.63rem', fontWeight: 800, color: '#E85555', letterSpacing: '0.1em', fontFamily: 'monospace', marginBottom: '0.5rem' }}>MISSING</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0.35rem' }}>
+                        {missingList.map((f: any) => (
+                          <span key={f.label} style={{ fontSize: '0.62rem', background: 'rgba(232,85,85,0.1)', border: '1px solid rgba(232,85,85,0.25)', borderRadius: 6, padding: '0.2rem 0.6rem', color: '#E85555', fontFamily: 'monospace' }}>{f.label}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ background: 'rgba(147,186,212,0.07)', border: '1px solid rgba(147,186,212,0.15)', borderRadius: 12, padding: '0.85rem 1rem', fontSize: '0.75rem', color: profile.text2, lineHeight: 1.7 }}>
+                    Go back and scan more positions, or tap <strong style={{ color: profile.text }}>Enter Measurements</strong> to type in values you measured with a tape measure. Both count toward the minimum.
+                  </div>
+                  <button onClick={() => { setSheet('hidden'); onRetake?.() }}
+                    style={{ width: '100%', padding: '0.95rem 1rem', background: `linear-gradient(135deg,${GOLD},#C4721E)`, border: 'none', borderRadius: 14, color: '#000', fontSize: '0.9rem', fontFamily: 'monospace', fontWeight: 900, letterSpacing: '0.06em', cursor: 'pointer', boxShadow: '0 4px 18px rgba(242,147,55,0.35)' }}>
+                    Enter / Review Measurements
+                  </button>
+                  <button onClick={() => { setSheet('hidden'); onRetake?.() }}
+                    style={{ width: '100%', padding: '0.85rem', background: 'rgba(147,186,212,0.07)', border: '1px solid rgba(147,186,212,0.2)', borderRadius: 12, color: profile.text2, fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: 700, cursor: 'pointer' }}>
+                    Go Back and Scan More
+                  </button>
+                  {hasMinimum && (
+                    <button onClick={() => handleGeneratePressed(true)}
+                      style={{ width: '100%', padding: '0.7rem', background: 'none', border: 'none', borderTop: '1px solid rgba(147,186,212,0.1)', color: profile.text3, fontSize: '0.63rem', fontFamily: 'monospace', cursor: 'pointer', paddingTop: '0.75rem' }}>
+                      Proceed with partial results ({measured.length} of {fields.length} only)
+                    </button>
+                  )}
                 </div>
-
-                <div style={{ background: 'rgba(242,147,55,0.08)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 12, padding: '0.85rem 1rem', fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}>
-                  For a meaningful compliance result, we recommend completing at least 3 measurements. You can go back and scan more positions to improve accuracy.
-                </div>
-
-                <button onClick={() => { setSheet('hidden'); onRetake?.() }} style={{ width: '100%', padding: '0.9rem', background: profile.pass, border: 'none', borderRadius: 12, color: '#fff', fontSize: '0.88rem', fontFamily: 'monospace', fontWeight: 700, cursor: 'pointer' }}>
-                  ← Go back and scan more
-                </button>
-                <button onClick={() => handleGeneratePressed(true)} style={{ width: '100%', padding: '0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${profile.bg3}`, borderRadius: 12, color: profile.text2, fontSize: '0.78rem', fontFamily: 'monospace', cursor: 'pointer' }}>
-                  Proceed anyway with partial results
-                </button>
-              </div>
-            )}
+              )
+            })()}
 
             {/* ── PLANS SHEET ── */}
             {sheet === 'plans' && <>
               {/* ── Trial / scan limit banner ── */}
               {trialExhausted && (
                 <div style={{ background: 'rgba(232,69,69,0.1)', border: '1.5px solid rgba(232,69,69,0.4)', borderRadius: 14, padding: '0.9rem 1.1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>🔒</span>
+                  <span style={{ fontSize: '1.2rem', flexShrink: 0 }}></span>
                   <div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#E84545', marginBottom: '0.25rem' }}>Free scans used up</div>
                     <div style={{ fontSize: '0.72rem', color: profile.text2, lineHeight: 1.6 }}>
@@ -1403,7 +1521,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                       onClick={() => { if (!trialExhausted) { Analytics.purchaseInitiated('report'); setSheet('report-ready') } }}
                       disabled={trialExhausted}
                       style={{ width: '100%', marginTop: '0.85rem', padding: '1.1rem', background: trialExhausted ? 'rgba(232,69,69,0.15)' : 'linear-gradient(135deg, #27A96B, #1A7A50)', border: trialExhausted ? '1px solid rgba(232,69,69,0.4)' : '2px solid rgba(39,169,107,0.6)', borderRadius: 14, cursor: trialExhausted ? 'default' : 'pointer', color: trialExhausted ? '#E84545' : '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.06em', boxShadow: trialExhausted ? 'none' : '0 6px 28px rgba(39,169,107,0.55)' }}>
-                      {trialExhausted ? '🔒 Free Trial Used' : '✉️  Email Me My Report →'}
+                      {trialExhausted ? ' Free Trial Used' : '✉️  Email Me My Report →'}
                     </button>
                     {trialExhausted ? (
                       <div style={{ fontSize: '0.68rem', color: '#E84545', textAlign:'center', marginTop:'0.35rem' }}>

@@ -20,7 +20,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'scan_ready'|'detect'|'capture'|'report'
+type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -279,6 +279,8 @@ export default function Home(){
     }
     if(payment==='cancelled'){
       if(product) Analytics.purchaseCancelled(product as 'report'|'pro')
+      // Clear payment params from URL — keep user on whatever screen they're on
+      // sessionStorage still has sc_fields so ReportScreen state is preserved
       window.history.replaceState({}, '', '/')
     }
   },[user])
@@ -510,18 +512,22 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   // handleCaptureComplete removed — capture screen deprecated
   const handleStartOver=useCallback(()=>{setMeasurements(null);setScreen('home')},[])
   const handleRetake=useCallback(()=>{
-    // Clear measurements and go back to scan
-    // Small delay ensures old camera stream is fully released before new one requests it
+    // Full retake — clears measurements, shows intro
     setMeasurements(null)
     setScreen('scan_ready')
+  },[])
+  const handleRetakeToReview=useCallback(()=>{
+    // Partial — keeps measurements, jumps straight to Review screen (no intro)
+    setScreen('scan_review')
   },[])
 
   // Full-screen flows (no bottom nav)
 
   if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('home')}/>
+  if(screen==='scan_review')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('report')} startAtReview={true}/>
   // Use IBC as fallback if code not yet detected (location loading)
   const activeCode = code ?? {code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
-  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetake} onStartOver={handleStartOver}/>
+  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
     <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>

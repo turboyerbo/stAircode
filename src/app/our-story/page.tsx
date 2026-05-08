@@ -18,7 +18,7 @@ export default function OurStoryPage() {
       <div style={{ background: '#0A1C2E', padding: '5rem 1.5rem 4rem' }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.16em', color: '#F29337', textTransform: 'uppercase', marginBottom: '1rem' }}>
-            Our Story
+            Blog
           </div>
           <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, color: '#E8F4FF', marginBottom: '1.5rem' }}>
             The starchitect is dead.

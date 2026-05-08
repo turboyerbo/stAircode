@@ -59,9 +59,10 @@ export default function UnlockPage() {
     const locP   = params.get('loc')
 
     // Check if returning from successful Stripe payment
-    if (params.get('payment') === 'success') setPaid(true)
+    const isPaymentSuccess = params.get('payment') === 'success'
+    if (isPaymentSuccess) setPaid(true)
 
-    // Try to restore from sessionStorage first (same-device flow)
+    // Priority 1: sessionStorage (same device/tab — most common mobile flow)
     const storedFields = (() => { try { return JSON.parse(sessionStorage.getItem('sc_fields') || '[]') } catch { return [] } })()
     const storedCode   = sessionStorage.getItem('sc_code_label') || ''
     const storedLoc    = sessionStorage.getItem('sc_location')   || ''
@@ -71,40 +72,43 @@ export default function UnlockPage() {
       setFields(storedFields)
       setCodeLabel(storedCode || codeP || 'Building Code')
       setLocation(storedLoc  || locP  || '')
-      setEmail(storedEmail || emailP || '')
+      setEmail(storedEmail   || emailP || '')
       setLoading(false)
       return
     }
 
-    // Fallback: load from server token
-    if (token) {
-      fetch(`/api/report/save?token=${token}`)
+    // Priority 2: token from URL (set by checkout success_url — survives cross-device)
+    const urlToken = token || params.get('token')
+    if (urlToken) {
+      fetch(`/api/report/save?token=${urlToken}`)
         .then(r => r.json())
         .then(d => {
-          if (d.ok) {
-            setFields(d.fields || [])
-            setCodeLabel(d.codeLabel || 'Building Code')
-            setLocation(d.location || '')
-            setEmail(d.email || emailP || '')
+          if (d.ok && d.fields?.length > 0) {
+            setFields(d.fields)
+            setCodeLabel(d.codeLabel || codeP || 'Building Code')
+            setLocation(d.location  || locP  || '')
+            setEmail(d.email        || storedEmail || emailP || '')
           } else {
-            // Token not found or expired — show helpful empty state
+            // Token exists but no data — use URL params as fallback
             setCodeLabel(codeP || 'Building Code')
-            setLocation(locP || '')
-            setEmail(emailP || '')
+            setLocation(locP   || '')
+            setEmail(storedEmail || emailP || '')
           }
         })
         .catch(() => {
           setCodeLabel(codeP || 'Building Code')
-          setLocation(locP || '')
-          setEmail(emailP || '')
+          setLocation(locP   || '')
+          setEmail(storedEmail || emailP || '')
         })
         .finally(() => setLoading(false))
-    } else {
-      setCodeLabel(codeP || 'Building Code')
-      setLocation(locP || '')
-      setEmail(emailP || '')
-      setLoading(false)
+      return
     }
+
+    // Priority 3: URL params only (minimal fallback)
+    setCodeLabel(codeP || 'Building Code')
+    setLocation(locP   || '')
+    setEmail(storedEmail || emailP || '')
+    setLoading(false)
   }, [])
 
   const passed  = fields.filter(f => f.pass === true  || f.clearAbove)

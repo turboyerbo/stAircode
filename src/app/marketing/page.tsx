@@ -186,7 +186,6 @@ export default function MarketingPage() {
       ══════════════════════════════════════════════ */}
       <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.1rem' }}>📍</span>
           <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0D1E2E' }}>
             Checks compliance with local building codes specific to your location
           </span>
@@ -203,9 +202,9 @@ export default function MarketingPage() {
             <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>See why building professionals choose stAIrcode</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
               {[
-                { icon: '📐', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
-                { icon: '⚖️', title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and 6 other codes. Pass/fail shown per dimension.' },
-                { icon: '📄', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for real estate disclosure, pre-inspection screening, or contractor briefings.' },
+                { icon: '', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
+                { icon: '', title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and 6 other codes. Pass/fail shown per dimension.' },
+                { icon: '', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for real estate disclosure, pre-inspection screening, or contractor briefings.' },
                 { icon: '🔵', title: 'AR Measurement Line', body: 'A blue measurement line animates across the screen as the AI reads each dimension — clear visual feedback showing exactly what\'s being measured.' },
               ].map(f => (
                 <div key={f.title} className={styles.featureCard}>
@@ -456,9 +455,12 @@ export default function MarketingPage() {
             {/* Article 1 — CTV News */}
             <a href="https://www.ctvnews.ca/ottawa/video/2026/03/02/ask-the-expert-stairway-safety-and-homeowner-liability/" target="_blank" rel="noopener noreferrer"
               style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#0A1C2E,#1a3a5c)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>⚖️</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>CTV NEWS · OTTAWA</span>
+              <div style={{ height: 160, overflow: 'hidden', position: 'relative', background: '#0A1C2E' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/news/ctv_stairway_safety.png" alt="CTV News — Stairway safety and homeowner liability" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.72),transparent)' }}>
+                  <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>CTV NEWS · OTTAWA</span>
+                </div>
               </div>
               <div style={{ padding: '1rem', flex: 1 }}>
                 <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>CUSTOMER STORY</div>
@@ -473,9 +475,12 @@ export default function MarketingPage() {
             {/* Article 2 — Global News */}
             <a href="https://globalnews.ca/news/10729529/firefighters-raise-concerns-about-b-c-s-new-single-stairwell-apartment-rules/" target="_blank" rel="noopener noreferrer"
               style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a2a1a,#2d4a2d)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🚒</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>GLOBAL NEWS · B.C.</span>
+              <div style={{ height: 160, overflow: 'hidden', position: 'relative', background: '#1a2a1a' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/news/global_news_firefighters.png" alt="Global News — Firefighters raise concerns about B.C. stairwell rules" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.72),transparent)' }}>
+                  <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>GLOBAL NEWS · B.C.</span>
+                </div>
               </div>
               <div style={{ padding: '1rem', flex: 1 }}>
                 <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY UPDATE</div>
@@ -490,9 +495,14 @@ export default function MarketingPage() {
             {/* Article 5 — OBC Reference */}
             <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer"
               style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#0a1a0a,#1a3a1a)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>📋</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>ONTARIO · BUILDING CODE</span>
+              <div style={{ height: 160, overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg,#0A1C2E,#1a3a2a)' }}>
+                <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff', lineHeight: 1.3, marginBottom: '0.3rem' }}>Ontario Building Code 2024</div>
+                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>Section 9.8 — Stair and Ramp Requirements</div>
+                </div>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.6),transparent)' }}>
+                  <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>ONTARIO · BUILDING CODE</span>
+                </div>
               </div>
               <div style={{ padding: '1rem', flex: 1 }}>
                 <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>REGULATORY</div>
@@ -507,9 +517,12 @@ export default function MarketingPage() {
             {/* Article 6 — WSJ */}
             <a href="https://www.wsj.com/articles/construction-companies-see-promise-in-ai-agents-12dc2d60" target="_blank" rel="noopener noreferrer"
               style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a1208,#3a2a10)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🤖</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>WALL STREET JOURNAL</span>
+              <div style={{ height: 160, overflow: 'hidden', position: 'relative', background: '#1a1208' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/news/wsj_ai_construction.png" alt="Wall Street Journal — Construction Companies See Promise in AI Agents" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.72),transparent)' }}>
+                  <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>WALL STREET JOURNAL</span>
+                </div>
               </div>
               <div style={{ padding: '1rem', flex: 1 }}>
                 <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY · AI</div>
@@ -545,10 +558,10 @@ export default function MarketingPage() {
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 {[
-                  { href: 'https://www.instagram.com/staircode/', label: '📸', title: 'Instagram' },
-                  { href: 'https://www.facebook.com/people/Staircode/61589350702805/', label: '👥', title: 'Facebook' },
-                  { href: 'https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share', label: '▶', title: 'Google Play' },
-                  { href: 'mailto:info@staircode.app', label: '✉', title: 'Email us' },
+                  { href: 'https://www.instagram.com/staircode/', label: 'IG', title: 'Instagram' },
+                  { href: 'https://www.facebook.com/people/Staircode/61589350702805/', label: 'FB', title: 'Facebook' },
+                  { href: 'https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share', label: 'GP', title: 'Google Play' },
+                  { href: 'mailto:info@staircode.app', label: '@', title: 'Email us' },
                 ].map(s => (
                   <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer" title={s.title}
                     style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F5FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', textDecoration: 'none', color: '#0D1E2E' }}>
@@ -690,7 +703,7 @@ export default function MarketingPage() {
           }}>
             {/* Icon + text */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: '1 1 280px' }}>
-              <span style={{ fontSize: '1.4rem', flexShrink: 0, marginTop: '0.1rem' }}>🍪</span>
+              
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E8F4FF', marginBottom: '0.3rem' }}>
                   We use cookies

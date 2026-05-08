@@ -173,13 +173,51 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          // 2. Email the report immediately after payment
-          // (The full report text is chunked in metadata)
-          if (report) await sendReportEmail(email, report, 'report')
-          else {
-            // Report text wasn't in metadata (too long) — send a notification
-            // The user can view/export the report from inside the app
-            await sendReportEmail(email, '[Report generated in-app — please open Staircode to view and export your report.]', 'report')
+          // 2. Generate the full report using saved scan data, then email it
+          const saveToken = meta.saveToken
+          const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
+
+          if (saveToken) {
+            try {
+              // Fetch the saved scan fields from the server
+              const savedRes  = await fetch(`${appUrl}/api/report/save?token=${saveToken}`)
+              const savedData = await savedRes.json()
+
+              if (savedData.ok && savedData.fields?.length > 0) {
+                // Generate the full AI report with the real measurements
+                const genRes = await fetch(`${appUrl}/api/report/generate`, {
+                  method:  'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    email,
+                    fields:    savedData.fields,
+                    codeLabel: savedData.codeLabel,
+                    location:  savedData.location,
+                    isOntario: savedData.isOntario,
+                    paid:      true,
+                  }),
+                })
+                const genData = await genRes.json()
+                if (genData.ok) {
+                  console.log(`[webhook] Full report generated and emailed to ${email}`)
+                } else {
+                  console.error('[webhook] Report generation failed:', genData.error)
+                  // Fallback: send notification
+                  await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
+                }
+              } else {
+                console.warn('[webhook] saveToken found but no fields returned — sending fallback')
+                await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
+              }
+            } catch (err) {
+              console.error('[webhook] Failed to fetch saved scan data:', err)
+              await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
+            }
+          } else if (report) {
+            // Legacy path: report text was chunked in metadata
+            await sendReportEmail(email, report, 'report')
+          } else {
+            await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
           }
         }
 

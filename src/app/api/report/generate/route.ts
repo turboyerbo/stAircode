@@ -67,47 +67,72 @@ function buildPrompt(
   location:  string,
   isOntario: boolean
 ): string {
+  const today = new Date().toLocaleDateString('en-CA', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  })
+
+  // Build measurement rows — missing values stated explicitly
   const rows = fields.map(f => {
-    const val    = f.clearAbove ? 'CLEAR/OPEN' : f.value != null ? `${Math.round(f.value)}mm` : 'Not measured'
+    const val    = f.clearAbove
+      ? 'CLEAR (obstruction-free confirmed)'
+      : f.value != null
+        ? `${Math.round(f.value)}mm`
+        : 'NOT CAPTURED — must be verified during formal inspection'
     const range  = f.min != null && f.max != null ? `${f.min}–${f.max}mm`
                  : f.min != null ? `≥${f.min}mm`
                  : f.max != null ? `≤${f.max}mm` : 'N/A'
-    const status = f.pass === true ? 'PASS' : f.pass === false ? 'FAIL' : 'N/A'
+    const status = f.value == null && !f.clearAbove
+      ? 'NOT ASSESSED'
+      : f.pass === true ? 'PASS' : f.pass === false ? 'FAIL' : 'N/A'
     return `${f.label}: ${val} (required: ${range}) — ${status}`
   }).join('\n')
 
-  const failed = fields.filter(f => f.pass === false)
+  const failed  = fields.filter(f => f.pass === false)
     .map(f => `${f.label}: measured ${f.value}mm`)
     .join('\n')
 
+  const missing = fields.filter(f => f.value == null && !f.clearAbove)
+    .map(f => f.label)
+    .join(', ')
+
   return `You are a professional building code compliance consultant. Write a concise pre-inspection stair assessment report.
 
-LOCATION: ${location || 'Unknown'}
-CODE: ${codeLabel} (${codeRef})${isOntario ? ' — Ontario, Canada' : ''}
+DATE: ${today}
+LOCATION: ${location || 'Not specified'}
+CODE: ${codeLabel}${codeRef ? ` (${codeRef})` : ''}${isOntario ? ' — Ontario, Canada' : ''}
 
 MEASUREMENTS:
 ${rows}
 
-${failed ? `FAILED ITEMS:\n${failed}` : 'All measured items passed.'}
+${failed  ? `FAILED ITEMS:\n${failed}` : 'All assessed items passed.'}
+${missing ? `NOT CAPTURED (must be verified during formal inspection): ${missing}` : ''}
 
-Write a professional report with these 5 sections. Plain text only — no markdown, no asterisks, no bullet symbols. Use proper grammar, correct spelling, and complete sentences throughout. Every sentence must be grammatically correct and read naturally.
+Write a professional report with exactly these 5 sections. Plain text only — no markdown, no asterisks, no bullet symbols. Use proper grammar, correct spelling, and complete sentences throughout.
+
+STRICT RULES:
+- Never write [Insert Date], [Address], [Consultant Name], or any placeholder in brackets.
+- The date of this assessment is ${today}. Use this date directly if you mention it.
+- Do not include a "Prepared By" line anywhere in the report.
+- For every NOT CAPTURED measurement: state clearly it was not assessed and must be physically verified during a formal inspection. Do not estimate it or guess.
+- For every FAIL: explain the specific deficiency and its safety or code consequence.
+- For every PASS: confirm it meets the requirement in one sentence.
 
 1. STAIR DESCRIPTION
-Brief description of the staircase based on the measurements (2-3 sentences).
+Brief description of the staircase based on the measurements (2-3 sentences). Do not include dates or consultant names.
 
 2. COMPLIANCE ANALYSIS
-For each measured dimension: what was found, what is required, and pass/fail. Be specific with values.
+For each assessed dimension: what was found, what is required, and the pass/fail result. For any NOT CAPTURED dimension, clearly state it was not assessed.
 
 3. APPLICABLE CODE SECTIONS
-List the specific ${codeLabel} sections that apply, with a plain-language summary of each requirement.
+The specific ${codeLabel} sections that apply, with a plain-language summary of each requirement.
 
-4. PROBABLE OCCUPANCY & RISK
-Most likely occupancy type based on the location and dimensions. Key compliance risks in order of severity.
+4. PROBABLE OCCUPANCY AND RISK
+Most likely occupancy type based on location and dimensions. Key compliance risks in order of severity.
 
 5. RECOMMENDATION
-One clear recommendation: whether a formal inspection is needed, what to fix first, and next steps.
+One clear recommendation: whether a formal inspection is needed, what to address first, and next steps.
 
-Keep the total report under 600 words. Be direct and professional. Proofread carefully — no spelling errors, no incomplete sentences, no run-on sentences.`
+Keep the total report under 600 words. Be direct and professional. No placeholder text of any kind.`
 }
 
 // ── Send email via Resend ──────────────────────────────────────────────────────
