@@ -26,8 +26,7 @@ function PhoneMockup() {
   const screen = PHONE_SCREENS[active]
 
   return (
-    <div style={{ position: 'relative', width: 240, userSelect: 'none' }}>
-      {/* Phone shell */}
+    <div style={{ position: 'relative', width: 240, userSelect: 'none' }}>{/* Phone shell */}
       <div style={{
         width: 240,
         borderRadius: 40,
@@ -35,16 +34,13 @@ function PhoneMockup() {
         boxShadow: '0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.05)',
         padding: '14px 11px 22px',
         position: 'relative',
-      }}>
-        {/* Dynamic island / notch */}
-        <div style={{ width: 88, height: 28, background: '#1c1c1e', borderRadius: 16, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#333' }} />
+      }}>{/* Dynamic island / notch */}
+        <div style={{ width: 88, height: 28, background: '#1c1c1e', borderRadius: 16, margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><div style={{ width: 11, height: 11, borderRadius: '50%', background: '#333' }} />
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#444' }} />
         </div>
 
         {/* Screen area */}
-        <div style={{ borderRadius: 24, overflow: 'hidden', position: 'relative', background: '#000', aspectRatio: '9/19.5' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div style={{ borderRadius: 24, overflow: 'hidden', position: 'relative', background: '#000', aspectRatio: '9/19.5' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={screen.src}
             alt={screen.alt}
@@ -65,9 +61,7 @@ function PhoneMockup() {
             padding: '1.5rem 0.75rem 0.7rem',
             opacity: fading ? 0 : 1,
             transition: 'opacity 0.35s ease',
-          }}>
-            <div style={{ fontSize: '0.58rem', fontWeight: 800, color: '#F29337', letterSpacing: '0.12em', fontFamily: 'monospace' }}>
-              {screen.label.toUpperCase()}
+          }}><div style={{ fontSize: '0.58rem', fontWeight: 800, color: '#F29337', letterSpacing: '0.12em', fontFamily: 'monospace' }}>{screen.label.toUpperCase()}
             </div>
           </div>
         </div>

@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     <!-- Body -->
     <div style="padding:28px 32px;">
 
-      <h2 style="margin:0 0 20px;font-size:1.1rem;color:#0A1C2E;">📣 New Testimonial Submitted</h2>
+      <h2 style="margin:0 0 20px;font-size:1.1rem;color:#0A1C2E;"> New Testimonial Submitted</h2>
 
       <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
         <tr style="border-bottom:1px solid #E5EBF2;">
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       </div>
 
       <div style="margin-top:24px;padding:14px 18px;background:#E8F5EE;border-radius:10px;font-size:0.78rem;color:#1A6B44;">
-        ✅ This user has been granted a <strong>free report unlock</strong> as thanks for their testimonial.
+         This user has been granted a <strong>free report unlock</strong> as thanks for their testimonial.
       </div>
     </div>
 
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           from,
           to:      [OWNER_EMAIL],
-          subject: `🌟 New Beta Testimonial — ${name}, ${business}`,
+          subject: ` New Beta Testimonial — ${name}, ${business}`,
           html,
           reply_to: email || undefined,
         }),

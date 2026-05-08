@@ -82,7 +82,7 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
     : `
       <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:2rem;color:#1a2b3c">
         <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 1rem;" />
-        <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro 🎉</h1>
+        <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro </h1>
         <p style="color:#555;line-height:1.6">Your Pro subscription is now active. You have 20 scans/month, full compliance reports, and access to all supported building codes.</p>
         <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#1565C0;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Open Staircode →</a>
         <p style="margin-top:2rem;font-size:0.8rem;color:#999">Manage your subscription at staircode.app/settings · Cancel anytime.</p>
@@ -191,6 +191,7 @@ export async function POST(req: NextRequest) {
                   body: JSON.stringify({
                     email,
                     fields:    savedData.fields,
+                    frames:    savedData.frames ?? {},    // ← include measurement photos
                     codeLabel: savedData.codeLabel,
                     location:  savedData.location,
                     isOntario: savedData.isOntario,

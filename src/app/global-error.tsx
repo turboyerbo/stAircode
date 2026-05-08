@@ -32,11 +32,9 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
 
   return (
     <html>
-      <body style={{ fontFamily: 'system-ui,sans-serif', background: '#0A1C2E', color: '#E8F4FF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '2rem' }}>⚠️</div>
+      <body style={{ fontFamily: 'system-ui,sans-serif', background: '#0A1C2E', color: '#E8F4FF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1rem', padding: '2rem', textAlign: 'center' }}><div style={{ fontSize: '2rem' }}></div>
         <h1 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>Something went wrong</h1>
-        <p style={{ fontSize: '0.88rem', color: '#93BAD4', maxWidth: 360, lineHeight: 1.65, margin: 0 }}>
-          An unexpected error occurred. Please refresh the page or contact{' '}
+        <p style={{ fontSize: '0.88rem', color: '#93BAD4', maxWidth: 360, lineHeight: 1.65, margin: 0 }}>An unexpected error occurred. Please refresh the page or contact{' '}
           <a href="mailto:info@staircode.app" style={{ color: '#F29337' }}>info@staircode.app</a> if it persists.
         </p>
         <button

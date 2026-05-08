@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
   const failCount = measuredFields.filter((f: any) => f.pass === false).length
   const overallPass = failCount === 0 && measuredFields.length > 0
   const verdictColor  = overallPass ? passColor : failColor
-  const verdictLabel  = overallPass ? '✓ COMPLIANT' : '⚠ REVIEW REQUIRED'
+  const verdictLabel  = overallPass ? ' COMPLIANT' : ' REVIEW REQUIRED'
 
   const html = `
 <!DOCTYPE html>
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
   <!-- Beta pricing banner -->
   <div style="background:linear-gradient(135deg,#F29337,#C4721E);padding:0.75rem 2rem;text-align:center;">
     <p style="margin:0;font-size:0.85rem;font-weight:800;color:#fff;">
-      🎉 Get your full report for <span style="text-decoration:line-through;opacity:0.65;font-weight:400;">$38.99</span> &nbsp;<strong>$2.99</strong> — Beta testing discount
+       Get your full report for <span style="text-decoration:line-through;opacity:0.65;font-weight:400;">$38.99</span> &nbsp;<strong>$2.99</strong> — Beta testing discount
     </p>
   </div>
 
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     <!-- Lock + CTA -->
     <div style="text-align:center;padding:1rem 0 1.75rem;">
-      <div style="font-size:1.8rem;margin-bottom:0.5rem;">🔒</div>
+      <div style="font-size:1.8rem;margin-bottom:0.5rem;"></div>
       <p style="font-size:0.95rem;font-weight:800;color:#0D1E2E;margin:0 0 0.35rem;">Full report locked</p>
       <p style="font-size:0.78rem;color:#5E7D9B;margin:0 0 1.25rem;line-height:1.6;">
         Your full report includes detailed code citations, measurement photos,<br>and a pre-inspection summary — ready to share with your inspector.
@@ -182,12 +182,12 @@ export async function POST(req: NextRequest) {
     <p style="font-size:0.72rem;font-weight:800;color:#0D1E2E;margin:0 0 0.6rem;letter-spacing:0.06em;text-transform:uppercase;">Your full PDF report includes:</p>
     <table style="width:100%;border-collapse:collapse;">
       <tr>
-        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0.5rem 0.2rem 0;width:50%;">✓ All measurements with code limits</td>
-        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0;">✓ Building code section citations</td>
+        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0.5rem 0.2rem 0;width:50%;"> All measurements with code limits</td>
+        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0;"> Building code section citations</td>
       </tr>
       <tr>
-        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0.5rem 0.2rem 0;">✓ Measurement photographs</td>
-        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0;">✓ Pre-inspection summary</td>
+        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0.5rem 0.2rem 0;"> Measurement photographs</td>
+        <td style="font-size:0.78rem;color:#2C4A66;padding:0.2rem 0;"> Pre-inspection summary</td>
       </tr>
     </table>
   </div>

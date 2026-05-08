@@ -145,7 +145,7 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
   const date    = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 
 
-  // Build photo grid HTML if frames were captured
+  // Build photo grid HTML — embed actual images, two per row
   const frameLabels: Record<string,string> = {
     overview:    'Full Stair View',
     riser_front: 'Riser Height',
@@ -155,28 +155,38 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
     alt_angle:   'Stair Width',
     tread_top:   'Tread Depth',
   }
-  const frameEntries = Object.entries(frames).filter(([k]) => frameLabels[k] && frames[k])
-  // Photo grid: each row = label + measurement reading (inline images blocked by many email clients)
-  // Instead we describe what was captured with a visual indicator row
-  const photoGridHtml = frameEntries.length > 0 ? `
+  const frameEntries = Object.entries(frames).filter(([k]) => frameLabels[k] && frames[k] && (frames[k] as string).length > 100)
+
+  const photoGridHtml = (() => {
+    if (frameEntries.length === 0) return `
+    <div style="background:#FFF8F0;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:1rem 2rem;">
+      <p style="font-size:0.78rem;color:#8A6A3A;margin:0;">No measurement photos were captured during this scan.</p>
+    </div>`
+
+    const rows: string[] = []
+    for (let i = 0; i < frameEntries.length; i += 2) {
+      const cells = frameEntries.slice(i, i + 2).map(([posId, b64]) => {
+        const src = (b64 as string).startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`
+        return `
+          <td style="width:50%;padding:6px;vertical-align:top;">
+            <img src="${src}" alt="${frameLabels[posId] ?? posId}"
+              width="260"
+              style="width:100%;max-width:260px;height:180px;object-fit:cover;border-radius:10px;display:block;border:1px solid #E5EBF2;" />
+            <div style="font-size:11px;font-weight:700;color:#0A1C2E;margin-top:5px;text-align:center;font-family:monospace;letter-spacing:0.05em;">
+              ${frameLabels[posId] ?? posId}
+            </div>
+          </td>`
+      }).join('')
+      rows.push(`<tr>${cells}</tr>`)
+    }
+
+    return `
     <div style="background:#F5F8FA;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:1.5rem 2rem;">
-      <h2 style="font-size:0.85rem;font-weight:800;color:#0A1C2E;margin:0 0 0.25rem;letter-spacing:0.05em;text-transform:uppercase;">📸 Measurements Captured</h2>
-      <p style="font-size:0.72rem;color:#4E7A9B;margin:0 0 1rem;">The following positions were successfully scanned during this inspection.</p>
-      <table style="width:100%;border-collapse:collapse;">
-        <tr style="background:#E8F4FF;">
-          <th style="padding:0.5rem 0.75rem;font-size:0.65rem;color:#2C5A7A;font-weight:700;text-align:left;font-family:monospace;letter-spacing:0.08em;text-transform:uppercase;">Position</th>
-          <th style="padding:0.5rem 0.75rem;font-size:0.65rem;color:#2C5A7A;font-weight:700;text-align:left;font-family:monospace;letter-spacing:0.08em;text-transform:uppercase;">Status</th>
-        </tr>
-        ${frameEntries.map(([posId], i) => `
-        <tr style="background:${i % 2 === 0 ? '#ffffff' : '#F5F8FA'};">
-          <td style="padding:0.5rem 0.75rem;font-size:0.8rem;color:#0A1C2E;font-weight:600;">${frameLabels[posId] ?? posId}</td>
-          <td style="padding:0.5rem 0.75rem;font-size:0.75rem;color:#27A96B;font-weight:700;">✓ Captured</td>
-        </tr>`).join('')}
-      </table>
-      <p style="font-size:0.65rem;color:#93BAD4;margin:0.75rem 0 0;font-style:italic;">
-        ${frameEntries.length} of 7 measurement positions captured during this inspection.
-      </p>
-    </div>` : ''
+      <h2 style="font-size:13px;font-weight:800;color:#0A1C2E;margin:0 0 4px;letter-spacing:0.05em;text-transform:uppercase;">Measurement Photos</h2>
+      <p style="font-size:11px;color:#4E7A9B;margin:0 0 14px;">${frameEntries.length} of ${Object.keys(frameLabels).length} positions captured during this inspection.</p>
+      <table style="width:100%;border-collapse:collapse;">${rows.join('')}</table>
+    </div>`
+  })()
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

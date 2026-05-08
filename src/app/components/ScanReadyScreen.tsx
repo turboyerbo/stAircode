@@ -1375,8 +1375,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
   // ── Camera error ──────────────────────────────────────────────────────────
   if (camError) return (
-    <div style={{position:'fixed',inset:0,background:NAVY,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
-      <div style={{fontSize:'2rem'}}>📷</div>
+    <div style={{position:'fixed',inset:0,background:NAVY,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{fontSize:'2rem'}}></div>
       <p style={{color:WHITE,textAlign:'center'}}>Camera access is required to scan stairs.</p>
       <button onClick={onBack} style={{padding:'0.8rem 2rem',background:AMBER,border:'none',borderRadius:12,color:'#fff',fontWeight:700,cursor:'pointer'}}>Back</button>
     </div>
@@ -1397,17 +1396,14 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
     const slide = INTRO_SLIDES[introSlide]
     const isLast = introSlide === INTRO_SLIDES.length - 1
     return (
-      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>
-        {/* Header */}
-        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-          <button onClick={onBack} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.85rem',cursor:'pointer',fontFamily:'monospace',padding:'0.25rem 0'}}>← Exit</button>
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>{/* Header */}
+        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}><button onClick={onBack} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.85rem',cursor:'pointer',fontFamily:'monospace',padding:'0.25rem 0'}}>← Exit</button>
           <span style={{fontSize:'0.72rem',fontFamily:'monospace',color:'#9ca3af',letterSpacing:'0.1em'}}>HOW TO SCAN</span>
           <button onClick={()=>setShowIntro(false)} style={{background:'none',border:'none',color:'#6b7280',fontSize:'0.75rem',cursor:'pointer',fontFamily:'monospace'}}>Skip →</button>
         </div>
 
         {/* Image — full white bg, fills most of screen */}
-        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>{/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={slide.img}
             src={slide.img}
@@ -1418,27 +1414,23 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
           {introSlide > 0 && (
             <button
               onClick={()=>setIntroSlide(i=>i-1)}
-              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
-              ‹
+              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>‹
             </button>
           )}
           {/* Right arrow */}
           <button
             onClick={()=>{ if(isLast) setShowIntro(false); else setIntroSlide(i=>i+1) }}
-            style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background: isLast ? '#27A96B' : 'rgba(10,28,46,0.85)',border:`2px solid ${isLast ? '#27A96B' : 'rgba(255,255,255,0.25)'}`,color:'#fff',fontSize: isLast ? '1rem' : '1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)',fontFamily:'monospace'}}>
-            {isLast ? '✓' : '›'}
+            style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background: isLast ? '#27A96B' : 'rgba(10,28,46,0.85)',border:`2px solid ${isLast ? '#27A96B' : 'rgba(255,255,255,0.25)'}`,color:'#fff',fontSize: isLast ? '1rem' : '1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)',fontFamily:'monospace'}}>{isLast ? '' : '›'}
           </button>
         </div>
 
         {/* Text */}
-        <div style={{padding:'1rem 1.25rem',flexShrink:0}}>
-          <div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
+        <div style={{padding:'1rem 1.25rem',flexShrink:0}}><div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
           <div style={{fontSize:'0.82rem',color:'#4b5563',lineHeight:1.6,fontFamily:'system-ui,sans-serif'}}>{slide.desc}</div>
         </div>
 
         {/* Dot indicators */}
-        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 0.75rem)',paddingTop:'0.25rem',flexShrink:0}}>
-          {INTRO_SLIDES.map((_,i)=>(
+        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 0.75rem)',paddingTop:'0.25rem',flexShrink:0}}>{INTRO_SLIDES.map((_,i)=>(
             <div key={i} onClick={()=>setIntroSlide(i)} style={{
               width: i===introSlide ? 22 : 8, height:8,
               borderRadius: i===introSlide ? 4 : '50%',
@@ -1450,11 +1442,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
         {/* Start scan button — only on last slide */}
         {isLast && (
-          <div style={{padding:'0 1.25rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1rem)',flexShrink:0}}>
-            <button
+          <div style={{padding:'0 1.25rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1rem)',flexShrink:0}}><button
               onClick={()=>setShowIntro(false)}
-              style={{width:'100%',padding:'1.1rem',background:'linear-gradient(135deg,#0A1C2E,#1a3a5c)',border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'1rem',fontWeight:900,letterSpacing:'0.06em',cursor:'pointer',boxShadow:'0 6px 24px rgba(10,28,46,0.4)'}}>
-              📷 Start Scanning →
+              style={{width:'100%',padding:'1.1rem',background:'linear-gradient(135deg,#0A1C2E,#1a3a5c)',border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'1rem',fontWeight:900,letterSpacing:'0.06em',cursor:'pointer',boxShadow:'0 6px 24px rgba(10,28,46,0.4)'}}>Start Scanning →
             </button>
           </div>
         )}
@@ -1469,42 +1459,34 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
     const slide = INTRO_SLIDES[introSlide]
     const isLast = introSlide === INTRO_SLIDES.length - 1
     return (
-      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>
-        {/* Header */}
-        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-          <span style={{fontSize:'0.85rem',fontWeight:700,color:'#0A1C2E',fontFamily:'system-ui,sans-serif'}}>📷 AI Guide</span>
+      <div style={{position:'fixed',inset:0,background:'#fff',display:'flex',flexDirection:'column',zIndex:9999}}>{/* Header */}
+        <div style={{padding:'1rem 1.25rem 0.75rem',borderBottom:'1px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}><span style={{fontSize:'0.85rem',fontWeight:700,color:'#0A1C2E',fontFamily:'system-ui,sans-serif'}}> AI Guide</span>
           <button
             onClick={()=>setShowGuide(false)}
-            style={{background:'#0A1C2E',border:'none',borderRadius:10,color:'#fff',fontSize:'0.8rem',fontFamily:'monospace',fontWeight:700,cursor:'pointer',padding:'0.5rem 1rem',letterSpacing:'0.06em'}}>
-            ← Resume Scan
+            style={{background:'#0A1C2E',border:'none',borderRadius:10,color:'#fff',fontSize:'0.8rem',fontFamily:'monospace',fontWeight:700,cursor:'pointer',padding:'0.5rem 1rem',letterSpacing:'0.06em'}}>← Resume Scan
           </button>
         </div>
 
-        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div style={{flex:1,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff',position:'relative'}}>{/* eslint-disable-next-line @next/next/no-img-element */}
               <img key={slide.img} src={slide.img} alt={slide.title}
             style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',display:'block',animation:'fadeSlide 0.3s ease'}}/>
           {introSlide > 0 && (
             <button onClick={()=>setIntroSlide(i=>i-1)}
-              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
-              ‹
+              style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>‹
             </button>
           )}
           {!isLast && (
             <button onClick={()=>setIntroSlide(i=>i+1)}
-              style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>
-              ›
+              style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:14,background:'rgba(10,28,46,0.85)',border:'2px solid rgba(255,255,255,0.25)',color:'#fff',fontSize:'1.6rem',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(0,0,0,0.3)'}}>›
             </button>
           )}
         </div>
 
-        <div style={{padding:'1rem 1.25rem',flexShrink:0}}>
-          <div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
+        <div style={{padding:'1rem 1.25rem',flexShrink:0}}><div style={{fontSize:'1rem',fontWeight:800,color:'#0A1C2E',marginBottom:'0.35rem',fontFamily:'system-ui,sans-serif'}}>{slide.title}</div>
           <div style={{fontSize:'0.82rem',color:'#4b5563',lineHeight:1.6,fontFamily:'system-ui,sans-serif'}}>{slide.desc}</div>
         </div>
 
-        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1.5rem)',paddingTop:'0.25rem',flexShrink:0}}>
-          {INTRO_SLIDES.map((_,i)=>(
+        <div style={{display:'flex',justifyContent:'center',gap:'0.45rem',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 1.5rem)',paddingTop:'0.25rem',flexShrink:0}}>{INTRO_SLIDES.map((_,i)=>(
             <div key={i} onClick={()=>setIntroSlide(i)} style={{
               width: i===introSlide ? 22 : 8, height:8,
               borderRadius: i===introSlide ? 4 : '50%',
@@ -1521,14 +1503,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
   if (showReview) return (
     <div style={{position:'fixed',inset:0,background:NAVY,overflowY:'auto',
       padding:'max(env(safe-area-inset-top,0px),2.5rem) 1.25rem 3rem',
-      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
-      <div style={{maxWidth:440,margin:'0 auto',display:'flex',flexDirection:'column',gap:'0.85rem'}}>
-
-        <div style={{textAlign:'center',marginBottom:'0.25rem'}}>
-          <div style={{fontSize:'1.5rem',marginBottom:'0.3rem'}}>📐</div>
+      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{maxWidth:440,margin:'0 auto',display:'flex',flexDirection:'column',gap:'0.85rem'}}><div style={{textAlign:'center',marginBottom:'0.25rem'}}><div style={{fontSize:'1.5rem',marginBottom:'0.3rem'}}></div>
           <div style={{fontSize:'1.1rem',fontWeight:800,color:WHITE}}>Review Measurements</div>
-          <div style={{fontSize:'0.72rem',color:WHITE2,marginTop:'0.25rem',lineHeight:1.5}}>
-            Tap ↺ on any row to rescan that measurement. Tap a value to edit it manually.
+          <div style={{fontSize:'0.72rem',color:WHITE2,marginTop:'0.25rem',lineHeight:1.5}}>Tap ↺ on any row to rescan that measurement. Tap a value to edit it manually.
           </div>
         </div>
 
@@ -1548,10 +1525,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
               border:`1.5px solid ${isMissing ? 'rgba(250,116,31,0.35)' : BORDER}`,
               background: isMissing ? 'rgba(250,116,31,0.06)' : 'rgba(255,255,255,0.04)',
               overflow:'hidden',
-            }}>
-              {/* Row header */}
-              <div style={{display:'flex',alignItems:'center',padding:'0.7rem 0.9rem',gap:'0.6rem'}}>
-                {/* Status dot */}
+            }}>{/* Row header */}
+              <div style={{display:'flex',alignItems:'center',padding:'0.7rem 0.9rem',gap:'0.6rem'}}>{/* Status dot */}
                 <div style={{
                   width:8,height:8,borderRadius:'50%',flexShrink:0,
                   background: isMissing ? AMBER : GREEN,
@@ -1576,10 +1551,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
               </div>
 
               {/* Value area */}
-              <div style={{padding:'0 0.9rem 0.75rem'}}>
-                {type==='number' && (
-                  <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}>
-                    <input type="number" inputMode="numeric"
+              <div style={{padding:'0 0.9rem 0.75rem'}}>{type==='number' && (
+                  <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}><input type="number" inputMode="numeric"
                       value={reviewVals[key]!=null && reviewVals[key]!=='clear' && reviewVals[key]!=='none' ? String(reviewVals[key]) : ''}
                       placeholder={isMissing ? 'Not captured — tap ↺ to rescan' : '—'}
                       onChange={e=>{ const v=parseInt(e.target.value,10); if(!isNaN(v)&&v>0) setReviewVals(p=>({...p,[key]:v})) }}
@@ -1595,25 +1568,21 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                   </div>
                 )}
                 {type==='nosing' && (
-                  <div style={{display:'flex',gap:'0.4rem'}}>
-                    {(['none','yes'] as const).map(opt=>(
+                  <div style={{display:'flex',gap:'0.4rem'}}>{(['none','yes'] as const).map(opt=>(
                       <button key={opt} onClick={()=>setReviewVals(p=>({...p,nosing:opt==='yes'?(nosingMm||30):'none'}))}
                         style={{padding:'0.45rem 1rem',borderRadius:10,border:'none',cursor:'pointer',fontFamily:'monospace',fontSize:'0.78rem',fontWeight:700,
                           background:(opt==='none'?reviewVals[key]==='none':reviewVals[key]!=='none'&&reviewVals[key]!=null)?AMBER+'33':'rgba(255,255,255,0.06)',
-                          color:(opt==='none'?reviewVals[key]==='none':reviewVals[key]!=='none'&&reviewVals[key]!=null)?AMBER:WHITE2}}>
-                        {opt==='none'?'No nosing':'Has nosing'}
+                          color:(opt==='none'?reviewVals[key]==='none':reviewVals[key]!=='none'&&reviewVals[key]!=null)?AMBER:WHITE2}}>{opt==='none'?'No nosing':'Has nosing'}
                       </button>
                     ))}
                   </div>
                 )}
                 {type==='headroom' && (
-                  <div style={{display:'flex',gap:'0.4rem'}}>
-                    {(['clear','low'] as const).map(opt=>(
+                  <div style={{display:'flex',gap:'0.4rem'}}>{(['clear','low'] as const).map(opt=>(
                       <button key={opt} onClick={()=>setReviewVals(p=>({...p,headroom:opt==='clear'?'clear':(p.headroom!=='clear'?p.headroom:1950)}))}
                         style={{padding:'0.45rem 1rem',borderRadius:10,border:'none',cursor:'pointer',fontFamily:'monospace',fontSize:'0.78rem',fontWeight:700,
                           background:(opt==='clear'?reviewVals[key]==='clear':reviewVals[key]!=='clear'&&reviewVals[key]!=null)?GREEN+'33':'rgba(255,255,255,0.06)',
-                          color:(opt==='clear'?reviewVals[key]==='clear':reviewVals[key]!=='clear'&&reviewVals[key]!=null)?GREEN:WHITE2}}>
-                        {opt==='clear'?'✓ Clear':'⚠ Low'}
+                          color:(opt==='clear'?reviewVals[key]==='clear':reviewVals[key]!=='clear'&&reviewVals[key]!=null)?GREEN:WHITE2}}>{opt==='clear'?' Clear':' Low'}
                       </button>
                     ))}
                   </div>
@@ -1625,14 +1594,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
         {/* Missing items callout */}
         {Object.values(reviewVals).filter(v=>v!=null).length < 4 && (
-          <div style={{background:'rgba(250,116,31,0.08)',border:'1px solid rgba(250,116,31,0.25)',borderRadius:12,padding:'0.65rem 0.9rem',fontSize:'0.72rem',color:WHITE2,lineHeight:1.6}}>
-            <strong style={{color:AMBER}}>Some measurements are missing.</strong> You can still generate a partial report,
+          <div style={{background:'rgba(250,116,31,0.08)',border:'1px solid rgba(250,116,31,0.25)',borderRadius:12,padding:'0.65rem 0.9rem',fontSize:'0.72rem',color:WHITE2,lineHeight:1.6}}><strong style={{color:AMBER}}>Some measurements are missing.</strong> You can still generate a partial report,
             or tap ↺ Rescan on any row to go back and capture it.
           </div>
         )}
 
-        <button onClick={submitReview} style={{width:'100%',padding:'1.1rem',background:`linear-gradient(135deg,${GREEN},#1A7A50)`,border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'0.95rem',fontWeight:900,letterSpacing:'0.08em',cursor:'pointer',boxShadow:'0 4px 24px rgba(39,169,107,0.4)',marginTop:'0.25rem'}}>
-          Generate Report →
+        <button onClick={submitReview} style={{width:'100%',padding:'1.1rem',background:`linear-gradient(135deg,${GREEN},#1A7A50)`,border:'none',borderRadius:16,color:'#fff',fontFamily:'monospace',fontSize:'0.95rem',fontWeight:900,letterSpacing:'0.08em',cursor:'pointer',boxShadow:'0 4px 24px rgba(39,169,107,0.4)',marginTop:'0.25rem'}}>Generate Report →
         </button>
       </div>
     </div>
@@ -1640,9 +1607,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
   // ── Main scan UI ──────────────────────────────────────────────────────────
   return (
-    <div ref={arOverlayRef} style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
-
-      {/* Live camera feed */}
+    <div ref={arOverlayRef} style={{position:'fixed',inset:0,background:'#000',overflow:'hidden',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>{/* Live camera feed */}
       {/* iOS Safari requires playsInline AND webkit-playsinline as HTML attributes */}
       <video
         ref={videoRef}
@@ -1708,8 +1673,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
             overflow: 'hidden',   // ← clips SVG to camera zone only
             pointerEvents: 'none',
             zIndex: 18,
-          }}>
-            <ARMeasurementOverlay
+          }}><ARMeasurementOverlay
               posId={currentPos.id}
               color={color}
               valueMm={valueMm}
@@ -1792,9 +1756,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
       {/* ── IMAGE ZONE — illustration overlaid on camera ─────────────────── */}
       {/* Countdown timer — top right, only during position stage */}
       {showIllustration && stage === 'position' && (
-        <div style={{position:'absolute',top:IMAGE_TOP+10,right:12,background:'rgba(10,28,46,0.88)',backdropFilter:'blur(8px)',borderRadius:12,padding:'0.4rem 0.75rem',border:`1px solid ${AMBER}55`,display:'flex',alignItems:'center',gap:'0.5rem',zIndex:12}}>
-          <svg width="20" height="20" viewBox="0 0 36 36" style={{transform:'rotate(-90deg)',flexShrink:0}}>
-            <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3"/>
+        <div style={{position:'absolute',top:IMAGE_TOP+10,right:12,background:'rgba(10,28,46,0.88)',backdropFilter:'blur(8px)',borderRadius:12,padding:'0.4rem 0.75rem',border:`1px solid ${AMBER}55`,display:'flex',alignItems:'center',gap:'0.5rem',zIndex:12}}><svg width="20" height="20" viewBox="0 0 36 36" style={{transform:'rotate(-90deg)',flexShrink:0}}><circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3"/>
             <circle cx="18" cy="18" r="14" fill="none" stroke={AMBER} strokeWidth="3"
               strokeDasharray={`${2*Math.PI*14}`}
               strokeDashoffset={`${2*Math.PI*14*(countdown/currentPos.positionTime)}`}
@@ -1816,10 +1778,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
           : 'linear-gradient(to bottom,rgba(10,28,46,0.95),rgba(10,28,46,0.6))',
         display:'flex',alignItems:'center',gap:'0.75rem',
         height:IMAGE_TOP,boxSizing:'border-box',
-      }}>
-        {/* Back button → dropdown menu */}
-        <div style={{position:'relative',flexShrink:0}}>
-          <button
+      }}>{/* Back button → dropdown menu */}
+        <div style={{position:'relative',flexShrink:0}}><button
             onClick={()=>setShowBackMenu(v=>!v)}
             style={{width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.5)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}
           >←</button>
@@ -1831,8 +1791,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
               padding:'0.4rem',zIndex:200,
               display:'flex',flexDirection:'column',gap:'0.25rem',
               minWidth:160,boxShadow:'0 8px 32px rgba(0,0,0,0.6)',
-            }}>
-              {/* Go back one step */}
+            }}>{/* Go back one step */}
               <button
                 onClick={()=>{ setShowBackMenu(false); if(posIdx>0) goTo(posIdx-1); else setShowBackMenu(false) }}
                 style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:WHITE,fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
@@ -1844,7 +1803,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                 onClick={()=>{ setShowBackMenu(false); finishScan() }}
                 style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:GREEN,fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
               >
-                <span style={{fontSize:'1rem'}}>📋</span> View Report
+                 View Report
               </button>
               {/* Divider */}
               <div style={{height:1,background:BORDER,margin:'0.15rem 0'}}/>
@@ -1853,7 +1812,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                 onClick={()=>{ setShowBackMenu(false); onBack() }}
                 style={{padding:'0.65rem 0.9rem',background:'transparent',border:'none',borderRadius:10,color:'rgba(255,100,100,0.85)',fontSize:'0.82rem',fontWeight:600,cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:'0.5rem'}}
               >
-                <span style={{fontSize:'1rem'}}>🚪</span> Sign Out
+                 Sign Out
               </button>
               {/* Dismiss */}
               <button
@@ -1865,13 +1824,10 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
             </div>
           )}
         </div>
-        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'0.25rem'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:'0.6rem',fontFamily:'monospace',letterSpacing:'0.1em',color:WHITE2}}>STEP {currentPos.step} / 5</span>
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'0.25rem'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:'0.6rem',fontFamily:'monospace',letterSpacing:'0.1em',color:WHITE2}}>STEP {currentPos.step} / 5</span>
             <span style={{fontSize:'0.72rem',fontWeight:700,color:WHITE}}>{currentPos.label}</span>
           </div>
-          <div style={{height:3,background:'rgba(255,255,255,0.1)',borderRadius:2,overflow:'hidden'}}>
-            <div style={{height:'100%',width:`${progressPct}%`,background:`linear-gradient(90deg,${GREEN},${BLUE})`,borderRadius:2,transition:'width 0.4s ease'}}/>
+          <div style={{height:3,background:'rgba(255,255,255,0.1)',borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:`${progressPct}%`,background:`linear-gradient(90deg,${GREEN},${BLUE})`,borderRadius:2,transition:'width 0.4s ease'}}/>
           </div>
         </div>
         {/* Forward arrow — skip to next step */}
@@ -1891,14 +1847,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
         {/* AI Guide button */}
         <button
           onClick={()=>{ setShowGuide(true); setIntroSlide(Math.max(0, Math.min(posIdx, INTRO_SLIDES.length-1))) }}
-          style={{background:'rgba(10,28,46,0.7)',border:`1px solid ${BORDER}`,borderRadius:10,padding:'0.28rem 0.65rem',color:WHITE2,fontFamily:'monospace',fontSize:'0.58rem',fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
-          <span>📷</span><span>Guide</span>
+          style={{background:'rgba(10,28,46,0.7)',border:`1px solid ${BORDER}`,borderRadius:10,padding:'0.28rem 0.65rem',color:WHITE2,fontFamily:'monospace',fontSize:'0.58rem',fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}><span>Guide</span>
         </button>
         {/* AR / AI badge */}
         <div
           title={arSupported ? 'ARCore active' : 'AI Vision mode'}
-          style={{background:arSupported?'rgba(74,144,226,0.15)':'rgba(242,147,55,0.15)',border:`1px solid ${arSupported?'rgba(74,144,226,0.4)':'rgba(242,147,55,0.4)'}`,borderRadius:10,padding:'0.18rem 0.6rem',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}>
-          <div style={{width:5,height:5,borderRadius:'50%',background:arSupported?BLUE:AMBER,boxShadow:`0 0 4px ${arSupported?BLUE:AMBER}`}}/>
+          style={{background:arSupported?'rgba(74,144,226,0.15)':'rgba(242,147,55,0.15)',border:`1px solid ${arSupported?'rgba(74,144,226,0.4)':'rgba(242,147,55,0.4)'}`,borderRadius:10,padding:'0.18rem 0.6rem',flexShrink:0,display:'flex',alignItems:'center',gap:'0.3rem'}}><div style={{width:5,height:5,borderRadius:'50%',background:arSupported?BLUE:AMBER,boxShadow:`0 0 4px ${arSupported?BLUE:AMBER}`}}/>
           <span style={{fontSize:'0.5rem',fontFamily:'monospace',letterSpacing:'0.1em',color:arSupported?BLUE:AMBER,fontWeight:700}}>{arSupported?'AR·CORE':'AI·VISION'}</span>
         </div>
       </div>
@@ -1916,20 +1870,15 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
         paddingLeft:'1.25rem',paddingRight:'1.25rem',paddingTop:'0.85rem',
         display:'flex',flexDirection:'column',gap:'0.6rem',
         boxSizing:'border-box',
-      }}>
-
-        {/* ══ POSITION — countdown ticking, dialogue instruction ══ */}
+      }}>{/* ══ POSITION — countdown ticking, dialogue instruction ══ */}
         {stage==='position' && <>
           {/* Instruction card */}
-          <div style={{background:'rgba(255,255,255,0.06)',borderRadius:14,padding:'0.9rem 1rem',border:`1px solid rgba(255,255,255,0.1)`}}>
-            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.45rem'}}>
-              <div style={{width:24,height:24,borderRadius:'50%',background:indicator.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.65rem',fontFamily:'monospace',fontWeight:900,color:'#000',flexShrink:0}}>{currentPos.step}</div>
+          <div style={{background:'rgba(255,255,255,0.06)',borderRadius:14,padding:'0.9rem 1rem',border:`1px solid rgba(255,255,255,0.1)`}}><div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.45rem'}}><div style={{width:24,height:24,borderRadius:'50%',background:indicator.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.65rem',fontFamily:'monospace',fontWeight:900,color:'#000',flexShrink:0}}>{currentPos.step}</div>
               <div style={{fontSize:'0.92rem',fontWeight:800,color:WHITE,lineHeight:1.2}}>{currentPos.label}</div>
             </div>
             <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.6}}>{currentPos.detail}</div>
           </div>
-          <div style={{display:'flex',gap:'0.45rem'}}>
-            {currentPos.optional && (
+          <div style={{display:'flex',gap:'0.45rem'}}>{currentPos.optional && (
               <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.75rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.75rem',cursor:'pointer'}}>Skip →</button>
             )}
             <button onClick={finishScan} style={{flex:currentPos.optional?1:2,padding:'0.75rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:13,color:AMBER,fontFamily:'monospace',fontSize:'0.75rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
@@ -1938,8 +1887,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
         {/* ══ READY — in position, tap to start ══ */}
         {stage==='ready' && <>
-          <div style={{background:`${indicator.color}11`,borderRadius:14,padding:'0.75rem 1rem',border:`1px solid ${indicator.color}33`}}>
-            <div style={{fontSize:'0.72rem',fontFamily:'monospace',color:indicator.color,fontWeight:700,letterSpacing:'0.08em',marginBottom:'0.3rem'}}>STEP {currentPos.step} / 5 — {currentPos.label.toUpperCase()}</div>
+          <div style={{background:`${indicator.color}11`,borderRadius:14,padding:'0.75rem 1rem',border:`1px solid ${indicator.color}33`}}><div style={{fontSize:'0.72rem',fontFamily:'monospace',color:indicator.color,fontWeight:700,letterSpacing:'0.08em',marginBottom:'0.3rem'}}>STEP {currentPos.step} / 5 — {currentPos.label.toUpperCase()}</div>
             <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.55}}>{currentPos.detail}</div>
           </div>
           <button onClick={handleReady} style={{
@@ -1949,11 +1897,9 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
             fontFamily:'monospace',fontSize:'1rem',fontWeight:900,
             letterSpacing:'0.04em',cursor:'pointer',
             boxShadow:'0 6px 28px rgba(39,169,107,0.5)',
-          }}>
-            ✓ {currentPos.readyLabel}
+          }}>{currentPos.readyLabel}
           </button>
-          <div style={{display:'flex',gap:'0.45rem'}}>
-            {currentPos.optional && (
+          <div style={{display:'flex',gap:'0.45rem'}}>{currentPos.optional && (
               <button onClick={()=>goTo(posIdx+1)} style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.05)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>Skip →</button>
             )}
             <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
@@ -1962,11 +1908,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
         {/* ══ HOLD — camera live, hold-still countdown ══ */}
         {stage==='hold' && <>
-          <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
-            {/* Countdown ring */}
-            <div style={{position:'relative',width:64,height:64,flexShrink:0}}>
-              <svg width="64" height="64" style={{transform:'rotate(-90deg)'}}>
-                <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4.5"/>
+          <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>{/* Countdown ring */}
+            <div style={{position:'relative',width:64,height:64,flexShrink:0}}><svg width="64" height="64" style={{transform:'rotate(-90deg)'}}><circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4.5"/>
                 <circle cx="32" cy="32" r="26" fill="none" stroke={GREEN} strokeWidth="4.5"
                   strokeDasharray={`${2*Math.PI*26}`}
                   strokeDashoffset={`${2*Math.PI*26*(countdown/currentPos.holdSeconds)}`}
@@ -1984,8 +1927,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
         {/* ══ CAPTURE — hold done, waiting for user to tap ══ */}
         {stage==='capture' && <>
-          <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.5}}>
-            Phone is steady — tap the button below when you are ready to capture.
+          <div style={{fontSize:'0.78rem',color:WHITE2,lineHeight:1.5}}>Phone is steady — tap the button below when you are ready to capture.
           </div>
           <button
             onClick={camWarm ? handleCapture : undefined}
@@ -2000,13 +1942,10 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
               cursor: camWarm ? 'pointer' : 'default',
               boxShadow: camWarm ? '0 6px 28px rgba(74,144,226,0.5)' : 'none',
               transition:'all 0.4s ease',
-            }}>
-            {camWarm ? `📸 ${currentPos.captureLabel}` : '⏳ Camera focusing…'}
+            }}>{camWarm ? ` ${currentPos.captureLabel}` : '⏳ Camera focusing…'}
           </button>
-          <div style={{display:'flex',gap:'0.45rem'}}>
-            <button onClick={()=>{ busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
-              style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
-              ↺ Re-steady
+          <div style={{display:'flex',gap:'0.45rem'}}><button onClick={()=>{ busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
+              style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>↺ Re-steady
             </button>
             <button onClick={finishScan} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →</button>
           </div>
@@ -2014,15 +1953,13 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
 
         {/* ══ ANALYSING — spinner ══ */}
         {stage==='analysing' && <>
-          <div style={{display:'flex',alignItems:'center',gap:'1rem'}}>
-            <div style={{width:40,height:40,borderRadius:'50%',border:'3px solid rgba(242,147,55,0.2)',borderTopColor:AMBER,animation:'spin 0.8s linear infinite',flexShrink:0}}/>
+          <div style={{display:'flex',alignItems:'center',gap:'1rem'}}><div style={{width:40,height:40,borderRadius:'50%',border:'3px solid rgba(242,147,55,0.2)',borderTopColor:AMBER,animation:'spin 0.8s linear infinite',flexShrink:0}}/>
             <div>
               <div style={{fontSize:'0.88rem',color:WHITE,fontWeight:700,marginBottom:'0.15rem'}}>Reading image…</div>
               <div style={{fontSize:'0.7rem',color:WHITE2}}>Measuring {indicator.label}</div>
             </div>
           </div>
-          <button onClick={finishScan} style={{width:'100%',padding:'0.72rem',background:'rgba(255,255,255,0.06)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
-            View Report →
+          <button onClick={finishScan} style={{width:'100%',padding:'0.72rem',background:'rgba(255,255,255,0.06)',border:`1px solid ${BORDER}`,borderRadius:13,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>View Report →
           </button>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         </>}
@@ -2053,19 +1990,16 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
               <div style={{
                 position:'absolute', top:IMAGE_TOP, left:0, right:0, bottom:BOTTOM_PANEL+8,
                 zIndex:20, pointerEvents:'none', overflow:'hidden',
-              }}>
-                {/* Confirmed badges — top right stack */}
-                <div style={{position:'absolute',top:8,right:8,display:'flex',flexDirection:'column',gap:'0.3rem',zIndex:25}}>
-                  {confirmed.slice(0,4).map(([k,v])=>(
+              }}>{/* Confirmed badges — top right stack */}
+                <div style={{position:'absolute',top:8,right:8,display:'flex',flexDirection:'column',gap:'0.3rem',zIndex:25}}>{confirmed.slice(0,4).map(([k,v])=>(
                     <div key={k} style={{
                       background:'rgba(10,28,46,0.88)', backdropFilter:'blur(6px)',
                       borderRadius:8, padding:'0.22rem 0.55rem',
                       border:`1px solid rgba(39,169,107,0.45)`,
                       display:'flex', alignItems:'center', gap:'0.35rem',
-                    }}>
-                      <span style={{fontSize:'0.55rem',fontFamily:'monospace',fontWeight:700,color:'rgba(39,169,107,0.7)',letterSpacing:'0.06em'}}>{capLabels[k]??k.toUpperCase()}</span>
+                    }}><span style={{fontSize:'0.55rem',fontFamily:'monospace',fontWeight:700,color:'rgba(39,169,107,0.7)',letterSpacing:'0.06em'}}>{capLabels[k]??k.toUpperCase()}</span>
                       <span style={{fontSize:'0.72rem',fontFamily:'monospace',fontWeight:900,color:'#27A96B'}}>{v}mm</span>
-                      <span style={{fontSize:'0.65rem',color:'#27A96B'}}>✓</span>
+                      
                     </div>
                   ))}
                 </div>
@@ -2086,10 +2020,8 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                   border:`1px solid ${indColor}66`,
                   display:'flex', alignItems:'center', gap:'0.4rem',
                   whiteSpace:'nowrap',
-                }}>
-                  <div style={{width:7,height:7,borderRadius:'50%',background:indColor,boxShadow:`0 0 5px ${indColor}`}}/>
-                  <span style={{fontSize:'0.62rem',fontFamily:'monospace',fontWeight:700,color:indColor,letterSpacing:'0.1em'}}>
-                    {capLabels[capKey]??currentPos.label.toUpperCase()} — MEASURED
+                }}><div style={{width:7,height:7,borderRadius:'50%',background:indColor,boxShadow:`0 0 5px ${indColor}`}}/>
+                  <span style={{fontSize:'0.62rem',fontFamily:'monospace',fontWeight:700,color:indColor,letterSpacing:'0.1em'}}>{capLabels[capKey]??currentPos.label.toUpperCase()} — MEASURED
                   </span>
                 </div>
               </div>
@@ -2098,27 +2030,20 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
             {/* ── Bottom panel result content ── */}
             {/* Big measurement number + ± adjustment */}
             {isMeasured ? (
-              <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>
-                  {/* − button */}
+              <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.5rem'}}>{/* − button */}
                   <button onClick={()=>setAdjustVal(v => Math.max(1, (v ?? numVal ?? 0) - (currentPos.id === 'overview' ? 1 : 5)))}
-                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    −
+                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>−
                   </button>
                   {/* Big number */}
-                  <div style={{flex:1,textAlign:'center'}}>
-                    <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'0.2rem'}}>
-                      <span style={{fontSize:'2.6rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
+                  <div style={{flex:1,textAlign:'center'}}><div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'0.2rem'}}><span style={{fontSize:'2.6rem',fontWeight:900,color:WHITE,fontFamily:'monospace',lineHeight:1}}>{dispVal}</span>
                       <span style={{fontSize:'1rem',color:WHITE2,fontFamily:'monospace'}}>mm</span>
                     </div>
                     {currentPos.id === 'riser_front' && results.tapeMeasureRead === 1 && (
-                      <div style={{ marginTop:'0.3rem', fontSize:'0.6rem', fontFamily:'monospace', color:'#4ade80', letterSpacing:'0.06em' }}>
-                        📏 TAPE MEASURE READ DIRECTLY
+                      <div style={{ marginTop:'0.3rem', fontSize:'0.6rem', fontFamily:'monospace', color:'#4ade80', letterSpacing:'0.06em' }}>TAPE MEASURE READ DIRECTLY
                       </div>
                     )}
                     {currentPos.id === 'riser_front' && results.tiltCorrected === 1 && results.tapeMeasureRead !== 1 && (
-                      <div style={{ marginTop:'0.3rem', fontSize:'0.6rem', fontFamily:'monospace', color:AMBER, letterSpacing:'0.06em' }}>
-                        📐 PERSPECTIVE CORRECTED{results.tiltAngleDeg ? ` (~${Math.round(Number(results.tiltAngleDeg))}° tilt)` : ''}
+                      <div style={{ marginTop:'0.3rem', fontSize:'0.6rem', fontFamily:'monospace', color:AMBER, letterSpacing:'0.06em' }}>PERSPECTIVE CORRECTED{results.tiltAngleDeg ? ` (~${Math.round(Number(results.tiltAngleDeg))}° tilt)` : ''}
                         {results.rawEstimateMm ? ` · raw ${Math.round(Number(results.rawEstimateMm))}mm` : ''}
                       </div>
                     )}
@@ -2132,8 +2057,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                         background:'rgba(232,85,85,0.15)', border:'1px solid rgba(232,85,85,0.4)',
                         borderRadius:8, fontSize:'0.62rem', lineHeight:1.5, color:'#ff9999',
                         fontFamily:'monospace',
-                      }}>
-                        ⚠ RISER INCONSISTENCY DETECTED
+                      }}>RISER INCONSISTENCY DETECTED
                         {results.riserVariationMm != null && ` — ${results.riserVariationMm}mm variation`}
                         {' '}(code limit: 9.5mm). Professional inspection required.
                       </div>
@@ -2144,34 +2068,29 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                         background:'rgba(242,147,55,0.12)', border:'1px solid rgba(242,147,55,0.3)',
                         borderRadius:8, fontSize:'0.62rem', lineHeight:1.5, color:AMBER,
                         fontFamily:'monospace',
-                      }}>
-                        ℹ Only one riser visible — consistency across all risers cannot be confirmed. Professional inspection recommended.
+                      }}>ℹ Only one riser visible — consistency across all risers cannot be confirmed. Professional inspection recommended.
                       </div>
                     )}
                     {adjustVal !== null && (
                       <div style={{fontSize:'0.58rem',color:AMBER,fontFamily:'monospace',marginTop:'0.1rem'}}>ADJUSTED</div>
                     )}
                     {results.scaleRef && (
-                      <div style={{fontSize:'0.58rem',color:WHITE2,fontFamily:'monospace',marginTop:'0.2rem',opacity:0.7}}>
-                        📐 {String(results.scaleRef)}
+                      <div style={{fontSize:'0.58rem',color:WHITE2,fontFamily:'monospace',marginTop:'0.2rem',opacity:0.7}}>{String(results.scaleRef)}
                       </div>
                     )}
                   </div>
                   {/* + button */}
                   <button onClick={()=>setAdjustVal(v => (v ?? numVal ?? 0) + (currentPos.id === 'overview' ? 1 : 5))}
-                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    +
+                    style={{width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:`1px solid ${BORDER}`,color:WHITE,fontSize:'1.5rem',fontWeight:300,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>+
                   </button>
                 </div>
                 {adjustVal !== null && (
-                  <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>
-                    {currentPos.id === "overview" ? "Adjust step count with − / +" : "Adjust with − / + if needed"} · original: {numVal}{currentPos.id === "overview" ? "" : "mm"}
+                  <div style={{fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',textAlign:'center',fontFamily:'monospace'}}>{currentPos.id === "overview" ? "Adjust step count with − / +" : "Adjust with − / + if needed"} · original: {numVal}{currentPos.id === "overview" ? "" : "mm"}
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{fontSize:'0.82rem',fontWeight:600,color:WHITE,textAlign:'center',padding:'0.5rem 0'}}>
-                {aiMessage ?? 'Could not read — tap Retry to try again.'}
+              <div style={{fontSize:'0.82rem',fontWeight:600,color:WHITE,textAlign:'center',padding:'0.5rem 0'}}>{aiMessage ?? 'Could not read — tap Retry to try again.'}
               </div>
             )}
 
@@ -2194,15 +2113,12 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
               fontFamily:'monospace', fontSize:'0.9rem', fontWeight:900,
               cursor:'pointer', letterSpacing:'0.04em',
               boxShadow: isMeasured ? '0 4px 18px rgba(39,169,107,0.45)' : '0 4px 18px rgba(250,116,31,0.35)',
-            }}>
-              {rescanReturnRef.current ? '← Back to Report' : isMeasured ? '✓ Confirm & Next →' : 'Next Position →'}
+            }}>{rescanReturnRef.current ? '← Back to Report' : isMeasured ? ' Confirm & Next →' : 'Next Position →'}
             </button>
 
             {/* Retry / View Report */}
-            <div style={{display:'flex',gap:'0.45rem'}}>
-              <button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
-                style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>
-                ↺ Retry
+            <div style={{display:'flex',gap:'0.45rem'}}><button onClick={()=>{ setAdjustVal(null); busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
+                style={{flex:1,padding:'0.65rem',background:'rgba(255,255,255,0.07)',border:`1px solid ${BORDER}`,borderRadius:12,color:WHITE2,fontFamily:'monospace',fontSize:'0.72rem',cursor:'pointer'}}>↺ Retry
               </button>
               <button onClick={()=>{
                 if (adjustVal !== null && capKey) {
@@ -2213,8 +2129,7 @@ export default function ScanReadyScreen({ userRole='diy', onSuccess, onBack, sta
                   })
                 }
                 finishScan()
-              }} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>
-                View Report →
+              }} style={{flex:1,padding:'0.65rem',background:'rgba(250,116,31,0.12)',border:`1px solid rgba(250,116,31,0.3)`,borderRadius:12,color:AMBER,fontFamily:'monospace',fontSize:'0.72rem',fontWeight:600,cursor:'pointer'}}>View Report →
               </button>
             </div>
           </>

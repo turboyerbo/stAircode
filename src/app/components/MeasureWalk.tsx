@@ -509,8 +509,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
 
   return (
     <div ref={wrapRef} style={{position:'fixed',inset:0,background:'#EEF3F9',overflow:'hidden',
-      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
-      <style>{`
+      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><style>{`
         @keyframes blink  {0%,100%{opacity:.3}50%{opacity:1}}
         @keyframes fadeUp {from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fadeIn {from{opacity:0}to{opacity:1}}
@@ -527,15 +526,12 @@ export default function MeasureWalk({onComplete,onBack}:Props){
 
       {/* Camera error */}
       {camError&&(<div style={{position:'absolute',inset:0,zIndex:90,background:'rgba(13,43,69,0.96)',
-        display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem'}}>
-        <span style={{fontSize:'2.5rem'}}>📷</span>
-        <p style={{color:'#fff',textAlign:'center',lineHeight:1.6,maxWidth:280}}>Camera access is needed to scan your staircase.</p>
+        display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem'}}><p style={{color:'#fff',textAlign:'center',lineHeight:1.6,maxWidth:280}}>Camera access is needed to scan your staircase.</p>
         <button onClick={onBack} style={{padding:'.85rem 2rem',background:C.blue,border:'none',borderRadius:14,color:'#fff',fontSize:'.9rem',cursor:'pointer'}}>← Go Back</button>
       </div>)}
 
       {/* Warming up */}
-      {!camReady&&!camError&&(<div style={{position:'absolute',inset:0,zIndex:30,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(13,43,69,0.7)'}}>
-        <div style={{width:10,height:10,borderRadius:'50%',background:C.blue,animation:'pulse 1s ease-in-out infinite'}}/>
+      {!camReady&&!camError&&(<div style={{position:'absolute',inset:0,zIndex:30,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(13,43,69,0.7)'}}><div style={{width:10,height:10,borderRadius:'50%',background:C.blue,animation:'pulse 1s ease-in-out infinite'}}/>
       </div>)}
 
       {/* Top bar */}
@@ -543,15 +539,13 @@ export default function MeasureWalk({onComplete,onBack}:Props){
         paddingTop:'max(env(safe-area-inset-top,0px),2.4rem)',paddingBottom:'.6rem',
         paddingLeft:'1rem',paddingRight:'1rem',
         background:'linear-gradient(to bottom,rgba(13,43,69,0.7),transparent)',
-        display:'flex',alignItems:'center',gap:'0.5rem'}}>
-        <button onClick={()=>{stopLoop();onBack()}} style={{width:38,height:38,borderRadius:'50%',
+        display:'flex',alignItems:'center',gap:'0.5rem'}}><button onClick={()=>{stopLoop();onBack()}} style={{width:38,height:38,borderRadius:'50%',
           background:'rgba(13,43,69,0.5)',border:'1px solid rgba(21,101,192,0.25)',color:'#fff',
           fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
           backdropFilter:'blur(8px)'}}>←</button>
 
         {/* Progress pills */}
-        <div style={{flex:1,display:'flex',justifyContent:'center',gap:'.25rem'}}>
-          {primary.map((s,i)=>(
+        <div style={{flex:1,display:'flex',justifyContent:'center',gap:'.25rem'}}>{primary.map((s,i)=>(
             <div key={s.id} style={{height:3,borderRadius:3,
               width:i===pi?22:i<pi?10:5,
               background:i<pi?C.pass:i===pi?step.color:'rgba(21,101,192,0.25)',
@@ -560,8 +554,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
         </div>
 
         {/* Menu */}
-        <div style={{position:'relative'}}>
-          <button onClick={()=>setShowMenu(m=>!m)} style={{width:38,height:38,borderRadius:'50%',
+        <div style={{position:'relative'}}><button onClick={()=>setShowMenu(m=>!m)} style={{width:38,height:38,borderRadius:'50%',
             background:'rgba(13,43,69,0.5)',border:'1px solid rgba(21,101,192,0.25)',
             color:'rgba(255,255,255,0.85)',fontSize:'1.2rem',cursor:'pointer',
             display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(8px)'}}>⋯</button>
@@ -569,18 +562,16 @@ export default function MeasureWalk({onComplete,onBack}:Props){
             <div onClick={()=>setShowMenu(false)} style={{position:'fixed',inset:0,zIndex:49}}/>
             <div style={{position:'absolute',top:46,right:0,zIndex:50,background:'rgba(13,43,69,0.97)',
               backdropFilter:'blur(20px)',border:'1px solid rgba(21,101,192,0.20)',borderRadius:16,
-              overflow:'hidden',minWidth:190,boxShadow:'0 8px 32px rgba(0,0,0,.6)'}}>
-              {[
+              overflow:'hidden',minWidth:190,boxShadow:'0 8px 32px rgba(0,0,0,.6)'}}>{[
                 {icon:'↺',label:'Rescan this step',action:()=>{setShowMenu(false);rescan()}},
                 {icon:'⊞',label:'Finish & view report',action:()=>{setShowMenu(false);finish()}},
-                {icon:'✕',label:'Exit',action:()=>{setShowMenu(false);stopLoop();onBack()}},
+                {icon:'',label:'Exit',action:()=>{setShowMenu(false);stopLoop();onBack()}},
               ].map((item,i)=>(
                 <button key={i} onClick={item.action} style={{display:'flex',alignItems:'center',gap:'.7rem',
                   width:'100%',padding:'.88rem 1.1rem',background:'none',border:'none',
                   borderTop:i>0?'1px solid rgba(21,101,192,0.08)':'none',
                   color:'rgba(255,255,255,0.82)',fontSize:'.82rem',fontFamily:'inherit',
-                  textAlign:'left',cursor:'pointer'}}>
-                  <span style={{fontSize:'1rem',width:20,textAlign:'center'}}>{item.icon}</span>
+                  textAlign:'left',cursor:'pointer'}}><span style={{fontSize:'1rem',width:20,textAlign:'center'}}>{item.icon}</span>
                   {item.label}
                 </button>
               ))}
@@ -597,8 +588,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
 
       {/* Chat messages */}
       {!confirmed&&(<div style={{position:'absolute',bottom:150,left:0,right:0,zIndex:30,
-        padding:'0 1.2rem',display:'flex',flexDirection:'column',gap:'.5rem',pointerEvents:'none'}}>
-        {messages.map((m,i)=>{
+        padding:'0 1.2rem',display:'flex',flexDirection:'column',gap:'.5rem',pointerEvents:'none'}}>{messages.map((m,i)=>{
           const latest=i===messages.length-1
           return (
             <div key={m.id} style={{alignSelf:'flex-start',maxWidth:'84%',
@@ -607,8 +597,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
               borderRadius:'18px 18px 18px 4px',padding:'.7rem 1rem',
               backdropFilter:'blur(12px)',
               animation:latest?'popIn .22s ease-out':'none',
-              opacity:latest?1:0.4,transition:'opacity .3s'}}>
-              <p style={{margin:0,
+              opacity:latest?1:0.4,transition:'opacity .3s'}}><p style={{margin:0,
                 fontSize:latest?'.95rem':'.8rem',
                 color:m.type==='system'?'rgba(255,255,255,0.45)':'#fff',
                 lineHeight:1.45,fontWeight:latest?500:400}}>{m.text}</p>
@@ -620,8 +609,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
         {scanning&&(<div style={{alignSelf:'flex-start',background:'rgba(13,43,69,0.85)',
           border:'1px solid rgba(21,101,192,0.22)',borderRadius:'18px 18px 18px 4px',
           padding:'.65rem 1rem',backdropFilter:'blur(12px)',
-          display:'flex',gap:4,alignItems:'center',animation:'fadeIn .2s ease-out'}}>
-          {[0,1,2].map(k=>(
+          display:'flex',gap:4,alignItems:'center',animation:'fadeIn .2s ease-out'}}>{[0,1,2].map(k=>(
             <div key={k} style={{width:6,height:6,borderRadius:'50%',background:'rgba(255,255,255,0.55)',
               animation:`blink 1.2s ease-in-out ${k*.22}s infinite`}}/>
           ))}
@@ -630,8 +618,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
       </div>)}
 
       {/* Skip button */}
-      {!confirmed&&!step.silent&&camReady&&(<div style={{position:'absolute',bottom:104,right:'1.2rem',zIndex:30}}>
-        <button onClick={skipStep} style={{background:'rgba(13,43,69,0.55)',
+      {!confirmed&&!step.silent&&camReady&&(<div style={{position:'absolute',bottom:104,right:'1.2rem',zIndex:30}}><button onClick={skipStep} style={{background:'rgba(13,43,69,0.55)',
           border:'1px solid rgba(21,101,192,0.22)',borderRadius:20,padding:'.4rem 1rem',
           color:'rgba(255,255,255,0.35)',fontSize:'.7rem',fontFamily:'monospace',
           cursor:'pointer',backdropFilter:'blur(8px)'}}>Skip →</button>
@@ -643,38 +630,28 @@ export default function MeasureWalk({onComplete,onBack}:Props){
         paddingTop:'1.6rem',paddingLeft:'1.4rem',paddingRight:'1.4rem',
         paddingBottom:'max(env(safe-area-inset-bottom,0px),2.4rem)',
         display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem',
-        animation:'fadeUp .3s ease-out'}}>
-
-        <div style={{display:'flex',alignItems:'center',gap:'.5rem'}}>
-          <div style={{width:8,height:8,borderRadius:'50%',background:step.color,boxShadow:`0 0 10px ${step.color}`}}/>
-          <span style={{fontSize:'.6rem',fontFamily:'monospace',letterSpacing:'.2em',color:step.color,fontWeight:700}}>
-            {step.label.toUpperCase()} — MEASURED
+        animation:'fadeUp .3s ease-out'}}><div style={{display:'flex',alignItems:'center',gap:'.5rem'}}><div style={{width:8,height:8,borderRadius:'50%',background:step.color,boxShadow:`0 0 10px ${step.color}`}}/>
+          <span style={{fontSize:'.6rem',fontFamily:'monospace',letterSpacing:'.2em',color:step.color,fontWeight:700}}>{step.label.toUpperCase()} — MEASURED
           </span>
         </div>
 
         {openAbove?(
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:'2rem',fontWeight:900,color:C.pass}}>Headroom Clear</div>
+          <div style={{textAlign:'center'}}><div style={{fontSize:'2rem',fontWeight:900,color:C.pass}}>Headroom Clear</div>
             <div style={{fontSize:'.72rem',color:'rgba(255,255,255,0.35)',marginTop:'.3rem',fontFamily:'monospace'}}>Open to above</div>
           </div>
         ):(
-          <div style={{display:'flex',alignItems:'center',gap:'1rem',width:'100%',justifyContent:'center'}}>
-            <button onClick={()=>setResultMm(v=>v!=null?Math.max(step.rangeMin,v-1):v)}
+          <div style={{display:'flex',alignItems:'center',gap:'1rem',width:'100%',justifyContent:'center'}}><button onClick={()=>setResultMm(v=>v!=null?Math.max(step.rangeMin,v-1):v)}
               style={{width:50,height:50,borderRadius:'50%',flexShrink:0,
                 background:'rgba(21,101,192,0.09)',border:'1.5px solid rgba(21,101,192,0.25)',
                 color:'#fff',fontSize:'1.6rem',cursor:'pointer',
                 display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
-            <div style={{textAlign:'center'}}>
-              <div style={{display:'flex',alignItems:'baseline',gap:'.3rem',justifyContent:'center'}}>
-                <span style={{fontSize:'4rem',fontWeight:900,color:'#fff',letterSpacing:'-.04em',
+            <div style={{textAlign:'center'}}><div style={{display:'flex',alignItems:'baseline',gap:'.3rem',justifyContent:'center'}}><span style={{fontSize:'4rem',fontWeight:900,color:'#fff',letterSpacing:'-.04em',
                   lineHeight:1,fontVariantNumeric:'tabular-nums',transition:'all .15s'}}>{resultMm??'—'}</span>
                 <span style={{fontSize:'1.1rem',color:'rgba(255,255,255,0.35)',fontFamily:'monospace'}}>mm</span>
               </div>
-              {secondaryMm&&(<div style={{fontSize:'.7rem',fontFamily:'monospace',color:'rgba(96,165,250,0.8)',marginTop:'.2rem'}}>
-                Width also captured: {secondaryMm}mm
+              {secondaryMm&&(<div style={{fontSize:'.7rem',fontFamily:'monospace',color:'rgba(96,165,250,0.8)',marginTop:'.2rem'}}>Width also captured: {secondaryMm}mm
               </div>)}
-              <div style={{fontSize:'.6rem',color:'rgba(21,101,192,0.25)',fontFamily:'monospace',marginTop:'.15rem'}}>
-                Adjust with − / + if needed
+              <div style={{fontSize:'.6rem',color:'rgba(21,101,192,0.25)',fontFamily:'monospace',marginTop:'.15rem'}}>Adjust with − / + if needed
               </div>
             </div>
             <button onClick={()=>setResultMm(v=>v!=null?Math.min(step.rangeMax,v+1):v)}
@@ -685,8 +662,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
           </div>
         )}
 
-        <div style={{display:'flex',gap:'.6rem',width:'100%',maxWidth:340}}>
-          <button onClick={rescan} style={{flex:1,padding:'.8rem',
+        <div style={{display:'flex',gap:'.6rem',width:'100%',maxWidth:340}}><button onClick={rescan} style={{flex:1,padding:'.8rem',
             background:'rgba(21,101,192,0.08)',border:'1px solid rgba(21,101,192,0.22)',
             borderRadius:14,color:'rgba(255,255,255,0.55)',fontSize:'.8rem',
             fontFamily:'monospace',cursor:'pointer'}}>↺ Rescan</button>
@@ -694,8 +670,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
             background:`linear-gradient(135deg,${step.color},${rgba(step.color,.7)})`,
             border:'none',borderRadius:14,color:'#fff',fontSize:'.88rem',
             fontFamily:'monospace',fontWeight:700,letterSpacing:'.06em',cursor:'pointer',
-            boxShadow:`0 4px 20px ${rgba(step.color,.45)}`}}>
-            ✓ &nbsp;{pi<primary.length-1?'Next':'Finish'}
+            boxShadow:`0 4px 20px ${rgba(step.color,.45)}`}}>&nbsp;{pi<primary.length-1?'Next':'Finish'}
           </button>
         </div>
       </div>)}

@@ -68,8 +68,7 @@ export function BetaLogo({ size = 'md', onDark = false, style }: { size?: 'xs'|'
   const h = H[size]
   const ps = Math.max(9, Math.round(h * 0.3))
   return (
-    <div style={{ display:'inline-flex', alignItems:'center', gap: Math.round(h * 0.2), ...style }}>
-      <Logo size={size} onDark={onDark} />
+    <div style={{ display:'inline-flex', alignItems:'center', gap: Math.round(h * 0.2), ...style }}><Logo size={size} onDark={onDark} />
       <span style={{
         display:'inline-flex', alignItems:'center',
         background:'#F29337', color:'#fff',
