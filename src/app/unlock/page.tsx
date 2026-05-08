@@ -86,9 +86,18 @@ export default function UnlockPage() {
             setCodeLabel(d.codeLabel || 'Building Code')
             setLocation(d.location || '')
             setEmail(d.email || emailP || '')
+          } else {
+            // Token not found or expired — show helpful empty state
+            setCodeLabel(codeP || 'Building Code')
+            setLocation(locP || '')
+            setEmail(emailP || '')
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          setCodeLabel(codeP || 'Building Code')
+          setLocation(locP || '')
+          setEmail(emailP || '')
+        })
         .finally(() => setLoading(false))
     } else {
       setCodeLabel(codeP || 'Building Code')
@@ -124,6 +133,27 @@ export default function UnlockPage() {
   if (loading) return (
     <div style={{ minHeight: '100dvh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: C.text2, fontSize: '0.9rem' }}>Loading your report…</div>
+    </div>
+  )
+
+  // No scan data available — link was opened on a different device or session expired
+  if (fields.length === 0) return (
+    <div style={{ minHeight: '100dvh', background: C.bg, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: C.text, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ maxWidth: 380, textAlign: 'center' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔗</div>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.6rem' }}>Report link expired or opened on a new device</h2>
+        <p style={{ fontSize: '0.88rem', color: C.text2, lineHeight: 1.7, marginBottom: '1.5rem' }}>
+          Report links are tied to your scan session. To get your report, open staircode.app on the same device where you scanned — or run a new scan (it only takes a minute).
+        </p>
+        <p style={{ fontSize: '0.78rem', color: C.text2, lineHeight: 1.6, marginBottom: '1.5rem' }}>
+          If you think this is an error, email us at{' '}
+          <a href="mailto:info@staircode.app" style={{ color: C.orange }}>info@staircode.app</a>
+          {email ? ` (include your email: ${email})` : ''} and we&apos;ll help you retrieve it.
+        </p>
+        <a href="https://staircode.app" style={{ display: 'inline-block', background: C.orange, color: '#000', fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none', padding: '0.85rem 2rem', borderRadius: 12 }}>
+          Start a New Scan →
+        </a>
+      </div>
     </div>
   )
 

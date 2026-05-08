@@ -13,9 +13,27 @@ import PhoneMockup from "./PhoneMockup"
 
 
 export default function MarketingPage() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [scrolled,  setScrolled] = useState(false)
-  const [openFaq,   setOpenFaq]  = useState(null as number | null)
+  const [menuOpen,  setMenuOpen]  = useState(false)
+  const [scrolled,  setScrolled]  = useState(false)
+  const [openFaq,   setOpenFaq]   = useState(null as number | null)
+  const [cookieBanner, setCookieBanner] = useState(false)
+
+  // Show cookie banner only if not yet answered
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('sc_cookie_consent')) setCookieBanner(true)
+    } catch { setCookieBanner(true) }
+  }, [])
+
+  function acceptCookies() {
+    try { localStorage.setItem('sc_cookie_consent', 'accepted') } catch {}
+    setCookieBanner(false)
+  }
+
+  function declineCookies() {
+    try { localStorage.setItem('sc_cookie_consent', 'declined') } catch {}
+    setCookieBanner(false)
+  }
   const articlesRef = useRef<HTMLDivElement>(null)
 
   // Convert vertical wheel scroll → horizontal on the articles row (PC fix)
@@ -648,6 +666,83 @@ export default function MarketingPage() {
           <div style={{ color: 'rgba(255,255,255,0.25)' }}>© {new Date().getFullYear()} Just Open Technologies Inc.</div>
         </div>
       </footer>
+
+      {/* ── Cookie Consent Banner ─────────────────────────────────────────────── */}
+      {cookieBanner && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
+          padding: '0 1rem 1rem',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            maxWidth: 620,
+            margin: '0 auto',
+            background: '#0D1E2E',
+            border: '1px solid rgba(147,186,212,0.2)',
+            borderRadius: 16,
+            boxShadow: '0 -4px 40px rgba(0,0,0,0.45)',
+            padding: '1.25rem 1.5rem',
+            display: 'flex',
+            flexWrap: 'wrap' as const,
+            alignItems: 'center',
+            gap: '1rem',
+            pointerEvents: 'auto',
+          }}>
+            {/* Icon + text */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: '1 1 280px' }}>
+              <span style={{ fontSize: '1.4rem', flexShrink: 0, marginTop: '0.1rem' }}>🍪</span>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E8F4FF', marginBottom: '0.3rem' }}>
+                  We use cookies
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#93BAD4', lineHeight: 1.6 }}>
+                  We use cookies and similar technologies to improve your experience, analyse site traffic, and serve relevant content.
+                  By clicking <strong style={{ color: '#E8F4FF' }}>Accept</strong>, you consent to our use of cookies.
+                  {' '}<a href="/privacy" style={{ color: '#F29337', textDecoration: 'underline' }}>Privacy Policy</a>
+                  {' '}·{' '}
+                  <a href="/terms" style={{ color: '#F29337', textDecoration: 'underline' }}>Terms</a>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
+              <button
+                onClick={declineCookies}
+                style={{
+                  padding: '0.6rem 1.1rem',
+                  background: 'transparent',
+                  border: '1.5px solid rgba(147,186,212,0.25)',
+                  borderRadius: 10,
+                  color: '#93BAD4',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap' as const,
+                  transition: 'border-color 0.2s',
+                }}>
+                Decline
+              </button>
+              <button
+                onClick={acceptCookies}
+                style={{
+                  padding: '0.6rem 1.4rem',
+                  background: 'linear-gradient(135deg,#F29337,#C4721E)',
+                  border: 'none',
+                  borderRadius: 10,
+                  color: '#fff',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap' as const,
+                  boxShadow: '0 2px 12px rgba(242,147,55,0.35)',
+                }}>
+                Accept All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
