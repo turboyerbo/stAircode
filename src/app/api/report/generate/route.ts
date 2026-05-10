@@ -30,6 +30,8 @@ import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 import { checkScanUsage, incrementScanUsage } from '@/lib/scan-usage'
 import { trackServer }               from '@/lib/analytics-server'
 import { PostHog }                    from 'posthog-node'
+import { generatePDFReport }          from '@/lib/generate-pdf-report'
+import { createClient }               from '@supabase/supabase-js'
 
 // Tell Next.js / Netlify to allow up to 60s for this function
 export const maxDuration = 60
@@ -136,57 +138,68 @@ Keep the total report under 600 words. Be direct and professional. No placeholde
 }
 
 // ── Send email via Resend ──────────────────────────────────────────────────────
-async function sendEmail(to: string, reportText: string, codeLabel: string, location: string, surveyUrl: string, frames: Record<string,string> = {}) {
+async function sendEmail(to: string, reportText: string, codeLabel: string, location: string, surveyUrl: string, frames: Record<string,string> = {}, fields: any[] = []) {
   const resendKey = process.env.RESEND_API_KEY
   if (!resendKey) { console.warn('[report/generate] No RESEND_API_KEY'); return false }
 
-  const from    = process.env.EMAIL_FROM ?? 'info@staircode.app'
-  const subject = `Your stAIrcode Compliance Report — ${location || codeLabel}`
-  const date    = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const from  = process.env.EMAIL_FROM ?? 'info@staircode.app'
+  const date  = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const reportId = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`
 
-
-  // Build photo grid HTML — embed actual images, two per row
-  const frameLabels: Record<string,string> = {
-    overview:    'Full Stair View',
-    riser_front: 'Riser Height',
-    rotate_90:   'Nosing Check',
-    nosing:      'Nosing Close-Up',
-    handrail:    'Handrail Height',
-    alt_angle:   'Stair Width',
-    tread_top:   'Tread Depth',
+  // ── 1. Generate the PDF with embedded photos ───────────────────────────────
+  let pdfBuffer: Buffer | null = null
+  try {
+    pdfBuffer = await generatePDFReport({ reportText, fields, frames, codeLabel, location, date })
+    console.log(`[report/generate] PDF generated: ${Math.round(pdfBuffer.length / 1024)}KB, ${Object.keys(frames).length} photos embedded`)
+  } catch (pdfErr) {
+    console.error('[report/generate] PDF generation failed:', pdfErr)
   }
-  const frameEntries = Object.entries(frames).filter(([k]) => frameLabels[k] && frames[k] && (frames[k] as string).length > 100)
 
-  const photoGridHtml = (() => {
-    if (frameEntries.length === 0) return `
-    <div style="background:#FFF8F0;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:1rem 2rem;">
-      <p style="font-size:0.78rem;color:#8A6A3A;margin:0;">No measurement photos were captured during this scan.</p>
-    </div>`
+  // ── 2. Upload PDF to Supabase Storage ──────────────────────────────────────
+  let pdfUrl: string | null = null
+  if (pdfBuffer) {
+    try {
+      const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-    const rows: string[] = []
-    for (let i = 0; i < frameEntries.length; i += 2) {
-      const cells = frameEntries.slice(i, i + 2).map(([posId, b64]) => {
-        const src = (b64 as string).startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`
-        return `
-          <td style="width:50%;padding:6px;vertical-align:top;">
-            <img src="${src}" alt="${frameLabels[posId] ?? posId}"
-              width="260"
-              style="width:100%;max-width:260px;height:180px;object-fit:cover;border-radius:10px;display:block;border:1px solid #E5EBF2;" />
-            <div style="font-size:11px;font-weight:700;color:#0A1C2E;margin-top:5px;text-align:center;font-family:monospace;letter-spacing:0.05em;">
-              ${frameLabels[posId] ?? posId}
-            </div>
-          </td>`
-      }).join('')
-      rows.push(`<tr>${cells}</tr>`)
+      const storagePath = `reports/${reportId}.pdf`
+      const { error: uploadErr } = await sb.storage
+        .from('reports')
+        .upload(storagePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert:      true,
+        })
+
+      if (uploadErr) {
+        console.warn('[report/generate] Storage upload failed:', uploadErr.message)
+      } else {
+        // Get public URL
+        const { data: urlData } = sb.storage.from('reports').getPublicUrl(storagePath)
+        pdfUrl = urlData?.publicUrl ?? null
+        console.log(`[report/generate] PDF stored at ${pdfUrl}`)
+
+        // Save record to report_records table for admin access
+        await sb.from('report_records').insert({
+          id:           reportId,
+          email:        to,
+          code_label:   codeLabel,
+          location:     location,
+          pdf_url:      pdfUrl,
+          pdf_size_kb:  Math.round(pdfBuffer.length / 1024),
+          photos_count: Object.keys(frames).filter(k => frames[k]?.length > 100).length,
+          created_at:   new Date().toISOString(),
+        }).then(({ error }) => {
+          if (error) console.warn('[report/generate] report_records insert failed:', error.message)
+        })
+      }
+    } catch (storageErr) {
+      console.error('[report/generate] Storage error:', storageErr)
     }
+  }
 
-    return `
-    <div style="background:#F5F8FA;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:1.5rem 2rem;">
-      <h2 style="font-size:13px;font-weight:800;color:#0A1C2E;margin:0 0 4px;letter-spacing:0.05em;text-transform:uppercase;">Measurement Photos</h2>
-      <p style="font-size:11px;color:#4E7A9B;margin:0 0 14px;">${frameEntries.length} of ${Object.keys(frameLabels).length} positions captured during this inspection.</p>
-      <table style="width:100%;border-collapse:collapse;">${rows.join('')}</table>
-    </div>`
-  })()
+  // ── 3. Build the HTML email body ───────────────────────────────────────────
+  const photosCount = Object.keys(frames).filter(k => frames[k]?.length > 100).length
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -201,10 +214,18 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
     </div>
   </div>
 
-  ${photoGridHtml}
-
-  <div style="background:#ffffff;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:2rem;">
-    <pre style="white-space:pre-wrap;font-family:Georgia,serif;font-size:10.5pt;line-height:1.75;color:#0A1C2E;margin:0;">${reportText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+  <div style="background:#fff;border-left:3px solid #F29337;border-right:3px solid #F29337;padding:2rem;">
+    <p style="font-size:1rem;font-weight:700;color:#0A1C2E;margin:0 0 0.5rem;">Your compliance report is attached.</p>
+    <p style="font-size:0.88rem;color:#5E7D9B;line-height:1.7;margin:0 0 1rem;">
+      The full PDF report — including ${photosCount > 0 ? `${photosCount} measurement photo${photosCount !== 1 ? 's' : ''}` : 'your measurements'}, compliance analysis, and applicable code sections — is attached to this email.
+    </p>
+    <div style="background:#F4F7FB;border-radius:10px;padding:1rem 1.25rem;font-size:0.82rem;color:#5E7D9B;line-height:1.6;">
+      <strong style="color:#0A1C2E;">Included in this report:</strong><br>
+      · Measurement photos from your scan<br>
+      · Pass/fail result for each dimension<br>
+      · Applicable ${codeLabel} code sections<br>
+      · Pre-inspection recommendations
+    </div>
   </div>
 
   <div style="background:#0F2438;padding:1.25rem 2rem;text-align:center;">
@@ -228,18 +249,37 @@ async function sendEmail(to: string, reportText: string, codeLabel: string, loca
 </body>
 </html>`
 
+  // ── 4. Send email with PDF as attachment ────────────────────────────────────
+  const emailPayload: any = {
+    from,
+    to:      [to],
+    subject: `Your stAIrcode Compliance Report — ${location || codeLabel}`,
+    html,
+  }
+
+  if (pdfBuffer) {
+    emailPayload.attachments = [{
+      filename:     `staircode-compliance-report.pdf`,
+      content:      pdfBuffer.toString('base64'),
+      content_type: 'application/pdf',
+    }]
+  }
+
   const res = await fetch('https://api.resend.com/emails', {
     method:  'POST',
-    headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ from, to, subject, html }),
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+    body:    JSON.stringify(emailPayload),
   })
 
   if (!res.ok) {
-    console.error('[report/generate] Resend error:', await res.text())
-    return null
+    const err = await res.json().catch(() => ({}))
+    console.error('[report/generate] Resend error:', err)
+    return false
   }
-  const json = await res.json()
-  return json.id ?? null  // Resend returns { id: "re_xxxxx" }
+
+  const { id: emailId } = await res.json().catch(() => ({ id: null }))
+  console.log(`[report/generate] Email sent to ${to} (${emailId}) with PDF attachment (${pdfBuffer ? Math.round(pdfBuffer.length/1024) : 0}KB)`)
+  return { emailId: emailId ?? true, pdfUrl }
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -256,8 +296,22 @@ export async function POST(req: NextRequest) {
 
   const { email, fields, codeLabel, codeRef, location, isOntario, surveyUrl } = body
   // Captured measurement frames (base64 JPEGs keyed by position id)
+  // body.frames may arrive as: an object, a JSON string, or a double-stringified string
   let capturedFrames: Record<string,string> = {}
-  try { if (body.frames) capturedFrames = JSON.parse(body.frames) } catch {}
+  if (body.frames) {
+    try {
+      if (typeof body.frames === 'object') {
+        capturedFrames = body.frames
+      } else if (typeof body.frames === 'string') {
+        let parsed = JSON.parse(body.frames)
+        // Handle double-stringify case
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed)
+        if (parsed && typeof parsed === 'object') capturedFrames = parsed
+      }
+    } catch { capturedFrames = {} }
+  }
+  const frameCount = Object.values(capturedFrames).filter(v => v && v.length > 100).length
+  console.log(`[report/generate] Received ${frameCount} valid photo frames (${Object.keys(capturedFrames).length} total keys)`)
 
   // ── Experiment: print-report ──────────────────────────────────────────────
   // Evaluate server-side so ad-blockers can't interfere with the measurement.
@@ -380,9 +434,11 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Email it ─────────────────────────────────────────────────────────────────
-  const emailId = reportEmail
-    ? await sendEmail(reportEmail, reportText, codeLabel || 'Building Code', location || '', surveyUrl || SURVEY_URL, capturedFrames)
+  const emailResult = reportEmail
+    ? await sendEmail(reportEmail, reportText, codeLabel || 'Building Code', location || '', surveyUrl || SURVEY_URL, capturedFrames, fields)
     : null
+  const emailId = emailResult ? (typeof emailResult === 'object' ? emailResult.emailId : emailResult) : null
+  const pdfUrl  = emailResult && typeof emailResult === 'object' ? emailResult.pdfUrl : null
 
   // Track server-side — captures even if the browser closes before client fires
   // Includes experiment variant so PostHog can calculate conversion per arm
@@ -461,5 +517,6 @@ export async function POST(req: NextRequest) {
     emailed:   !!emailId,
     emailId,
     reportText,
+    pdfUrl:    pdfUrl ?? null,
   })
 }

@@ -482,11 +482,14 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
     const measurementCount = (['rise','run','width','guard'] as const).filter(k => n(k) !== null).length
     Analytics.scanCompleted({ role: user?.role ?? 'diy', measurementCount, hasFailed: false })
     // Persist captured frames for report email embedding
+    // _frames arrives as a JSON string from ScanReadyScreen — parse it to object first
     if (raw._frames) {
       try {
         const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
-        u._frames = raw._frames
+        u._frames = typeof raw._frames === 'string' ? JSON.parse(raw._frames) : raw._frames
         localStorage.setItem('sc_user', JSON.stringify(u))
+        // Also write directly to sessionStorage for immediate access
+        sessionStorage.setItem('sc_frames', typeof raw._frames === 'string' ? raw._frames : JSON.stringify(raw._frames))
       } catch {}
     }
     setMeasurements(m)

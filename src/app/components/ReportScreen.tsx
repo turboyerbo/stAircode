@@ -202,6 +202,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   const [testimError,    setTestimError]    = useState<string | null>(null)
   const [unlockToken,    setUnlockToken]    = useState<string | null>(null)   // set after successful submission
   const [freeGenLoading, setFreeGenLoading] = useState(false)
+  const [pdfUrl,         setPdfUrl]         = useState<string | null>(null)
 
   // ── PostHog experiment: 'print-report' ────────────────────────────────────
   // Tracks sign-in → report generation conversion rate.
@@ -331,10 +332,17 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
       sessionStorage.setItem('sc_fields', JSON.stringify(fields))
       sessionStorage.setItem('sc_code_label', codeLabel)
       sessionStorage.setItem('sc_location', location || '')
-      sessionStorage.setItem('sc_report_text', '')  // cleared — generated after payment
-      // Also save frames (stored in localStorage._frames by page.tsx)
-      const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
-      if (u._frames) sessionStorage.setItem('sc_frames', JSON.stringify(u._frames))
+      sessionStorage.setItem('sc_report_text', '')
+      // Frames: sessionStorage may already have them (set by ScanReadyScreen or page.tsx)
+      // If not, fall back to localStorage._frames — but avoid double-stringifying
+      const existingFrames = sessionStorage.getItem('sc_frames')
+      if (!existingFrames || existingFrames === '{}') {
+        const u = JSON.parse(localStorage.getItem('sc_user') || '{}')
+        if (u._frames) {
+          // u._frames is already an object (parsed in page.tsx) — stringify once for storage
+          sessionStorage.setItem('sc_frames', typeof u._frames === 'string' ? u._frames : JSON.stringify(u._frames))
+        }
+      }
     } catch {}
 
     // Send teaser email (pass/fail only, no full report)
@@ -376,7 +384,15 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           email: userEmail, fields, codeLabel, location, isOntario,
-          frames: (() => { try { return sessionStorage.getItem('sc_frames') ?? undefined } catch { return undefined } })(),
+          frames: (() => {
+            try {
+              const raw = sessionStorage.getItem('sc_frames')
+              if (!raw || raw === '{}') return {}
+              const parsed = JSON.parse(raw)
+              // If it parsed to a string (double-stringified), parse again
+              return typeof parsed === 'string' ? JSON.parse(parsed) : parsed
+            } catch { return {} }
+          })(),
         }),
       })
       const saveData = await saveRes.json()
@@ -537,7 +553,14 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           location,
           isOntario,
           testimonialToken: unlockToken,
-          frames: (() => { try { return sessionStorage.getItem('sc_frames') ?? undefined } catch { return undefined } })(),
+          frames: (() => {
+            try {
+              const raw = sessionStorage.getItem('sc_frames')
+              if (!raw || raw === '{}') return {}
+              const parsed = JSON.parse(raw)
+              return typeof parsed === 'string' ? JSON.parse(parsed) : parsed
+            } catch { return {} }
+          })(),
         }),
       })
       const data = await res.json()
@@ -548,8 +571,8 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
           u.email = userEmail
           localStorage.setItem('sc_user', JSON.stringify(u))
         } catch {}
-        // Show success — report emailed
-        setUnlockToken('__done__')   // sentinel: show delivered state
+        if (data.pdfUrl) setPdfUrl(data.pdfUrl)
+        setUnlockToken('__done__')
         setFreeGenLoading(false)
       } else {
         setGenError(data.error ?? 'Report generation failed. Please try again.')
@@ -612,302 +635,13 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   // ── PAYWALL SCREEN — shown after user enters email, replaces results entirely ──
   // This prevents the full results from ever being visible without payment.
   if (sheet === 'report-ready') {
+    const reportDone = unlockToken === '__done__'
     return (
-      <div style={{ minHeight: '100dvh', background: profile.bg, color: profile.text, display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflowY: 'auto' }}>{/* Top bar */}
-        <div style={{ padding: '0.75rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><BetaLogo size="xs" onDark />
+      <div style={{ minHeight: '100dvh', background: profile.bg, color: profile.text, display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflowY: 'auto' }}>
+        {/* Top bar */}
+        <div style={{ padding: '0.75rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <BetaLogo size="xs" onDark />
           <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: profile.text3 }}>{codeLabel} · {location || 'Unknown'}</div>
-        </div>
-
-        <div style={{ flex: 1, padding: '1.5rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>{/* Email confirmation */}
-          {emailSent ? (
-            <div style={{ background: 'rgba(39,169,107,0.08)', border: '1.5px solid rgba(39,169,107,0.3)', borderRadius: 14, padding: '1rem 1.25rem', textAlign: 'center' }}><div style={{ fontSize: '1.8rem', marginBottom: '0.4rem' }}></div>
-              <div style={{ fontSize: '1rem', fontWeight: 900, color: profile.pass, marginBottom: '0.25rem' }}>Results sent to your inbox</div>
-              <div style={{ fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}>Check <strong style={{ color: profile.text }}>{emailInput}</strong> for your pass/fail summary.<br/>
-                Your email includes a link to unlock the full report.
-              </div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '0.5rem 0' }}><div style={{ fontSize: '1.8rem', marginBottom: '0.4rem' }}></div>
-              <div style={{ fontSize: '1rem', fontWeight: 900, color: profile.text }}>Scan complete</div>
-            </div>
-          )}
-
-          {/* Pass/fail counts — the ONLY data shown without payment */}
-          <div style={{ background: profile.bg2, borderRadius: 14, padding: '1rem', display: 'flex', justifyContent: 'space-around', border: `1px solid ${profile.bg3}` }}><div style={{ textAlign: 'center' }}><div style={{ fontSize: '2rem', fontWeight: 900, color: profile.pass, lineHeight: 1 }}>{passed.length}</div>
-              <div style={{ fontSize: "0.72rem", color: profile.text3, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: "0.2rem", fontWeight: 700 }}>PASSED</div>
-            </div>
-            <div style={{ width: 1, background: 'rgba(147,186,212,0.15)', alignSelf: 'stretch' }} />
-            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '2rem', fontWeight: 900, color: failed.length > 0 ? profile.fail : profile.text3, lineHeight: 1 }}>{failed.length}</div>
-              <div style={{ fontSize: "0.72rem", color: profile.text3, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: "0.2rem", fontWeight: 700 }}>FAILED</div>
-            </div>
-            <div style={{ width: 1, background: 'rgba(147,186,212,0.15)', alignSelf: 'stretch' }} />
-            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '2rem', fontWeight: 900, color: profile.text2, lineHeight: 1 }}>{measured.length}</div>
-              <div style={{ fontSize: "0.72rem", color: profile.text3, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: "0.2rem", fontWeight: 700 }}>SCANNED</div>
-            </div>
-          </div>
-
-          {/* Urgency if fails */}
-          {failed.length > 0 && (
-            <div style={{ background: 'rgba(232,85,85,0.06)', border: '1px solid rgba(232,85,85,0.2)', borderRadius: 12, padding: '0.75rem 1rem', fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}><strong style={{ color: profile.fail }}> {failed.length} item{failed.length > 1 ? 's' : ''} flagged.</strong>{' '}
-              Exact measurements, code citations, and recommended actions are in the full report.
-              Your inspector or contractor will ask for this documentation.
-            </div>
-          )}
-
-          {/* Lock icon + paywall */}
-          <div style={{ background: 'rgba(242,147,55,0.06)', border: '1.5px solid rgba(242,147,55,0.35)', borderRadius: 16, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}><div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}><div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 900, color: profile.text }}>Full report locked</div>
-                <div style={{ fontSize: '0.7rem', color: profile.text2 }}>Measurement photos · Code citations · Pre-inspection summary</div>
-              </div>
-            </div>
-
-            {/* Beta pricing */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}><span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
-              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: GOLD }}>$2.99</span>
-              <span style={{ fontSize: '0.62rem', fontWeight: 800, fontFamily: 'monospace', color: profile.pass, background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 20, padding: '0.15rem 0.55rem', letterSpacing: '0.06em' }}>BETA DISCOUNT</span>
-            </div>
-
-            <button
-              onClick={() => handlePayForReport()}
-              style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${GOLD},#D97706)`, border: 'none', borderRadius: 14, color: '#000', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.06em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(242,147,55,0.45)' }}
-            >
-              Unlock Full Report — $2.99 →
-            </button>
-
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', textAlign: 'center' as const, lineHeight: 1.6 }}>One-time payment · Secure checkout via Stripe · PDF emailed instantly
-            </div>
-
-            {/* Sample report preview */}
-            <a href="/sample-report" target="_blank" rel="noopener noreferrer"
-              style={{ display: 'block', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(147,186,212,0.2)', textDecoration: 'none', position: 'relative' as const }}><div style={{ background: 'rgba(147,186,212,0.06)', padding: '0.55rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ fontSize: '0.68rem', color: profile.text2, fontWeight: 600 }}>Preview what your report looks like</span>
-                <span style={{ fontSize: '0.65rem', color: GOLD, fontWeight: 700 }}>View sample →</span>
-              </div>
-              {/* Mini report mockup */}
-              <div style={{ background: '#0A1C2E', padding: '0.75rem 0.85rem', display: 'flex', flexDirection: 'column' as const, gap: '0.45rem' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><div style={{ fontSize: '0.62rem', fontWeight: 900, color: GOLD, letterSpacing: '0.04em' }}>stAIrcode</div>
-                  <div style={{ fontSize: '0.55rem', color: profile.text3, fontFamily: 'monospace' }}>OBC 2024 · Toronto</div>
-                </div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: profile.text }}>Stair Compliance Report</div>
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' as const }}>{[['Rise 195mm','pass'],['Run 250mm','pass'],['Width 1100mm','pass'],['Handrail 900mm','pass']].map(([label, status]) => (
-                    <div key={label} style={{ fontSize: '0.55rem', padding: '0.15rem 0.5rem', borderRadius: 6, background: status === 'pass' ? 'rgba(39,169,107,0.15)' : 'rgba(232,85,85,0.15)', color: status === 'pass' ? profile.pass : profile.fail, fontFamily: 'monospace', fontWeight: 700, border: `1px solid ${status === 'pass' ? 'rgba(39,169,107,0.3)' : 'rgba(232,85,85,0.3)'}` }}>{label}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ fontSize: '0.6rem', color: profile.text3, lineHeight: 1.5 }}>Full stair description · Code citations · Pre-inspection summary · Measurement photos</div>
-              </div>
-            </a>
-
-            {/* ── Discount code entry ─────────────────────────────────────── */}
-            {!discountApplied ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}><div style={{ fontSize: '0.72rem', color: profile.text2, textAlign: 'center' as const }}>Have a discount code?</div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}><input
-                    type="text"
-                    placeholder="Enter code"
-                    value={discountCode}
-                    onChange={e => { setDiscountCode(e.target.value); setDiscountError(null) }}
-                    onKeyDown={e => { if (e.key === 'Enter') handleApplyDiscount() }}
-                    style={{ flex: 1, padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${discountCode ? 'rgba(147,186,212,0.45)' : 'rgba(147,186,212,0.2)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'monospace', letterSpacing: '0.04em' }}
-                  />
-                  <button
-                    onClick={handleApplyDiscount}
-                    disabled={discountChecking || !discountCode.trim()}
-                    style={{ padding: '0.7rem 1rem', background: discountCode.trim() ? 'rgba(242,147,55,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${discountCode.trim() ? 'rgba(242,147,55,0.4)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: discountCode.trim() ? GOLD : profile.text3, fontSize: '0.8rem', fontWeight: 700, cursor: discountCode.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' as const, fontFamily: 'monospace' }}
-                  >
-                    {discountChecking ? '…' : 'Apply →'}
-                  </button>
-                </div>
-                {discountError && (
-                  <div style={{ fontSize: '0.73rem', color: profile.fail, padding: '0.4rem 0.65rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)' }}>{discountError}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}><div style={{ background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 10, padding: '0.65rem 0.9rem', textAlign: 'center' as const, fontSize: '0.8rem', color: profile.pass, fontWeight: 700 }}>Discount applied — report unlocked!
-                </div>
-                <input
-                  type="email"
-                  placeholder="your@email.com — required to receive report *"
-                  value={emailInput}
-                  onChange={e => { setEmailInput(e.target.value); setGenError(null) }}
-                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? profile.pass : 'rgba(147,186,212,0.25)'}`, borderRadius: 10, color: profile.text, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
-                />
-                {genError && (
-                  <div style={{ fontSize: '0.72rem', color: profile.fail, padding: '0.4rem 0.65rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)' }}>{genError}
-                  </div>
-                )}
-                <button
-                  onClick={handleFreeGenerate}
-                  disabled={freeGenLoading || unlockToken === '__done__'}
-                  style={{ width: '100%', padding: '0.9rem', background: freeGenLoading ? 'rgba(39,169,107,0.1)' : 'rgba(39,169,107,0.15)', border: `1.5px solid ${profile.pass}`, borderRadius: 12, color: profile.pass, fontSize: '0.9rem', fontWeight: 900, fontFamily: 'monospace', cursor: freeGenLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>{freeGenLoading ? (
-                    <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(39,169,107,0.25)', borderTopColor: profile.pass, animation: 'spin 0.8s linear infinite' }} /> Sending report…</>
-                  ) : unlockToken === '__done__' ? ' Report sent — check your email' : 'Email My Free Report →'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* ── Beta Testimonial: leave feedback → get report free ─────────── */}
-          <div style={{ border: '1.5px solid rgba(147,186,212,0.2)', borderRadius: 16, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(147,186,212,0.04)' }}>{/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}><div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: profile.text }}>Get it free — leave a testimonial</div>
-                <div style={{ fontSize: '0.7rem', color: profile.text2, marginTop: '0.1rem' }}>We&apos;re in beta. Your feedback unlocks the report at no cost.</div>
-              </div>
-            </div>
-
-            {unlockToken === '__done__' ? (
-              /* ── Report delivered successfully ─────────────────────────── */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}><div style={{ background: 'rgba(39,169,107,0.1)', border: '1.5px solid rgba(39,169,107,0.35)', borderRadius: 14, padding: '1.25rem', textAlign: 'center' as const }}><div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}></div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: profile.pass, marginBottom: '0.35rem' }}>Report sent!</div>
-                  <div style={{ fontSize: '0.78rem', color: profile.text2, lineHeight: 1.6 }}>Your full compliance report has been emailed to{' '}
-                    <strong style={{ color: profile.text }}>{emailInput || '—'}</strong>.
-                    Check your inbox (and spam folder if needed).
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSheet('hidden')}
-                  style={{ width: '100%', padding: '0.85rem', background: 'rgba(39,169,107,0.12)', border: `1px solid ${profile.pass}`, borderRadius: 12, color: profile.pass, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>← Back to scan summary
-                </button>
-              </div>
-            ) : unlockToken ? (
-              /* ── Testimonial accepted — show email + free generate button ─ */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}><div style={{ background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '0.75rem 1rem', textAlign: 'center' as const }}><div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}></div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: profile.pass }}>Thank you for your feedback!</div>
-                  <div style={{ fontSize: '0.72rem', color: profile.text2, marginTop: '0.25rem', lineHeight: 1.55 }}>Your report is unlocked. Enter your email and press the button below — it will be sent instantly.
-                  </div>
-                </div>
-
-                {/* Email input — required for delivery */}
-                <input
-                  type="email"
-                  placeholder="your@email.com — required to receive report *"
-                  value={emailInput}
-                  onChange={e => { setEmailInput(e.target.value); setGenError(null) }}
-                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? profile.pass : 'rgba(147,186,212,0.25)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }}
-                />
-
-                {genError && (
-                  <div style={{ fontSize: '0.72rem', color: profile.fail, padding: '0.5rem 0.75rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)' }}>{genError}
-                  </div>
-                )}
-
-                <button
-                  onClick={handleFreeGenerate}
-                  disabled={freeGenLoading}
-                  style={{ width: '100%', padding: '1rem', background: freeGenLoading ? 'rgba(39,169,107,0.15)' : 'rgba(39,169,107,0.18)', border: `1.5px solid ${profile.pass}`, borderRadius: 14, color: profile.pass, fontSize: '0.95rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.06em', cursor: freeGenLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>{freeGenLoading ? (
-                    <><div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(39,169,107,0.3)', borderTopColor: profile.pass, animation: 'spin 0.8s linear infinite' }} /> Generating &amp; sending…</>
-                  ) : (
-                    'Email My Free Report →'
-                  )}
-                </button>
-              </div>
-            ) : (
-              /* ── Testimonial form ─────────────────────────────────────────── */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>{/* Name */}
-                <input
-                  type="text" placeholder="Your full name *"
-                  value={testimName} onChange={e => setTestimName(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimName.trim() ? 'rgba(147,186,212,0.35)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
-                />
-
-                {/* Title / Role */}
-                <input
-                  type="text" placeholder="Your title or role  (e.g. Building Inspector) *"
-                  value={testimTitle} onChange={e => setTestimTitle(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimTitle.trim() ? 'rgba(147,186,212,0.35)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
-                />
-
-                {/* Business */}
-                <input
-                  type="text" placeholder="Business or organisation name *"
-                  value={testimBusiness} onChange={e => setTestimBusiness(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimBusiness.trim() ? 'rgba(147,186,212,0.35)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
-                />
-
-                {/* Comment */}
-                <div style={{ position: 'relative' }}><textarea
-                    placeholder="Share your honest experience — what did you use stAIrcode for? What worked, what could be better? (min 50 characters) *"
-                    value={testimComment} onChange={e => setTestimComment(e.target.value)}
-                    rows={4}
-                    style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.75rem 0.9rem', paddingBottom: '1.6rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${testimComment.trim().length >= 50 ? profile.pass : testimComment.length > 0 ? 'rgba(242,147,55,0.35)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: profile.text, fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical' as const, lineHeight: 1.6 }}
-                  />
-                  <span style={{ position: 'absolute', bottom: 8, right: 10, fontSize: '0.62rem', fontFamily: 'monospace', color: testimComment.trim().length >= 50 ? profile.pass : profile.text3 }}>{testimComment.trim().length}/50 min
-                  </span>
-                </div>
-
-                {/* Error */}
-                {testimError && (
-                  <div style={{ fontSize: '0.72rem', color: profile.fail, lineHeight: 1.5, padding: '0.5rem 0.75rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)' }}>{testimError}
-                  </div>
-                )}
-
-                {/* Submit */}
-                <button
-                  onClick={handleTestimonialSubmit}
-                  disabled={testimSending}
-                  style={{ width: '100%', padding: '0.9rem', background: testimSending ? 'rgba(147,186,212,0.08)' : 'rgba(147,186,212,0.12)', border: '1.5px solid rgba(147,186,212,0.3)', borderRadius: 12, color: testimSending ? profile.text3 : profile.text, fontSize: '0.85rem', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.05em', cursor: testimSending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
-                >
-                  {testimSending ? (
-                    <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(147,186,212,0.2)', borderTopColor: profile.text2, animation: 'spin 0.8s linear infinite' }} /> Submitting…</>
-                  ) : (
-                    'Submit Feedback & Unlock Free Report →'
-                  )}
-                </button>
-
-                <div style={{ fontSize: '0.65rem', color: profile.text3, textAlign: 'center' as const, lineHeight: 1.55 }}>By submitting, you agree that your feedback may be featured on staircode.app for promotional purposes.
-                  {' '}Your name, title, and business may be displayed publicly.
-                  {' '}To request removal at any time, email{' '}
-                  <a href="mailto:info@staircode.app" style={{ color: GOLD, textDecoration: 'none' }}>info@staircode.app</a>.
-                  {' '}Beta program only.
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Email capture if not yet sent */}
-          {!emailSent && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}><div style={{ fontSize: '0.72rem', color: profile.text3, textAlign: 'center' }}>— or get your pass/fail summary by email —</div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}><input
-                  type="email" inputMode="email" autoComplete="email" placeholder="your@email.com"
-                  value={emailInput} onChange={e => setEmailInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && emailInput.includes('@')) emailReport(emailInput) }}
-                  style={{ flex: 1, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? profile.pass : 'rgba(147,186,212,0.2)'}`, borderRadius: 12, color: profile.text, fontSize: '0.9rem', outline: 'none' }}
-                />
-                <button
-                  onClick={() => emailReport(emailInput)}
-                  disabled={emailSending || !emailInput.includes('@')}
-                  style={{ padding: '0.8rem 1rem', background: emailInput.includes('@') ? 'rgba(39,169,107,0.2)' : 'rgba(255,255,255,0.04)', border: `1px solid ${emailInput.includes('@') ? profile.pass : 'rgba(147,186,212,0.15)'}`, borderRadius: 12, color: emailInput.includes('@') ? profile.pass : profile.text3, fontSize: '0.78rem', fontWeight: 700, cursor: emailInput.includes('@') ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' as const }}
-                >
-                  {emailSending ? '…' : 'Send →'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Find professionals */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}><div style={{ fontSize: '0.7rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', textAlign: 'center' as const, marginBottom: '0.25rem', fontWeight: 700 }}>FIND A PROFESSIONAL</div>
-            {([
-              { type: 'inspector'  as const, icon: '', label: 'Find a Building Inspector' },
-              { type: 'architect'  as const, icon: '', label: 'Find a Licensed Architect'  },
-              { type: 'contractor' as const, icon: '', label: 'Find a Stair Contractor'    },
-            ]).map(({ type, icon, label }) => (
-              <button
-                key={type}
-                onClick={() => openMap(type)}
-                style={{ width: '100%', padding: '0.72rem 1rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(147,186,212,0.15)', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.55rem', color: profile.text2, fontSize: '0.8rem', fontWeight: 600 }}
-              >
-                <span>{icon}</span>
-                <span>{label}</span>
-                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: profile.text3, fontWeight: 600 }}>↗ Maps</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Back */}
-          <button
-            onClick={() => { setSheet('hidden') }}
-            style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.7rem', fontFamily: 'monospace', cursor: 'pointer', textAlign: 'center' as const, padding: '0.5rem' }}
-          >
-            ← Back to scan summary
-          </button>
         </div>
       </div>
     )
