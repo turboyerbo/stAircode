@@ -632,16 +632,124 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
   // Derive userEmail once for the whole render
   const userEmail = (() => { try { const u = localStorage.getItem('sc_user'); return u ? JSON.parse(u).email : '' } catch { return '' } })()
 
-  // ── PAYWALL SCREEN — shown after user enters email, replaces results entirely ──
-  // This prevents the full results from ever being visible without payment.
+  // ── PAYWALL SCREEN — shown after user presses Generate Report ───────────────
   if (sheet === 'report-ready') {
     const reportDone = unlockToken === '__done__'
     return (
       <div style={{ minHeight: '100dvh', background: profile.bg, color: profile.text, display: 'flex', flexDirection: 'column', maxWidth: 430, margin: '0 auto', fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflowY: 'auto' }}>
-        {/* Top bar */}
         <div style={{ padding: '0.75rem 1.25rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <BetaLogo size="xs" onDark />
           <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: profile.text3 }}>{codeLabel} · {location || 'Unknown'}</div>
+        </div>
+        <div style={{ flex: 1, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Pass/Fail summary */}
+          <div style={{ background: profile.bg2, borderRadius: 14, padding: '1rem', display: 'flex', justifyContent: 'space-around', border: `1px solid ${profile.bg3}` }}>
+            <div style={{ textAlign: 'center' as const }}>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: profile.pass, lineHeight: 1 }}>{passed.length}</div>
+              <div style={{ fontSize: '0.72rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', marginTop: '0.2rem', fontWeight: 700 }}>PASSED</div>
+            </div>
+            <div style={{ width: 1, background: 'rgba(147,186,212,0.15)', alignSelf: 'stretch' }} />
+            <div style={{ textAlign: 'center' as const }}>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: failed.length > 0 ? profile.fail : profile.text3, lineHeight: 1 }}>{failed.length}</div>
+              <div style={{ fontSize: '0.72rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', marginTop: '0.2rem', fontWeight: 700 }}>FAILED</div>
+            </div>
+            <div style={{ width: 1, background: 'rgba(147,186,212,0.15)', alignSelf: 'stretch' }} />
+            <div style={{ textAlign: 'center' as const }}>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: profile.text2, lineHeight: 1 }}>{measured.length}</div>
+              <div style={{ fontSize: '0.72rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', marginTop: '0.2rem', fontWeight: 700 }}>SCANNED</div>
+            </div>
+          </div>
+
+          {/* Success state */}
+          {reportDone ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ background: 'rgba(39,169,107,0.08)', border: '1.5px solid rgba(39,169,107,0.3)', borderRadius: 14, padding: '1.25rem', textAlign: 'center' as const }}>
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: profile.pass, marginBottom: '0.3rem' }}>Report sent to your inbox</div>
+                <div style={{ fontSize: '0.78rem', color: profile.text2, lineHeight: 1.6 }}>Check <strong style={{ color: profile.text }}>{emailInput}</strong> — your full compliance report PDF is on its way.</div>
+              </div>
+              {pdfUrl ? (
+                <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'block', width: '100%', padding: '1rem', background: `linear-gradient(135deg,${GOLD},#C4721E)`, borderRadius: 14, color: '#000', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.06em', cursor: 'pointer', textAlign: 'center' as const, textDecoration: 'none', boxSizing: 'border-box' as const, boxShadow: '0 4px 24px rgba(242,147,55,0.35)' }}>
+                  Download PDF Report
+                </a>
+              ) : (
+                <div style={{ textAlign: 'center' as const, fontSize: '0.75rem', color: profile.text3 }}>PDF link will arrive in your email shortly</div>
+              )}
+              <button onClick={() => setSheet('hidden')} style={{ width: '100%', padding: '0.85rem', background: 'rgba(147,186,212,0.07)', border: `1px solid rgba(147,186,212,0.2)`, borderRadius: 12, color: profile.text2, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
+                Back to scan summary
+              </button>
+            </div>
+          ) : (
+            // Paywall
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {failed.length > 0 && (
+                <div style={{ background: 'rgba(232,85,85,0.06)', border: '1px solid rgba(232,85,85,0.2)', borderRadius: 12, padding: '0.75rem 1rem', fontSize: '0.75rem', color: profile.text2, lineHeight: 1.65 }}>
+                  <strong style={{ color: profile.fail }}>{failed.length} item{failed.length > 1 ? 's' : ''} flagged.</strong>{' '}Exact measurements, code citations, and recommended actions are in the full report.
+                </div>
+              )}
+              <div style={{ background: 'rgba(242,147,55,0.06)', border: '1.5px solid rgba(242,147,55,0.35)', borderRadius: 16, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 900, color: profile.text }}>Full report locked</div>
+                  <div style={{ fontSize: '0.7rem', color: profile.text2 }}>Measurement photos · Code citations · Pre-inspection summary</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 900, color: GOLD }}>$2.99</span>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 800, fontFamily: 'monospace', color: profile.pass, background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 20, padding: '0.15rem 0.55rem', letterSpacing: '0.06em' }}>BETA DISCOUNT</span>
+                </div>
+                {!emailInput.includes('@') && (
+                  <input type="email" placeholder="your@email.com"
+                    value={emailInput} onChange={e => { setEmailInput(e.target.value); setGenError(null) }}
+                    style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(147,186,212,0.25)', borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }} />
+                )}
+                <button onClick={() => handlePayForReport()}
+                  style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${GOLD},#D97706)`, border: 'none', borderRadius: 14, color: '#000', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.06em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(242,147,55,0.45)' }}>
+                  Unlock Full Report — $2.99 →
+                </button>
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center' as const }}>One-time payment · Stripe · PDF emailed + downloadable instantly</div>
+                <a href="/sample-report" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', color: GOLD, textAlign: 'center' as const, textDecoration: 'none', display: 'block' }}>View sample report →</a>
+              </div>
+              {!discountApplied ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: profile.text2, textAlign: 'center' as const }}>Have a discount code?</div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="text" placeholder="Enter code" value={discountCode} onChange={e => { setDiscountCode(e.target.value); setDiscountError(null) }} onKeyDown={e => { if (e.key === 'Enter') handleApplyDiscount() }}
+                      style={{ flex: 1, padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${discountCode ? 'rgba(147,186,212,0.45)' : 'rgba(147,186,212,0.2)'}`, borderRadius: 10, color: profile.text, fontSize: '0.88rem', outline: 'none', fontFamily: 'monospace', letterSpacing: '0.04em' }} />
+                    <button onClick={handleApplyDiscount} disabled={discountChecking || !discountCode.trim()}
+                      style={{ padding: '0.7rem 1rem', background: discountCode.trim() ? 'rgba(242,147,55,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${discountCode.trim() ? 'rgba(242,147,55,0.4)' : 'rgba(147,186,212,0.15)'}`, borderRadius: 10, color: discountCode.trim() ? GOLD : profile.text3, fontSize: '0.8rem', fontWeight: 700, cursor: discountCode.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' as const, fontFamily: 'monospace' }}>
+                      {discountChecking ? '…' : 'Apply →'}
+                    </button>
+                  </div>
+                  {discountError && <div style={{ fontSize: '0.73rem', color: profile.fail, padding: '0.4rem 0.65rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)' }}>{discountError}</div>}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                  <div style={{ background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 10, padding: '0.65rem 0.9rem', textAlign: 'center' as const, fontSize: '0.8rem', color: profile.pass, fontWeight: 700 }}>Discount applied — report unlocked!</div>
+                  {!emailInput.includes('@') && (
+                    <input type="email" placeholder="your@email.com — required to receive report" value={emailInput} onChange={e => { setEmailInput(e.target.value); setGenError(null) }}
+                      style={{ width: '100%', boxSizing: 'border-box' as const, padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid rgba(147,186,212,0.25)`, borderRadius: 10, color: profile.text, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }} />
+                  )}
+                  {genError && <div style={{ fontSize: '0.72rem', color: profile.fail, padding: '0.4rem 0.65rem', background: 'rgba(232,85,85,0.08)', borderRadius: 8, border: '1px solid rgba(232,85,85,0.2)' }}>{genError}</div>}
+                  <button onClick={handleFreeGenerate} disabled={freeGenLoading}
+                    style={{ width: '100%', padding: '0.9rem', background: freeGenLoading ? 'rgba(39,169,107,0.1)' : 'rgba(39,169,107,0.15)', border: `1.5px solid ${profile.pass}`, borderRadius: 12, color: profile.pass, fontSize: '0.9rem', fontWeight: 900, fontFamily: 'monospace', cursor: freeGenLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    {freeGenLoading ? <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(39,169,107,0.25)', borderTopColor: profile.pass, animation: 'spin 0.8s linear infinite' }} /> Sending report…</> : 'Email My Free Report →'}
+                  </button>
+                </div>
+              )}
+              <div style={{ borderTop: '1px solid rgba(147,186,212,0.1)', paddingTop: '0.85rem', textAlign: 'center' as const }}>
+                <button onClick={() => setSheet('testimonial-only')} style={{ background: 'none', border: 'none', color: profile.text2, fontSize: '0.78rem', cursor: 'pointer', lineHeight: 1.5 }}>Leave a testimonial to get it free →</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ fontSize: '0.7rem', color: profile.text3, fontFamily: 'monospace', letterSpacing: '0.1em', textAlign: 'center' as const, marginBottom: '0.25rem', fontWeight: 700 }}>FIND A PROFESSIONAL</div>
+                {([{ type: 'inspector' as const, label: 'Find a Building Inspector' }, { type: 'architect' as const, label: 'Find a Licensed Architect' }, { type: 'contractor' as const, label: 'Find a Stair Contractor' }]).map(({ type, label }) => (
+                  <button key={type} onClick={() => openMap(type)} style={{ width: '100%', padding: '0.72rem 1rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(147,186,212,0.15)', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.55rem', color: profile.text2, fontSize: '0.8rem', fontWeight: 600 }}>
+                    <span>{label}</span><span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: profile.text3, fontWeight: 600 }}>↗ Maps</span>
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setSheet('hidden')} style={{ background: 'none', border: 'none', color: profile.text3, fontSize: '0.7rem', fontFamily: 'monospace', cursor: 'pointer', textAlign: 'center' as const, padding: '0.5rem' }}>← Back to scan summary</button>
+            </div>
+          )}
         </div>
       </div>
     )
