@@ -17,6 +17,9 @@ console.log('[next.config] Cache version:', BUILD_VERSION)
 
 const nextConfig = {
   reactStrictMode: false,   // Extensions like Honey override window.open — strict mode turns that into a crash
+  // Disable Next.js's attempt to inline/minify external Google Fonts stylesheets at build time.
+  // The fonts are loaded via <link> tags and resolved correctly at runtime on the CDN.
+  optimizeFonts: false,
   // jsPDF is browser-only — never bundle it for server/edge runtimes
   // serverExternalPackages is Next.js 15+; use experimental key for Next.js 14.x
   experimental: {
