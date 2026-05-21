@@ -196,9 +196,89 @@ export default function MarketingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
+          COMPLIANCE MODULES
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '5rem 1.25rem', background: '#ffffff', borderTop: '1px solid #EEF3F9' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div className={styles.sectionLabel}>Compliance Modules</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>One app. Every inspection category.</h2>
+          <p style={{ fontSize: '1rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 620, marginBottom: 0 }}>
+            Select a module, follow the guided scan, and generate a cited compliance report — per category. Start with stairs today. More modules launching soon.
+          </p>
+
+          <div className={styles.modulesGrid}>
+
+            {/* ── LIVE: Stairs ── */}
+            <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`}>
+              <span className={styles.moduleIcon}>🪜</span>
+              <span className={styles.moduleName}>Stair Compliance</span>
+              <span className={styles.moduleDesc}>Rise, run, headroom, width, handrail height, nosing & baluster spacing vs. OBC, NBC, IBC and more.</span>
+              <span className={`${styles.modulePill} ${styles.live}`}>Live</span>
+            </a>
+
+            {/* ── COMING SOON ── */}
+            {[
+              {
+                icon: '📐',
+                name: 'Architectural Plans Review',
+                desc: 'Upload AHJ-approved drawings. AI cross-references stamped plans against as-built conditions and flags deviations.',
+              },
+              {
+                icon: '🏗️',
+                name: 'Foundation Inspection',
+                desc: 'Scan foundation walls, footings, and slab edges. Checks bearing widths, setbacks, and crack documentation.',
+              },
+              {
+                icon: '🚧',
+                name: 'Guardrails & Handrails',
+                desc: 'Height, baluster spacing, and graspability checks for guards on decks, balconies, mezzanines, and landings.',
+              },
+              {
+                icon: '🪟',
+                name: 'Windows',
+                desc: 'Egress opening sizes, sill heights, clear opening dimensions, and window well requirements per jurisdiction.',
+              },
+              {
+                icon: '🔥',
+                name: 'Smoke & CO Detectors',
+                desc: 'Placement verification relative to bedrooms, storeys, and mechanical rooms. Distance-to-ceiling checks.',
+              },
+              {
+                icon: '💨',
+                name: 'Bathroom Ventilation',
+                desc: 'Fan CFM requirements, duct termination, makeup air, and humidity control compliance per code.',
+              },
+              {
+                icon: '📏',
+                name: 'Ceiling Heights',
+                desc: 'Minimum clearances for habitable rooms, corridors, bathrooms, and basement conversions.',
+              },
+              {
+                icon: '🚪',
+                name: 'Door Widths & Clearances',
+                desc: 'Accessible and egress door widths, swing clearances, threshold heights, and hardware reach ranges.',
+              },
+            ].map(m => (
+              <div key={m.name} className={`${styles.moduleCard} ${styles.soon}`}>
+                <span className={styles.moduleIcon}>{m.icon}</span>
+                <span className={styles.moduleName}>{m.name}</span>
+                <span className={styles.moduleDesc}>{m.desc}</span>
+                <span className={`${styles.modulePill} ${styles.soon}`}>Coming Soon</span>
+              </div>
+            ))}
+
+          </div>
+
+          <p style={{ marginTop: '1.5rem', fontSize: '0.78rem', color: '#9DB4C5', lineHeight: 1.6 }}>
+            Module roadmap is updated as each category reaches beta. Early access available for licensed inspection firms. <a href="mailto:info@staircode.app?subject=Module%20Early%20Access" style={{ color: '#F29337', textDecoration: 'none', fontWeight: 600 }}>Contact us →</a>
+          </p>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
-      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#ffffff' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>How It Works</div>
+      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>How It Works</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '3rem' }}>Three steps to a compliance scan</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'flex-start' }}>{/* Steps */}
             <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>{[
@@ -251,7 +331,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           TESTIMONIAL
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}><div style={{ maxWidth: 720, margin: '0 auto' }}><div className={styles.testimonial}>
+      <section style={{ background: '#ffffff', padding: '4rem 1.25rem' }}><div style={{ maxWidth: 720, margin: '0 auto' }}><div className={styles.testimonial}>
             <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>&ldquo;The app flagged inconsistent risers, and the building inspector later confirmed it. A quick check was all we needed, and this got things moving in the right direction.&rdquo;
             </blockquote>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>

@@ -223,3 +223,117 @@
   .heroPhoneMobile  { display: none; }
   .heroPhoneDesktop { display: flex; }
 }
+
+/* ── Compliance Modules grid ─────────────────────────────────────────────── */
+.modulesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.moduleCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1.25rem 1.25rem 1.1rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1.5px solid #E2EAF0;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+/* Active module (stairs) */
+.moduleCard.active {
+  border-color: #F29337;
+  box-shadow:
+    0 2px 10px rgba(242,147,55,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  cursor: pointer;
+}
+.moduleCard.active:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgba(242,147,55,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Coming-soon modules */
+.moduleCard.soon {
+  background: #F7FAFC;
+  border-color: #DDE5EE;
+  cursor: default;
+  opacity: 0.72;
+}
+
+.moduleIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.moduleName {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0D1E2E;
+  line-height: 1.3;
+}
+
+.moduleCard.soon .moduleName {
+  color: #7A96AF;
+}
+
+.moduleDesc {
+  font-size: 0.75rem;
+  color: #5E7D9B;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.moduleCard.soon .moduleDesc {
+  color: #9DB4C5;
+}
+
+.modulePill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.6;
+}
+
+.modulePill.live {
+  background: rgba(242,147,55,0.12);
+  color: #D97B1F;
+  border: 1px solid rgba(242,147,55,0.3);
+}
+
+.modulePill.soon {
+  background: rgba(93,120,150,0.10);
+  color: #7A96AF;
+  border: 1px solid rgba(93,120,150,0.18);
+}
+
+/* Lock icon overlay on coming-soon cards */
+.moduleCard.soon::after {
+  content: '🔒';
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  font-size: 0.75rem;
+  opacity: 0.35;
+}
+
+@media (max-width: 600px) {
+  .modulesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
