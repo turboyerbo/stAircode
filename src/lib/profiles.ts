@@ -30,8 +30,8 @@ const B = {
   bg2:       '#0F2438',
   bg3:       '#152D46',
   text:      '#E8F4FF',
-  text2:     '#93BAD4',
-  text3:     '#4E7A9B',
+  text2:     '#B0CDE0',
+  text3:     '#7AADCA',
   pass:      '#3DB88A',
   fail:      '#E85555',
   warn:      '#F29337',
@@ -96,16 +96,16 @@ const ARCHITECT: ProfileTheme = {
   terms: {
     riser: 'Riser Height', tread: 'Tread Depth', width: 'Clear Width',
     handrail: 'Handrail Height', nosing: 'Nosing Projection', headroom: 'Headroom Clearance',
-    report: 'Compliance Report', passed: 'Within Tolerance ✓', failed: 'Non-Compliant', scanning: 'Dimensional survey…',
+    report: 'Compliance Report', passed: 'Within Tolerance ', failed: 'Non-Compliant', scanning: 'Dimensional survey…',
   },
   copy: {
     reportTitle: 'Pre-Inspection Report', reportSubtitle: 'Compliance assessment against applicable building code',
     reportPrice: 'Generate Full Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Pro — 20 Reports/month', proPrice: '$199/month', proNote: '20 scans/month, AR plane detection, all codes.',
     enterpriseTitle: 'Enterprise / Studio', enterpriseNote: 'Team seats, API access, BIM export.',
-    findInspector: '📍 Find Architect / Inspector',
+    findInspector: ' Find Architect / Inspector',
     scanIntro: "Ready to survey. Starting with riser height — face the riser, phone upright, ~1m distance.",
-    verdictLikely: 'Likely Compliant ✅', verdictPossibly: 'Possibly Compliant 🔶', verdictFail: 'Issues Detected ⚠️',
+    verdictLikely: 'Likely Compliant ', verdictPossibly: 'Possibly Compliant ', verdictFail: 'Issues Detected ',
   },
   aiPersona: `AUDIENCE: A registered architect or designer who is fully fluent in building code and construction terminology.
 
@@ -132,16 +132,16 @@ const BUILDING_MANAGER: ProfileTheme = {
   terms: {
     riser: 'Step Height', tread: 'Step Depth', width: 'Stair Width',
     handrail: 'Handrail Height', nosing: 'Step Edge', headroom: 'Overhead Clearance',
-    report: 'Compliance Report', passed: 'Compliant ✓', failed: 'Non-Compliant', scanning: 'Compliance check in progress…',
+    report: 'Compliance Report', passed: 'Compliant ', failed: 'Non-Compliant', scanning: 'Compliance check in progress…',
   },
   copy: {
     reportTitle: 'Building Compliance Report', reportSubtitle: 'Stair assessment for building management records',
     reportPrice: 'Get Compliance Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Pro — 20 Assessments/month', proPrice: '$199/month', proNote: '20 scans/month — ideal for multi-unit buildings.',
     enterpriseTitle: 'Enterprise', enterpriseNote: 'Multi-site management, team access, audit trail.',
-    findInspector: '📍 Find a Certified Inspector',
+    findInspector: ' Find a Certified Inspector',
     scanIntro: "Let's assess this staircase for compliance. I'll check each dimension against the applicable building code. Starting with step height — hold your phone upright facing the steps.",
-    verdictLikely: 'Compliant ✅', verdictPossibly: 'Requires Verification 🔶', verdictFail: 'Compliance Issues Found ⚠️',
+    verdictLikely: 'Compliant ', verdictPossibly: 'Requires Verification ', verdictFail: 'Compliance Issues Found ',
   },
   aiPersona: `AUDIENCE: A building manager or facilities professional. Understands compliance requirements and liability but is not a design professional.
 
@@ -169,16 +169,16 @@ const CONTRACTOR: ProfileTheme = {
   terms: {
     riser: 'Riser', tread: 'Tread', width: 'Clear Width',
     handrail: 'Rail Height', nosing: 'Nosing', headroom: 'Headroom',
-    report: 'Site Report', passed: 'Pass ✓', failed: 'Fail — Fix Required', scanning: 'Measuring…',
+    report: 'Site Report', passed: 'Pass ', failed: 'Fail — Fix Required', scanning: 'Measuring…',
   },
   copy: {
     reportTitle: 'Site Compliance Check', reportSubtitle: 'Stair dimensions vs code — pass/fail per item',
     reportPrice: 'Get Site Report — FREE during Beta', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Pro — 20 Checks/month', proPrice: '$199/month', proNote: '20 scans/month across all your sites.',
     enterpriseTitle: 'Enterprise', enterpriseNote: 'Team access, project management integration.',
-    findInspector: '📍 Find Inspector',
+    findInspector: ' Find Inspector',
     scanIntro: "Starting riser measurement. Phone upright, face-on to the riser, about 1m back. Hold steady.",
-    verdictLikely: 'Passes Code ✅', verdictPossibly: 'Marginal — Verify 🔶', verdictFail: 'Fails Code ⚠️',
+    verdictLikely: 'Passes Code ', verdictPossibly: 'Marginal — Verify ', verdictFail: 'Fails Code ',
   },
   aiPersona: `AUDIENCE: A builder, carpenter, or construction tradesperson. Knows all the terminology — riser, tread, nosing, going, headroom, stringer. Does not need anything explained.
 
@@ -205,16 +205,16 @@ const DIY: ProfileTheme = {
   terms: {
     riser: 'Step Height', tread: 'Step Depth', width: 'Stair Width',
     handrail: 'Handrail Height', nosing: 'Step Lip', headroom: 'Overhead Clearance',
-    report: 'Your Results', passed: 'Looks Good ✓', failed: 'Needs Attention', scanning: 'Measuring your stairs…',
+    report: 'Your Results', passed: 'Looks Good ', failed: 'Needs Attention', scanning: 'Measuring your stairs…',
   },
   copy: {
     reportTitle: 'Your Stair Check', reportSubtitle: "Here's what we found about your stairs",
     reportPrice: 'Get the Full Report — $2.99', reportPriceNote: 'FREE during beta · Normally $2.99',
     proTitle: 'Unlimited Scans', proPrice: '$199/month', proNote: 'Scan as many staircases as you want. Cancel anytime.',
     enterpriseTitle: 'Need professional help?', enterpriseNote: 'Talk to our team — we can connect you with a local inspector.',
-    findInspector: '📍 Find a Local Inspector',
+    findInspector: ' Find a Local Inspector',
     scanIntro: "Hi! I'm going to help you check your stairs. We'll start by measuring the step height — that's how tall each step is. Hold your phone upright and point it at the front of the steps.",
-    verdictLikely: 'Your stairs look good! ✅', verdictPossibly: 'A few things to double-check 🔶', verdictFail: 'Some issues found ⚠️',
+    verdictLikely: 'Your stairs look good! ', verdictPossibly: 'A few things to double-check ', verdictFail: 'Some issues found ',
   },
   aiPersona: `AUDIENCE: A homeowner or DIY renovator with no construction background. They have never heard terms like "riser", "tread", "nosing", or "headroom clearance".
 
@@ -246,16 +246,16 @@ const REALESTATE: ProfileTheme = {
   terms: {
     riser: 'Step Height', tread: 'Step Depth', width: 'Stair Width',
     handrail: 'Handrail', nosing: 'Step Edge', headroom: 'Overhead Clearance',
-    report: 'Property Report', passed: 'Code Compliant ✓', failed: 'Compliance Issue', scanning: 'Property assessment…',
+    report: 'Property Report', passed: 'Code Compliant ', failed: 'Compliance Issue', scanning: 'Property assessment…',
   },
   copy: {
     reportTitle: 'Stair Compliance Assessment', reportSubtitle: 'Pre-listing compliance check for disclosure purposes',
     reportPrice: 'Get Property Report — FREE during Beta', reportPriceNote: 'One-time · Suitable for disclosure file · Instant PDF',
     proTitle: 'Pro — Unlimited Properties', proPrice: '$199/month', proNote: 'Assess every property in your portfolio.',
     enterpriseTitle: 'Brokerage / Team Plan', enterpriseNote: 'Team access, branded reports, portfolio management.',
-    findInspector: '📍 Find a Certified Inspector',
+    findInspector: ' Find a Certified Inspector',
     scanIntro: "I'll assess this staircase for code compliance — useful for disclosure and pre-listing purposes. Starting with step height. Hold your phone upright facing the stairs.",
-    verdictLikely: 'Likely Code Compliant ✅', verdictPossibly: 'May Require Disclosure 🔶', verdictFail: 'Compliance Issues — Review Required ⚠️',
+    verdictLikely: 'Likely Code Compliant ', verdictPossibly: 'May Require Disclosure ', verdictFail: 'Compliance Issues — Review Required ',
   },
   aiPersona: `AUDIENCE: A real estate agent, broker, or property investor. Understands compliance risk and property liability but is not a builder or designer.
 

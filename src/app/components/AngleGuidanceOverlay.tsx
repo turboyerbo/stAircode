@@ -92,21 +92,16 @@ export default function AngleGuidanceOverlay({ mode, isActive, onReady }: Props)
       padding:    '8px 12px',
       backdropFilter: 'blur(8px)',
       pointerEvents: 'none',
-    }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-        <span style={{ fontSize: 14, color }}>{MODE_ICON[mode]}</span>
-        <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 700, color, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          {acceptable ? '✓ ANGLE OK — HOLD STILL' : 'ADJUST ANGLE'}
+    }}>{/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}><span style={{ fontSize: 14, color }}>{MODE_ICON[mode]}</span>
+        <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 700, color, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{acceptable ? ' ANGLE OK — HOLD STILL' : 'ADJUST ANGLE'}
         </span>
-        <div style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace' }}>
-          {Math.round(score * 100)}%
+        <div style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace' }}>{Math.round(score * 100)}%
         </div>
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
-        <div style={{
+      <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}><div style={{
           height: '100%', width: `${barW}%`,
           background: `linear-gradient(to right, #ff6b6b, ${color})`,
           borderRadius: 2,
@@ -116,15 +111,13 @@ export default function AngleGuidanceOverlay({ mode, isActive, onReady }: Props)
 
       {/* Guidance text */}
       {!acceptable && (
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-          {guidance}
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{guidance}
         </div>
       )}
 
       {/* Ideal position reminder */}
       {acceptable && (
-        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4, fontStyle: 'italic' }}>
-          {MODE_IDEAL[mode]}
+        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4, fontStyle: 'italic' }}>{MODE_IDEAL[mode]}
         </div>
       )}
     </div>
@@ -156,7 +149,7 @@ function computeQuality(
           : gamma < -15 ? 'Rotate phone to the left'
           : 'Straighten the phone'
         : totalOff > 10 ? `Almost there — fine-tune angle (${Math.round(totalOff)}° off)`
-        : '✓ Good angle'
+        : ' Good angle'
       break
     }
     case 'tread': {
@@ -165,7 +158,7 @@ function computeQuality(
       guidance = angleDeg > 20
         ? 'Hold phone flat above the tread, camera pointing straight down'
         : angleDeg > 10 ? 'Flatten phone a little more'
-        : '✓ Good angle'
+        : ' Good angle'
       break
     }
     case 'width':
@@ -175,7 +168,7 @@ function computeQuality(
       angleDeg = Math.abs(gamma)
       guidance = angleDeg > 25
         ? 'Level the phone horizontally'
-        : '✓ Good angle'
+        : ' Good angle'
       break
     }
   }

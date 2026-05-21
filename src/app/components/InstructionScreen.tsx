@@ -70,8 +70,7 @@ function StaircaseDiagram({ animStep }: { animStep: number }) {
 
       {/* ── RISER HEIGHT ANNOTATION (animates in on step 0) ── */}
       {animStep >= 0 && (
-        <g opacity={animStep >= 1 ? 0.35 : 1} style={{ transition: 'opacity 0.5s' }}>
-          {/* Bracket */}
+        <g opacity={animStep >= 1 ? 0.35 : 1} style={{ transition: 'opacity 0.5s' }}>{/* Bracket */}
           <line x1="172" y1="131" x2="172" y2="153" stroke="#4A90E2" strokeWidth="1.5"
             strokeDasharray={animStep === 0 ? "0,100" : "100,0"}
             style={{ transition: 'stroke-dasharray 0.6s ease' }}
@@ -88,8 +87,7 @@ function StaircaseDiagram({ animStep }: { animStep: number }) {
 
       {/* ── TREAD ANNOTATION (step 1) ── */}
       {animStep >= 1 && (
-        <g opacity={animStep >= 2 ? 0.35 : 1} style={{ transition: 'opacity 0.5s' }}>
-          <line x1="178" y1="158" x2="200" y2="158" stroke="#ffa726" strokeWidth="1.5"
+        <g opacity={animStep >= 2 ? 0.35 : 1} style={{ transition: 'opacity 0.5s' }}><line x1="178" y1="158" x2="200" y2="158" stroke="#ffa726" strokeWidth="1.5"
             strokeDasharray={animStep === 1 ? "0,100" : "100,0"}
             style={{ transition: 'stroke-dasharray 0.6s ease' }}
           />
@@ -102,8 +100,7 @@ function StaircaseDiagram({ animStep }: { animStep: number }) {
 
       {/* ── HEADROOM ANNOTATION (step 2) ── */}
       {animStep >= 2 && (
-        <g style={{ transition: 'opacity 0.5s' }}>
-          <line x1="160" y1="64" x2="160" y2="153" stroke="#42a5f5" strokeWidth="1"
+        <g style={{ transition: 'opacity 0.5s' }}><line x1="160" y1="64" x2="160" y2="153" stroke="#42a5f5" strokeWidth="1"
             strokeDasharray="3,3"
           />
           <line x1="156" y1="64" x2="164" y2="64" stroke="#42a5f5" strokeWidth="1.5"/>
@@ -231,8 +228,7 @@ export function StairPartIndicator({ fieldKey }: { fieldKey: string }) {
       borderRadius: 10, padding: '6px 8px',
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
       zIndex: 20,
-    }}>
-      <svg viewBox="0 0 60 70" width="52" height="62">
+    }}><svg viewBox="0 0 60 70" width="52" height="62">
         {/* Stair outline */}
         {[0,1,2,3].map(i => (
           <g key={i}>
@@ -299,8 +295,7 @@ export function StairPartIndicator({ fieldKey }: { fieldKey: string }) {
       <span style={{
         fontSize: '0.48rem', fontFamily: 'monospace', letterSpacing: '0.08em',
         color: h.color, fontWeight: 700,
-      }}>
-        {h.label}
+      }}>{h.label}
       </span>
     </div>
   )
@@ -309,19 +304,19 @@ export function StairPartIndicator({ fieldKey }: { fieldKey: string }) {
 // ── Instruction steps data ────────────────────────────────────────────────────
 const STEPS = [
   {
-    icon: '📏',
+    icon: '',
     title: 'Stand 60–90 cm away',
     body: 'Position yourself directly in front of the staircase. Hold your phone at chest height, camera facing the steps.',
     animStep: 0,
   },
   {
-    icon: '🎯',
+    icon: '',
     title: 'Aim at the riser edge',
     body: 'Point the camera so the full height of one riser is visible. The blue line will auto-detect the edge.',
     animStep: 1,
   },
   {
-    icon: '✦',
+    icon: '',
     title: 'Tap to draw a measurement',
     body: 'Tap the top of the riser, then drag down to the bottom. A dotted line appears with the detected dimension.',
     animStep: 2,
@@ -355,8 +350,7 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
       maxWidth: 430, margin: '0 auto',
       fontFamily: 'var(--sans)',
       overflowY: 'auto',
-    }}>
-      {/* Fine grid background */}
+    }}>{/* Fine grid background */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
         backgroundImage: `
@@ -372,8 +366,7 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
         padding: '3rem 1.25rem 0.75rem',
         borderBottom: '1px solid rgba(74,144,226,0.12)',
         position: 'relative', zIndex: 2,
-      }}>
-        <button onClick={onBack} style={{
+      }}><button onClick={onBack} style={{
           background: 'none', color: 'rgba(255,255,255,0.5)',
           fontSize: '0.75rem', fontFamily: 'monospace', cursor: 'pointer',
           letterSpacing: '0.1em', padding: '0.3rem 0.6rem',
@@ -382,14 +375,12 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
         <span style={{
           fontFamily: 'monospace', fontSize: '0.6rem', letterSpacing: '0.2em',
           color: 'rgba(74,144,226,0.7)', textTransform: 'uppercase',
-        }}>
-          HOW TO MEASURE
+        }}>HOW TO MEASURE
         </span>
         <span style={{
           fontFamily: 'monospace', fontSize: '0.6rem',
           color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em',
-        }}>
-          {fieldLabel ? fieldLabel.toUpperCase() : 'STAIRCASE'}
+        }}>{fieldLabel ? fieldLabel.toUpperCase() : 'STAIRCASE'}
         </span>
       </div>
 
@@ -399,15 +390,13 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
         borderBottom: '1px solid rgba(74,144,226,0.1)',
         position: 'relative', zIndex: 2,
         background: 'rgba(0,0,0,0.3)',
-      }}>
-        <StaircaseDiagram animStep={animStep} />
+      }}><StaircaseDiagram animStep={animStep} />
 
         {/* Animated dimension label underneath diagram */}
         <div style={{
           display: 'flex', justifyContent: 'center', gap: '1rem',
           marginTop: '0.75rem', marginBottom: '0.25rem',
-        }}>
-          {[
+        }}>{[
             { key: 0, label: 'RISE', color: '#4A90E2' },
             { key: 1, label: 'TREAD', color: '#ffa726' },
             { key: 2, label: 'HEADROOM', color: '#42a5f5' },
@@ -416,10 +405,8 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
               display: 'flex', alignItems: 'center', gap: '0.3rem',
               opacity: animStep === item.key ? 1 : 0.3,
               transition: 'opacity 0.4s',
-            }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }}/>
-              <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: item.color, letterSpacing: '0.1em' }}>
-                {item.label}
+            }}><div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }}/>
+              <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: item.color, letterSpacing: '0.1em' }}>{item.label}
               </span>
             </div>
           ))}
@@ -427,18 +414,15 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
       </div>
 
       {/* Step cards */}
-      <div style={{ padding: '1.25rem 1.25rem 0', position: 'relative', zIndex: 2 }}>
-        {/* Step tabs */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-          {STEPS.map((s, i) => (
+      <div style={{ padding: '1.25rem 1.25rem 0', position: 'relative', zIndex: 2 }}>{/* Step tabs */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>{STEPS.map((s, i) => (
             <button key={i} onClick={() => goStep(i)} style={{
               flex: 1, padding: '0.4rem 0',
               background: step === i ? 'rgba(74,144,226,0.15)' : 'rgba(21,101,192,0.05)',
               border: `1px solid ${step === i ? 'rgba(74,144,226,0.5)' : 'rgba(255,255,255,0.1)'}`,
               borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-            }}>
-              <span style={{ fontSize: '1rem' }}>{s.icon}</span>
+            }}><span style={{ fontSize: '1rem' }}>{s.icon}</span>
               <span style={{
                 fontSize: '0.5rem', fontFamily: 'monospace', letterSpacing: '0.08em',
                 color: step === i ? '#4A90E2' : 'rgba(255,255,255,0.35)',
@@ -457,46 +441,38 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
           opacity: entering ? 0 : 1,
           transform: entering ? 'translateY(6px)' : 'translateY(0)',
           transition: 'opacity 0.18s, transform 0.18s',
-        }}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-            <div style={{
+        }}><div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}><div style={{
               width: 28, height: 28, borderRadius: '50%',
               background: 'rgba(74,144,226,0.15)',
               border: '1px solid rgba(74,144,226,0.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.72rem', fontFamily: 'monospace', color: '#4A90E2', fontWeight: 700,
               flexShrink: 0,
-            }}>
-              {step + 1}
+            }}>{step + 1}
             </div>
             <div>
               <p style={{
                 fontFamily: 'var(--display)', fontSize: '0.95rem', fontWeight: 700,
                 fontStyle: 'italic', color: '#fff', margin: 0, marginBottom: '0.35rem',
-              }}>
-                {STEPS[step].title}
+              }}>{STEPS[step].title}
               </p>
-              <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.65 }}>
-                {STEPS[step].body}
+              <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.65 }}>{STEPS[step].body}
               </p>
             </div>
           </div>
         </div>
 
         {/* Key tip panels */}
-        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.75rem' }}>
-          {[
-            { icon: '✏️', text: 'Type any value manually to override' },
+        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.75rem' }}>{[
+            { icon: '', text: 'Type any value manually to override' },
             { icon: '↩', text: 'Skip a step if measurement is tricky' },
           ].map((tip, i) => (
             <div key={i} style={{
               flex: 1, background: 'rgba(21,101,192,0.04)',
               border: '1px solid rgba(21,101,192,0.09)', borderRadius: 8,
               padding: '0.6rem 0.65rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
-            }}>
-              <span style={{ fontSize: '0.85rem' }}>{tip.icon}</span>
-              <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
-                {tip.text}
+            }}><span style={{ fontSize: '0.85rem' }}>{tip.icon}</span>
+              <span style={{ fontSize: '0.64rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{tip.text}
               </span>
             </div>
           ))}
@@ -509,14 +485,12 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
           border: '1px solid rgba(74,144,226,0.2)',
           borderRadius: 10, padding: '0.75rem 0.85rem',
           display: 'flex', gap: '0.75rem', alignItems: 'center',
-        }}>
-          {/* Mini phone mockup */}
+        }}>{/* Mini phone mockup */}
           <div style={{
             width: 38, height: 62, background: '#111', border: '2px solid rgba(255,255,255,0.3)',
             borderRadius: 6, flexShrink: 0, position: 'relative', overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {/* Screen content: stair edges + line */}
+          }}>{/* Screen content: stair edges + line */}
             <svg viewBox="0 0 34 56" width="34" height="56">
               {/* Stair shapes */}
               {[0,1,2].map(i => (
@@ -538,11 +512,9 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
             </svg>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: '0.7rem', color: '#93c5fd', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.05em' }}>
-              WHAT YOU&apos;LL SEE
+            <p style={{ margin: 0, fontSize: '0.7rem', color: '#93c5fd', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.05em' }}>WHAT YOU&apos;LL SEE
             </p>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>
-              Green dashed lines mark detected edges. Tap and drag to draw a measurement. The dimension appears instantly.
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>Green dashed lines mark detected edges. Tap and drag to draw a measurement. The dimension appears instantly.
             </p>
           </div>
         </div>
@@ -555,8 +527,7 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
         borderTop: '1px solid rgba(74,144,226,0.12)',
         position: 'relative', zIndex: 2,
         background: 'linear-gradient(to top, rgba(13,43,69,0.8) 0%, transparent 100%)',
-      }}>
-        <button onClick={onOpenCamera} style={{
+      }}><button onClick={onOpenCamera} style={{
           width: '100%', padding: '1.05rem',
           background: 'linear-gradient(135deg, #1565C0 0%, #1976D2 100%)',
           border: 'none', borderRadius: 14, cursor: 'pointer',
@@ -564,16 +535,13 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
           letterSpacing: '0.18em', color: '#fff', textTransform: 'uppercase',
           boxShadow: '0 4px 24px rgba(14,70,160,0.45)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-        }}>
-          <span style={{ fontSize: '1.1rem' }}>📷</span>
-          Open Camera
+        }}>Open Camera
         </button>
         <p style={{
           textAlign: 'center', marginTop: '0.6rem',
           fontSize: '0.58rem', fontFamily: 'monospace',
           color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em',
-        }}>
-          CAMERA OPENS ON THE RISE HEIGHT FIRST
+        }}>CAMERA OPENS ON THE RISE HEIGHT FIRST
         </p>
       </div>
     </div>

@@ -51,14 +51,14 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Parse body ─────────────────────────────────────────────────────────────
-  let body: { product: string; userEmail?: string; reportData?: string }
+  let body: { product: string; userEmail?: string; reportData?: string; saveToken?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  const { product, userEmail, reportData } = body
+  const { product, userEmail, reportData, saveToken } = body
 
   if (!['report', 'photo_report', 'pro'].includes(product)) {
     return NextResponse.json({ error: 'Invalid product' }, { status: 400 })
@@ -110,12 +110,15 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
 
       // Where to send the user after payment
-      success_url: product === 'report' || product === 'photo_report' ? `${APP_URL}/unlock?payment=success&session_id={CHECKOUT_SESSION_ID}` : `${APP_URL}/?payment=success&product=${product}&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: (product === 'report' || product === 'photo_report')
+        ? `${APP_URL}/unlock?payment=success&token=${saveToken ?? ''}&session_id={CHECKOUT_SESSION_ID}`
+        : `${APP_URL}/?payment=success&product=${product}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${APP_URL}/?payment=cancelled`,
 
       metadata: {
         product,
-        userEmail: userEmail ?? '',
+        userEmail:  userEmail ?? '',
+        saveToken:  saveToken  ?? '',
         ...chunks,
       },
 

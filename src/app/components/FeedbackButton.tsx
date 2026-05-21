@@ -83,7 +83,6 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
           gap: '0.5rem',
         }}
       >
-        <span style={{ fontSize: '1rem' }}>💬</span>
         Share Beta Feedback
       </button>
 
@@ -115,24 +114,19 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
             display: 'flex',
             flexDirection: 'column',
             maxHeight: '90dvh',
-          }}>
-
-            {/* Handle + header */}
+          }}>{/* Handle + header */}
             <div style={{
               padding: '1rem 1.25rem 0.75rem',
               borderBottom: '1px solid rgba(10,28,46,0.10)',
               flexShrink: 0,
-            }}>
-              <div style={{
+            }}><div style={{
                 width: 36, height: 4, borderRadius: 2,
                 background: 'rgba(10,28,46,0.15)',
                 margin: '0 auto 0.85rem',
               }} />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><div>
                   <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0A1C2E' }}>Beta Feedback</div>
-                  <div style={{ fontSize: '0.7rem', color: '#417CA4', marginTop: '0.1rem' }}>
-                    2 min · helps us improve stAIrcode
+                  <div style={{ fontSize: '0.7rem', color: '#417CA4', marginTop: '0.1rem' }}>2 min · helps us improve stAIrcode
                   </div>
                 </div>
                 <button
@@ -148,14 +142,13 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
-                  ✕
+                  
                 </button>
               </div>
             </div>
 
             {/* Tally iframe */}
-            <div style={{ flex: 1, overflow: 'hidden', minHeight: 420, background: '#ffffff' }}>
-              <iframe
+            <div style={{ flex: 1, overflow: 'hidden', minHeight: 420, background: '#ffffff' }}><iframe
                 src={embedUrl}
                 title="Beta Feedback"
                 style={{
@@ -174,15 +167,13 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
               padding: '0.6rem 1.25rem 1.5rem',
               borderTop: '1px solid rgba(10,28,46,0.08)',
               flexShrink: 0,
-            }}>
-              <p style={{
+            }}><p style={{
                 margin: 0,
                 fontSize: '0.6rem',
                 color: '#5E7D9B',
                 textAlign: 'center',
                 lineHeight: 1.6,
-              }}>
-                Responses are anonymous unless you include contact info.
+              }}>Responses are anonymous unless you include contact info.
                 We read every submission — thank you for helping us improve.
               </p>
             </div>

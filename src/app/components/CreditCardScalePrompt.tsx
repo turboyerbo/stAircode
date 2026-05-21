@@ -98,8 +98,7 @@ export default function CreditCardScalePrompt({
       }}
     >
       {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        {/* Card icon */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>{/* Card icon */}
         <div
           style={{
             flexShrink: 0,
@@ -140,8 +139,7 @@ export default function CreditCardScalePrompt({
           />
         </div>
 
-        <div style={{ flex: 1 }}>
-          <p
+        <div style={{ flex: 1 }}><p
             style={{
               margin: 0,
               color: '#fff',
@@ -183,7 +181,7 @@ export default function CreditCardScalePrompt({
             gap: 8,
           }}
         >
-          <span style={{ fontSize: 16 }}>📐</span>
+          
           <p
             style={{
               margin: 0,
@@ -198,8 +196,7 @@ export default function CreditCardScalePrompt({
       )}
 
       {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}><button
           onClick={() => dismiss(false)}
           disabled={!canDismiss}
           style={{
@@ -236,7 +233,7 @@ export default function CreditCardScalePrompt({
             transition: 'all 0.3s',
           }}
         >
-          {canDismiss ? 'Card is in frame ✓' : `Reading… ${countdown}s`}
+          {canDismiss ? 'Card is in frame ' : `Reading… ${countdown}s`}
         </button>
       </div>
 

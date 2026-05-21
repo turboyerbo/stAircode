@@ -390,8 +390,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
       position: 'fixed', inset: 0, background: '#EEF3F9',
       fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       overflow: 'hidden',
-    }}>
-      <style>{`
+    }}><style>{`
         @keyframes sdBlink    { 0%,100%{opacity:.22} 50%{opacity:1} }
         @keyframes sdSweep    { 0%{top:4%} 100%{top:92%} }
         @keyframes sdPulse    { 0%,100%{opacity:.42} 50%{opacity:1} }
@@ -404,10 +403,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           position:'absolute',inset:0,zIndex:90,background:'rgba(13,43,69,0.97)',
           display:'flex',flexDirection:'column',alignItems:'center',
           justifyContent:'center',gap:'1.2rem',padding:'2rem',
-        }}>
-          <span style={{fontSize:'2.5rem'}}>📷</span>
-          <p style={{color:'#fff',textAlign:'center',lineHeight:1.6,maxWidth:280}}>
-            Camera access needed to detect the staircase.
+        }}><p style={{color:'#fff',textAlign:'center',lineHeight:1.6,maxWidth:280}}>Camera access needed to detect the staircase.
           </p>
           <button onClick={onBack} style={{
             padding:'0.85rem 2rem',background:C.blue,border:'none',
@@ -432,16 +428,14 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
         paddingBottom:'0.65rem',paddingLeft:'1rem',paddingRight:'1rem',
         background:'linear-gradient(to bottom,rgba(13,43,69,0.75) 0%,transparent 100%)',
         display:'flex',alignItems:'center',gap:'0.55rem',
-      }}>
-        <button onClick={onBack} style={{
+      }}><button onClick={onBack} style={{
           width:40,height:40,borderRadius:'50%',flexShrink:0,
           background:'rgba(13,43,69,0.52)',border:'1px solid rgba(21,101,192,0.25)',
           color:'#fff',fontSize:'1.05rem',cursor:'pointer',
           display:'flex',alignItems:'center',justifyContent:'center',
           backdropFilter:'blur(8px)',
         }}>←</button>
-        <div style={{flex:1,textAlign:'center'}}>
-          <span style={{
+        <div style={{flex:1,textAlign:'center'}}><span style={{
             fontSize:'0.62rem',fontFamily:'monospace',letterSpacing:'0.2em',
             color:'rgba(255,255,255,0.55)',
           }}>STAIR DETECTION</span>
@@ -456,22 +450,19 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           background:'linear-gradient(175deg,#0D2B45 0%,#0A1F33 100%)',
           display:'flex',flexDirection:'column',alignItems:'center',
           justifyContent:'center',gap:'1.4rem',padding:'2.5rem',
-        }}>
-          <div style={{
+        }}><div style={{
             width:72,height:72,borderRadius:'50%',
             background:'rgba(74,144,226,0.1)',border:`2px solid ${C.planeStroke}`,
             display:'flex',alignItems:'center',justifyContent:'center',
             fontSize:'2rem',
-          }}>📷</div>
-          <div style={{textAlign:'center'}}>
-            <div style={{
+          }}></div>
+          <div style={{textAlign:'center'}}><div style={{
               fontSize:'1.2rem',fontWeight:700,color:'#fff',marginBottom:'0.5rem',
             }}>Point at the staircase</div>
             <div style={{
               fontSize:'0.78rem',color:'rgba(255,255,255,0.45)',
               fontFamily:'monospace',lineHeight:1.6,maxWidth:260,
-            }}>
-              The AI will detect the stair and count the risers automatically.
+            }}>The AI will detect the stair and count the risers automatically.
             </div>
           </div>
           <button onClick={startCamera} style={{
@@ -511,9 +502,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             paddingBottom:'max(env(safe-area-inset-bottom,0px),2.8rem)',
             background:'linear-gradient(to top,rgba(13,43,69,0.88) 60%,transparent)',
             display:'flex',flexDirection:'column',alignItems:'center',gap:'0.8rem',
-          }}>
-            <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-              <div style={{
+          }}><div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}><div style={{
                 width:8,height:8,borderRadius:'50%',
                 background: (status==='scanning'||status==='counting'||status==='slow') ? C.planeStroke : 'rgba(255,255,255,0.28)',
                 boxShadow:  (status==='scanning'||status==='counting'||status==='slow') ? `0 0 12px ${C.planeStroke}` : 'none',
@@ -529,16 +518,14 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                 fontSize:'0.65rem',fontFamily:'monospace',
                 color:C.planeStroke,letterSpacing:'0.08em',
                 animation:'sdBlink 0.9s ease-in-out infinite',
-              }}>
-                Staircase detected — counting risers…
+              }}>Staircase detected — counting risers…
               </span>
             )}
             {status === 'slow' && (
               <span style={{
                 fontSize:'0.65rem',fontFamily:'monospace',
                 color:C.warn,letterSpacing:'0.06em',textAlign:'center',
-              }}>
-                Slow connection — please wait, this can take up to 25 s
+              }}>Slow connection — please wait, this can take up to 25 s
               </span>
             )}
             <button onClick={handleSkip} style={{
@@ -554,12 +541,10 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
       {/* ── No stair ─────────────────────────────────────────────────────── */}
       {status === 'no_stair' && (
         <BottomSheet>
-          <div style={{fontSize:'2rem',textAlign:'center',marginBottom:'0.25rem'}}>🔍</div>
-          <div style={{fontSize:'1.05rem',fontWeight:700,color:'#fff',textAlign:'center',marginBottom:'0.35rem'}}>
-            No staircase detected
+          <div style={{fontSize:'2rem',textAlign:'center',marginBottom:'0.25rem'}}></div>
+          <div style={{fontSize:'1.05rem',fontWeight:700,color:'#fff',textAlign:'center',marginBottom:'0.35rem'}}>No staircase detected
           </div>
-          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',fontFamily:'monospace',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>
-            Point your camera at the stairs so the risers are clearly visible, then try again.
+          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',fontFamily:'monospace',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>Point your camera at the stairs so the risers are clearly visible, then try again.
           </div>
           <div style={{height:'0.4rem'}} />
           <SheetButton primary onClick={handleRetry}>↺  Try Again</SheetButton>
@@ -572,12 +557,10 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
       {/* ── Error ────────────────────────────────────────────────────────── */}
       {status === 'error' && (
         <BottomSheet>
-          <div style={{fontSize:'2rem',textAlign:'center',marginBottom:'0.25rem'}}>⚠️</div>
-          <div style={{fontSize:'1.05rem',fontWeight:700,color:C.warn,textAlign:'center',marginBottom:'0.35rem'}}>
-            Detection failed
+          <div style={{fontSize:'2rem',textAlign:'center',marginBottom:'0.25rem'}}></div>
+          <div style={{fontSize:'1.05rem',fontWeight:700,color:C.warn,textAlign:'center',marginBottom:'0.35rem'}}>Detection failed
           </div>
-          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',fontFamily:'monospace',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>
-            Could not reach the analysis service. Check your connection and try again.
+          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',fontFamily:'monospace',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>Could not reach the analysis service. Check your connection and try again.
           </div>
           <div style={{height:'0.4rem'}} />
           <SheetButton primary onClick={handleRetry}>↺  Retry</SheetButton>
@@ -597,17 +580,13 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             {/* Header */}
             <div style={{
               display:'flex',alignItems:'center',gap:'0.6rem',marginBottom:'0.3rem',
-            }}>
-              <span style={{fontSize:'1.3rem'}}>✏️</span>
-              <div>
-                <div style={{fontSize:'0.85rem',fontWeight:700,color:'#fff'}}>
-                  Enter riser count manually
+            }}><div>
+                <div style={{fontSize:'0.85rem',fontWeight:700,color:'#fff'}}>Enter riser count manually
                 </div>
                 <div style={{
                   fontSize:'0.62rem',fontFamily:'monospace',
                   color:'rgba(255,255,255,0.35)',marginTop:'0.1rem',
-                }}>
-                  Count the risers you can see and adjust below
+                }}>Count the risers you can see and adjust below
                 </div>
               </div>
             </div>
@@ -616,8 +595,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             <div style={{
               display:'flex',alignItems:'center',justifyContent:'center',
               gap:'1.2rem',padding:'0.8rem 0',
-            }}>
-              <button
+            }}><button
                 onClick={() => setManualRiserCount(v => Math.max(1, v - 1))}
                 style={{
                   width:52,height:52,borderRadius:'50%',flexShrink:0,
@@ -625,8 +603,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                   color:'#fff',fontSize:'1.8rem',lineHeight:1,cursor:'pointer',
                   display:'flex',alignItems:'center',justifyContent:'center',
                 }}>−</button>
-              <div style={{textAlign:'center'}}>
-                <div style={{
+              <div style={{textAlign:'center'}}><div style={{
                   fontSize:'3.8rem',fontWeight:900,color:'#fff',
                   lineHeight:1,fontVariantNumeric:'tabular-nums',letterSpacing:'-0.04em',
                 }}>{manualRiserCount}</div>
@@ -651,8 +628,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
               padding:'0.65rem 0.9rem',
               background:`${hColor}12`,border:`1px solid ${hColor}44`,
               borderRadius:10,marginBottom:'0.4rem',
-            }}>
-              <div>
+            }}><div>
                 <div style={{
                   fontSize:'0.56rem',fontFamily:'monospace',
                   color:'rgba(255,255,255,0.32)',letterSpacing:'0.14em',
@@ -663,16 +639,14 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                 <div style={{
                   fontSize:'0.56rem',fontFamily:'monospace',
                   color:'rgba(255,255,255,0.28)',marginTop:'0.15rem',
-                }}>
-                  {handrailBothSides
+                }}>{handrailBothSides
                     ? `${manualRiserCount} risers · width > 1100 mm`
                     : handrailOneSide
                     ? `${manualRiserCount} risers > 3 threshold`
                     : `${manualRiserCount} risers ≤ 3 — no handrail needed`}
                 </div>
               </div>
-              <span style={{fontSize:'1.6rem',filter:`drop-shadow(0 0 6px ${hColor})`}}>
-                {handrailBothSides ? '⟺' : handrailOneSide ? '⊣' : '✓'}
+              <span style={{fontSize:'1.6rem',filter:`drop-shadow(0 0 6px ${hColor})`}}>{handrailBothSides ? '⟺' : handrailOneSide ? '⊣' : ''}
               </span>
             </div>
 
@@ -691,8 +665,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           {/* Confirmed badge */}
           <div style={{
             display:'flex',alignItems:'center',gap:'0.55rem',marginBottom:'0.8rem',
-          }}>
-            <div style={{
+          }}><div style={{
               width:8,height:8,borderRadius:'50%',
               background:C.pass,boxShadow:`0 0 10px ${C.pass}`,
             }} />
@@ -709,20 +682,17 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             background:'rgba(21,101,192,0.06)',
             border:'1px solid rgba(255,255,255,0.1)',
             borderRadius:12,marginBottom:'0.6rem',
-          }}>
-            <div>
+          }}><div>
               <div style={{
                 fontSize:'0.58rem',fontFamily:'monospace',
                 color:'rgba(255,255,255,0.35)',letterSpacing:'0.14em',
               }}>RISERS COUNTED</div>
-              <div style={{display:'flex',alignItems:'baseline',gap:'0.4rem',marginTop:'0.2rem'}}>
-                <span style={{
+              <div style={{display:'flex',alignItems:'baseline',gap:'0.4rem',marginTop:'0.2rem'}}><span style={{
                   fontSize:'2.6rem',fontWeight:900,lineHeight:1,
                   color:'#fff',fontVariantNumeric:'tabular-nums',
                 }}>{result.riserCount}</span>
                 {isApprox && (
-                  <span style={{fontSize:'0.62rem',color:C.warn,fontFamily:'monospace'}}>
-                    approx
+                  <span style={{fontSize:'0.62rem',color:C.warn,fontFamily:'monospace'}}>approx
                   </span>
                 )}
               </div>
@@ -743,8 +713,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             background:`${handrailColor}12`,
             border:`1px solid ${handrailColor}44`,
             borderRadius:12,marginBottom:'1rem',
-          }}>
-            <div>
+          }}><div>
               <div style={{
                 fontSize:'0.58rem',fontFamily:'monospace',
                 color:'rgba(255,255,255,0.35)',letterSpacing:'0.14em',
@@ -756,8 +725,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
               <div style={{
                 fontSize:'0.58rem',fontFamily:'monospace',
                 color:'rgba(255,255,255,0.3)',marginTop:'0.2rem',lineHeight:1.45,
-              }}>
-                {handrailBothSides
+              }}>{handrailBothSides
                   ? `${result.riserCount} risers · stair width > 1100 mm`
                   : handrailOneSide
                   ? `${result.riserCount} risers > 3 — one side minimum`
@@ -766,8 +734,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                   : 'Riser count undetermined'}
               </div>
             </div>
-            <span style={{fontSize:'1.8rem',filter:`drop-shadow(0 0 8px ${handrailColor})`}}>
-              {handrailBothSides ? '⟺' : handrailOneSide ? '⊣' : '✓'}
+            <span style={{fontSize:'1.8rem',filter:`drop-shadow(0 0 8px ${handrailColor})`}}>{handrailBothSides ? '⟺' : handrailOneSide ? '⊣' : ''}
             </span>
           </div>
 
@@ -776,8 +743,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             <div style={{
               fontSize:'0.6rem',fontFamily:'monospace',
               color:'rgba(255,255,255,0.25)',textAlign:'center',marginBottom:'0.6rem',
-            }}>
-              Using stair width {knownWidth} mm from prior session
+            }}>Using stair width {knownWidth} mm from prior session
             </div>
           )}
 
@@ -802,8 +768,7 @@ function BottomSheet({ children }: { children?: React.ReactNode }) {
       paddingBottom:'max(env(safe-area-inset-bottom,0px),2.6rem)',
       display:'flex',flexDirection:'column',gap:'0.55rem',
       animation:'sdFadeUp 0.35s ease-out',
-    }}>
-      {children}
+    }}>{children}
     </div>
   )
 }
@@ -825,8 +790,7 @@ function SheetButton({
       letterSpacing: primary ? '0.08em' : '0.04em',
       cursor:'pointer',
       boxShadow: primary ? '0 6px 24px rgba(74,144,226,0.38)' : 'none',
-    }}>
-      {children}
+    }}>{children}
     </button>
   )
 }
@@ -838,8 +802,7 @@ function ConfidenceRing({ value }: { value: number }) {
   const dash  = circ * value
   const color = value >= 0.8 ? C.pass : value >= 0.6 ? C.warn : C.fail
   return (
-    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
-      <svg width={46} height={46} viewBox="0 0 46 46">
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}><svg width={46} height={46} viewBox="0 0 46 46">
         <circle cx={23} cy={23} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={3}/>
         <circle cx={23} cy={23} r={r} fill="none" stroke={color} strokeWidth={3}
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"

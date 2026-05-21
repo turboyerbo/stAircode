@@ -5,17 +5,49 @@
  * Font: DM Sans (Google Fonts) — same as Chrono
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
-
 import PhoneMockup from "./PhoneMockup"
 
+
 export default function MarketingPage() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [scrolled,  setScrolled] = useState(false)
-  const [openFaq,   setOpenFaq]  = useState(null as number | null)
+  const [menuOpen,  setMenuOpen]  = useState(false)
+  const [scrolled,  setScrolled]  = useState(false)
+  const [openFaq,   setOpenFaq]   = useState(null as number | null)
+  const [cookieBanner, setCookieBanner] = useState(false)
+
+  // Show cookie banner only if not yet answered
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('sc_cookie_consent')) setCookieBanner(true)
+    } catch { setCookieBanner(true) }
+  }, [])
+
+  function acceptCookies() {
+    try { localStorage.setItem('sc_cookie_consent', 'accepted') } catch {}
+    setCookieBanner(false)
+  }
+
+  function declineCookies() {
+    try { localStorage.setItem('sc_cookie_consent', 'declined') } catch {}
+    setCookieBanner(false)
+  }
+  const articlesRef = useRef<HTMLDivElement>(null)
+
+  // Convert vertical wheel scroll → horizontal on the articles row (PC fix)
+  useEffect(() => {
+    const el = articlesRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return // already horizontal
+      e.preventDefault()
+      el.scrollLeft += e.deltaY * 2
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -25,6 +57,7 @@ export default function MarketingPage() {
 
   const navLinks = [
     { label: 'How It Works', href: '#how-it-works' },
+    { label: 'Sample Report', href: '/sample-report' },
     { label: 'Research',     href: '/research' },
     { label: 'Pricing',      href: '#pricing' },
     { label: 'About',        href: '#about' },
@@ -66,20 +99,13 @@ export default function MarketingPage() {
         backdropFilter: 'blur(8px)',
         transition: 'box-shadow 0.2s',
         boxShadow: scrolled ? '0 2px 16px rgba(0,0,0,0.06)' : 'none',
-      }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 1.25rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Logo */}
-          <a href="/marketing" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textDecoration: 'none', gap: '2px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+      }}><div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 1.25rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>{/* Logo */}
+          <a href="/marketing" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
             <NavLogo height={28} />
-            <span style={{ fontSize: '0.48rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', fontFamily: 'monospace', lineHeight: 1, paddingLeft: '1px' }}>
-              Next Step in Building
-            </span>
           </a>
 
           {/* Desktop nav */}
-          <nav className={styles.desktopNav} style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-            {navLinks.slice(0, 4).map(l => (
+          <nav className={styles.desktopNav} style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>{navLinks.slice(0, 5).map(l => (
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
             <a href="/?signin=1" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
@@ -105,14 +131,12 @@ export default function MarketingPage() {
             background: '#0A1C2E', borderTop: '1px solid rgba(255,255,255,0.08)',
             padding: '1rem 1.25rem 1.5rem',
             display: 'flex', flexDirection: 'column', gap: '0.25rem',
-          }}>
-            {navLinks.map(l => (
+          }}>{navLinks.map(l => (
               <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
                 style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 500, color: 'rgba(255,255,255,0.85)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
               >{l.label}</a>
             ))}
-            <a href="/?signin=1" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>
-              Get a compliance report →
+            <a href="/?signin=1" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>Get a compliance report →
             </a>
           </div>
         )}
@@ -121,31 +145,22 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════ */}
-      <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#0A1C2E' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>
-          {/* ── Left: headline + CTAs ── */}
-          <div style={{ flex: '1 1 320px' }}>
-            <div className={styles.obadge}>Building Code Compliance for Professionals</div>
-            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.5rem', color: '#FFFFFF' }}>
-              Track inspections and deliver comprehensive reports with live building code guidance — using any phone.
+      <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#0A1C2E' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>{/* ── Left: headline + CTAs ── */}
+          <div style={{ flex: '1 1 320px' }}><div className={styles.obadge}>Stair Compliance for Building Professionals</div>
+            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.5rem', color: '#FFFFFF' }}>Check your stairs with live building code guidance — using any phone.
             </h1>
-            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>
-              A fast, documented building code compliance check — before the inspector shows up.
+            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>A fast, documented stair compliance check — before the inspector shows up.
               No tape measure. No technical knowledge required.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-              <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>
-                Check Stairs Now →
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}><a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>Check Stairs Now →
               </a>
-              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
-                Compliance Report
+              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700 }}>Stair Compliance Report
               </a>
             </div>
           </div>
 
           {/* ── Right: animated phone mockup ── */}
-          <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
-            <PhoneMockup />
+          <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><PhoneMockup />
           </div>
 
         </div>
@@ -154,51 +169,21 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           AS SEEN IN / TRUST BAR
       ══════════════════════════════════════════════ */}
-      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5E7D9B', flexShrink: 0 }}>Checks compliance against</span>
-          {['OBC 2024', 'NBC 2020', 'BCBC 2024', 'QBC 2020', 'IBC 2021', 'IRC 2021'].map(code => (
-            <span key={code} style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E', background: '#fff', border: '1px solid #E2EAF0', borderRadius: 6, padding: '5px 12px' }}>
-              {code}
-            </span>
-          ))}
+      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}><span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0D1E2E' }}>Checks compliance with local building codes specific to your location
+          </span>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════
-          TESTIMONIAL
-      ══════════════════════════════════════════════ */}
-      <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div className={styles.testimonial}>
-            <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>
-              &ldquo;stAIrcode flagged two inconsistent risers during a quick scan. The building inspector later confirmed it — and that was enough for our client to move forward with a renovation they would have otherwise avoided.&rdquo;
-            </blockquote>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Licensed Architect</div>
-                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Toronto, Ontario</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
           WHY CHOOSE
       ══════════════════════════════════════════════ */}
-      <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}>
-        <div className={styles.section} style={{ padding: 0 }}>
-          <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-            <div className={styles.sectionLabel}>Why stAIrcode</div>
+      <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div className={styles.section} style={{ padding: 0 }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Why stAIrcode</div>
             <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>See why building professionals choose stAIrcode</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
-              {[
-                { icon: '📐', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
-                { icon: '⚖️', title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and 6 other codes. Pass/fail shown per dimension.' },
-                { icon: '📄', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for real estate disclosure, pre-inspection screening, or contractor briefings.' },
-                { icon: '🔵', title: 'AR Measurement Line', body: 'A blue measurement line animates across the screen as the AI reads each dimension — clear visual feedback showing exactly what\'s being measured.' },
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
+                { icon: '', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
+                { icon: '', title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and 6 other codes. Pass/fail shown per dimension.' },
+                { icon: '', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for real estate disclosure, pre-inspection screening, or contractor briefings.' },
+                { icon: '', title: 'AR Measurement Line', body: 'A blue measurement line animates across the screen as the AI reads each dimension — clear visual feedback showing exactly what\'s being measured.' },
               ].map(f => (
                 <div key={f.title} className={styles.featureCard}>
                   <div style={{ fontSize: '1.6rem', marginBottom: '0.6rem' }}>{f.icon}</div>
@@ -212,48 +197,17 @@ export default function MarketingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
-          STATS
-      ══════════════════════════════════════════════ */}
-      <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Non-compliant stairs are a liability</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
-            {[
-              { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
-              { num: '1,800', lbl: 'ER visits per day from falls in Canada' },
-              { num: '20%',   lbl: 'Of senior fall hospitalizations involve stairs' },
-              { num: '+50%',  lbl: 'Increased trip risk from riser inconsistency >3/8"' },
-            ].map(s => (
-              <div key={s.num} className={styles.statPill}>
-                <div className="num">{s.num}</div>
-                <div className="lbl">{s.lbl}</div>
-              </div>
-            ))}
-          </div>
-          <a href="/research" style={{ fontSize: '0.85rem', color: '#F29337', fontWeight: 600, textDecoration: 'none' }}>
-            View full research with sources →
-          </a>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
-      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#ffffff' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className={styles.sectionLabel}>How It Works</div>
+      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#ffffff' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>How It Works</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '3rem' }}>Three steps to a compliance scan</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'flex-start' }}>
-            {/* Steps */}
-            <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              {[
-                { n: '1', title: 'Complete a building scan with any smartphone', body: 'Create a free account and start scanning immediately. AI-Vision guides you through the process — no technical knowledge or special equipment needed.' },
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'flex-start' }}>{/* Steps */}
+            <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>{[
+                { n: '1', title: 'Complete a scan with any smartphone', body: 'Create a free account and start scanning immediately. AI-Vision guides you through the process — no technical knowledge or special equipment needed.' },
                 { n: '2', title: 'Get instant pass/fail results', body: 'Follow the on-screen guided positions. stAIrcode walks you through each measurement automatically and checks every dimension against your local building code.' },
                 { n: '3', title: 'Download a professional compliance report', body: 'For a detailed assessment, include a reference object for scale — no measuring tape required. Your PDF report includes measurement photos, code citations, and a full pass/fail analysis ready to share with your architect, contractor, or building inspector.' },
               ].map(s => (
-                <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
-                  <div className={styles.stepNum}>{s.n}</div>
+                <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}><div className={styles.stepNum}>{s.n}</div>
                   <div>
                     <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0D1E2E' }}>{s.title}</h3>
                     <p style={{ fontSize: '0.88rem', color: '#5E7D9B', lineHeight: 1.65 }}>{s.body}</p>
@@ -262,8 +216,7 @@ export default function MarketingPage() {
               ))}
             </div>
             {/* How it works image */}
-            <div style={{ flex: '0 1 340px' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+            <div style={{ flex: '0 1 340px' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/hero_app_scan.jpg"
                 alt="stAIrcode app scanning stairs — live measurement in progress"
@@ -275,72 +228,93 @@ export default function MarketingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════
+          STATS
+      ══════════════════════════════════════════════ */}
+      <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Non-compliant stairs are a liability</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>{[
+              { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
+              { num: '1,800', lbl: 'ER visits per day from falls in Canada' },
+              { num: '20%',   lbl: 'Of senior fall hospitalizations involve stairs' },
+              { num: '+50%',  lbl: 'Increased trip risk from riser inconsistency >3/8"' },
+            ].map(s => (
+              <div key={s.num} className={styles.statPill}>
+                <div className="num">{s.num}</div>
+                <div className="lbl">{s.lbl}</div>
+              </div>
+            ))}
+          </div>
+          <a href="/research" style={{ fontSize: '0.85rem', color: '#F29337', fontWeight: 600, textDecoration: 'none' }}>View full research with sources →
+          </a>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          TESTIMONIAL
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '4rem 1.25rem', background: '#ffffff' }}><div style={{ maxWidth: 720, margin: '0 auto' }}><div className={styles.testimonial}>
+            <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>&ldquo;The app flagged inconsistent risers, and the building inspector later confirmed it. A quick check was all we needed, and this got things moving in the right direction.&rdquo;
+            </blockquote>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Licensed Architect</div>
+                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Toronto, Ontario</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
           PRICING
       ══════════════════════════════════════════════ */}
-      <section id="pricing" style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className={styles.sectionLabel}>Pricing</div>
+      <section id="pricing" style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Pricing</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Simple, transparent pricing</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
-            {/* Free */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>{/* Free */}
             <div className={styles.priceCard}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5E7D9B', marginBottom: '0.5rem' }}>Free</div>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E', marginBottom: '0.25rem' }}>$0</div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>No credit card required</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
-                {['Full guided scan flow', 'AI vision measurement', 'Pass/fail per building code', 'Supports OBC, NBC, IBC + more'].map(f => (
-                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
-                    <span style={{ color: '#4ade80', fontWeight: 700 }}>✓</span> {f}
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Full guided scan flow', 'AI vision measurement', 'Pass/fail per building code', 'Supports OBC, NBC, IBC + more'].map(f => (
+                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: '#0D1E2E', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>
-                Start Free Scan
+              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: '#0D1E2E', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>Start Free Scan
               </a>
             </div>
 
             {/* Full Report */}
             <div className={`${styles.priceCard} ${styles.priceCardFeatured}`}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Report</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$38.99</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}><div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$38.99</div>
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>$2.99</div>
               </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
+              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
               </div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $38.99</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
-                {['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
-                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
-                    <span style={{ color: '#F29337', fontWeight: 700 }}>✓</span> {f}
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
+                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" className={styles.navCta} style={{ display: 'block', textAlign: 'center', padding: '11px' }}>
-                Get Full Report →
+              <a href="/?signin=1" className={styles.navCta} style={{ display: 'block', textAlign: 'center', padding: '11px' }}>Get Full Report →
               </a>
             </div>
             {/* Pro Subscription */}
             <div className={styles.priceCard}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#27A96B', marginBottom: '0.5rem' }}>Pro Subscription</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#5E7D9B' }}>Coming Soon</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}><div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#5E7D9B' }}>Coming Soon</div>
               </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>COMING SOON</span>
+              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>COMING SOON</span>
               </div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>20 stair reports/month · $199/mo after beta · Cancel anytime</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>
-                {['Everything in Full Report', '20 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
-                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>
-                    <span style={{ color: '#27A96B', fontWeight: 700 }}>✓</span> {f}
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Everything in Full Report', '20 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
+                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: 'rgba(94,125,155,0.15)', color: '#5E7D9B', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(94,125,155,0.3)', cursor: 'default' }}>
-                Notify Me →
+              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: 'rgba(94,125,155,0.15)', color: '#5E7D9B', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(94,125,155,0.3)', cursor: 'default' }}>Notify Me →
               </a>
             </div>
           </div>
@@ -350,9 +324,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FAQ
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '5rem 1.25rem', background: '#ffffff' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div className={styles.sectionLabel}>FAQ</div>
+      <section style={{ padding: '5rem 1.25rem', background: '#ffffff' }}><div style={{ maxWidth: 720, margin: '0 auto' }}><div className={styles.sectionLabel}>FAQ</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem' }}>Frequently asked questions</h2>
           {faqs.map((f, i) => (
             <div key={i} className={styles.faqItem}>
@@ -369,20 +341,14 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FINAL CTA
       ══════════════════════════════════════════════ */}
-      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem' }}>
-            Ready to check your stairs?
+      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}><div style={{ maxWidth: 640, margin: '0 auto' }}><h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem' }}>Ready to check your stairs?
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.65, marginBottom: '2rem' }}>
-            Scan for free in under 5 minutes. No app download. No tape measure.<br />
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.65, marginBottom: '2rem' }}>Scan for free in under 5 minutes. No app download. No tape measure.<br />
             Just your phone and the stairs in question.
           </p>
-          <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>
-            Get a compliance report →
+          <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
           </a>
-          <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>
-            Pre-screening tool. Always confirm with a licensed inspector before renovation or real estate transaction.
+          <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>Pre-screening tool. Always confirm with a licensed inspector before renovation or real estate transaction.
           </p>
         </div>
       </section>
@@ -390,121 +356,101 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           ARTICLES
       ══════════════════════════════════════════════ */}
-      <section style={{ background: '#F0F5FA', padding: '4rem 1.25rem' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.5rem' }}>In the news &amp; research</div>
-          <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: '#0D1E2E', letterSpacing: '-0.02em', marginBottom: '2rem' }}>
-            Stair safety matters
+      <section style={{ background: '#F0F5FA', padding: '4rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.5rem' }}>In the news &amp; research</div>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: '#0D1E2E', letterSpacing: '-0.02em', marginBottom: '2rem' }}>Stair safety matters
           </h2>
 
-          {/* Scrollable article cards */}
-          <div style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', WebkitOverflowScrolling: 'touch', msOverflowStyle: 'none', scrollbarWidth: 'none' } as any}>
+          {/* Scrollable article cards — with PC scroll support */}
+          <div style={{ position: 'relative' }}>{/* Left arrow */}
+            <button
+              onClick={() => articlesRef.current && (articlesRef.current.scrollLeft -= 320)}
+              aria-label="Scroll left"
+              style={{ position: 'absolute', left: -20, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 40, height: 40, borderRadius: '50%', background: '#fff', border: '1.5px solid #E2EAF0', boxShadow: '0 2px 12px rgba(44,74,110,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', color: '#0D1E2E', transition: 'box-shadow 0.2s' }}
+            >‹</button>
+            {/* Right arrow */}
+            <button
+              onClick={() => articlesRef.current && (articlesRef.current.scrollLeft += 320)}
+              aria-label="Scroll right"
+              style={{ position: 'absolute', right: -20, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 40, height: 40, borderRadius: '50%', background: '#fff', border: '1.5px solid #E2EAF0', boxShadow: '0 2px 12px rgba(44,74,110,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', color: '#0D1E2E', transition: 'box-shadow 0.2s' }}
+            >›</button>
+
+          <div ref={articlesRef} style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', paddingBottom: '1rem', WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', cursor: 'grab' } as any}
+            onMouseDown={e => {
+              const el = articlesRef.current; if (!el) return
+              el.style.cursor = 'grabbing'
+              const startX = e.pageX - el.offsetLeft
+              const scrollLeft = el.scrollLeft
+              const onMove = (me: MouseEvent) => { el.scrollLeft = scrollLeft - (me.pageX - el.offsetLeft - startX) }
+              const onUp   = () => { el.style.cursor = 'grab'; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+              window.addEventListener('mousemove', onMove)
+              window.addEventListener('mouseup', onUp)
+            }}
+          >
 
             {/* Article 1 — CTV News */}
             <a href="https://www.ctvnews.ca/ottawa/video/2026/03/02/ask-the-expert-stairway-safety-and-homeowner-liability/" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#0A1C2E,#1a3a5c)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>⚖️</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>CTV NEWS · OTTAWA</span>
+              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}><div style={{ height: 160, overflow: 'hidden', position: 'relative', background: '#0A1C2E' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/news/ctv_stairway_safety.png" alt="CTV News — Stairway safety and homeowner liability" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.72),transparent)' }}><span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>CTV NEWS · OTTAWA</span>
+                </div>
               </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>CUSTOMER STORY</div>
+              <div style={{ padding: '1rem', flex: 1 }}><div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>CUSTOMER STORY</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Ask The Expert: Stairway safety and homeowner liability</div>
                 <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>Personal injury lawyer Calla Rose discusses homeowner responsibilities regarding stairway maintenance and safety under the Ontario Building Code.</p>
               </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
+              <div style={{ padding: '0 1rem 1rem' }}><span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
               </div>
             </a>
 
             {/* Article 2 — Global News */}
             <a href="https://globalnews.ca/news/10729529/firefighters-raise-concerns-about-b-c-s-new-single-stairwell-apartment-rules/" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a2a1a,#2d4a2d)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🚒</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>GLOBAL NEWS · B.C.</span>
+              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}><div style={{ height: 160, overflow: 'hidden', position: 'relative', background: '#1a2a1a' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/news/global_news_firefighters.png" alt="Global News — Firefighters raise concerns about B.C. stairwell rules" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.72),transparent)' }}><span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>GLOBAL NEWS · B.C.</span>
+                </div>
               </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY UPDATE</div>
+              <div style={{ padding: '1rem', flex: 1 }}><div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY UPDATE</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Firefighters raise concerns about B.C.&apos;s new single-stairwell apartment rules</div>
                 <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>Safety advocates question changes to stairwell requirements in new residential construction across British Columbia.</p>
               </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
-              </div>
-            </a>
-
-            {/* Article 3 — Academic */}
-            <a href="https://www.sciencedirect.com/science/article/abs/pii/S0003687012001524" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a1a3a,#2a2a5c)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🔬</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>APPLIED ERGONOMICS · PEER-REVIEWED</span>
-              </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>ACADEMIC RESEARCH</div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Riser height variability and stair-fall risk: biomechanical analysis</div>
-                <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>Research demonstrates that riser height inconsistencies exceeding 9.5mm significantly increase trip and fall probability on residential staircases.</p>
-              </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
-              </div>
-            </a>
-
-            {/* Article 4 — CMHC */}
-            <a href="https://www.cmhc-schl.gc.ca/en/professionals/industry-innovation-and-leadership/industry-expertise/housingresearch" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a0a0a,#3a1a1a)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🏠</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>CMHC · HOUSING RESEARCH</span>
-              </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>REGULATORY</div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Housing accessibility and stair design guidelines for aging-in-place</div>
-                <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>CMHC guidelines on universal design for residential staircases, focusing on safety for occupants of all ages and abilities.</p>
-              </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
+              <div style={{ padding: '0 1rem 1rem' }}><span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
               </div>
             </a>
 
             {/* Article 5 — OBC Reference */}
             <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#0a1a0a,#1a3a1a)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>📋</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>ONTARIO · BUILDING CODE</span>
+              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}><div style={{ height: 160, overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg,#0A1C2E,#1a3a2a)' }}><div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', boxSizing: 'border-box' }}><div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff', lineHeight: 1.3, marginBottom: '0.3rem' }}>Ontario Building Code 2024</div>
+                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>Section 9.8 — Stair and Ramp Requirements</div>
+                </div>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.6),transparent)' }}><span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>ONTARIO · BUILDING CODE</span>
+                </div>
               </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>REGULATORY</div>
+              <div style={{ padding: '1rem', flex: 1 }}><div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>REGULATORY</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Ontario Building Code 2024 — Stair and ramp requirements</div>
                 <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>Official OBC 2024 provisions covering riser height, tread depth, handrail height, and stairway width for residential and commercial occupancies.</p>
               </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
+              <div style={{ padding: '0 1rem 1rem' }}><span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
               </div>
             </a>
 
             {/* Article 6 — WSJ */}
             <a href="https://www.wsj.com/articles/construction-companies-see-promise-in-ai-agents-12dc2d60" target="_blank" rel="noopener noreferrer"
-              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1a1208,#3a2a10)', height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '2rem' }}>🤖</span>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em' }}>WALL STREET JOURNAL</span>
+              style={{ flexShrink: 0, width: 300, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(44,74,110,0.1)', textDecoration: 'none', border: '1px solid rgba(44,90,122,0.1)', display: 'flex', flexDirection: 'column' }}><div style={{ height: 160, overflow: 'hidden', position: 'relative', background: '#1a1208' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/news/wsj_ai_construction.png" alt="Wall Street Journal — Construction Companies See Promise in AI Agents" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.4rem 0.7rem', background: 'linear-gradient(to top,rgba(0,0,0,0.72),transparent)' }}><span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.1em' }}>WALL STREET JOURNAL</span>
+                </div>
               </div>
-              <div style={{ padding: '1rem', flex: 1 }}>
-                <div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY · AI</div>
+              <div style={{ padding: '1rem', flex: 1 }}><div style={{ fontSize: '0.72rem', color: '#F29337', fontWeight: 700, marginBottom: '0.4rem' }}>INDUSTRY · AI</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0D1E2E', lineHeight: 1.3, marginBottom: '0.5rem' }}>Construction Companies See Promise in AI Agents</div>
                 <p style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.55, margin: 0 }}>The Wall Street Journal examines how the construction industry is adopting AI agents to automate inspections, documentation, and compliance workflows on job sites.</p>
               </div>
-              <div style={{ padding: '0 1rem 1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
+              <div style={{ padding: '0 1rem 1rem' }}><span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E' }}>Read more →</span>
               </div>
             </a>
 
           </div>
-          <p style={{ fontSize: '0.72rem', color: '#5E7D9B', marginTop: '1rem', textAlign: 'center' }}>
-            Scroll to see more articles · Updated regularly
+          </div>{/* end scroll wrapper */}
+          <p style={{ fontSize: '0.72rem', color: '#5E7D9B', marginTop: '1.5rem', textAlign: 'center' }}>Use scroll wheel, drag, or the arrows to browse · Updated regularly
           </p>
         </div>
       </section>
@@ -512,34 +458,26 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           SITE FOOTER (Procore-style)
       ══════════════════════════════════════════════ */}
-      <section style={{ background: '#fff', borderTop: '1px solid #E5EBF2', padding: '3.5rem 1.25rem 2rem' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem', marginBottom: '3rem' }}>
-
-            {/* Brand */}
-            <div style={{ flex: '1 1 220px', minWidth: 180 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+      <section style={{ background: '#fff', borderTop: '1px solid #E5EBF2', padding: '3.5rem 1.25rem 2rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem', marginBottom: '3rem' }}>{/* Brand */}
+            <div style={{ flex: '1 1 220px', minWidth: 180 }}>{/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/staircode_logo.png" alt="stAIrcode" style={{ height: 32, marginBottom: '1rem', display: 'block' }} />
-              <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>
-                stAIrcode is committed to improving building safety by making building code compliance accessible to everyone — from first-time homebuyers to professional building managers.
+              <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by making stair compliance accessible to everyone — from first-time homebuyers to professional building managers.
               </p>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                {[
-                  { href: 'https://www.instagram.com/staircode/', label: '📸' },
-                  { href: 'https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share', label: '▶' },
-                  { href: 'mailto:info@staircode.app', label: '✉' },
+              <div style={{ display: 'flex', gap: '0.75rem' }}>{[
+                  { href: 'https://www.instagram.com/staircode/', label: 'IG', title: 'Instagram' },
+                  { href: 'https://www.facebook.com/people/Staircode/61589350702805/', label: 'FB', title: 'Facebook' },
+                  { href: 'https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share', label: 'GP', title: 'Google Play' },
+                  { href: 'mailto:info@staircode.app', label: '@', title: 'Email us' },
                 ].map(s => (
-                  <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer"
-                    style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F5FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', textDecoration: 'none', color: '#0D1E2E' }}>
-                    {s.label}
+                  <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer" title={s.title}
+                    style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0F5FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', textDecoration: 'none', color: '#0D1E2E' }}>{s.label}
                   </a>
                 ))}
               </div>
             </div>
 
             {/* New to stAIrcode? */}
-            <div style={{ flex: '1 1 160px', minWidth: 140 }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>New to stAIrcode?</div>
+            <div style={{ flex: '1 1 160px', minWidth: 140 }}><div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>New to stAIrcode?</div>
                   {[
                 { label: 'What is stAIrcode?',  href: '/what-is-staircode' },
                 { label: 'Platform Overview',    href: '/platform-overview' },
@@ -549,15 +487,13 @@ export default function MarketingPage() {
                 { label: 'App Marketplace',      href: '#' },
                 { label: 'Developers / API',     href: '#' },
               ].map(l => (
-                <div key={l.label} style={{ marginBottom: '0.55rem' }}>
-                  <a href={l.href} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l.label}</a>
+                <div key={l.label} style={{ marginBottom: '0.55rem' }}><a href={l.href} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l.label}</a>
                 </div>
               ))}
             </div>
 
             {/* About */}
-            <div style={{ flex: '1 1 160px', minWidth: 140 }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>About stAIrcode</div>
+            <div style={{ flex: '1 1 160px', minWidth: 140 }}><div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>About stAIrcode</div>
                   {[
                 { label: 'Our Story',         href: '/our-story' },
                 { label: 'Blog',              href: '#' },
@@ -568,35 +504,49 @@ export default function MarketingPage() {
                 { label: 'Terms of Service',  href: '/terms' },
                 { label: 'Unsubscribe',       href: 'mailto:info@staircode.app?subject=Unsubscribe' },
               ].map(l => (
-                <div key={l.label} style={{ marginBottom: '0.55rem' }}>
-                  <a href={l.href} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l.label}</a>
+                <div key={l.label} style={{ marginBottom: '0.55rem' }}><a href={l.href} style={{ fontSize: '0.83rem', color: '#5E7D9B', textDecoration: 'none' }}>{l.label}</a>
                 </div>
               ))}
             </div>
 
             {/* Downloads */}
-            <div style={{ flex: '1 1 160px', minWidth: 140 }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>Downloads</div>
+            <div style={{ flex: '1 1 160px', minWidth: 140 }}><div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>Downloads</div>
+
+              {/* Google Play badge */}
               <a href="https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#000', borderRadius: 8, padding: '0.5rem 0.85rem', textDecoration: 'none', marginBottom: '0.75rem', width: 'fit-content' }}>
-                <span style={{ fontSize: '0.85rem' }}>▶</span>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', background: '#000', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.55rem 1rem', textDecoration: 'none', marginBottom: '0.65rem', minWidth: 155 }}>{/* Google Play triangle logo */}
+                <svg width="20" height="22" viewBox="0 0 20 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0.5 1.33L11.14 11L0.5 20.67V1.33Z" fill="#4285F4"/>
+                  <path d="M14.5 7.5L2.5 0.5L11.14 11L14.5 7.5Z" fill="#34A853"/>
+                  <path d="M14.5 14.5L11.14 11L2.5 21.5L14.5 14.5Z" fill="#FBBC04"/>
+                  <path d="M19.5 11C19.5 10.17 19.07 9.43 18.41 9L14.5 7.5L11.14 11L14.5 14.5L18.41 13C19.07 12.57 19.5 11.83 19.5 11Z" fill="#EA4335"/>
+                </svg>
                 <div>
-                  <div style={{ fontSize: '0.48rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1 }}>GET IT ON</div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>Google Play</div>
+                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Get it on</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>Google Play</div>
                 </div>
               </a>
-              <div style={{ fontSize: '0.75rem', color: '#9BB5C8', fontStyle: 'italic' }}>iOS — Coming soon</div>
+
+              {/* App Store badge */}
+              <a href="#" aria-disabled="true"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', background: '#000', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.55rem 1rem', textDecoration: 'none', minWidth: 155, opacity: 0.55, cursor: 'default', pointerEvents: 'none' }}>{/* Apple logo */}
+                <svg width="18" height="22" viewBox="0 0 18 22" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.93 11.62c-.02-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.9-3.54-1.93-1.51-.15-2.96.89-3.73.89-.78 0-1.97-.87-3.24-.85C4.79 6.07 3.2 7 2.35 8.43.59 11.33 1.89 15.63 3.59 18c.85 1.17 1.85 2.48 3.16 2.43 1.27-.05 1.75-.82 3.28-.82s1.97.82 3.3.79c1.36-.02 2.22-1.19 3.05-2.37.97-1.36 1.36-2.69 1.38-2.76-.03-.01-2.64-1.01-2.67-4.02l.04.37zM12.51 3.91c.7-.86 1.17-2.05 1.04-3.25-1.01.04-2.23.67-2.95 1.52-.65.74-1.22 1.94-1.07 3.08 1.13.09 2.28-.58 2.98-1.35z"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Download on the</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>App Store</div>
+                </div>
+              </a>
+              <div style={{ fontSize: '0.68rem', color: '#9BB5C8', marginTop: '0.4rem' }}>iOS — Launching May 2025</div>
             </div>
 
           </div>
 
           {/* Bottom strip */}
-          <div style={{ borderTop: '1px solid #E5EBF2', paddingTop: '1.25rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ fontSize: '0.75rem', color: '#9BB5C8' }}>
-              © {new Date().getFullYear()} Just Open Technologies Inc. · staircode.app
+          <div style={{ borderTop: '1px solid #E5EBF2', paddingTop: '1.25rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}><div style={{ fontSize: '0.75rem', color: '#9BB5C8' }}>© {new Date().getFullYear()} Just Open Technologies Inc. · staircode.app
             </div>
-            <div style={{ display: 'flex', gap: '1.25rem' }}>
-              {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Research', '/research'], ['Contact', 'mailto:info@staircode.app']].map(([l, h]) => (
+            <div style={{ display: 'flex', gap: '1.25rem' }}>{[['Privacy', '/privacy'], ['Terms', '/terms'], ['Research', '/research'], ['Contact', 'mailto:info@staircode.app']].map(([l, h]) => (
                 <a key={l} href={h} style={{ fontSize: '0.75rem', color: '#9BB5C8', textDecoration: 'none' }}>{l}</a>
               ))}
             </div>
@@ -607,16 +557,12 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FOOTER (minimal — keep for structure)
       ══════════════════════════════════════════════ */}
-      <footer style={{ display: 'none' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+      <footer style={{ display: 'none' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{/* eslint-disable-next-line @next/next/no-img-element */}
             <NavLogo height={20} style={{ opacity: 0.75 }} />
             <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>stAIrcode</span>
             <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.8em' }}>staircode.app</span>
           </div>
-          <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <a href="/research">Research</a>
+          <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}><a href="/research">Research</a>
             <a href="/privacy">Privacy</a>
             <a href="/terms">Terms</a>
             <a href="mailto:info@staircode.app">Contact</a>
@@ -624,6 +570,74 @@ export default function MarketingPage() {
           <div style={{ color: 'rgba(255,255,255,0.25)' }}>© {new Date().getFullYear()} Just Open Technologies Inc.</div>
         </div>
       </footer>
+
+      {/* ── Cookie Consent Banner ─────────────────────────────────────────────── */}
+      {cookieBanner && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
+          padding: '0 1rem 1rem',
+          pointerEvents: 'none',
+        }}><div style={{
+            maxWidth: 620,
+            margin: '0 auto',
+            background: '#0D1E2E',
+            border: '1px solid rgba(147,186,212,0.2)',
+            borderRadius: 16,
+            boxShadow: '0 -4px 40px rgba(0,0,0,0.45)',
+            padding: '1.25rem 1.5rem',
+            display: 'flex',
+            flexWrap: 'wrap' as const,
+            alignItems: 'center',
+            gap: '1rem',
+            pointerEvents: 'auto',
+          }}>{/* Icon + text */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: '1 1 280px' }}><div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E8F4FF', marginBottom: '0.3rem' }}>We use cookies
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#93BAD4', lineHeight: 1.6 }}>We use cookies and similar technologies to improve your experience, analyse site traffic, and serve relevant content.
+                  By clicking <strong style={{ color: '#E8F4FF' }}>Accept</strong>, you consent to our use of cookies.
+                  {' '}<a href="/privacy" style={{ color: '#F29337', textDecoration: 'underline' }}>Privacy Policy</a>
+                  {' '}·{' '}
+                  <a href="/terms" style={{ color: '#F29337', textDecoration: 'underline' }}>Terms</a>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}><button
+                onClick={declineCookies}
+                style={{
+                  padding: '0.6rem 1.1rem',
+                  background: 'transparent',
+                  border: '1.5px solid rgba(147,186,212,0.25)',
+                  borderRadius: 10,
+                  color: '#93BAD4',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap' as const,
+                  transition: 'border-color 0.2s',
+                }}>Decline
+              </button>
+              <button
+                onClick={acceptCookies}
+                style={{
+                  padding: '0.6rem 1.4rem',
+                  background: 'linear-gradient(135deg,#F29337,#C4721E)',
+                  border: 'none',
+                  borderRadius: 10,
+                  color: '#fff',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap' as const,
+                  boxShadow: '0 2px 12px rgba(242,147,55,0.35)',
+                }}>Accept All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
