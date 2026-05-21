@@ -87,8 +87,8 @@ export function getAngleGuidance(
   angleDeg: number,
   direction: 'up' | 'down' | 'left' | 'right' | 'level'
 ): string {
-  if (angleDeg <= 5) return ' Perfect angle — hold still'
-  if (angleDeg <= 10) return ' Good — tap to capture'
+  if (angleDeg <= 5) return '✓ Perfect angle — hold still'
+  if (angleDeg <= 10) return '✓ Good — tap to capture'
 
   const tiltVerb = direction === 'down' ? 'Tilt up' : direction === 'up' ? 'Tilt down'
                  : direction === 'left' ? 'Rotate right' : direction === 'right' ? 'Rotate left'
@@ -102,8 +102,8 @@ export function getAngleGuidance(
     headroom: `${tiltVerb} — point up toward the ceiling/soffit`,
   }
 
-  if (angleDeg <= 20) return ` ${modeInstructions[mode]} (${Math.round(angleDeg)}° off)`
-  return ` ${modeInstructions[mode]} — too angled (${Math.round(angleDeg)}° off, max ${ANGLE_TOLERANCE[mode]}°)`
+  if (angleDeg <= 20) return `⚠ ${modeInstructions[mode]} (${Math.round(angleDeg)}° off)`
+  return `✗ ${modeInstructions[mode]} — too angled (${Math.round(angleDeg)}° off, max ${ANGLE_TOLERANCE[mode]}°)`
 }
 
 // ── Cosine perspective correction (AI Vision mode) ─────────────────────────────

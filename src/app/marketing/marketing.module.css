@@ -180,14 +180,3 @@
 }
 .footer a { color: rgba(255, 255, 255, 0.5); text-decoration: none; }
 .footer a:hover { color: #F29337; }
-
-/* ── Hero phone mockup responsive ─────────────────────────────────────────── */
-/* Mobile: show phone below CTAs, hide right-column phone */
-.heroPhoneMobile  { display: flex; }
-.heroPhoneDesktop { display: none; }
-
-@media (min-width: 860px) {
-  /* Desktop: hide inline phone, show right-column phone */
-  .heroPhoneMobile  { display: none; }
-  .heroPhoneDesktop { display: flex; }
-}

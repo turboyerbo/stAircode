@@ -1,7 +1,7 @@
 /**
  * src/lib/compliance-engine.ts
  *
- *   THIS FILE RUNS ONLY ON THE SERVER.
+ * ⚠️  THIS FILE RUNS ONLY ON THE SERVER.
  * It is never sent to the browser. All code limits and compliance
  * logic live here, protected from public view.
  *

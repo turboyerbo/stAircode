@@ -76,15 +76,18 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       color: T.text,
       paddingBottom: '2rem',
-    }}>{/* Header */}
-      <div style={{ padding: '1.6rem 1.25rem 0.5rem', borderBottom: `1px solid ${T.border}` }}><div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
+    }}>
+
+      {/* Header */}
+      <div style={{ padding: '1.6rem 1.25rem 0.5rem', borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: T.text, letterSpacing: '-0.02em' }}>Settings</h1>
       </div>
 
       {/* ── PREFERENCES ── */}
       <SectionHeader label="Preferences" />
 
-      <SettingsRow icon="—" label="Units" value={user.units === 'mm' ? 'Millimetres (mm)' : 'Imperial (ft/in)'} onTap={() => setShowUnits(v => !v)} />
+      <SettingsRow icon="📐" label="Units" value={user.units === 'mm' ? 'Millimetres (mm)' : 'Imperial (ft/in)'} onTap={() => setShowUnits(v => !v)} />
       {showUnits && (
         <OptionGroup>
           {(['mm', 'ft'] as const).map(u => (
@@ -98,7 +101,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       )}
 
       <SettingsRow
-        icon="" label="I am a…"
+        icon="👤" label="I am a…"
         value={ROLE_LABELS[user.role ?? 'diy']}
         valueColor={ROLE_COLORS[user.role ?? 'diy']}
         onTap={() => setShowRole(v => !v)}
@@ -114,25 +117,34 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
 
       {/* ── ACCOUNT ── */}
       {/* Header */}
-      <div style={{ background:'#0A1C2E', backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', padding:'1.5rem 1.25rem 1.25rem' }}><div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
+      <div style={{ background:'#0A1C2E', backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', padding:'1.5rem 1.25rem 1.25rem' }}>
+        <div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
         <div style={{ fontSize:'1.3rem', fontWeight:900, color:'#E8F4FF', letterSpacing:'-0.02em' }}>Settings</div>
       </div>
       <div style={{ height:5, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px', marginBottom:'0.25rem' }} />
 
       <SectionHeader label="Account" />
 
-      <SettingsRow icon="—" label="Account" value={user.email} sub={`Signed in with ${user.provider}`} />
+      <SettingsRow icon="👤" label="Account" value={user.email} sub={`Signed in with ${user.provider}`} />
 
-      {/* Payment Method — hidden until Pro subscription launches */}
+      <SettingsRow icon="💳" label="Payment Method" value="None added" onTap={() => setShowPayment(v => !v)} />
+      {showPayment && (
+        <OptionGroup>
+          {['Credit Card'].map(p => (
+            <OptionRow key={p} label={p} selected={false} onSelect={() => setShowPayment(false)} />
+          ))}
+        </OptionGroup>
+      )}
 
       <SettingsRow
-        icon="—" label="Membership"
+        icon="⭐" label="Membership"
         value={MEMBERSHIP_LABELS[user.membership]}
         valueColor={MEMBERSHIP_COLORS[user.membership]}
         onTap={() => setShowMembership(v => !v)}
       />
       {showMembership && (
-        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.borderHi}`, borderRadius: 14, overflow: 'hidden' }}>{([
+        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.borderHi}`, borderRadius: 14, overflow: 'hidden' }}>
+          {([
             { id: 'free',       label: 'Free',       desc: 'Basic scanning, limited reports',       price: '$0/mo'  },
             { id: 'pro',        label: 'Pro',         desc: '20 scans/month, PDF exports',          price: '$199/mo' },
             { id: 'enterprise', label: 'Enterprise',  desc: 'Team access, API, priority support',    price: '$79/mo' },
@@ -145,12 +157,14 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
                 border: 'none', borderBottom: `1px solid ${T.border}`,
                 cursor: 'pointer', textAlign: 'left',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}><div>
+              }}>
+              <div>
                 <div style={{ fontSize: '0.88rem', fontWeight: 700, color: MEMBERSHIP_COLORS[id] }}>{label}</div>
                 <div style={{ fontSize: '0.7rem', color: T.text2, marginTop: '0.15rem' }}>{desc}</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span style={{ fontSize: '0.82rem', color: T.text, fontWeight: 700 }}>{price}</span>
-                {user.membership === id && <span style={{fontSize:'0.75rem',color:'#27A96B',fontWeight:700}}>&#10003;</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.82rem', color: T.text, fontWeight: 700 }}>{price}</span>
+                {user.membership === id && <span style={{ color: T.pass, fontSize: '1rem' }}>✓</span>}
               </div>
             </button>
           ))}
@@ -162,7 +176,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
         <>
           <SectionHeader label="Subscription" />
           <SettingsRow
-            icon="" label="Manage Subscription"
+            icon="💳" label="Manage Subscription"
             value={user.membership === 'pro' ? '$199/mo · Active' : 'Enterprise — Contact us'}
             valueColor={T.pass}
             onTap={async () => {
@@ -185,7 +199,10 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
 
       {/* ── BETA FEEDBACK ── */}
       <SectionHeader label="Beta Testing" />
-      <div style={{ margin: '0 1rem 1rem' }}><div style={{ background: BG2, border: `1px solid ${T.border}`, borderRadius: 16, padding: '1rem' }}><div style={{ fontSize: '0.78rem', color: T.text2, lineHeight: 1.6, marginBottom: '0.85rem' }}>You&apos;re using an early build of Staircode. Your feedback directly shapes what gets built next.
+      <div style={{ margin: '0 1rem 1rem' }}>
+        <div style={{ background: BG2, border: `1px solid ${T.border}`, borderRadius: 16, padding: '1rem' }}>
+          <div style={{ fontSize: '0.78rem', color: T.text2, lineHeight: 1.6, marginBottom: '0.85rem' }}>
+            You&apos;re using an early build of Staircode. Your feedback directly shapes what gets built next.
           </div>
           <FeedbackButton source="settings" />
         </div>
@@ -194,9 +211,11 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       {/* ── ABOUT ── */}
       <SectionHeader label="About" />
 
-      <SettingsRow icon="—" label="Legal Information" onTap={() => setShowLegal(v => !v)} />
+      <SettingsRow icon="⚖️" label="Legal Information" onTap={() => setShowLegal(v => !v)} />
       {showLegal && (
-        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '1.1rem' }}><p style={{ fontSize: '0.74rem', color: T.text2, lineHeight: 1.75, margin: 0 }}><strong style={{ color: T.text }}>stAIrcode</strong> is a visual aid tool developed by{' '}
+        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '1.1rem' }}>
+          <p style={{ fontSize: '0.74rem', color: T.text2, lineHeight: 1.75, margin: 0 }}>
+            <strong style={{ color: T.text }}>stAIrcode</strong> is a visual aid tool developed by{' '}
             <strong style={{ color: T.text }}>Just Open Technologies Inc.</strong> (federally incorporated in Canada;
             extra-provincial registration in Ontario). stAIrcode is <strong style={{ color: T.text }}>not a compliance
             checker</strong> and does not constitute a building inspection or professional assessment of any kind.
@@ -229,10 +248,11 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
         </div>
       )}
 
-      <SettingsRow icon="—" label="App Version" value={APP_VERSION} />
+      <SettingsRow icon="📱" label="App Version" value={APP_VERSION} />
 
       {/* ── LOG OUT ── */}
-      <div style={{ margin: '1.5rem 1rem 0' }}>{!logoutConfirm ? (
+      <div style={{ margin: '1.5rem 1rem 0' }}>
+        {!logoutConfirm ? (
           <button onClick={() => setLogoutConfirm(true)} style={{
             width: '100%', padding: '1rem',
             background: 'rgba(232,85,85,0.1)',
@@ -240,12 +260,16 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
             borderRadius: 14, color: T.fail,
             fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
             letterSpacing: '0.04em',
-          }}>Log Out
+          }}>
+            Log Out
           </button>
         ) : (
-          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '1.1rem', textAlign: 'center' }}><p style={{ fontSize: '0.85rem', color: T.text2, margin: '0 0 0.9rem', lineHeight: 1.5 }}>Are you sure you want to log out?
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '1.1rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.85rem', color: T.text2, margin: '0 0 0.9rem', lineHeight: 1.5 }}>
+              Are you sure you want to log out?
             </p>
-            <div style={{ display: 'flex', gap: '0.6rem' }}><button onClick={() => setLogoutConfirm(false)} style={{
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button onClick={() => setLogoutConfirm(false)} style={{
                 flex: 1, padding: '0.8rem',
                 background: T.cardHi, border: `1px solid ${T.border}`,
                 borderRadius: 10, color: T.text,
@@ -275,7 +299,8 @@ function SectionHeader({ label }: { label: string }) {
       fontSize: '0.62rem', fontWeight: 700,
       letterSpacing: '0.16em', color: T.text3,
       fontFamily: 'monospace', textTransform: 'uppercase',
-    }}>{label}
+    }}>
+      {label}
     </div>
   )
 }
@@ -284,7 +309,6 @@ function SettingsRow({ icon, label, value, sub, valueColor, onTap }: {
   icon: string; label: string; value?: string; sub?: string
   valueColor?: string; onTap?: () => void
 }) {
-  const showIcon = icon && icon !== '—' && icon !== ''
   return (
     <button onClick={onTap} disabled={!onTap} style={{
       width: '100%', padding: '0.9rem 1.25rem',
@@ -293,12 +317,14 @@ function SettingsRow({ icon, label, value, sub, valueColor, onTap }: {
       cursor: onTap ? 'pointer' : 'default', textAlign: 'left',
       borderBottom: `1px solid ${T.border}`,
     }}>
-      {showIcon && <span style={{ fontSize: '1.15rem', flexShrink: 0, width: 24, textAlign: 'center' }}>{icon}</span>}
-      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: '0.9rem', color: T.text, fontWeight: 600 }}>{label}</div>
+      <span style={{ fontSize: '1.15rem', flexShrink: 0, width: 24, textAlign: 'center' }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.9rem', color: T.text, fontWeight: 600 }}>{label}</div>
         {sub && <div style={{ fontSize: '0.72rem', color: T.text2, marginTop: '0.1rem' }}>{sub}</div>}
       </div>
       {value && (
-        <span style={{ fontSize: '0.8rem', color: valueColor ?? T.text2, flexShrink: 0, maxWidth: 180, textAlign: 'right', fontWeight: valueColor ? 700 : 400 }}>{value}
+        <span style={{ fontSize: '0.8rem', color: valueColor ?? T.text2, flexShrink: 0, maxWidth: 180, textAlign: 'right', fontWeight: valueColor ? 700 : 400 }}>
+          {value}
         </span>
       )}
       {onTap && <span style={{ color: T.text3, fontSize: '1rem', marginLeft: '0.1rem' }}>›</span>}
@@ -313,7 +339,8 @@ function OptionGroup({ children }: { children: React.ReactNode }) {
       background: T.card,
       border: `1px solid ${T.borderHi}`,
       borderRadius: 14, overflow: 'hidden',
-    }}>{children}
+    }}>
+      {children}
     </div>
   )
 }
@@ -328,8 +355,9 @@ function OptionRow({ label, selected, onSelect }: {
       border: 'none', borderBottom: `1px solid ${T.border}`,
       cursor: 'pointer', textAlign: 'left',
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    }}><span style={{ fontSize: '0.9rem', color: T.text, fontWeight: selected ? 700 : 400 }}>{label}</span>
-      {selected && <span style={{fontSize:'0.8rem',color:'#27A96B',fontWeight:900}}>&#10003;</span>}
+    }}>
+      <span style={{ fontSize: '0.9rem', color: T.text, fontWeight: selected ? 700 : 400 }}>{label}</span>
+      {selected && <span style={{ color: T.pass, fontSize: '1.1rem' }}>✓</span>}
     </button>
   )
 }

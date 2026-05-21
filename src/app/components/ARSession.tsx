@@ -9,9 +9,9 @@
  * so MeasureWalk.tsx can use it identically to the AI fallback path.
  *
  * Device support:
- *    Android Chrome 81+ (ARCore)
- *     iOS Safari 15.4+ (ARKit — plane detection behind flag on some versions)
- *     iOS Chrome, desktop — triggers onError() → AI fallback
+ *   ✅ Android Chrome 81+ (ARCore)
+ *   ⚠️  iOS Safari 15.4+ (ARKit — plane detection behind flag on some versions)
+ *   ❌  iOS Chrome, desktop — triggers onError() → AI fallback
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -169,7 +169,8 @@ export default function ARSession({
       <div style={styles.overlay}>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         <div style={styles.card}>
-          <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', letterSpacing: '0.15em', color: stepColor, marginBottom: '0.6rem' }}>STARTING AR SESSION
+          <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', letterSpacing: '0.15em', color: stepColor, marginBottom: '0.6rem' }}>
+            STARTING AR SESSION
           </div>
           <div style={styles.spinner(stepColor)} />
           <p style={styles.hint}>Requesting camera + AR access…</p>
@@ -182,7 +183,7 @@ export default function ARSession({
     return (
       <div style={styles.overlay}>
         <div style={styles.card}>
-          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}></div>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📡</div>
           <p style={styles.hint}>AR not available on this device</p>
           <button onClick={onError} style={styles.btn(stepColor)}>Use AI instead</button>
         </div>
@@ -191,10 +192,12 @@ export default function ARSession({
   }
 
   return (
-    <div ref={overlayRef} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>{/* Top bar */}
+    <div ref={overlayRef} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
+      {/* Top bar */}
       <div style={styles.topBar}>
         <button onClick={handleBack} style={styles.iconBtn}>←</button>
-        <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', letterSpacing: '0.16em', color: stepColor }}>{stepLabel.toUpperCase()} — AR MODE
+        <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', letterSpacing: '0.16em', color: stepColor }}>
+          {stepLabel.toUpperCase()} — AR MODE
         </div>
         <div style={{ width: 38 }} />
       </div>
@@ -213,11 +216,14 @@ export default function ARSession({
       <div style={styles.bottomTray}>
         {lockedMm ? (
           <>
-            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>{lockedMm}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>
+                {lockedMm}
               </div>
               <div style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>mm</div>
             </div>
-            <div style={{ display: 'flex', gap: '0.7rem', width: '100%', maxWidth: 320 }}><button onClick={handleBack} style={styles.secondaryBtn}>
+            <div style={{ display: 'flex', gap: '0.7rem', width: '100%', maxWidth: 320 }}>
+              <button onClick={handleBack} style={styles.secondaryBtn}>
                 ↺ Rescan
               </button>
               <button
@@ -225,12 +231,13 @@ export default function ARSession({
                 disabled={confidence === 'low'}
                 style={styles.btn(stepColor)}
               >
-                 Confirm
+                ✓ Confirm
               </button>
             </div>
           </>
         ) : (
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', textAlign: 'center', fontFamily: 'monospace' }}>{MODE_HINT[mode]}
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', textAlign: 'center', fontFamily: 'monospace' }}>
+            {MODE_HINT[mode]}
           </p>
         )}
       </div>

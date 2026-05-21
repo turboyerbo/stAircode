@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
+import { logEvent as fbEvent } from '@/lib/firebase'
 
 const C = {
   bg:     '#0A1C2E',
@@ -59,10 +60,12 @@ export default function UnlockPage() {
     const locP   = params.get('loc')
 
     // Check if returning from successful Stripe payment
-    const isPaymentSuccess = params.get('payment') === 'success'
-    if (isPaymentSuccess) setPaid(true)
+    if (params.get('payment') === 'success') {
+      setPaid(true)
+      fbEvent('purchase', { value: 2.99, currency: 'CAD', transaction_id: params.get('session_id') || '' })
+    }
 
-    // Priority 1: sessionStorage (same device/tab — most common mobile flow)
+    // Try to restore from sessionStorage first (same-device flow)
     const storedFields = (() => { try { return JSON.parse(sessionStorage.getItem('sc_fields') || '[]') } catch { return [] } })()
     const storedCode   = sessionStorage.getItem('sc_code_label') || ''
     const storedLoc    = sessionStorage.getItem('sc_location')   || ''
@@ -72,43 +75,31 @@ export default function UnlockPage() {
       setFields(storedFields)
       setCodeLabel(storedCode || codeP || 'Building Code')
       setLocation(storedLoc  || locP  || '')
-      setEmail(storedEmail   || emailP || '')
+      setEmail(storedEmail || emailP || '')
       setLoading(false)
       return
     }
 
-    // Priority 2: token from URL (set by checkout success_url — survives cross-device)
-    const urlToken = token || params.get('token')
-    if (urlToken) {
-      fetch(`/api/report/save?token=${urlToken}`)
+    // Fallback: load from server token
+    if (token) {
+      fetch(`/api/report/save?token=${token}`)
         .then(r => r.json())
         .then(d => {
-          if (d.ok && d.fields?.length > 0) {
-            setFields(d.fields)
-            setCodeLabel(d.codeLabel || codeP || 'Building Code')
-            setLocation(d.location  || locP  || '')
-            setEmail(d.email        || storedEmail || emailP || '')
-          } else {
-            // Token exists but no data — use URL params as fallback
-            setCodeLabel(codeP || 'Building Code')
-            setLocation(locP   || '')
-            setEmail(storedEmail || emailP || '')
+          if (d.ok) {
+            setFields(d.fields || [])
+            setCodeLabel(d.codeLabel || 'Building Code')
+            setLocation(d.location || '')
+            setEmail(d.email || emailP || '')
           }
         })
-        .catch(() => {
-          setCodeLabel(codeP || 'Building Code')
-          setLocation(locP   || '')
-          setEmail(storedEmail || emailP || '')
-        })
+        .catch(() => {})
         .finally(() => setLoading(false))
-      return
+    } else {
+      setCodeLabel(codeP || 'Building Code')
+      setLocation(locP || '')
+      setEmail(emailP || '')
+      setLoading(false)
     }
-
-    // Priority 3: URL params only (minimal fallback)
-    setCodeLabel(codeP || 'Building Code')
-    setLocation(locP   || '')
-    setEmail(storedEmail || emailP || '')
-    setLoading(false)
   }, [])
 
   const passed  = fields.filter(f => f.pass === true  || f.clearAbove)
@@ -135,62 +126,71 @@ export default function UnlockPage() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100dvh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: C.text2, fontSize: '0.9rem' }}>Loading your report…</div>
-    </div>
-  )
-
-  // No scan data available — link was opened on a different device or session expired
-  if (fields.length === 0) return (
-    <div style={{ minHeight: '100dvh', background: C.bg, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: C.text, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}><div style={{ maxWidth: 380, textAlign: 'center' }}><div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}></div>
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.6rem' }}>Report link expired or opened on a new device</h2>
-        <p style={{ fontSize: '0.88rem', color: C.text2, lineHeight: 1.7, marginBottom: '1.5rem' }}>Report links are tied to your scan session. To get your report, open staircode.app on the same device where you scanned — or run a new scan (it only takes a minute).
-        </p>
-        <p style={{ fontSize: '0.78rem', color: C.text2, lineHeight: 1.6, marginBottom: '1.5rem' }}>If you think this is an error, email us at{' '}
-          <a href="mailto:info@staircode.app" style={{ color: C.orange }}>info@staircode.app</a>
-          {email ? ` (include your email: ${email})` : ''} and we&apos;ll help you retrieve it.
-        </p>
-        <a href="https://staircode.app" style={{ display: 'inline-block', background: C.orange, color: '#000', fontWeight: 800, fontSize: '0.9rem', textDecoration: 'none', padding: '0.85rem 2rem', borderRadius: 12 }}>Start a New Scan →
-        </a>
-      </div>
+    <div style={{ minHeight: '100dvh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: C.text2, fontSize: '0.9rem' }}>Loading your report…</div>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100dvh', background: C.bg, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: C.text }}>{/* Safety stripe */}
+    <div style={{ minHeight: '100dvh', background: C.bg, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: C.text }}>
+
+      {/* Safety stripe */}
       <div style={{ height: 4, background: 'repeating-linear-gradient(-45deg,#F29337 0,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)' }} />
 
       {/* Header */}
-      <div style={{ background: C.bg2, borderBottom: `1px solid ${C.border}`, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><a href="/marketing" style={{ textDecoration: 'none' }}><span style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.02em' }}>st<span style={{ color: C.orange }}>AI</span>rcode
+      <div style={{ background: C.bg2, borderBottom: `1px solid ${C.border}`, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <a href="/marketing" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.02em' }}>
+            st<span style={{ color: C.orange }}>AI</span>rcode
           </span>
         </a>
-        <span style={{ color: C.text3, fontSize: '0.75rem', marginLeft: 'auto' }}>{codeLabel}{location ? ` · ${location}` : ''}
+        <span style={{ color: C.text3, fontSize: '0.75rem', marginLeft: 'auto' }}>
+          {codeLabel}{location ? ` · ${location}` : ''}
         </span>
       </div>
 
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>{/* Verdict banner */}
+      <div style={{ maxWidth: 520, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+
+        {/* Verdict banner */}
         <div style={{
-          background: overall ? 'rgba(39,169,107,0.1)' : 'rgba(232,69,69,0.1)',
-          border: `1.5px solid ${overall ? 'rgba(39,169,107,0.4)' : 'rgba(232,69,69,0.4)'}`,
+          background: fields.length === 0 ? 'rgba(65,124,164,0.1)' : overall ? 'rgba(39,169,107,0.1)' : 'rgba(232,69,69,0.1)',
+          border: `1.5px solid ${fields.length === 0 ? 'rgba(65,124,164,0.3)' : overall ? 'rgba(39,169,107,0.4)' : 'rgba(232,69,69,0.4)'}`,
           borderRadius: 16, padding: '1.25rem', textAlign: 'center', marginBottom: '1.5rem',
-        }}><div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{overall ? '' : ''}</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 900, color: overall ? C.green : C.red, marginBottom: '0.25rem' }}>{fields.length === 0 ? 'Scan results' : overall ? 'No issues detected' : `${failed.length} item${failed.length > 1 ? 's' : ''} flagged`}
+        }}>
+          <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>
+            {fields.length === 0 ? '📋' : overall ? '✅' : '⚠️'}
           </div>
-          <div style={{ fontSize: '0.8rem', color: C.text2 }}>{passed.length} passed · {failed.length} failed · {fields.length} measured
+          <div style={{ fontSize: '1.1rem', fontWeight: 900, color: fields.length === 0 ? C.blue : overall ? C.green : C.red, marginBottom: '0.25rem' }}>
+            {fields.length === 0 ? 'Your stair compliance report' : overall ? 'No issues detected' : `${failed.length} item${failed.length > 1 ? 's' : ''} require attention`}
           </div>
+          {fields.length > 0 && (
+            <div style={{ fontSize: '0.8rem', color: C.text2 }}>
+              {passed.length} passed · {failed.length} failed · {fields.length} measured
+            </div>
+          )}
+          {fields.length === 0 && (
+            <div style={{ fontSize: '0.78rem', color: C.text2 }}>
+              Unlock the full report to see your complete compliance results
+            </div>
+          )}
         </div>
 
         {/* Pass/fail table */}
         {fields.length > 0 && (
-          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', marginBottom: '1.5rem' }}><div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${C.border}`, fontSize: '0.65rem', color: C.orange, fontWeight: 800, letterSpacing: '0.12em' }}>MEASUREMENT SUMMARY
+          <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', marginBottom: '1.5rem' }}>
+            <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${C.border}`, fontSize: '0.65rem', color: C.orange, fontWeight: 800, letterSpacing: '0.12em' }}>
+              MEASUREMENT SUMMARY
             </div>
             {fields.map((f, i) => {
               const st = f.pass === true || f.clearAbove ? 'PASS'
                        : f.pass === false ? 'FAIL' : 'N/A'
               const col = st === 'PASS' ? C.green : st === 'FAIL' ? C.red : C.text3
               return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.7rem 1rem', borderBottom: i < fields.length - 1 ? `1px solid ${C.border}` : 'none', gap: '0.6rem' }}><span style={{ fontSize: '0.85rem', width: 20 }}>{f.icon || ''}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.7rem 1rem', borderBottom: i < fields.length - 1 ? `1px solid ${C.border}` : 'none', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '0.85rem', width: 20 }}>{f.icon || '📏'}</span>
                   <span style={{ flex: 1, fontSize: '0.82rem', color: C.text }}>{f.label}</span>
-                  <span style={{ fontSize: '0.78rem', fontFamily: 'monospace', color: f.pass === false ? 'rgba(255,255,255,0.3)' : C.text2 }}>{f.pass === false ? '████' : f.value != null ? `${f.value}mm` : f.clearAbove ? 'Clear' : '—'}
+                  <span style={{ fontSize: '0.78rem', fontFamily: 'monospace', color: f.pass === false ? 'rgba(255,255,255,0.3)' : C.text2 }}>
+                    {f.pass === false ? '████' : f.value != null ? `${f.value}mm` : f.clearAbove ? 'Clear' : '—'}
                   </span>
                   <span style={{ fontSize: '0.62rem', fontWeight: 800, color: col, fontFamily: 'monospace', width: 34, textAlign: 'right' }}>{st}</span>
                 </div>
@@ -201,34 +201,41 @@ export default function UnlockPage() {
 
         {/* Failed items urgency */}
         {failed.length > 0 && (
-          <div style={{ background: 'rgba(232,69,69,0.07)', border: '1px solid rgba(232,69,69,0.25)', borderRadius: 12, padding: '0.9rem 1rem', marginBottom: '1.5rem', fontSize: '0.8rem', color: C.text2, lineHeight: 1.7 }}><strong style={{ color: C.red }}> {failed.length} item{failed.length > 1 ? 's' : ''} require attention.</strong> Exact measurements, applicable code sections, and recommended remediation are in the full report. A building inspector or contractor will ask for this documentation.
+          <div style={{ background: 'rgba(232,69,69,0.07)', border: '1px solid rgba(232,69,69,0.25)', borderRadius: 12, padding: '0.9rem 1rem', marginBottom: '1.5rem', fontSize: '0.8rem', color: C.text2, lineHeight: 1.7 }}>
+            <strong style={{ color: C.red }}>⚠ {failed.length} item{failed.length > 1 ? 's' : ''} require attention.</strong> Exact measurements, applicable code sections, and recommended remediation are in the full report. A building inspector or contractor will ask for this documentation.
           </div>
         )}
 
         {/* ── PAYWALL ── */}
-        <div style={{ background: C.bg2, border: `1.5px solid rgba(242,147,55,0.4)`, borderRadius: 18, padding: '1.5rem', marginBottom: '1.5rem' }}><div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}><div>
+        <div style={{ background: C.bg2, border: `1.5px solid rgba(242,147,55,0.4)`, borderRadius: 18, padding: '1.5rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '1.3rem' }}>🔒</span>
+            <div>
               <div style={{ fontSize: '0.9rem', fontWeight: 900, color: C.text }}>Full compliance report</div>
               <div style={{ fontSize: '0.72rem', color: C.text2 }}>Photos · Code citations · Pre-inspection summary</div>
             </div>
           </div>
 
           {/* What's included */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.25rem' }}>{[
-              ' Measurement photographs from every scan',
-              ' Full pass/fail analysis with exact values',
-              ' Building code citations per dimension',
-              ' Occupancy classification & bylaw notes',
-              ' Pre-inspection summary for your inspector',
-              ' Recommended remediation for failed items',
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1.25rem' }}>
+            {[
+              '📷 Measurement photographs from every scan',
+              '📋 Full pass/fail analysis with exact values',
+              '📖 Building code citations per dimension',
+              '🏛 Occupancy classification & bylaw notes',
+              '📄 Pre-inspection summary for your inspector',
+              '🔧 Recommended remediation for failed items',
             ].map(item => (
-              <div key={item} style={{ fontSize: '0.78rem', color: C.text2, display: 'flex', gap: '0.5rem' }}><span style={{ flexShrink: 0 }}>{item.split(' ')[0]}</span>
+              <div key={item} style={{ fontSize: '0.78rem', color: C.text2, display: 'flex', gap: '0.5rem' }}>
+                <span style={{ flexShrink: 0 }}>{item.split(' ')[0]}</span>
                 <span>{item.split(' ').slice(1).join(' ')}</span>
               </div>
             ))}
           </div>
 
           {/* Beta pricing */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}><span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
             <span style={{ fontSize: '1.6rem', fontWeight: 900, color: C.orange }}>$2.99</span>
             <span style={{ fontSize: '0.62rem', fontWeight: 800, fontFamily: 'monospace', color: C.green, background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '0.15rem 0.5rem', letterSpacing: '0.06em' }}>BETA DISCOUNT</span>
           </div>
@@ -243,16 +250,18 @@ export default function UnlockPage() {
 
           {error && <div style={{ fontSize: '0.75rem', color: C.red, textAlign: 'center', marginBottom: '0.5rem' }}>{error}</div>}
 
-          <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center' }}>One-time payment · Secure checkout via Stripe · PDF delivered to your email instantly
+          <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center' }}>
+            One-time payment · Secure checkout via Stripe · PDF delivered to your email instantly
           </div>
         </div>
 
         {/* Find a professional */}
-        <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 14, padding: '1rem', marginBottom: '1.5rem' }}><div style={{ fontSize: '0.65rem', color: C.orange, fontWeight: 800, letterSpacing: '0.12em', marginBottom: '0.75rem' }}>FIND A PROFESSIONAL</div>
+        <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 14, padding: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.65rem', color: C.orange, fontWeight: 800, letterSpacing: '0.12em', marginBottom: '0.75rem' }}>FIND A PROFESSIONAL</div>
           {[
-            { icon: '', label: 'Find a Building Inspector', q: 'building inspector near me' },
-            { icon: '', label: 'Find a Licensed Architect',  q: 'licensed architect near me' },
-            { icon: '', label: 'Find a Stair Contractor',    q: 'stair renovation contractor near me' },
+            { icon: '🔍', label: 'Find a Building Inspector', q: 'building inspector near me' },
+            { icon: '📐', label: 'Find a Licensed Architect',  q: 'licensed architect near me' },
+            { icon: '🔨', label: 'Find a Stair Contractor',    q: 'stair renovation contractor near me' },
           ].map(({ icon, label, q }) => (
             <a key={label}
               href={`https://www.google.com/maps/search/${encodeURIComponent(q)}`}
@@ -265,7 +274,8 @@ export default function UnlockPage() {
         </div>
 
         {/* Learn more links */}
-        <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 14, padding: '1rem', marginBottom: '1.5rem' }}><div style={{ fontSize: '0.65rem', color: C.blue, fontWeight: 800, letterSpacing: '0.12em', marginBottom: '0.75rem' }}>LEARN MORE</div>
+        <div style={{ background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 14, padding: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.65rem', color: C.blue, fontWeight: 800, letterSpacing: '0.12em', marginBottom: '0.75rem' }}>LEARN MORE</div>
           {[
             { label: 'Ontario Building Code 2024 — Stair requirements', href: 'https://www.ontario.ca/laws/statute/92b23' },
             { label: 'CMHC — Housing accessibility guidelines', href: 'https://www.cmhc-schl.gc.ca/en/professionals/industry-innovation-and-leadership/industry-expertise/housingresearch' },
@@ -283,7 +293,9 @@ export default function UnlockPage() {
         </div>
 
         {/* Scan again */}
-        <div style={{ textAlign: 'center' }}><a href="/?signin=1" style={{ fontSize: '0.78rem', color: C.text3, textDecoration: 'none' }}>← Scan different stairs
+        <div style={{ textAlign: 'center' }}>
+          <a href="/?signin=1" style={{ fontSize: '0.78rem', color: C.text3, textDecoration: 'none' }}>
+            ← Scan different stairs
           </a>
         </div>
       </div>

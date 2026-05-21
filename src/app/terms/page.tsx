@@ -13,15 +13,18 @@ export default function TermsPage() {
       position: 'fixed', inset: 0, overflowY: 'auto',
       background: '#ffffff',
       zIndex: 9999,
-    }}><main style={{
+    }}>
+      <main style={{
         maxWidth: 720, margin: '0 auto',
         padding: '3rem 1.5rem 5rem',
         fontFamily: "Georgia, 'Times New Roman', serif",
         background: '#ffffff',
         color: '#111827',
         lineHeight: 1.8,
-      }}>{/* Back link */}
-        <a href="javascript:history.back()" style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', color:'#1d4ed8', fontSize:'0.82rem', marginBottom:'2rem', textDecoration:'none', fontFamily:'system-ui,sans-serif' }}>← Back
+      }}>
+        {/* Back link */}
+        <a href="javascript:history.back()" style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', color:'#1d4ed8', fontSize:'0.82rem', marginBottom:'2rem', textDecoration:'none', fontFamily:'system-ui,sans-serif' }}>
+          ← Back
         </a>
 
         <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.3rem', color: '#0A1C2E', fontFamily:'system-ui,sans-serif' }}>Terms of Service</h1>
@@ -97,7 +100,8 @@ export default function TermsPage() {
           Questions about these Terms: <a href="mailto:info@staircode.app" style={{ color: '#1565C0' }}>info@staircode.app</a>
         </Section>
 
-        <p style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#9ca3af', fontFamily:'system-ui,sans-serif' }}>© {new Date().getFullYear()} Just Open Technologies Inc. All rights reserved.
+        <p style={{ marginTop: '3rem', fontSize: '0.8rem', color: '#9ca3af', fontFamily:'system-ui,sans-serif' }}>
+          © {new Date().getFullYear()} Just Open Technologies Inc. All rights reserved.
         </p>
       </main>
     </div>
@@ -106,7 +110,8 @@ export default function TermsPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: '2.25rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '2rem' }}><h2 style={{
+    <section style={{ marginBottom: '2.25rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '2rem' }}>
+      <h2 style={{
         fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem',
         color: '#0A1C2E', fontFamily: 'system-ui, sans-serif',
         borderLeft: '3px solid #0A1C2E', paddingLeft: '0.75rem',

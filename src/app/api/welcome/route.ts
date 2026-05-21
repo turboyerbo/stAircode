@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
       <!-- Beta free callout -->
       <div style="background:linear-gradient(135deg,rgba(39,169,107,0.08),rgba(39,169,107,0.04)); border:1.5px solid rgba(39,169,107,0.3); border-radius:14px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; text-align:center;">
-        <div style="font-size:1.1rem; font-weight:900; color:#27A96B; margin-bottom:0.4rem;"> Your report is FREE during Beta</div>
+        <div style="font-size:1.1rem; font-weight:900; color:#27A96B; margin-bottom:0.4rem;">🎉 Your report is FREE during Beta</div>
         <p style="font-size:0.85rem; color:#2C4A66; line-height:1.6; margin-bottom:1rem;">
           During our beta period (until June 2026), full PDF compliance reports are completely free. Your report includes all measurements, building code citations, and a pre-inspection summary.
         </p>
@@ -96,10 +96,10 @@ export async function POST(req: NextRequest) {
       <!-- What's in the report -->
       <p style="font-size:0.9rem; color:#2C4A66; line-height:1.7; margin-bottom:0.5rem; font-weight:700;">Your PDF compliance report includes:</p>
       <ul style="padding-left:1.25rem; margin-bottom:1.5rem;">
-        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;"> &nbsp;Full stair description with all captured dimensions</li>
-        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;"> &nbsp;Detailed pass/fail compliance analysis per item</li>
-        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;"> &nbsp;Applicable building code sections cited by reference</li>
-        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8;"> &nbsp;Pre-inspection summary — ready to share with your inspector or contractor</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;">📋 &nbsp;Full stair description with all captured dimensions</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;">⚖️ &nbsp;Detailed pass/fail compliance analysis per item</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8; margin-bottom:0.2rem;">🏛️ &nbsp;Applicable building code sections cited by reference</li>
+        <li style="font-size:0.85rem; color:#2C4A66; line-height:1.8;">🔍 &nbsp;Pre-inspection summary — ready to share with your inspector or contractor</li>
       </ul>
 
       <!-- Subscription option -->

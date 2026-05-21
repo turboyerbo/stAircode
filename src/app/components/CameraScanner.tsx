@@ -365,7 +365,7 @@ export default function CameraScanner({
   // ── Status text ───────────────────────────────────────────────────────────
   const statusColor = confirmed ? 'green' : isReady ? 'green' : confidence > 0.25 ? 'amber' : 'grey'
   const statusText  = confirmed
-    ? 'Captured '
+    ? 'Captured ✓'
     : drawMode === 'done' && drawnMm
     ? `Drawn: ${drawnMm} mm — tap capture`
     : drawMode === 'drawing'
@@ -388,7 +388,8 @@ export default function CameraScanner({
       position: 'fixed', inset: 0, background: '#EEF3F9',
       display: 'flex', flexDirection: 'column',
       maxWidth: 430, margin: '0 auto', zIndex: 50,
-    }}>{/* Video */}
+    }}>
+      {/* Video */}
       <video ref={videoRef} autoPlay playsInline muted
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
@@ -418,7 +419,9 @@ export default function CameraScanner({
       {/* Camera loading */}
       {!cameraReady && !cameraError && (
         <div style={{ position: 'absolute', inset: 0, background: '#111', zIndex: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', fontFamily: 'monospace' }}>STARTING CAMERA…
+          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+            STARTING CAMERA…
           </span>
         </div>
       )}
@@ -429,9 +432,12 @@ export default function CameraScanner({
           position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 20,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: '1rem', padding: '2rem', textAlign: 'center',
-        }}><div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', color: '#fff', fontStyle: 'italic' }}>Camera access needed
+        }}>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', color: '#fff', fontStyle: 'italic' }}>
+            Camera access needed
           </div>
-          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: 260 }}>Allow camera access in your browser settings, then tap Retry.
+          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: 260 }}>
+            Allow camera access in your browser settings, then tap Retry.
           </p>
           <button onClick={startCamera} style={btnStyle('#1565C0')}>Retry Camera</button>
           <button onClick={onBack} style={btnStyle('rgba(21,101,192,0.20)', true)}>← Go Back</button>
@@ -440,27 +446,35 @@ export default function CameraScanner({
 
       {/* ── HUD overlay ── */}
       {!cameraError && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'none', zIndex: 10 }}>{/* Top bar */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', pointerEvents: 'none', zIndex: 10 }}>
+
+          {/* Top bar */}
           <div style={{
             padding: '2.5rem 1rem 0.75rem',
             background: 'linear-gradient(to bottom, rgba(13,43,69,0.7) 0%, transparent 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             pointerEvents: 'all',
-          }}><button onClick={() => { stopCamera(); onBack() }} style={iconBtnStyle()}>←</button>
-            <div style={{ textAlign: 'center' }}><span style={{ fontFamily: 'var(--display)', fontSize: '1rem', fontWeight: 700,
-                fontStyle: 'italic', color: '#fff', textShadow: '0 1px 8px rgba(13,43,69,0.5)' }}>{field.label}
+          }}>
+            <button onClick={() => { stopCamera(); onBack() }} style={iconBtnStyle()}>←</button>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontFamily: 'var(--display)', fontSize: '1rem', fontWeight: 700,
+                fontStyle: 'italic', color: '#fff', textShadow: '0 1px 8px rgba(13,43,69,0.5)' }}>
+                {field.label}
               </span>
             </div>
             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)',
               background: 'rgba(21,101,192,0.22)', padding: '0.2rem 0.6rem',
-              borderRadius: 20, backdropFilter: 'blur(8px)', fontFamily: 'monospace' }}>{fieldIndex + 1} / {totalFields}
+              borderRadius: 20, backdropFilter: 'blur(8px)', fontFamily: 'monospace' }}>
+              {fieldIndex + 1} / {totalFields}
             </span>
           </div>
 
           {/* Center — draw hint, readout, status */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem',
-            paddingBottom: '0.5rem', pointerEvents: 'none' }}>{/* Draw mode hint */}
+            paddingBottom: '0.5rem', pointerEvents: 'none' }}>
+
+            {/* Draw mode hint */}
             <div style={{
               background: 'rgba(13,43,69,0.6)', backdropFilter: 'blur(8px)',
               borderRadius: 20, padding: '0.3rem 0.9rem',
@@ -468,7 +482,8 @@ export default function CameraScanner({
               fontFamily: 'monospace', letterSpacing: '0.05em',
               border: drawMode === 'drawing' ? '1px solid rgba(74,144,226,0.4)' : '1px solid rgba(255,255,255,0.1)',
               transition: 'border-color 0.3s',
-            }}>{drawHint}
+            }}>
+              {drawHint}
             </div>
 
             {/* Big readout */}
@@ -477,14 +492,16 @@ export default function CameraScanner({
                 fontFamily: 'var(--display)', fontSize: '3.2rem', fontWeight: 900, lineHeight: 1,
                 color: isReady ? '#93c5fd' : '#ef9a9a',
                 textShadow: '0 2px 20px rgba(13,43,69,0.7)', transition: 'color 0.3s',
-              }}>{Math.round(activeMm)}
+              }}>
+                {Math.round(activeMm)}
                 <span style={{ fontSize: '1rem', fontWeight: 400, opacity: 0.8, marginLeft: 4 }}>mm</span>
               </div>
             )}
 
             {/* Confidence bar (vision auto-detect) */}
             {!drawnMm && cameraReady && (
-              <div style={{ width: 120, height: 3, background: 'rgba(21,101,192,0.20)', borderRadius: 3, overflow: 'hidden' }}><div style={{
+              <div style={{ width: 120, height: 3, background: 'rgba(21,101,192,0.20)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{
                   height: '100%', width: `${Math.round(confidence * 100)}%`,
                   background: confidence > 0.5 ? '#4A90E2' : confidence > 0.25 ? '#ffb74d' : '#ef5350',
                   transition: 'width 0.2s, background 0.3s', borderRadius: 3,
@@ -500,7 +517,9 @@ export default function CameraScanner({
                 background:'rgba(21,101,192,0.85)', backdropFilter:'blur(8px)',
                 border:'1px solid rgba(66,165,245,0.4)',
                 fontSize:'0.62rem', fontFamily:'monospace', letterSpacing:'0.08em', color:'#fff',
-              }}>{calibration.confidence === 'high' ? '' : '~'} CALIBRATED ·{' '}
+              }}>
+                <span style={{ fontSize:'0.7rem' }}>📏</span>
+                {calibration.confidence === 'high' ? '✓' : '~'} CALIBRATED ·{' '}
                 {(calibration.mmPerPixel).toFixed(3)}mm/px ·{' '}
                 {calibration.confidence.toUpperCase()}
               </div>
@@ -517,13 +536,15 @@ export default function CameraScanner({
                         : 'rgba(13,43,69,0.55)',
               border: `1px solid ${statusColor === 'green' ? 'rgba(74,144,226,0.4)' : 'rgba(255,255,255,0.1)'}`,
               color: '#fff', transition: 'background 0.3s',
-            }}><div style={{ width: 7, height: 7, borderRadius: '50%',
+            }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%',
                 background: statusColor === 'green' ? '#4A90E2' : statusColor === 'amber' ? '#ffb74d' : 'rgba(255,255,255,0.4)' }}/>
               {statusText}
             </div>
 
             {/* Progress dots */}
-            <div style={{ display: 'flex', gap: '0.35rem' }}>{Array.from({ length: totalFields }).map((_, i) => (
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              {Array.from({ length: totalFields }).map((_, i) => (
                 <div key={i} style={{
                   width: 6, height: 6, borderRadius: '50%',
                   background: i < fieldIndex ? '#1976D2' : i === fieldIndex ? '#fff' : 'rgba(21,101,192,0.25)',
@@ -540,14 +561,17 @@ export default function CameraScanner({
             background: 'linear-gradient(to top, rgba(13,43,69,0.85) 0%, transparent 100%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.7rem',
             pointerEvents: 'all',
-          }}>{/* Manual / detected input */}
+          }}>
+            {/* Manual / detected input */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
               background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)',
               border: '1px solid rgba(21,101,192,0.25)', borderRadius: 12,
               padding: '0.45rem 0.7rem', width: '100%',
-            }}><span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)',
-                whiteSpace: 'nowrap', fontFamily: 'monospace', letterSpacing: '0.06em' }}>{drawnMm && !hasManual ? ' DRAWN:' : autoFilled && !hasManual ? ' AUTO:' : 'MANUAL:'}
+            }}>
+              <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.55)',
+                whiteSpace: 'nowrap', fontFamily: 'monospace', letterSpacing: '0.06em' }}>
+                {drawnMm && !hasManual ? '✦ DRAWN:' : autoFilled && !hasManual ? '✦ AUTO:' : 'MANUAL:'}
               </span>
               <input
                 type="number"
@@ -564,12 +588,15 @@ export default function CameraScanner({
               <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace' }}>mm</span>
               {manualValue && (
                 <button onClick={() => { setManualValue(''); setAutoFilled(false); setDrawnMm(null); setDrawMode('idle'); setPointA(null); setPointB(null) }}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 2px' }}></button>
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 2px' }}>
+                  ✕
+                </button>
               )}
             </div>
 
             {/* Capture button row */}
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>{/* Capture button — large round shutter */}
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              {/* Capture button — large round shutter */}
               <button onClick={capture} disabled={!activeMm} style={{
                 width: 68, height: 68, borderRadius: '50%',
                 border: `3px solid ${confirmed ? '#4A90E2' : 'rgba(255,255,255,0.85)'}`,
@@ -577,7 +604,8 @@ export default function CameraScanner({
                 backdropFilter: 'blur(8px)', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s', opacity: !activeMm ? 0.4 : 1,
-              }}><div style={{
+              }}>
+                <div style={{
                   width: 48, height: 48,
                   background: confirmed ? '#4A90E2' : '#fff',
                   borderRadius: '50%', transition: 'all 0.2s',
@@ -585,13 +613,15 @@ export default function CameraScanner({
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}><button onClick={onSkip} style={{
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              <button onClick={onSkip} style={{
                 background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)',
                 fontSize: '0.68rem', cursor: 'pointer', textDecoration: 'underline',
                 fontFamily: 'monospace', letterSpacing: '0.05em',
               }}>Skip</button>
               {visionResult?.debugInfo && (
-                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'monospace' }}>{visionResult.debugInfo}
+                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.25)', fontFamily: 'monospace' }}>
+                  {visionResult.debugInfo}
                 </span>
               )}
             </div>

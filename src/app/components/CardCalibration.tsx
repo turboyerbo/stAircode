@@ -341,51 +341,62 @@ export default function CardCalibration({ onCalibrated, onSkip, onBack }: Props)
       <video ref={videoRef} autoPlay playsInline muted style={S.video}/>
       <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPD} onPointerMove={onPM} onPointerUp={onPU}/>
 
-      {locked && <div style={{position:'absolute',inset:0,zIndex:12,background:'rgba(0,127,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'0.5rem'}}><div style={{width:64,height:64,borderRadius:'50%',background:'#007FFF',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.8rem'}}></div>
+      {locked && <div style={{position:'absolute',inset:0,zIndex:12,background:'rgba(0,127,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'0.5rem'}}>
+        <div style={{width:64,height:64,borderRadius:'50%',background:'#007FFF',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.8rem'}}>✓</div>
         <span style={{color:'#fff',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.14em',fontSize:'0.85rem'}}>SCALE LOCKED — card no longer needed</span>
       </div>}
 
-      {camErr && <div style={{position:'absolute',inset:0,background:'rgba(13,43,69,0.96)',zIndex:12,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem'}}><p style={{color:'#fff',textAlign:'center',lineHeight:1.6,fontSize:'0.88rem'}}>Camera access required.</p>
+      {camErr && <div style={{position:'absolute',inset:0,background:'rgba(13,43,69,0.96)',zIndex:12,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem'}}>
+        <p style={{color:'#fff',textAlign:'center',lineHeight:1.6,fontSize:'0.88rem'}}>Camera access required.</p>
         <Btn onClick={onBack}>← Back</Btn>
       </div>}
 
       <div style={S.top}>
         <IBtn onClick={() => { streamRef.current?.getTracks().forEach(t=>t.stop()); onBack() }}>←</IBtn>
-        <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}><div style={{width:7,height:7,borderRadius:'50%',background:aiDot,flexShrink:0}}/>
+        <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}>
+          <div style={{width:7,height:7,borderRadius:'50%',background:aiDot,flexShrink:0}}/>
           <span style={{color:'rgba(255,255,255,0.9)',fontSize:'0.82rem',fontWeight:600}}>Hold Card at Arm&apos;s Length</span>
         </div>
         <button onClick={()=>setMode(m=>m==='auto'?'manual':'auto')}
-          style={{background:mode==='manual'?'rgba(0,127,255,0.3)':'rgba(21,101,192,0.22)',border:'none',borderRadius:20,color:'rgba(255,255,255,0.85)',fontSize:'0.6rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.1em',padding:'0.3rem 0.75rem',cursor:'pointer'}}>{mode==='auto'?'MANUAL':'AUTO'}
+          style={{background:mode==='manual'?'rgba(0,127,255,0.3)':'rgba(21,101,192,0.22)',border:'none',borderRadius:20,color:'rgba(255,255,255,0.85)',fontSize:'0.6rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.1em',padding:'0.3rem 0.75rem',cursor:'pointer'}}>
+          {mode==='auto'?'MANUAL':'AUTO'}
         </button>
       </div>
 
       {/* Centre instruction */}
-      <div style={{position:'absolute',top:'5.5rem',left:'50%',transform:'translateX(-50%)',zIndex:9,textAlign:'center',whiteSpace:'nowrap'}}><div style={{background:'rgba(13,43,69,0.55)',backdropFilter:'blur(8px)',borderRadius:16,padding:'0.3rem 1rem',fontSize:'0.63rem',fontFamily:'monospace',color:'rgba(255,255,255,0.7)',letterSpacing:'0.05em'}}>Card detected once → pocket it → walk the stairs
+      <div style={{position:'absolute',top:'5.5rem',left:'50%',transform:'translateX(-50%)',zIndex:9,textAlign:'center',whiteSpace:'nowrap'}}>
+        <div style={{background:'rgba(13,43,69,0.55)',backdropFilter:'blur(8px)',borderRadius:16,padding:'0.3rem 1rem',fontSize:'0.63rem',fontFamily:'monospace',color:'rgba(255,255,255,0.7)',letterSpacing:'0.05em'}}>
+          Card detected once → pocket it → walk the stairs
         </div>
       </div>
 
       <div style={S.bot}>
-        <div style={{padding:'0.3rem 0.85rem',background:'rgba(13,43,69,0.5)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,fontSize:'0.64rem',fontFamily:'monospace',color:'rgba(255,255,255,0.7)',letterSpacing:'0.06em'}}>{mode==='auto'
+        <div style={{padding:'0.3rem 0.85rem',background:'rgba(13,43,69,0.5)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,fontSize:'0.64rem',fontFamily:'monospace',color:'rgba(255,255,255,0.7)',letterSpacing:'0.06em'}}>
+          {mode==='auto'
             ? ai==='loading' ? 'Loading AI detector…'
               : det ? `Card found ${stable}/5` : 'Hold card flat, centred — arm\'s length away'
             : 'Drag corners to match your card exactly'}
         </div>
 
         {/* Distance adjustment slider */}
-        <div style={{width:'100%',display:'flex',flexDirection:'column',gap:'0.25rem'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.45)',letterSpacing:'0.06em'}}>HOLD DISTANCE ADJUST</span>
+        <div style={{width:'100%',display:'flex',flexDirection:'column',gap:'0.25rem'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.45)',letterSpacing:'0.06em'}}>HOLD DISTANCE ADJUST</span>
             <span style={{fontSize:'0.65rem',fontFamily:'monospace',color:'#FF7F00'}}>{Math.round(HOLD_DIST_MM * distAdj)}mm</span>
           </div>
           <input type="range" min={0.6} max={1.6} step={0.05} value={distAdj}
             onChange={e => setDistAdj(Number(e.target.value))}
             style={{width:'100%',accentColor:'#007FFF',cursor:'pointer'}}/>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.52rem',fontFamily:'monospace',color:'rgba(255,255,255,0.25)'}}><span>Near (20cm)</span><span>← Adjust if card looks wrong →</span><span>Far (55cm)</span>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.52rem',fontFamily:'monospace',color:'rgba(255,255,255,0.25)'}}>
+            <span>Near (20cm)</span><span>← Adjust if card looks wrong →</span><span>Far (55cm)</span>
           </div>
         </div>
 
-        {mode==='manual' && !locked && <Btn onClick={confirmManual}>  Lock Scale</Btn>}
+        {mode==='manual' && !locked && <Btn onClick={confirmManual}>✓  Lock Scale</Btn>}
 
         <button onClick={()=>{streamRef.current?.getTracks().forEach(t=>t.stop());onSkip()}}
-          style={{background:'none',border:'none',color:'rgba(255,255,255,0.32)',fontSize:'0.63rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em'}}>Skip calibration (lower accuracy)
+          style={{background:'none',border:'none',color:'rgba(255,255,255,0.32)',fontSize:'0.63rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em'}}>
+          Skip calibration (lower accuracy)
         </button>
       </div>
     </div>

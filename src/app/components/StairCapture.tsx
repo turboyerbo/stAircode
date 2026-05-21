@@ -276,11 +276,13 @@ export default function StairCapture({ calibration, onComplete, onBack }: Props)
     }).catch(() => setCamError(true))
   }
 
-  const confLabel = !result ? '' : result.confidence > 0.6 ? ' HIGH CONFIDENCE' : result.confidence > 0.4 ? '~ MEDIUM — CHECK VALUES' : ' LOW — CONSIDER RETAKE'
+  const confLabel = !result ? '' : result.confidence > 0.6 ? '✓ HIGH CONFIDENCE' : result.confidence > 0.4 ? '~ MEDIUM — CHECK VALUES' : '⚠ LOW — CONSIDER RETAKE'
   const confColor = !result ? '#fff' : result.confidence > 0.6 ? '#4A90E2' : result.confidence > 0.4 ? '#ffb74d' : '#ef5350'
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'#EEF3F9', display:'flex', flexDirection:'column', maxWidth:430, margin:'0 auto', zIndex:60 }}>{/* Camera video (live only) */}
+    <div style={{ position:'fixed', inset:0, background:'#EEF3F9', display:'flex', flexDirection:'column', maxWidth:430, margin:'0 auto', zIndex:60 }}>
+
+      {/* Camera video (live only) */}
       <video ref={videoRef} autoPlay playsInline muted
         style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', display: phase==='live'?'block':'none' }}/>
 
@@ -296,50 +298,62 @@ export default function StairCapture({ calibration, onComplete, onBack }: Props)
       <canvas ref={hiddenRef} style={{ display:'none' }}/>
 
       {camError && (
-        <div style={{ position:'absolute', inset:0, background:'rgba(13,43,69,0.96)', zIndex:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', padding:'2rem' }}><p style={{ color:'#fff', textAlign:'center' }}>Camera access required.</p>
+        <div style={{ position:'absolute', inset:0, background:'rgba(13,43,69,0.96)', zIndex:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', padding:'2rem' }}>
+          <p style={{ color:'#fff', textAlign:'center' }}>Camera access required.</p>
           <button onClick={onBack} style={greenBtn()}>← Back</button>
         </div>
       )}
 
       {/* Top bar */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10, padding:'2.8rem 1rem 0.8rem', background:'linear-gradient(to bottom,rgba(13,43,69,0.75),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}><button onClick={() => { streamRef.current?.getTracks().forEach(t=>t.stop()); onBack() }} style={iconBtn()}>←</button>
-        <span style={{ color:'#fff', fontWeight:700, fontSize:'0.88rem' }}>{phase==='live' ? 'Frame the Staircase' : phase==='analysing' ? 'Analysing…' : 'Results'}
+      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10, padding:'2.8rem 1rem 0.8rem', background:'linear-gradient(to bottom,rgba(13,43,69,0.75),transparent)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <button onClick={() => { streamRef.current?.getTracks().forEach(t=>t.stop()); onBack() }} style={iconBtn()}>←</button>
+        <span style={{ color:'#fff', fontWeight:700, fontSize:'0.88rem' }}>
+          {phase==='live' ? 'Frame the Staircase' : phase==='analysing' ? 'Analysing…' : 'Results'}
         </span>
         <div style={{ width:36 }}/>
       </div>
 
       {/* Calibration badge */}
       {calibration && phase === 'live' && (
-        <div style={{ position:'absolute', top:'5.5rem', left:'50%', transform:'translateX(-50%)', zIndex:10, padding:'0.25rem 0.8rem', background:'rgba(21,101,192,0.8)', borderRadius:16, fontSize:'0.6rem', fontFamily:'monospace', color:'#fff', letterSpacing:'0.07em', whiteSpace:'nowrap' }}>{calibration.method==='auto'?'AI':'Manual'} · {calibration.confidence} · {calibration.mmPerPixel.toFixed(3)}mm/px
+        <div style={{ position:'absolute', top:'5.5rem', left:'50%', transform:'translateX(-50%)', zIndex:10, padding:'0.25rem 0.8rem', background:'rgba(21,101,192,0.8)', borderRadius:16, fontSize:'0.6rem', fontFamily:'monospace', color:'#fff', letterSpacing:'0.07em', whiteSpace:'nowrap' }}>
+          📏 {calibration.method==='auto'?'AI':'Manual'} · {calibration.confidence} · {calibration.mmPerPixel.toFixed(3)}mm/px
         </div>
       )}
 
       {/* LIVE: bottom controls */}
       {phase === 'live' && (
-        <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:10, padding:'1rem 1.25rem 2.8rem', background:'linear-gradient(to top,rgba(13,43,69,0.88),transparent)', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.8rem' }}><p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.65)', textAlign:'center', margin:0, lineHeight:1.5 }}>Frame all steps top-to-bottom. Tap shutter when steady.
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:10, padding:'1rem 1.25rem 2.8rem', background:'linear-gradient(to top,rgba(13,43,69,0.88),transparent)', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.8rem' }}>
+          <p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.65)', textAlign:'center', margin:0, lineHeight:1.5 }}>
+            Frame all steps top-to-bottom. Tap shutter when steady.
           </p>
           {/* Shutter button */}
-          <button onClick={shutter} style={{ width:74, height:74, borderRadius:'50%', border:'3.5px solid rgba(255,255,255,0.85)', background:'rgba(21,101,192,0.20)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(8px)' }}><div style={{ width:54, height:54, background:'#fff', borderRadius:'50%' }}/>
+          <button onClick={shutter} style={{ width:74, height:74, borderRadius:'50%', border:'3.5px solid rgba(255,255,255,0.85)', background:'rgba(21,101,192,0.20)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(8px)' }}>
+            <div style={{ width:54, height:54, background:'#fff', borderRadius:'50%' }}/>
           </button>
         </div>
       )}
 
       {/* ANALYSING spinner */}
       {phase === 'analysing' && (
-        <div style={{ position:'absolute', inset:0, zIndex:12, background:'rgba(13,43,69,0.5)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'0.75rem' }}><div style={{ width:50, height:50, border:'4px solid rgba(255,255,255,0.1)', borderTop:'4px solid #4A90E2', borderRadius:'50%', animation:'spin 0.75s linear infinite' }}/>
+        <div style={{ position:'absolute', inset:0, zIndex:12, background:'rgba(13,43,69,0.5)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'0.75rem' }}>
+          <div style={{ width:50, height:50, border:'4px solid rgba(255,255,255,0.1)', borderTop:'4px solid #4A90E2', borderRadius:'50%', animation:'spin 0.75s linear infinite' }}/>
           <span style={{ color:'rgba(255,255,255,0.75)', fontFamily:'monospace', fontSize:'0.8rem', letterSpacing:'0.12em' }}>MEASURING…</span>
         </div>
       )}
 
       {/* RESULTS / UNCERTAIN: bottom panel */}
       {(phase === 'results' || phase === 'uncertain') && result && (
-        <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:12, background:'rgba(8,14,8,0.96)', backdropFilter:'blur(18px)', borderRadius:'20px 20px 0 0', padding:'1.1rem 1.25rem 2.6rem', display:'flex', flexDirection:'column', gap:'0.6rem' }}>{/* Confidence + calibration header */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}><span style={{ fontFamily:'monospace', fontSize:'0.65rem', letterSpacing:'0.09em', color:confColor }}>{confLabel}</span>
-            {result.calibrated && <span style={{ fontSize:'0.6rem', fontFamily:'monospace', color:'rgba(144,202,249,0.85)' }}> CALIBRATED</span>}
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:12, background:'rgba(8,14,8,0.96)', backdropFilter:'blur(18px)', borderRadius:'20px 20px 0 0', padding:'1.1rem 1.25rem 2.6rem', display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+
+          {/* Confidence + calibration header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <span style={{ fontFamily:'monospace', fontSize:'0.65rem', letterSpacing:'0.09em', color:confColor }}>{confLabel}</span>
+            {result.calibrated && <span style={{ fontSize:'0.6rem', fontFamily:'monospace', color:'rgba(144,202,249,0.85)' }}>📏 CALIBRATED</span>}
           </div>
 
           {/* Measurement grid */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.4rem' }}>{([
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.4rem' }}>
+            {([
               { key:'rise',   label:'Rise',   icon:'↕' },
               { key:'run',    label:'Run',    icon:'↔' },
               { key:'width',  label:'Width',  icon:'⟺' },
@@ -352,19 +366,24 @@ export default function StairCapture({ calibration, onComplete, onBack }: Props)
           </div>
 
           {/* Headroom / guard note */}
-          <div style={{ background:'rgba(21,101,192,0.05)', border:'1px solid rgba(21,101,192,0.09)', borderRadius:8, padding:'0.5rem 0.7rem', fontSize:'0.65rem', color:'rgba(255,255,255,0.4)', lineHeight:1.55 }}>Headroom & guard height not captured from this angle — enter manually on report or skip.
+          <div style={{ background:'rgba(21,101,192,0.05)', border:'1px solid rgba(21,101,192,0.09)', borderRadius:8, padding:'0.5rem 0.7rem', fontSize:'0.65rem', color:'rgba(255,255,255,0.4)', lineHeight:1.55 }}>
+            Headroom & guard height not captured from this angle — enter manually on report or skip.
           </div>
 
           {/* Uncertain warning */}
           {phase === 'uncertain' && (
-            <div style={{ background:'rgba(230,81,0,0.12)', border:'1px solid rgba(230,81,0,0.25)', borderRadius:8, padding:'0.55rem 0.75rem', fontSize:'0.67rem', color:'#ffb74d', lineHeight:1.55 }}>Low confidence — check lighting, ensure all steps are visible, and retake if needed.
+            <div style={{ background:'rgba(230,81,0,0.12)', border:'1px solid rgba(230,81,0,0.25)', borderRadius:8, padding:'0.55rem 0.75rem', fontSize:'0.67rem', color:'#ffb74d', lineHeight:1.55 }}>
+              ⚠ Low confidence — check lighting, ensure all steps are visible, and retake if needed.
             </div>
           )}
 
           {/* Actions */}
-          <div style={{ display:'flex', gap:'0.55rem' }}><button onClick={retake} style={{ flex:1, padding:'0.82rem', background:'rgba(21,101,192,0.08)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:12, color:'rgba(255,255,255,0.7)', fontSize:'0.76rem', fontFamily:'monospace', cursor:'pointer' }}>↩ Retake
+          <div style={{ display:'flex', gap:'0.55rem' }}>
+            <button onClick={retake} style={{ flex:1, padding:'0.82rem', background:'rgba(21,101,192,0.08)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:12, color:'rgba(255,255,255,0.7)', fontSize:'0.76rem', fontFamily:'monospace', cursor:'pointer' }}>
+              ↩ Retake
             </button>
-            <button onClick={() => onComplete(result)} style={{ flex:2, padding:'0.82rem', background:'#1565C0', border:'none', borderRadius:12, color:'#fff', fontSize:'0.78rem', fontFamily:'monospace', fontWeight:700, letterSpacing:'0.1em', cursor:'pointer' }}>Use These →
+            <button onClick={() => onComplete(result)} style={{ flex:2, padding:'0.82rem', background:'#1565C0', border:'none', borderRadius:12, color:'#fff', fontSize:'0.78rem', fontFamily:'monospace', fontWeight:700, letterSpacing:'0.1em', cursor:'pointer' }}>
+              Use These →
             </button>
           </div>
         </div>
@@ -385,7 +404,9 @@ function EditCard({ label, icon, value, onEdit }: { label:string; icon:string; v
   }
 
   return (
-    <div style={{ background:'rgba(21,101,192,0.06)', border:'1px solid rgba(21,101,192,0.16)', borderRadius:10, padding:'0.5rem 0.65rem' }}><div style={{ display:'flex', alignItems:'center', gap:'0.3rem', marginBottom:'0.15rem' }}><span style={{ fontSize:'0.72rem', opacity:0.4 }}>{icon}</span>
+    <div style={{ background:'rgba(21,101,192,0.06)', border:'1px solid rgba(21,101,192,0.16)', borderRadius:10, padding:'0.5rem 0.65rem' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'0.3rem', marginBottom:'0.15rem' }}>
+        <span style={{ fontSize:'0.72rem', opacity:0.4 }}>{icon}</span>
         <span style={{ fontSize:'0.6rem', fontFamily:'monospace', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)', textTransform:'uppercase' as const }}>{label}</span>
       </div>
       {editing ? (
@@ -395,7 +416,8 @@ function EditCard({ label, icon, value, onEdit }: { label:string; icon:string; v
           style={{ background:'transparent', border:'none', borderBottom:'1px solid #4A90E2', outline:'none', color:'#fff', fontFamily:'monospace', fontSize:'1.1rem', fontWeight:700, width:'100%' }}/>
       ) : (
         <div onClick={() => { setRaw(value?String(Math.round(value)):''); setEditing(true) }}
-          style={{ fontSize:'1.15rem', fontWeight:700, fontFamily:'monospace', color:value?'#93c5fd':'rgba(255,255,255,0.25)', cursor:'pointer', lineHeight:1.2 }}>{value ? `${Math.round(value)} mm` : 'tap to enter'}
+          style={{ fontSize:'1.15rem', fontWeight:700, fontFamily:'monospace', color:value?'#93c5fd':'rgba(255,255,255,0.25)', cursor:'pointer', lineHeight:1.2 }}>
+          {value ? `${Math.round(value)} mm` : 'tap to enter'}
         </div>
       )}
     </div>

@@ -329,7 +329,9 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
   const capturedSteps = STEPS.filter(s => results[s.id] != null)
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#EEF3F9', maxWidth: 430, margin: '0 auto', zIndex: 60, overflow: 'hidden' }}>{/* Live camera */}
+    <div style={{ position: 'fixed', inset: 0, background: '#EEF3F9', maxWidth: 430, margin: '0 auto', zIndex: 60, overflow: 'hidden' }}>
+
+      {/* Live camera */}
       <video ref={videoRef} autoPlay playsInline muted
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: editMode ? 'none' : 'block' }} />
 
@@ -345,7 +347,8 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
 
       {/* Camera error */}
       {camError && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,43,69,0.96)', zIndex: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem' }}><p style={{ color: '#fff', textAlign: 'center', lineHeight: 1.6 }}>Camera access required.</p>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,43,69,0.96)', zIndex: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem' }}>
+          <p style={{ color: '#fff', textAlign: 'center', lineHeight: 1.6 }}>Camera access required.</p>
           <button onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); onBack() }}
             style={bS('#007FFF')}>← Back</button>
         </div>
@@ -353,8 +356,11 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
 
       {/* ══ EDIT MODE: result confirmation panel ══════════════════════════════ */}
       {editMode && pendingResult && (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg,#1C1F24,#1C2030)', zIndex: 25, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', gap: '1.5rem' }}>{/* Step label */}
-          <div style={{ textAlign: 'center' }}><div style={{ fontSize: '2rem', marginBottom: '0.3rem' }}>{step.icon}</div>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg,#1C1F24,#1C2030)', zIndex: 25, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', gap: '1.5rem' }}>
+
+          {/* Step label */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.3rem' }}>{step.icon}</div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: step.color, fontFamily: 'monospace', letterSpacing: '0.08em' }}>{step.label}</div>
           </div>
 
@@ -362,9 +368,12 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
           <ConfBadge conf={pendingResult.confidence} source={pendingResult.source} />
 
           {/* Editable value */}
-          <div style={{ textAlign: 'center', width: '100%' }}><div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>{pendingResult.confidence < 0.35 ? ' LOW CONFIDENCE — PLEASE VERIFY' : 'CONFIRM OR ADJUST BELOW'}
+          <div style={{ textAlign: 'center', width: '100%' }}>
+            <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
+              {pendingResult.confidence < 0.35 ? '⚠ LOW CONFIDENCE — PLEASE VERIFY' : 'CONFIRM OR ADJUST BELOW'}
             </div>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><input
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+              <input
                 type="number"
                 value={editingVal}
                 onChange={e => setEditingVal(e.target.value)}
@@ -380,31 +389,38 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
               />
               <span style={{ fontSize: '1.2rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>mm</span>
             </div>
-            <div style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.28)', marginTop: '0.4rem' }}>Valid range: {step.rangeMin}–{step.rangeMax} mm
+            <div style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.28)', marginTop: '0.4rem' }}>
+              Valid range: {step.rangeMin}–{step.rangeMax} mm
             </div>
           </div>
 
           {/* Quick adjustment buttons */}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>{[-10, -5, +5, +10].map(delta => (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {[-10, -5, +5, +10].map(delta => (
               <button key={delta}
                 onClick={() => setEditingVal(v => String(Math.max(step.rangeMin, Math.min(step.rangeMax, Math.round((parseFloat(v) || 0) + delta)))))}
-                style={{ padding: '0.45rem 0.7rem', background: 'rgba(21,101,192,0.08)', border: '1px solid rgba(21,101,192,0.20)', borderRadius: 8, color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', fontFamily: 'monospace', cursor: 'pointer' }}>{delta > 0 ? '+' : ''}{delta}
+                style={{ padding: '0.45rem 0.7rem', background: 'rgba(21,101,192,0.08)', border: '1px solid rgba(21,101,192,0.20)', borderRadius: 8, color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', fontFamily: 'monospace', cursor: 'pointer' }}>
+                {delta > 0 ? '+' : ''}{delta}
               </button>
             ))}
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}><button onClick={skipStep}
-              style={{ flex: 1, padding: '0.85rem', background: 'rgba(21,101,192,0.06)', border: '1px solid rgba(21,101,192,0.20)', borderRadius: 12, color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem', fontFamily: 'monospace', cursor: 'pointer' }}>SKIP
+          <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+            <button onClick={skipStep}
+              style={{ flex: 1, padding: '0.85rem', background: 'rgba(21,101,192,0.06)', border: '1px solid rgba(21,101,192,0.20)', borderRadius: 12, color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem', fontFamily: 'monospace', cursor: 'pointer' }}>
+              SKIP
             </button>
             <button onClick={confirmEdit}
-              style={{ flex: 3, padding: '0.85rem', background: step.color === '#00B67A' ? '#007FFF' : step.color + 'cc', border: 'none', borderRadius: 12, color: '#fff', fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>CONFIRM {Math.round(parseFloat(editingVal) || 0)} mm →
+              style={{ flex: 3, padding: '0.85rem', background: step.color === '#00B67A' ? '#007FFF' : step.color + 'cc', border: 'none', borderRadius: 12, color: '#fff', fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>
+              CONFIRM {Math.round(parseFloat(editingVal) || 0)} mm →
             </button>
           </div>
 
           {/* Retake option */}
           <button onClick={() => { setEditMode(false); setPending(null) }}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.06em' }}>↩ Retake this shot
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '0.62rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.06em' }}>
+            ↩ Retake this shot
           </button>
         </div>
       )}
@@ -413,22 +429,27 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
       {!editMode && (
         <>
           {/* Top bar */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, padding: '2.8rem 1rem 0.6rem', background: 'linear-gradient(to bottom,rgba(13,43,69,0.85),transparent)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}><button onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); onBack() }}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, padding: '2.8rem 1rem 0.6rem', background: 'linear-gradient(to bottom,rgba(13,43,69,0.85),transparent)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <button onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); onBack() }}
               style={{ width: 36, height: 36, background: 'rgba(21,101,192,0.22)', border: 'none', borderRadius: '50%', color: '#fff', fontSize: '1rem', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
 
             {/* Progress */}
-            <div style={{ display: 'flex', gap: '0.28rem', flex: 1, justifyContent: 'center' }}>{STEPS.map((s, i) => (
+            <div style={{ display: 'flex', gap: '0.28rem', flex: 1, justifyContent: 'center' }}>
+              {STEPS.map((s, i) => (
                 <div key={s.id} style={{ width: i === stepIdx ? 22 : 7, height: 7, borderRadius: 4, background: i < stepIdx ? s.color : i === stepIdx ? step.color : 'rgba(21,101,192,0.25)', transition: 'all 0.25s' }} />
               ))}
             </div>
 
             {/* Cal badge */}
-            <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', color: isCalibrated ? '#00B67A' : '#FFB020', background: 'rgba(13,43,69,0.45)', borderRadius: 8, padding: '0.15rem 0.45rem', whiteSpace: 'nowrap' }}>{isCalibrated ? ' CAL' : ' UNCAL'}
+            <div style={{ fontSize: '0.52rem', fontFamily: 'monospace', color: isCalibrated ? '#00B67A' : '#FFB020', background: 'rgba(13,43,69,0.45)', borderRadius: 8, padding: '0.15rem 0.45rem', whiteSpace: 'nowrap' }}>
+              {isCalibrated ? '✓ CAL' : '⚠ UNCAL'}
             </div>
           </div>
 
           {/* Step label */}
-          <div style={{ position: 'absolute', top: '6.2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}><div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(13,43,69,0.6)', backdropFilter: 'blur(10px)', border: `1.5px solid ${step.color}50`, padding: '0.28rem 0.8rem', borderRadius: 20 }}><span style={{ fontSize: '0.9rem' }}>{step.icon}</span>
+          <div style={{ position: 'absolute', top: '6.2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 20 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(13,43,69,0.6)', backdropFilter: 'blur(10px)', border: `1.5px solid ${step.color}50`, padding: '0.28rem 0.8rem', borderRadius: 20 }}>
+              <span style={{ fontSize: '0.9rem' }}>{step.icon}</span>
               <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', fontWeight: 700, color: step.color, letterSpacing: '0.06em' }}>{step.label}</span>
               <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)' }}>{stepIdx + 1}/{STEPS.length}</span>
             </div>
@@ -436,9 +457,13 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
 
           {/* Live value (top right) */}
           {liveValue != null && (
-            <div style={{ position: 'absolute', top: '6.2rem', right: '0.8rem', zIndex: 20, pointerEvents: 'none' }}><div style={{ background: 'rgba(13,43,69,0.7)', backdropFilter: 'blur(8px)', border: `1px solid ${step.color}${liveConf > 0.4 ? 'aa' : '44'}`, borderRadius: 10, padding: '0.28rem 0.6rem', textAlign: 'right' }}><div style={{ fontSize: '1.05rem', fontFamily: 'monospace', fontWeight: 700, color: liveConf > 0.4 ? step.color : '#FFB020' }}>{Math.round(liveValue)}<span style={{ fontSize: '0.55rem', opacity: 0.55 }}> mm</span>
+            <div style={{ position: 'absolute', top: '6.2rem', right: '0.8rem', zIndex: 20, pointerEvents: 'none' }}>
+              <div style={{ background: 'rgba(13,43,69,0.7)', backdropFilter: 'blur(8px)', border: `1px solid ${step.color}${liveConf > 0.4 ? 'aa' : '44'}`, borderRadius: 10, padding: '0.28rem 0.6rem', textAlign: 'right' }}>
+                <div style={{ fontSize: '1.05rem', fontFamily: 'monospace', fontWeight: 700, color: liveConf > 0.4 ? step.color : '#FFB020' }}>
+                  {Math.round(liveValue)}<span style={{ fontSize: '0.55rem', opacity: 0.55 }}> mm</span>
                 </div>
-                <div style={{ fontSize: '0.46rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em' }}>{liveConf > 0.6 ? 'GOOD' : liveConf > 0.35 ? 'FAIR' : 'EST'}
+                <div style={{ fontSize: '0.46rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em' }}>
+                  {liveConf > 0.6 ? 'GOOD' : liveConf > 0.35 ? 'FAIR' : 'EST'}
                 </div>
               </div>
             </div>
@@ -446,12 +471,15 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
 
           {/* Captured strip (left) */}
           {capturedSteps.length > 0 && (
-            <div style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '0.25rem', pointerEvents: 'none' }}>{capturedSteps.map(s => {
+            <div style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '0.25rem', pointerEvents: 'none' }}>
+              {capturedSteps.map(s => {
                 const r = results[s.id]!
                 return (
-                  <div key={s.id} style={{ background: 'rgba(13,43,69,0.7)', backdropFilter: 'blur(8px)', border: `1px solid ${s.color}40`, borderRadius: 8, padding: '0.22rem 0.45rem', minWidth: 68 }}><div style={{ fontSize: '0.48rem', fontFamily: 'monospace', color: s.color, letterSpacing: '0.07em' }}>{s.icon} {s.label.toUpperCase()}</div>
-                    <div style={{ fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: 700, color: r.source === 'manual' ? '#fff' : r.confidence > 0.4 ? s.color : '#FFB020' }}>{Math.round(r.value)}<span style={{ fontSize: '0.48rem', opacity: 0.45 }}>mm</span>
-                      {r.source === 'manual' && <span style={{fontSize:'0.6rem',color:'#93BAD4',marginLeft:2}}>M</span>}
+                  <div key={s.id} style={{ background: 'rgba(13,43,69,0.7)', backdropFilter: 'blur(8px)', border: `1px solid ${s.color}40`, borderRadius: 8, padding: '0.22rem 0.45rem', minWidth: 68 }}>
+                    <div style={{ fontSize: '0.48rem', fontFamily: 'monospace', color: s.color, letterSpacing: '0.07em' }}>{s.icon} {s.label.toUpperCase()}</div>
+                    <div style={{ fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: 700, color: r.source === 'manual' ? '#fff' : r.confidence > 0.4 ? s.color : '#FFB020' }}>
+                      {Math.round(r.value)}<span style={{ fontSize: '0.48rem', opacity: 0.45 }}>mm</span>
+                      {r.source === 'manual' && <span style={{ fontSize: '0.4rem', opacity: 0.55 }}> ✎</span>}
                     </div>
                   </div>
                 )
@@ -460,23 +488,29 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
           )}
 
           {/* Bottom controls */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20, padding: '0.7rem 1.1rem 2.6rem', background: 'linear-gradient(to top,rgba(0,0,0,0.92) 75%,transparent)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}><div style={{ textAlign: 'center' }}><p style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600, margin: '0 0 0.1rem', lineHeight: 1.35 }}>{step.hint}</p>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20, padding: '0.7rem 1.1rem 2.6rem', background: 'linear-gradient(to top,rgba(0,0,0,0.92) 75%,transparent)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600, margin: '0 0 0.1rem', lineHeight: 1.35 }}>{step.hint}</p>
               <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.42)', margin: 0, lineHeight: 1.35, fontFamily: 'monospace' }}>{step.detail}</p>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', width: '100%', justifyContent: 'center' }}>{/* Skip without measuring */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', width: '100%', justifyContent: 'center' }}>
+              {/* Skip without measuring */}
               <button onClick={() => { setPending({ value: Math.round((step.rangeMin + step.rangeMax)/2), confidence: 0, source: 'estimated' }); setEditingVal(String(Math.round((step.rangeMin + step.rangeMax)/2))); setEditMode(true) }}
-                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 20, padding: '0.42rem 0.9rem', color: 'rgba(255,255,255,0.42)', fontSize: '0.62rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.07em' }}>ENTER
+                style={{ background: 'none', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 20, padding: '0.42rem 0.9rem', color: 'rgba(255,255,255,0.42)', fontSize: '0.62rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.07em' }}>
+                ENTER
               </button>
 
               {/* Shutter */}
               <button onClick={capture}
-                style={{ width: 70, height: 70, borderRadius: '50%', border: `3px solid ${step.color}`, background: 'rgba(21,101,192,0.09)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', boxShadow: `0 0 0 6px ${step.color}20` }}><div style={{ width: 50, height: 50, background: step.color, borderRadius: '50%' }} />
+                style={{ width: 70, height: 70, borderRadius: '50%', border: `3px solid ${step.color}`, background: 'rgba(21,101,192,0.09)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', boxShadow: `0 0 0 6px ${step.color}20` }}>
+                <div style={{ width: 50, height: 50, background: step.color, borderRadius: '50%' }} />
               </button>
 
               {capturedSteps.length >= 2
                 ? <button onClick={() => finishWalk(results)}
-                    style={{ background: 'none', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 20, padding: '0.42rem 0.9rem', color: 'rgba(255,255,255,0.42)', fontSize: '0.62rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.07em' }}>DONE
+                    style={{ background: 'none', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 20, padding: '0.42rem 0.9rem', color: 'rgba(255,255,255,0.42)', fontSize: '0.62rem', fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.07em' }}>
+                    DONE
                   </button>
                 : <div style={{ width: 70 }} />}
             </div>
@@ -491,15 +525,16 @@ export default function ARWalk({ calibration, onComplete, onBack }: Props) {
 
 function ConfBadge({ conf, source }: { conf: number; source: string }) {
   const label = source === 'manual' ? 'MANUALLY ENTERED'
-    : conf > 0.65 ? ' HIGH CONFIDENCE'
+    : conf > 0.65 ? '✓ HIGH CONFIDENCE'
     : conf > 0.35 ? '~ MEDIUM — VERIFY VALUE'
-    : ' LOW — PLEASE CHECK AND ADJUST'
+    : '⚠ LOW — PLEASE CHECK AND ADJUST'
   const color = source === 'manual' ? '#FF7F00'
     : conf > 0.65 ? '#00B67A'
     : conf > 0.35 ? '#FFB020'
     : '#E63946'
   return (
-    <div style={{ padding: '0.3rem 1rem', background: color + '22', border: `1px solid ${color}55`, borderRadius: 20, fontSize: '0.65rem', fontFamily: 'monospace', color, letterSpacing: '0.08em' }}>{label}
+    <div style={{ padding: '0.3rem 1rem', background: color + '22', border: `1px solid ${color}55`, borderRadius: 20, fontSize: '0.65rem', fontFamily: 'monospace', color, letterSpacing: '0.08em' }}>
+      {label}
     </div>
   )
 }

@@ -82,7 +82,7 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
     : `
       <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:2rem;color:#1a2b3c">
         <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 1rem;" />
-        <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro </h1>
+        <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro 🎉</h1>
         <p style="color:#555;line-height:1.6">Your Pro subscription is now active. You have 20 scans/month, full compliance reports, and access to all supported building codes.</p>
         <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#1565C0;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Open Staircode →</a>
         <p style="margin-top:2rem;font-size:0.8rem;color:#999">Manage your subscription at staircode.app/settings · Cancel anytime.</p>
@@ -173,52 +173,13 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          // 2. Generate the full report using saved scan data, then email it
-          const saveToken = meta.saveToken
-          const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
-
-          if (saveToken) {
-            try {
-              // Fetch the saved scan fields from the server
-              const savedRes  = await fetch(`${appUrl}/api/report/save?token=${saveToken}`)
-              const savedData = await savedRes.json()
-
-              if (savedData.ok && savedData.fields?.length > 0) {
-                // Generate the full AI report with the real measurements
-                const genRes = await fetch(`${appUrl}/api/report/generate`, {
-                  method:  'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    email,
-                    fields:    savedData.fields,
-                    frames:    savedData.frames ?? {},    // ← include measurement photos
-                    codeLabel: savedData.codeLabel,
-                    location:  savedData.location,
-                    isOntario: savedData.isOntario,
-                    paid:      true,
-                  }),
-                })
-                const genData = await genRes.json()
-                if (genData.ok) {
-                  console.log(`[webhook] Full report generated and emailed to ${email}`)
-                } else {
-                  console.error('[webhook] Report generation failed:', genData.error)
-                  // Fallback: send notification
-                  await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-                }
-              } else {
-                console.warn('[webhook] saveToken found but no fields returned — sending fallback')
-                await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-              }
-            } catch (err) {
-              console.error('[webhook] Failed to fetch saved scan data:', err)
-              await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-            }
-          } else if (report) {
-            // Legacy path: report text was chunked in metadata
-            await sendReportEmail(email, report, 'report')
-          } else {
-            await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
+          // 2. Email the report immediately after payment
+          // (The full report text is chunked in metadata)
+          if (report) await sendReportEmail(email, report, 'report')
+          else {
+            // Report text wasn't in metadata (too long) — send a notification
+            // The user can view/export the report from inside the app
+            await sendReportEmail(email, '[Report generated in-app — please open Staircode to view and export your report.]', 'report')
           }
         }
 

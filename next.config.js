@@ -16,7 +16,6 @@ const BUILD_VERSION = getBuildVersion()
 console.log('[next.config] Cache version:', BUILD_VERSION)
 
 const nextConfig = {
-  reactStrictMode: false,   // Extensions like Honey override window.open — strict mode turns that into a crash
   // jsPDF is browser-only — never bundle it for server/edge runtimes
   // serverExternalPackages is Next.js 15+; use experimental key for Next.js 14.x
   experimental: {
@@ -89,8 +88,8 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com chrome-extension:",
-              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://fonts.googleapis.com https://fonts.gstatic.com chrome-extension:",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com",
+              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.google.com https://www.googletagmanager.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.firebase.io https://*.firebaseapp.com https://firebaseinstallations.googleapis.com https://*.googleapis.com",
               "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",

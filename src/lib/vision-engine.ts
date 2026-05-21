@@ -537,7 +537,7 @@ export function drawOverlay(
     ctx.beginPath(); ctx.roundRect(cx + 4, cy + 4, 22, 14, 2); ctx.stroke()
     ctx.fillStyle = '#4ade80'
     ctx.font = '10px system-ui'
-    ctx.fillText(' Card detected', cx + 30, cy + 14)
+    ctx.fillText('✓ Card detected', cx + 30, cy + 14)
   }
 
   // ── Confidence arc (top-right corner) ────────────────────────────────────────────

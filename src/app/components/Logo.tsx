@@ -68,7 +68,8 @@ export function BetaLogo({ size = 'md', onDark = false, style }: { size?: 'xs'|'
   const h = H[size]
   const ps = Math.max(9, Math.round(h * 0.3))
   return (
-    <div style={{ display:'inline-flex', alignItems:'center', gap: Math.round(h * 0.2), ...style }}><Logo size={size} onDark={onDark} />
+    <div style={{ display:'inline-flex', alignItems:'center', gap: Math.round(h * 0.2), ...style }}>
+      <Logo size={size} onDark={onDark} />
       <span style={{
         display:'inline-flex', alignItems:'center',
         background:'#F29337', color:'#fff',
@@ -78,6 +79,28 @@ export function BetaLogo({ size = 'md', onDark = false, style }: { size?: 'xs'|'
         boxShadow:'0 1px 6px rgba(242,147,55,0.45)',
         flexShrink:0, lineHeight:1,
       }}>BETA</span>
+    </div>
+  )
+}
+
+// LogoWithSlogan — logo + 'Next Step in Building' tagline
+export function LogoWithSlogan({ size = 'md', onDark = false, style }: { size?: 'xs'|'sm'|'md'|'lg'|'xl'; onDark?: boolean; style?: React.CSSProperties }) {
+  const h = H[size]
+  return (
+    <div style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', gap: Math.round(h * 0.18), ...style }}>
+      <Logo size={size} onDark={onDark} />
+      <span style={{
+        fontSize: Math.max(8, Math.round(h * 0.22)),
+        fontWeight: 400,
+        letterSpacing: '0.18em',
+        color: onDark ? 'rgba(255,255,255,0.55)' : 'rgba(27,58,107,0.55)',
+        textTransform: 'uppercase',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        lineHeight: 1,
+        userSelect: 'none',
+      }}>
+        Next Step in Building
+      </span>
     </div>
   )
 }

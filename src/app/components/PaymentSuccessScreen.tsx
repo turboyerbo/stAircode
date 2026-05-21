@@ -91,14 +91,18 @@ export default function PaymentSuccessScreen() {
       padding: '2rem 1.5rem',
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       color: C.text,
-    }}>{/* Safety stripe at top */}
+    }}>
+      {/* Safety stripe at top */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: 4,
         background: 'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)',
       }} />
 
-      <div style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>{/* Logo wordmark */}
-        <div style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: '2rem' }}>st<span style={{ color: C.orange }}>AI</span>rcode
+      <div style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>
+
+        {/* Logo wordmark */}
+        <div style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: '2rem' }}>
+          st<span style={{ color: C.orange }}>AI</span>rcode
         </div>
 
         {/* Success card */}
@@ -108,7 +112,8 @@ export default function PaymentSuccessScreen() {
           borderRadius: 20,
           padding: '2rem 1.75rem',
           marginBottom: '1rem',
-        }}>{/* Checkmark */}
+        }}>
+          {/* Checkmark */}
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
             background: 'rgba(39,169,107,0.12)',
@@ -116,25 +121,30 @@ export default function PaymentSuccessScreen() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 1.25rem',
             fontSize: '1.8rem',
-          }}></div>
+          }}>
+            ✓
+          </div>
 
           <h1 style={{
             fontSize: '1.6rem', fontWeight: 900,
             letterSpacing: '-0.02em', marginBottom: '0.5rem',
             color: C.green,
-          }}>Payment complete
+          }}>
+            Payment complete
           </h1>
 
           {/* Beta pricing confirmation */}
-          <div style={{ background: 'rgba(242,147,55,0.08)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><span style={{ fontSize: '0.78rem', color: C.text2 }}>Beta testing price paid:</span>
+          <div style={{ background: 'rgba(242,147,55,0.08)', border: '1px solid rgba(242,147,55,0.25)', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', color: C.text2 }}>Beta testing price paid:</span>
             <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>$38.99</span>
-            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: C.orange }}>$2.99 </span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: C.orange }}>$2.99 ✓</span>
           </div>
 
           <p style={{
             fontSize: '0.9rem', color: C.text2,
             lineHeight: 1.7, marginBottom: '1.75rem',
-          }}>Your stair compliance report is ready. Click the button below to
+          }}>
+            Your stair compliance report is ready. Click the button below to
             download your PDF. A copy has also been sent to your email.
           </p>
 
@@ -166,9 +176,12 @@ export default function PaymentSuccessScreen() {
               border: '1.5px solid rgba(39,169,107,0.35)',
               borderRadius: 14, padding: '1rem',
               marginBottom: '0.75rem',
-            }}><div style={{ fontSize: '1rem', fontWeight: 700, color: C.green, marginBottom: '0.25rem' }}>Report downloaded
+            }}>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: C.green, marginBottom: '0.25rem' }}>
+                ✓ Report downloaded
               </div>
-              <div style={{ fontSize: '0.78rem', color: C.text2, lineHeight: 1.6 }}>Check your Downloads folder for the PDF.
+              <div style={{ fontSize: '0.78rem', color: C.text2, lineHeight: 1.6 }}>
+                Check your Downloads folder for the PDF.
                 A copy was also sent to your email.
               </div>
             </div>
@@ -181,7 +194,8 @@ export default function PaymentSuccessScreen() {
               borderRadius: 10, padding: '0.75rem 1rem',
               fontSize: '0.78rem', color: '#ff9999',
               marginBottom: '0.75rem', lineHeight: 1.6,
-            }}>{error}
+            }}>
+              {error}
             </div>
           )}
 
@@ -191,7 +205,9 @@ export default function PaymentSuccessScreen() {
             border: '1px solid rgba(65,124,164,0.2)',
             borderRadius: 12, padding: '0.9rem 1rem',
             textAlign: 'left',
-          }}><div style={{ fontSize: '0.72rem', color: C.text3, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.5rem' }}>YOUR REPORT INCLUDES
+          }}>
+            <div style={{ fontSize: '0.72rem', color: C.text3, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
+              YOUR REPORT INCLUDES
             </div>
             {[
               'Measurement summary table with pass/fail results',
@@ -204,7 +220,9 @@ export default function PaymentSuccessScreen() {
                 fontSize: '0.78rem', color: C.text2,
                 display: 'flex', gap: '0.5rem',
                 alignItems: 'flex-start', marginBottom: '0.35rem',
-              }}>{item}
+              }}>
+                <span style={{ color: C.orange, flexShrink: 0, marginTop: '0.05rem' }}>✓</span>
+                {item}
               </div>
             ))}
           </div>
@@ -231,8 +249,10 @@ export default function PaymentSuccessScreen() {
           ← Back to stAIrcode
         </button>
 
-        <p style={{ fontSize: '0.65rem', color: C.text3, marginTop: '1.25rem', lineHeight: 1.6 }}>Questions? Contact us at{' '}
-          <a href="mailto:info@staircode.app" style={{ color: C.blue, textDecoration: 'none' }}>info@staircode.app
+        <p style={{ fontSize: '0.65rem', color: C.text3, marginTop: '1.25rem', lineHeight: 1.6 }}>
+          Questions? Contact us at{' '}
+          <a href="mailto:info@staircode.app" style={{ color: C.blue, textDecoration: 'none' }}>
+            info@staircode.app
           </a>
         </p>
       </div>
