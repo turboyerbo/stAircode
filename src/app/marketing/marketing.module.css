@@ -322,14 +322,18 @@
   border: 1px solid rgba(93,120,150,0.18);
 }
 
-/* Lock icon overlay on coming-soon cards */
+/* Coming-soon corner triangle */
 .moduleCard.soon::after {
-  content: '🔒';
+  content: '';
   position: absolute;
-  top: 0.7rem;
-  right: 0.8rem;
-  font-size: 0.75rem;
-  opacity: 0.35;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 28px 28px 0;
+  border-color: transparent #DDE5EE transparent transparent;
+  border-radius: 0 12px 0 0;
 }
 
 @media (max-width: 600px) {

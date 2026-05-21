@@ -963,7 +963,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                   {/* ── Report preview — visible top section ──────────────── */}
                   <div style={{ padding: '0 1.1rem', paddingBottom: '0.5rem' }}>{/* Header */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}><div>
-                        <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'monospace', letterSpacing: '0.12em', marginBottom: '0.2rem' }}>STAIRCODE · PRE-INSPECTION REPORT</div>
+                        <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'monospace', letterSpacing: '0.12em', marginBottom: '0.2rem' }}>STAIRCODE · COMPLIANCE REPORT</div>
                         <div style={{ fontSize: '1rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>Stair Compliance Report</div>
                         <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.15rem' }}>{codeLabel} · {location || 'Your location'} · {dateStr}</div>
                       </div>

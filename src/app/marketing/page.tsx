@@ -149,11 +149,11 @@ export default function MarketingPage() {
           <div style={{ flex: '1 1 320px' }}><div className={styles.obadge}>Building Compliance Tools for Inspectors &amp; Professionals</div>
             <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.5rem', color: '#FFFFFF' }}>Live building code guidance — using any phone.
             </h1>
-            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>A fast, documented stair compliance check with guidance and code analysis.
+            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>Guided, documented building code compliance — from any phone. The next step in building information software.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}><a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>Check Stairs Now →
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}><a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>Start a Compliance Scan →
               </a>
-              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12)', position: 'relative', overflow: 'hidden' }}>Stair Compliance Report
+              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12)', position: 'relative', overflow: 'hidden' }}>View Sample Report
               </a>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           AS SEEN IN / TRUST BAR
       ══════════════════════════════════════════════ */}
-      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}><span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0D1E2E' }}>Checks compliance with local building codes specific to your location
+      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}><span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0D1E2E' }}>AI-powered building code compliance — jurisdiction detected automatically, report generated in minutes
           </span>
         </div>
       </div>
@@ -177,15 +177,14 @@ export default function MarketingPage() {
           WHY CHOOSE
       ══════════════════════════════════════════════ */}
       <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div className={styles.section} style={{ padding: 0 }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Why stAIrcode</div>
-            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>See why building inspectors and professionals choose stAIrcode</h2>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Built for inspectors and compliance professionals</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
-                { icon: '', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
-                { icon: '', title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and 6 other codes. Pass/fail shown per dimension.' },
-                { icon: '', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for building inspection documentation, code enforcement records, or contractor briefings.' },
-                { icon: '', title: 'AR Measurement Line', body: 'A blue measurement line animates across the screen as the AI reads each dimension — clear visual feedback showing exactly what\'s being measured.' },
+                { title: 'AI Vision Analysis', body: "Claude Vision reads your photos, extracts measurements, and cross-references every dimension against your jurisdiction's building code — no tape measure, no manual calculations." },
+                { title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and more. Pass/fail shown per dimension with the exact code clause cited.' },
+                { title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes — ready for building inspection documentation, code enforcement records, or contractor briefings.' },
+                { title: 'Guided Module Workflow', body: 'Each inspection category is its own guided module. Select what you need to check, follow the on-screen steps, and receive a report scoped to that category.' },
               ].map(f => (
                 <div key={f.title} className={styles.featureCard}>
-                  <div style={{ fontSize: '1.6rem', marginBottom: '0.6rem' }}>{f.icon}</div>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
                 </div>
@@ -201,66 +200,72 @@ export default function MarketingPage() {
       <section style={{ padding: '5rem 1.25rem', background: '#ffffff', borderTop: '1px solid #EEF3F9' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div className={styles.sectionLabel}>Compliance Modules</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>One app. Every inspection category.</h2>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>One platform. Every inspection category.</h2>
           <p style={{ fontSize: '1rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 620, marginBottom: 0 }}>
-            Select a module, follow the guided scan, and generate a cited compliance report — per category. Start with stairs today. More modules launching soon.
+            stAIrcode is building the next generation of building information software — one module at a time. Select a category, follow the guided scan, and generate a cited compliance report. Stair compliance is live today. More modules launching soon.
           </p>
 
           <div className={styles.modulesGrid}>
 
             {/* ── LIVE: Stairs ── */}
             <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`}>
-              <span className={styles.moduleIcon}>🪜</span>
+              <span className={styles.moduleIcon}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="13" width="6" height="8" rx="1" fill="#F29337" fillOpacity="0.2" stroke="#F29337" strokeWidth="1.5"/>
+                  <rect x="7" y="7" width="6" height="14" rx="1" fill="#F29337" fillOpacity="0.2" stroke="#F29337" strokeWidth="1.5"/>
+                  <rect x="13" y="1" width="8" height="20" rx="1" fill="#F29337" fillOpacity="0.2" stroke="#F29337" strokeWidth="1.5"/>
+                </svg>
+              </span>
               <span className={styles.moduleName}>Stair Compliance</span>
-              <span className={styles.moduleDesc}>Rise, run, headroom, width, handrail height, nosing & baluster spacing vs. OBC, NBC, IBC and more.</span>
+              <span className={styles.moduleDesc}>Rise, run, headroom, width, handrail height, nosing, and baluster spacing checked against OBC, NBC, IBC, and more.</span>
               <span className={`${styles.modulePill} ${styles.live}`}>Live</span>
             </a>
 
             {/* ── COMING SOON ── */}
-            {[
+            {([
               {
-                icon: '📐',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1" width="14" height="18" rx="1.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="5" y1="6" x2="13" y2="6" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="5" y1="9" x2="13" y2="9" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="5" y1="12" x2="10" y2="12" stroke="#9DB4C5" strokeWidth="1.2"/><path d="M14 12l6 6" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="17" cy="15" r="3.5" stroke="#9DB4C5" strokeWidth="1.5"/></svg>,
                 name: 'Architectural Plans Review',
                 desc: 'Upload AHJ-approved drawings. AI cross-references stamped plans against as-built conditions and flags deviations.',
               },
               {
-                icon: '🏗️',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="14" width="20" height="7" rx="1" stroke="#9DB4C5" strokeWidth="1.5"/><rect x="4" y="8" width="14" height="6" rx="0.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="7" y1="8" x2="7" y2="14" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="11" y1="8" x2="11" y2="14" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="15" y1="8" x2="15" y2="14" stroke="#9DB4C5" strokeWidth="1.2"/><path d="M6 8V5l5-4 5 4v3" stroke="#9DB4C5" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
                 name: 'Foundation Inspection',
                 desc: 'Scan foundation walls, footings, and slab edges. Checks bearing widths, setbacks, and crack documentation.',
               },
               {
-                icon: '🚧',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="5" x2="21" y2="5" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="18" x2="21" y2="18" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><line x1="3" y1="5" x2="3" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="8" y1="5" x2="8" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="14" y1="5" x2="14" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="19" y1="5" x2="19" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/></svg>,
                 name: 'Guardrails & Handrails',
                 desc: 'Height, baluster spacing, and graspability checks for guards on decks, balconies, mezzanines, and landings.',
               },
               {
-                icon: '🪟',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="18" height="18" rx="1.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="11" y1="2" x2="11" y2="20" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="2" y1="11" x2="20" y2="11" stroke="#9DB4C5" strokeWidth="1.2"/><circle cx="11" cy="11" r="2" fill="#9DB4C5" fillOpacity="0.3"/></svg>,
                 name: 'Windows',
                 desc: 'Egress opening sizes, sill heights, clear opening dimensions, and window well requirements per jurisdiction.',
               },
               {
-                icon: '🔥',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="9" stroke="#9DB4C5" strokeWidth="1.5"/><path d="M11 6v5l3 3" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="3" r="1.2" fill="#9DB4C5"/><circle cx="11" cy="19" r="1.2" fill="#9DB4C5"/></svg>,
                 name: 'Smoke & CO Detectors',
-                desc: 'Placement verification relative to bedrooms, storeys, and mechanical rooms. Distance-to-ceiling checks.',
+                desc: 'Placement verification relative to bedrooms, storeys, and mechanical rooms. Distance-to-ceiling and spacing checks.',
               },
               {
-                icon: '💨',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="3" stroke="#9DB4C5" strokeWidth="1.5"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><path d="M4.93 4.93l2.12 2.12M14.95 14.95l2.12 2.12M4.93 17.07l2.12-2.12M14.95 7.05l2.12-2.12" stroke="#9DB4C5" strokeWidth="1.2" strokeLinecap="round"/></svg>,
                 name: 'Bathroom Ventilation',
                 desc: 'Fan CFM requirements, duct termination, makeup air, and humidity control compliance per code.',
               },
               {
-                icon: '📏',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="11" y1="1" x2="11" y2="21" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><path d="M7 5l4-4 4 4" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 17l4 4 4-4" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><line x1="4" y1="1" x2="18" y2="1" stroke="#9DB4C5" strokeWidth="1.2" strokeLinecap="round"/><line x1="4" y1="21" x2="18" y2="21" stroke="#9DB4C5" strokeWidth="1.2" strokeLinecap="round"/></svg>,
                 name: 'Ceiling Heights',
                 desc: 'Minimum clearances for habitable rooms, corridors, bathrooms, and basement conversions.',
               },
               {
-                icon: '🚪',
+                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="1" width="13" height="20" rx="1" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="3" y1="21" x2="20" y2="21" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="14" cy="11" r="1.2" fill="#9DB4C5"/></svg>,
                 name: 'Door Widths & Clearances',
                 desc: 'Accessible and egress door widths, swing clearances, threshold heights, and hardware reach ranges.',
               },
-            ].map(m => (
+            ] as { svg: React.ReactNode; name: string; desc: string }[]).map(m => (
               <div key={m.name} className={`${styles.moduleCard} ${styles.soon}`}>
-                <span className={styles.moduleIcon}>{m.icon}</span>
+                <span className={styles.moduleIcon}>{m.svg}</span>
                 <span className={styles.moduleName}>{m.name}</span>
                 <span className={styles.moduleDesc}>{m.desc}</span>
                 <span className={`${styles.modulePill} ${styles.soon}`}>Coming Soon</span>
@@ -279,11 +284,11 @@ export default function MarketingPage() {
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
       <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>How It Works</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '3rem' }}>Three steps to a compliance scan</h2>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '3rem' }}>Three steps to a compliance report</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'flex-start' }}>{/* Steps */}
             <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>{[
-                { n: '1', title: 'Complete a scan with any smartphone', body: 'Create a free account and start scanning immediately. AI-Vision guides you through the process — no technical knowledge or special equipment needed.' },
-                { n: '2', title: 'Get instant pass/fail results', body: 'Follow the on-screen guided positions. stAIrcode walks you through each measurement automatically and checks every dimension against your local building code.' },
+                { n: '1', title: 'Complete a scan with any smartphone', body: 'Create a free account and select the compliance module you need. AI-Vision guides you step by step — no technical knowledge or specialized equipment required.' },
+                { n: '2', title: 'Get instant pass/fail results', body: 'Follow the guided on-screen prompts. stAIrcode walks you through each measurement automatically and checks every dimension against your local building code in real time.' },
                 { n: '3', title: 'Download a professional compliance report', body: 'For a detailed assessment, include a reference object for scale — no measuring tape required. Your PDF report includes measurement photos, code citations, and a full pass/fail analysis ready to share with your client, architect, or contractor.' },
               ].map(s => (
                 <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}><div className={styles.stepNum}>{s.n}</div>
@@ -310,7 +315,7 @@ export default function MarketingPage() {
           STATS
       ══════════════════════════════════════════════ */}
       <section className={styles.darkSection} style={{ padding: '4.5rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel} style={{ color: '#F29337' }}>The Data</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Non-compliant stairs are a liability</h2>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2rem', color: '#fff' }}>Building code compliance is a safety issue</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>{[
               { num: '$92B+', lbl: 'Annual US medical costs from non-fatal stair falls' },
               { num: '1,800', lbl: 'ER visits per day from falls in Canada' },
@@ -323,7 +328,7 @@ export default function MarketingPage() {
               </div>
             ))}
           </div>
-          <a href="/research" style={{ fontSize: '0.85rem', color: '#F29337', fontWeight: 600, textDecoration: 'none' }}>View full research with sources →
+          <a href="/research" style={{ fontSize: '0.85rem', color: '#F29337', fontWeight: 600, textDecoration: 'none' }}>View research and sources →
           </a>
         </div>
       </section>
@@ -420,10 +425,10 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FINAL CTA
       ══════════════════════════════════════════════ */}
-      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}><div style={{ maxWidth: 640, margin: '0 auto' }}><h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem' }}>Ready to check your stairs?
+      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}><div style={{ maxWidth: 640, margin: '0 auto' }}><h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem' }}>Ready to run a compliance scan?
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.65, marginBottom: '2rem' }}>Scan for free in under 5 minutes. No app download. No tape measure.<br />
-            Just your phone and the stairs in question.
+            Just your phone and the building element in question.
           </p>
           <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
           </a>
@@ -436,7 +441,7 @@ export default function MarketingPage() {
           ARTICLES
       ══════════════════════════════════════════════ */}
       <section style={{ background: '#F0F5FA', padding: '4rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.5rem' }}>In the news &amp; research</div>
-          <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: '#0D1E2E', letterSpacing: '-0.02em', marginBottom: '2rem' }}>Stair safety matters
+          <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: '#0D1E2E', letterSpacing: '-0.02em', marginBottom: '2rem' }}>Building safety and code compliance
           </h2>
 
           {/* Scrollable article cards — with PC scroll support */}

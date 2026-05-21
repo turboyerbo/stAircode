@@ -30,7 +30,7 @@ export default function SampleReportPage() {
         <div style={{ background: 'linear-gradient(160deg,#0A1C2E 0%,#0F2E48 100%)', borderRadius: 20, overflow: 'hidden', marginBottom: '2rem', boxShadow: '0 8px 40px rgba(10,28,46,0.18)' }}>{/* Hazard stripe */}
           <div style={{ height: 10, background: 'repeating-linear-gradient(45deg,#F29337 0,#F29337 10px,#0A1C2E 10px,#0A1C2E 20px)' }} />
           <div style={{ padding: '2rem 2.5rem 2.5rem' }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}><div>
-                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.14em', fontFamily: 'monospace', marginBottom: '0.5rem' }}>STAIRCODE · BETA · PRE-INSPECTION AI ANALYSIS</div>
+                <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.14em', fontFamily: 'monospace', marginBottom: '0.5rem' }}>STAIRCODE · BETA · AI COMPLIANCE ANALYSIS</div>
                 <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.03em', lineHeight: 1.1 }}>Stair Compliance Report</h1>
                 <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', marginTop: '0.4rem' }}>OBC 2024 · Toronto, Ontario · May 5, 2026</div>
               </div>
