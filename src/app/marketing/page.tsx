@@ -67,7 +67,7 @@ export default function MarketingPage() {
   const faqs = [
     {
       q: 'Is stAIrcode a replacement for a building inspector?',
-      a: 'No. stAIrcode is a pre-screening tool. It helps you understand whether your stairs are likely compliant before you engage a licensed inspector — saving time and flagging issues early. Always confirm with a qualified professional before any renovation or real estate transaction.',
+      a: 'No. stAIrcode is a compliance aid tool. It helps building inspectors and professionals quickly document and assess stair compliance against local codes — flagging issues and generating cited reports. Always confirm findings with the appropriate authority having jurisdiction.',
     },
     {
       q: 'Which building codes does stAIrcode check against?',
@@ -146,15 +146,14 @@ export default function MarketingPage() {
           HERO
       ══════════════════════════════════════════════ */}
       <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#0A1C2E' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>{/* ── Left: headline + CTAs ── */}
-          <div style={{ flex: '1 1 320px' }}><div className={styles.obadge}>Stair Compliance for Building Professionals</div>
-            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.5rem', color: '#FFFFFF' }}>Check your stairs with live building code guidance — using any phone.
+          <div style={{ flex: '1 1 320px' }}><div className={styles.obadge}>Building Compliance Tools for Inspectors &amp; Professionals</div>
+            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.5rem', color: '#FFFFFF' }}>Live building code guidance — using any phone.
             </h1>
-            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>A fast, documented stair compliance check — before the inspector shows up.
-              No tape measure. No technical knowledge required.
+            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>A fast, documented stair compliance check with guidance and code analysis.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}><a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>Check Stairs Now →
               </a>
-              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700 }}>Stair Compliance Report
+              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12)', position: 'relative', overflow: 'hidden' }}>Stair Compliance Report
               </a>
             </div>
           </div>
@@ -178,11 +177,11 @@ export default function MarketingPage() {
           WHY CHOOSE
       ══════════════════════════════════════════════ */}
       <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div className={styles.section} style={{ padding: 0 }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Why stAIrcode</div>
-            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>See why building professionals choose stAIrcode</h2>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>See why building inspectors and professionals choose stAIrcode</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
                 { icon: '', title: 'AI Vision Measurement', body: 'Claude Vision reads your photos and extracts riser height, tread depth, stair width, headroom, nosing, and guardrail measurements — no tape measure needed.' },
                 { icon: '', title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and 6 other codes. Pass/fail shown per dimension.' },
-                { icon: '', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for real estate disclosure, pre-inspection screening, or contractor briefings.' },
+                { icon: '', title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes. Useful for building inspection documentation, code enforcement records, or contractor briefings.' },
                 { icon: '', title: 'AR Measurement Line', body: 'A blue measurement line animates across the screen as the AI reads each dimension — clear visual feedback showing exactly what\'s being measured.' },
               ].map(f => (
                 <div key={f.title} className={styles.featureCard}>
@@ -205,7 +204,7 @@ export default function MarketingPage() {
             <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>{[
                 { n: '1', title: 'Complete a scan with any smartphone', body: 'Create a free account and start scanning immediately. AI-Vision guides you through the process — no technical knowledge or special equipment needed.' },
                 { n: '2', title: 'Get instant pass/fail results', body: 'Follow the on-screen guided positions. stAIrcode walks you through each measurement automatically and checks every dimension against your local building code.' },
-                { n: '3', title: 'Download a professional compliance report', body: 'For a detailed assessment, include a reference object for scale — no measuring tape required. Your PDF report includes measurement photos, code citations, and a full pass/fail analysis ready to share with your architect, contractor, or building inspector.' },
+                { n: '3', title: 'Download a professional compliance report', body: 'For a detailed assessment, include a reference object for scale — no measuring tape required. Your PDF report includes measurement photos, code citations, and a full pass/fail analysis ready to share with your client, architect, or contractor.' },
               ].map(s => (
                 <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}><div className={styles.stepNum}>{s.n}</div>
                   <div>
@@ -280,7 +279,7 @@ export default function MarketingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: '#0D1E2E', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>Start Free Scan
+              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: 'linear-gradient(160deg, #1a3150 0%, #0D1E2E 60%)', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.10)' }}>Start Free Scan
               </a>
             </div>
 
@@ -293,7 +292,7 @@ export default function MarketingPage() {
               <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
               </div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $38.99</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with inspector or agent', 'Email delivery within minutes'].map(f => (
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with clients or authority having jurisdiction', 'Email delivery within minutes'].map(f => (
                   <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
                   </li>
                 ))}
@@ -348,7 +347,7 @@ export default function MarketingPage() {
           </p>
           <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
           </a>
-          <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>Pre-screening tool. Always confirm with a licensed inspector before renovation or real estate transaction.
+          <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>Compliance aid tool. Always confirm with a licensed inspector or authority having jurisdiction before renovation or occupancy decisions.
           </p>
         </div>
       </section>
@@ -461,7 +460,7 @@ export default function MarketingPage() {
       <section style={{ background: '#fff', borderTop: '1px solid #E5EBF2', padding: '3.5rem 1.25rem 2rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem', marginBottom: '3rem' }}>{/* Brand */}
             <div style={{ flex: '1 1 220px', minWidth: 180 }}>{/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/staircode_logo.png" alt="stAIrcode" style={{ height: 32, marginBottom: '1rem', display: 'block' }} />
-              <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by making stair compliance accessible to everyone — from first-time homebuyers to professional building managers.
+              <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by giving inspectors and compliance professionals instant, AI-powered code analysis — from any phone, on any job site.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>{[
                   { href: 'https://www.instagram.com/staircode/', label: 'IG', title: 'Instagram' },

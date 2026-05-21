@@ -17,18 +17,50 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #F29337;
+  background: linear-gradient(160deg, #F5A44A 0%, #F29337 45%, #D97B1F 100%);
   color: #fff;
   font-weight: 700;
   font-size: 0.88rem;
   padding: 10px 22px;
-  border-radius: 6px;
+  border-radius: 8px;
   text-decoration: none;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
   white-space: nowrap;
   letter-spacing: -0.01em;
+  position: relative;
+  overflow: hidden;
+  /* Subtle border for depth */
+  border: 1px solid rgba(255, 200, 120, 0.45);
+  /* Outer shadow + warm glow */
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.25),
+    0 4px 14px rgba(242,147,55,0.30),
+    inset 0 1px 0 rgba(255,255,255,0.28);
 }
-.navCta:hover { background: #d97b1f; transform: translateY(-1px); }
+
+/* Gloss sweep — top-left highlight */
+.navCta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.32) 0%,
+    rgba(255,255,255,0.10) 40%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.navCta:hover {
+  background: linear-gradient(160deg, #F7AF5C 0%, #F29337 45%, #C4691A 100%);
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.28),
+    0 6px 20px rgba(242,147,55,0.38),
+    inset 0 1px 0 rgba(255,255,255,0.28);
+}
 
 /* ── Hamburger ───────────────────────────────────────────────────────────── */
 .hamLine {
