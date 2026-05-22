@@ -169,7 +169,7 @@ const POSITIONS: PosCfg[] = [
     detail: 'Stand back so the entire exposed foundation wall is visible — from the grade line (soil surface) at the bottom to the top of the wall. Include any visible cracks or moisture staining. Good even lighting works best.',
     readyLabel: 'Wall is framed — Start',
     captureLabel: 'Tap to capture foundation overview',
-    holdSeconds: 3, positionTime: 4, optional: false,
+    holdSeconds: 5, positionTime: 12, optional: false,
     aiPrompt: (_p) => `You are a building inspection AI analysing a foundation wall image.
 
 STEP 1 — WALL TYPE CLASSIFICATION:
@@ -258,7 +258,7 @@ Reply ONLY with valid JSON (no markdown, no backticks):
     detail: 'Move close enough so the crack fills most of the frame. Include nearby mortar joints or block edges for scale. A coin or credit card placed beside the crack gives the most accurate width measurement.',
     readyLabel: 'Crack is framed — Start measuring',
     captureLabel: 'Tap to document crack',
-    holdSeconds: 3, positionTime: 4, optional: true,
+    holdSeconds: 5, positionTime: 12, optional: true,
     aiPrompt: (p) => `Close-up foundation crack documentation. Measure crack width and length precisely.
 
 STEP 1 — SCALE CALIBRATION (critical for crack width):
@@ -318,7 +318,7 @@ Reply ONLY with valid JSON:
     detail: 'Photograph the wall at a window or door opening, or any exposed end where the full wall cross-section is visible from face to face. A reference object on the wall edge improves accuracy significantly.',
     readyLabel: 'Wall edge in frame — Start measuring',
     captureLabel: 'Tap to measure wall thickness',
-    holdSeconds: 3, positionTime: 4, optional: true,
+    holdSeconds: 5, positionTime: 12, optional: true,
     aiPrompt: (p) => `Measure FOUNDATION WALL THICKNESS — the horizontal distance from one face of the wall to the other, measured at a window/door opening or exposed wall end.
 
 STEP 1 — SCALE CALIBRATION:
@@ -364,7 +364,7 @@ Reply ONLY with valid JSON:
     detail: 'Aim the camera at the base of the foundation wall where it meets the soil or floor slab. Include as much of the footing width as possible. A view from slightly to the side works best.',
     readyLabel: 'Base in frame — Start',
     captureLabel: 'Tap to assess foundation base',
-    holdSeconds: 3, positionTime: 4, optional: true,
+    holdSeconds: 5, positionTime: 12, optional: true,
     aiPrompt: (p) => `Assess the FOUNDATION BASE and FOOTING at the base of the wall.
 
 STEP 1 — SCALE CALIBRATION:
@@ -891,24 +891,25 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
             </div>
           </div>
 
-          {/* Numeric fields */}
+          {/* Numeric fields with per-step rescan buttons */}
           {([
-            { key: 'wallHeight', label: 'Exposed Wall Height', unit: 'mm' },
-            { key: 'wallThickness', label: 'Wall Thickness', unit: 'mm' },
-            { key: 'footingWidth', label: 'Footing Width', unit: 'mm' },
-            { key: 'crackWidthMm', label: 'Crack Width', unit: 'mm' },
-          ] as const).map(({ key, label, unit }) => {
-            const val = reviewVals[key]
+            { key: 'wallHeight',    label: 'Exposed Wall Height', unit: 'mm', posIdx: 0, posLabel: 'Wall Overview'   },
+            { key: 'wallThickness', label: 'Wall Thickness',      unit: 'mm', posIdx: 2, posLabel: 'Wall Thickness'  },
+            { key: 'footingWidth',  label: 'Footing Width',       unit: 'mm', posIdx: 3, posLabel: 'Foundation Base' },
+            { key: 'crackWidthMm',  label: 'Crack Width',         unit: 'mm', posIdx: 1, posLabel: 'Crack Detail'    },
+          ] as const).map(({ key, label, unit, posIdx: scanIdx, posLabel }) => {
+            const val = reviewVals[key as keyof typeof reviewVals] as number | null | undefined
             const isMissing = val == null
             return (
               <div key={key} style={{ borderRadius: 14, border: `1.5px solid ${isMissing ? 'rgba(250,116,31,0.3)' : BORDER}`, background: isMissing ? 'rgba(250,116,31,0.04)' : 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', padding: '0.65rem 0.9rem', gap: '0.6rem' }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: isMissing ? AMBER : GREEN, boxShadow: `0 0 5px ${isMissing ? AMBER : GREEN}`, flexShrink: 0 }} />
                   <div style={{ flex: 1, fontSize: '0.82rem', fontWeight: 700, color: WHITE }}>{label}</div>
-                  {key === 'wallHeight' && (
-                    <button onClick={() => { setPosIdx(0); setShowReview(false); busyRef.current = false; goTo(0) }}
-                      style={{ padding: '0.25rem 0.6rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 8, color: WHITE2, fontFamily: 'monospace', fontSize: '0.65rem', cursor: 'pointer' }}>↺ Rescan</button>
-                  )}
+                  <button
+                    onClick={() => { setShowReview(false); busyRef.current = false; goTo(scanIdx) }}
+                    style={{ padding: '0.25rem 0.6rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 8, color: WHITE2, fontFamily: 'monospace', fontSize: '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    title={`Re-scan ${posLabel}`}
+                  >↺ {posLabel}</button>
                 </div>
                 <div style={{ padding: '0 0.9rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <input type="number" inputMode="numeric"
@@ -955,8 +956,8 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
             </div>
           )}
 
-          <button onClick={submitReview} style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 16, color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.08em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(39,169,107,0.4)', marginTop: '0.25rem' }}>
-            Generate Foundation Report →
+          <button onClick={submitReview} style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 16, color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.04em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(242,147,55,0.4)', marginTop: '0.25rem' }}>
+            Generate Report — $2.99 →
           </button>
         </div>
       </div>

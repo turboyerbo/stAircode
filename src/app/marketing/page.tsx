@@ -153,8 +153,7 @@ export default function MarketingPage() {
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}><a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>Start a Compliance Scan →
               </a>
-              <a href="/?signin=1" style={{ fontSize: '1rem', padding: '13px 28px', background: 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontWeight: 700, boxShadow: '0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.12)', position: 'relative', overflow: 'hidden' }}>View Sample Report
-              </a>
+
             </div>
           </div>
 
