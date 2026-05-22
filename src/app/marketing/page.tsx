@@ -202,7 +202,7 @@ export default function MarketingPage() {
           <div className={styles.sectionLabel}>Compliance Modules</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>One platform. Every inspection category.</h2>
           <p style={{ fontSize: '1rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 620, marginBottom: 0 }}>
-            stAIrcode is building the next generation of building information software — one module at a time. Select a category, follow the guided scan, and generate a cited compliance report. Stair compliance is live today. More modules launching soon.
+            stAIrcode is building the next generation of building information software — one module at a time. Select a category, follow the guided scan, and generate a cited compliance report. Stair compliance and foundation inspection are live today. More modules launching soon.
           </p>
 
           <div className={styles.modulesGrid}>
@@ -221,17 +221,27 @@ export default function MarketingPage() {
               <span className={`${styles.modulePill} ${styles.live}`}>Live</span>
             </a>
 
+            {/* ── LIVE: Foundation ── */}
+            <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`} style={{ borderColor: '#417CA4', boxShadow: '0 2px 10px rgba(65,124,164,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
+              <span className={styles.moduleIcon}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="4" y="2" width="14" height="13" rx="1" fill="rgba(65,124,164,0.2)" stroke="#417CA4" strokeWidth="1.5"/>
+                  <rect x="1" y="15" width="20" height="6" rx="1" fill="rgba(65,124,164,0.35)" stroke="#417CA4" strokeWidth="1.5"/>
+                  <line x1="4" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1"/>
+                  <line x1="4" y1="11" x2="18" y2="11" stroke="#417CA4" strokeWidth="1"/>
+                </svg>
+              </span>
+              <span className={styles.moduleName}>Foundation Inspection</span>
+              <span className={styles.moduleDesc}>Wall type classification, crack detection and sizing, wall thickness, footing width, and moisture documentation.</span>
+              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(65,124,164,0.12)', color: '#417CA4', borderColor: 'rgba(65,124,164,0.3)' }}>Live</span>
+            </a>
+
             {/* ── COMING SOON ── */}
             {([
               {
                 svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1" width="14" height="18" rx="1.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="5" y1="6" x2="13" y2="6" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="5" y1="9" x2="13" y2="9" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="5" y1="12" x2="10" y2="12" stroke="#9DB4C5" strokeWidth="1.2"/><path d="M14 12l6 6" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="17" cy="15" r="3.5" stroke="#9DB4C5" strokeWidth="1.5"/></svg>,
                 name: 'Architectural Plans Review',
                 desc: 'Upload AHJ-approved drawings. AI cross-references stamped plans against as-built conditions and flags deviations.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="14" width="20" height="7" rx="1" stroke="#9DB4C5" strokeWidth="1.5"/><rect x="4" y="8" width="14" height="6" rx="0.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="7" y1="8" x2="7" y2="14" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="11" y1="8" x2="11" y2="14" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="15" y1="8" x2="15" y2="14" stroke="#9DB4C5" strokeWidth="1.2"/><path d="M6 8V5l5-4 5 4v3" stroke="#9DB4C5" strokeWidth="1.5" strokeLinejoin="round"/></svg>,
-                name: 'Foundation Inspection',
-                desc: 'Scan foundation walls, footings, and slab edges. Checks bearing widths, setbacks, and crack documentation.',
               },
               {
                 svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="5" x2="21" y2="5" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="18" x2="21" y2="18" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><line x1="3" y1="5" x2="3" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="8" y1="5" x2="8" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="14" y1="5" x2="14" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="19" y1="5" x2="19" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/></svg>,

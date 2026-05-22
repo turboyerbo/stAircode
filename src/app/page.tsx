@@ -688,7 +688,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined});setScreen('scan_ready')}} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
@@ -698,7 +698,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 }
 
 // ── Home Tab ──────────────────────────────────────────────────────────────────
-function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:()=>void;onLogout:()=>void;activeModule:'stair'|'foundation';onModuleChange:(m:'stair'|'foundation')=>void}){
+function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:(mod:'stair'|'foundation')=>void;onLogout:()=>void;activeModule:'stair'|'foundation';onModuleChange:(m:'stair'|'foundation')=>void}){
   const confirmed=!locLoading&&loc!=null&&isOntario(loc)
   const locStr=loc?`${loc.city}${loc.province?', '+loc.province:''}`:locLoading?'Detecting location…':'Location unavailable'
 
@@ -724,7 +724,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column'}}>{/* Hero */}
       <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.8rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.5rem',borderBottom:`1px solid ${C.border}`}}><div style={{display:'flex',justifyContent:'center'}}><BetaLogo size="md" onDark /></div>
-        <h1 style={{fontSize:'1.65rem',fontWeight:800,lineHeight:1.1,textAlign:'center',margin:0,letterSpacing:'-0.02em'}}>Stair <span style={{color:'#ffffff',textShadow:`0 0 28px ${C.orange}88`}}>Pre-Assessment</span>
+        <h1 style={{fontSize:'1.65rem',fontWeight:800,lineHeight:1.1,textAlign:'center',margin:0,letterSpacing:'-0.02em'}}><span style={{color:'#ffffff',textShadow:`0 0 28px ${C.orange}88`}}>Building Compliance</span> Scanner
         </h1>
         <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.55)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
       </div>
@@ -750,7 +750,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
 
           {/* Stair Compliance — LIVE */}
           <button
-            onClick={()=>{ onModuleChange('stair'); if(!atLimit) onStartScan() }}
+            onClick={()=>{ if(!atLimit) onStartScan('stair') }}
             style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='stair'?'rgba(39,169,107,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'rgba(39,169,107,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='stair'?'0 2px 10px rgba(39,169,107,0.15)':'none'}}
           >
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
@@ -767,7 +767,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
 
           {/* Foundation Inspection — LIVE */}
           <button
-            onClick={()=>{ onModuleChange('foundation'); if(!atLimit) onStartScan() }}
+            onClick={()=>{ if(!atLimit) onStartScan('foundation') }}
             style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='foundation'?'rgba(65,124,164,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='foundation'?'rgba(65,124,164,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='foundation'?'0 2px 10px rgba(65,124,164,0.15)':'none'}}
           >
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
