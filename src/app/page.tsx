@@ -13,6 +13,10 @@ import SettingsScreen                        from './components/SettingsScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ReportScreen                          from './components/ReportScreen'
 import PaymentSuccessScreen                  from './components/PaymentSuccessScreen'
+import FoundationScanScreen                  from './components/FoundationScanScreen'
+import FoundationReportScreen                from './components/FoundationReportScreen'
+import type { FoundationMeasurements }       from './components/FoundationScanScreen'
+import type { FoundationField }              from './components/FoundationReportScreen'
 
 const C = {
   dark:'#EEF3F9', card:'#FFFFFF', blue:'#007FFF', orange:'#FF7F00',
@@ -143,6 +147,135 @@ function check(m:StairMeasurements,code:Code){
        : undefined,
     } as any,
   ]
+}
+
+// ── Foundation compliance check ──────────────────────────────────────────────
+function checkFoundation(m: FoundationMeasurements, codeLabel: string): FoundationField[] {
+  const fields: FoundationField[] = []
+
+  // 1. Wall type — informational
+  fields.push({
+    label: 'Wall Type Identified',
+    value: m.wallTypeLabel ?? m.wallType,
+    pass: m.wallType !== 'unknown' ? null : null,
+    note: m.wallType === 'unknown' ? 'Wall type could not be determined from images — physical inspection required.' : undefined,
+    severity: 'info',
+  })
+
+  // 2. Wall thickness vs code minimums
+  const thicknessMin: Record<string, number> = {
+    poured_concrete: 150,
+    concrete_block: 190,
+    stone: 300,
+    brick: 190,
+    icf: 250,
+  }
+  const minThick = thicknessMin[m.wallType]
+  if (m.wallThickness != null && minThick != null) {
+    fields.push({
+      label: 'Wall Thickness',
+      value: m.wallThickness,
+      unit: 'mm',
+      pass: m.wallThickness >= minThick,
+      note: m.wallThickness < minThick
+        ? `Measured ${m.wallThickness}mm is below the typical ${minThick}mm minimum for ${m.wallTypeLabel ?? m.wallType} under ${codeLabel}.`
+        : `${m.wallThickness}mm meets the typical ${minThick}mm minimum for ${m.wallTypeLabel ?? m.wallType}.`,
+      severity: m.wallThickness < minThick ? 'warning' : 'info',
+    })
+  } else if (m.wallThickness != null) {
+    fields.push({ label: 'Wall Thickness', value: m.wallThickness, unit: 'mm', pass: null, note: 'Minimum not determined for this wall type.', severity: 'info' })
+  }
+
+  // 3. Wall height — check height/thickness ratio
+  if (m.wallHeight != null && m.wallThickness != null && m.wallThickness > 0) {
+    const ratio = m.wallHeight / m.wallThickness
+    const maxRatio = m.wallType === 'concrete_block' ? 11 : m.wallType === 'poured_concrete' ? 20 : 10
+    fields.push({
+      label: 'Height / Thickness Ratio',
+      value: ratio.toFixed(1),
+      pass: ratio <= maxRatio,
+      note: `${ratio.toFixed(1)}:1 — maximum is ${maxRatio}:1 for ${m.wallTypeLabel ?? m.wallType}. ${ratio > maxRatio ? 'Wall may require pilasters or additional lateral support.' : 'Within allowable limits.'}`,
+      severity: ratio > maxRatio ? 'warning' : 'info',
+    })
+  } else if (m.wallHeight != null) {
+    fields.push({ label: 'Exposed Wall Height', value: m.wallHeight, unit: 'mm', pass: null, note: 'Thickness not captured — height/ratio check not possible.', severity: 'info' })
+  }
+
+  // 4. Horizontal cracks — CRITICAL
+  fields.push({
+    label: 'Horizontal Cracks',
+    value: m.horizontalCrack ? 'Detected' : 'None detected',
+    pass: !m.horizontalCrack,
+    note: m.horizontalCrack
+      ? 'Horizontal cracks indicate lateral earth pressure potentially exceeding wall capacity. Immediate structural engineering assessment required.'
+      : 'No horizontal cracks observed.',
+    severity: m.horizontalCrack ? 'critical' : 'info',
+  })
+
+  // 5. Crack width classification
+  if (m.crackPresent && m.crackWidthMm != null) {
+    const crackPass =
+      m.crackWidthMm < 0.1 ? true   // hairline — acceptable
+      : m.crackWidthMm < 0.3 ? null  // fine — monitor (informational)
+      : false                         // medium/wide — flag
+    fields.push({
+      label: 'Crack Width',
+      value: m.crackWidthMm,
+      unit: 'mm',
+      pass: crackPass,
+      note: m.crackWidthMm < 0.1 ? 'Hairline — normal surface shrinkage, monitor for progression.'
+          : m.crackWidthMm < 0.3 ? 'Fine crack — monitor. Repair if progression observed.'
+          : m.crackWidthMm < 1.0 ? 'Medium crack — professional assessment and repair recommended.'
+          : 'Wide crack — structural assessment required before occupancy.',
+      severity: m.crackWidthMm >= 1.0 ? 'critical' : m.crackWidthMm >= 0.3 ? 'warning' : 'info',
+    })
+  } else if (!m.crackPresent) {
+    fields.push({ label: 'Crack Width', value: 'No cracks detected', pass: true, note: 'No cracks observed in the scanned area.', severity: 'info' })
+  }
+
+  // 6. Footing width
+  if (m.footingWidth != null && m.wallThickness != null) {
+    const footingMin = m.wallThickness * 2
+    fields.push({
+      label: 'Footing Width',
+      value: m.footingWidth,
+      unit: 'mm',
+      pass: m.footingWidth >= footingMin,
+      note: m.footingWidth >= footingMin
+        ? `${m.footingWidth}mm meets minimum (2× wall thickness = ${footingMin}mm).`
+        : `${m.footingWidth}mm is below typical minimum of ${footingMin}mm (2× wall thickness). Engineering review recommended.`,
+      severity: m.footingWidth < footingMin ? 'warning' : 'info',
+    })
+  } else if (m.footingWidth != null) {
+    fields.push({ label: 'Footing Width', value: m.footingWidth, unit: 'mm', pass: null, note: 'Wall thickness not captured — ratio check not possible.', severity: 'info' })
+  }
+
+  // 7. Dampproofing
+  if (m.dampproofingVisible !== null) {
+    fields.push({
+      label: 'Dampproofing',
+      value: m.dampproofingVisible ? 'Present' : 'Not detected',
+      pass: m.dampproofingVisible === true ? true : m.dampproofingVisible === false ? false : null,
+      note: m.dampproofingVisible
+        ? 'Dampproofing coating visible on exterior surface.'
+        : 'Dampproofing not detected. All below-grade walls require dampproofing under OBC s.9.13 / IBC §1805.',
+      severity: m.dampproofingVisible === false ? 'warning' : 'info',
+    })
+  }
+
+  // 8. Overall condition
+  fields.push({
+    label: 'Overall Condition',
+    value: m.overallCondition ? m.overallCondition.charAt(0).toUpperCase() + m.overallCondition.slice(1) : 'Not assessed',
+    pass: m.overallCondition === 'good' ? true : m.overallCondition === 'critical' ? false : null,
+    note: m.overallCondition === 'critical' ? 'Critical condition — professional assessment required before occupancy.'
+        : m.overallCondition === 'poor'     ? 'Poor condition — repairs required and professional review recommended.'
+        : m.overallCondition === 'fair'     ? 'Fair condition — minor issues noted, monitor and repair as needed.'
+        : 'Good overall condition — no significant issues observed.',
+    severity: m.overallCondition === 'critical' ? 'critical' : m.overallCondition === 'poor' ? 'warning' : 'info',
+  })
+
+  return fields
 }
 
 // ── Splash Screen ─────────────────────────────────────────────────────────────
@@ -416,6 +549,8 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
 function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>('home')
+  const [activeModule, setActiveModule] = useState<'stair'|'foundation'>('stair')
+  const [foundationMeasurements, setFoundationMeasurements] = useState<FoundationMeasurements|null>(null)
   const [loc,setLoc]=useState<Loc|null>(null)
   const [locLoading,setLocLoading]=useState(true)
   const [code,setCode]=useState<Code|null>(null)
@@ -521,6 +656,10 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   },[user])
   // handleDetectComplete removed — detect/capture screens deprecated,[])
   // handleCaptureComplete removed — capture screen deprecated
+  const handleFoundationScan = useCallback((m: FoundationMeasurements) => {
+    setFoundationMeasurements(m)
+    setScreen('report')
+  }, [])
   const handleStartOver=useCallback(()=>{setMeasurements(null);setScreen('home')},[])
   const handleRetake=useCallback(()=>{
     // Full retake — clears measurements, shows intro
@@ -534,6 +673,14 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 
   // Full-screen flows (no bottom nav)
 
+  // Foundation module routing
+  if(screen==='scan_ready' && activeModule==='foundation')
+    return <FoundationScanScreen onSuccess={handleFoundationScan} onBack={()=>setScreen('home')}/>
+  if(screen==='report' && activeModule==='foundation' && foundationMeasurements) {
+    const activeCode2 = code ?? {code:'IBC' as const,label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
+    const fFields = checkFoundation(foundationMeasurements, activeCode2.label)
+    return <FoundationReportScreen measurements={foundationMeasurements} fields={fFields} codeLabel={activeCode2.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  onRetake={()=>{setFoundationMeasurements(null);setScreen('scan_ready')}} onStartOver={()=>{setFoundationMeasurements(null);setActiveModule('stair');setScreen('home')}}/>
+  }
   if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('home')}/>
   if(screen==='scan_review')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('report')} startAtReview={true}/>
   // Use IBC as fallback if code not yet detected (location loading)
@@ -541,7 +688,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined});setScreen('scan_ready')}} onLogout={onLogout}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={()=>{setTab('home');Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined});setScreen('scan_ready')}} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
@@ -551,7 +698,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 }
 
 // ── Home Tab ──────────────────────────────────────────────────────────────────
-function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:()=>void;onLogout:()=>void}){
+function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:()=>void;onLogout:()=>void;activeModule:'stair'|'foundation';onModuleChange:(m:'stair'|'foundation')=>void}){
   const confirmed=!locLoading&&loc!=null&&isOntario(loc)
   const locStr=loc?`${loc.city}${loc.province?', '+loc.province:''}`:locLoading?'Detecting location…':'Location unavailable'
 
@@ -597,14 +744,61 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
           )}
         </div>
 
-        {/* Steps strip */}
-        <div style={{display:'flex',gap:'0.4rem'}}>{[{n:'1',label:locLoading?'Detecting…':code?.label??'Code loaded',done:!locLoading},{n:'2',label:'AI measures stairs',done:false},{n:'3',label:'Compliance report',done:false}].map(({n,label,done})=>(
-            <div key={n} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'0.3rem',padding:'0.6rem 0.3rem',background:'#FFFFFF',borderRadius:10,border:'1px solid rgba(44,90,122,0.15)',boxShadow:'0 1px 4px rgba(44,90,122,0.06)'}}><div style={{width:24,height:24,borderRadius:'50%',background:done?C.pass:'#2C5A7A',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.68rem',fontFamily:'monospace',fontWeight:700,color:'#fff',border:'none'}}>{done?'':n}</div>
-              <span style={{fontSize:'0.62rem',color:'#2C4A6E',textAlign:'center',lineHeight:1.3,fontFamily:'monospace',fontWeight:500}}>{label}</span>
+        {/* ── MODULE SELECTOR ── */}
+        <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}>
+          <div style={{fontSize:'0.6rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.1em',color:'#5E7D9B',marginBottom:'0.1rem'}}>SELECT INSPECTION MODULE</div>
+
+          {/* Stair Compliance — LIVE */}
+          <button
+            onClick={()=>{ onModuleChange('stair'); if(!atLimit) onStartScan() }}
+            style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='stair'?'rgba(39,169,107,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'rgba(39,169,107,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='stair'?'0 2px 10px rgba(39,169,107,0.15)':'none'}}
+          >
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
+              <rect x="1" y="13" width="6" height="8" rx="1" fill="rgba(39,169,107,0.2)" stroke="#27A96B" strokeWidth="1.5"/>
+              <rect x="7" y="7" width="6" height="14" rx="1" fill="rgba(39,169,107,0.2)" stroke="#27A96B" strokeWidth="1.5"/>
+              <rect x="13" y="1" width="8" height="20" rx="1" fill="rgba(39,169,107,0.2)" stroke="#27A96B" strokeWidth="1.5"/>
+            </svg>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Stair Compliance</div>
+              <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail</div>
+            </div>
+            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(39,169,107,0.12)',color:'#27A96B',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(39,169,107,0.3)',flexShrink:0}}>LIVE</span>
+          </button>
+
+          {/* Foundation Inspection — LIVE */}
+          <button
+            onClick={()=>{ onModuleChange('foundation'); if(!atLimit) onStartScan() }}
+            style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='foundation'?'rgba(65,124,164,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='foundation'?'rgba(65,124,164,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='foundation'?'0 2px 10px rgba(65,124,164,0.15)':'none'}}
+          >
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
+              <rect x="4" y="2" width="14" height="13" rx="1" fill="rgba(65,124,164,0.2)" stroke="#417CA4" strokeWidth="1.5"/>
+              <rect x="1" y="15" width="20" height="6" rx="1" fill="rgba(65,124,164,0.35)" stroke="#417CA4" strokeWidth="1.5"/>
+              <line x1="4" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1"/>
+              <line x1="4" y1="11" x2="18" y2="11" stroke="#417CA4" strokeWidth="1"/>
+            </svg>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Foundation Inspection</div>
+              <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Wall type, cracks, thickness, footing, moisture</div>
+            </div>
+            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(65,124,164,0.12)',color:'#417CA4',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(65,124,164,0.3)',flexShrink:0}}>LIVE</span>
+          </button>
+
+          {/* Coming-soon modules — greyed */}
+          {[
+            {name:'Guardrails & Handrails',desc:'Height, baluster spacing, graspability'},
+            {name:'Windows',desc:'Egress openings, sill heights, well dimensions'},
+            {name:'Smoke & CO Detectors',desc:'Placement, distance-to-ceiling, spacing'},
+          ].map(mod=>(
+            <div key={mod.name} style={{width:'100%',padding:'0.8rem 1rem',background:'rgba(0,0,0,0.02)',border:'1.5px solid rgba(44,90,122,0.1)',borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',opacity:0.55}}>
+              <div style={{width:22,height:22,borderRadius:6,background:'rgba(44,90,122,0.08)',border:'1px solid rgba(44,90,122,0.15)',flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:'0.82rem',fontWeight:700,color:'#7A96AF',lineHeight:1.2}}>{mod.name}</div>
+                <div style={{fontSize:'0.62rem',color:'#9DB4C5',marginTop:'0.1rem'}}>{mod.desc}</div>
+              </div>
+              <span style={{fontSize:'0.58rem',fontWeight:700,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(147,186,212,0.1)',color:'#9DB4C5',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(147,186,212,0.2)',flexShrink:0,whiteSpace:'nowrap'}}>SOON</span>
             </div>
           ))}
         </div>
-
 
         {/* Limit warning */}
         {atLimit && (
@@ -618,25 +812,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout}:{user:AppUser;l
 
         <div style={{flex:1}}/>
 
-        {/* CTA */}
-        <button
-          onClick={atLimit ? undefined : onStartScan}
-          style={{
-            width:'100%', padding:'1.15rem',
-            background: atLimit ? 'rgba(232,69,69,0.15)' : 'linear-gradient(135deg,#27A96B,#1A8A55)',
-            border: atLimit ? '1.5px solid rgba(232,69,69,0.3)' : 'none',
-            borderRadius:16, color: atLimit ? '#E84545' : '#fff',
-            fontSize:'1rem', fontFamily:"'Inter',sans-serif",
-            fontWeight:800, letterSpacing:'0.06em',
-            cursor: atLimit ? 'default' : 'pointer',
-            boxShadow: atLimit ? 'none' : '0 6px 32px rgba(39,169,107,0.45)',
-            transition:'all 0.2s',
-          }}
-        >
-          {atLimit ? ' Upgrade to Scan Again' : '● Start Scan'}
-        </button>
-
-        <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>Pre-analysis only · Not a substitute for professional inspection
+        <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>Compliance aid only · Not a substitute for professional inspection
         </p>
 
         {/* Social + store buttons — official logos */}
