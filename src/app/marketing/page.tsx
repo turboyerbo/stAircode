@@ -60,7 +60,7 @@ export default function MarketingPage() {
     { label: 'Sample Report', href: '/sample-report' },
     { label: 'Research',     href: '/research' },
     { label: 'Pricing',      href: '#pricing' },
-    { label: 'About',        href: '#about' },
+    { label: 'About',        href: '/about' },
     { label: 'Sign In',      href: '/' },
   ]
 
@@ -175,23 +175,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           WHY CHOOSE
       ══════════════════════════════════════════════ */}
-      <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div className={styles.section} style={{ padding: 0 }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Why stAIrcode</div>
-            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Built for inspectors and compliance professionals</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
-                { title: 'AI Vision Analysis', body: "Claude Vision reads your photos, extracts measurements, and cross-references every dimension against your jurisdiction's building code — no tape measure, no manual calculations." },
-                { title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and more. Pass/fail shown per dimension with the exact code clause cited.' },
-                { title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes — ready for building inspection documentation, code enforcement records, or contractor briefings.' },
-                { title: 'Guided Module Workflow', body: 'Each inspection category is its own guided module. Select what you need to check, follow the on-screen steps, and receive a report scoped to that category.' },
-              ].map(f => (
-                <div key={f.title} className={styles.featureCard}>
-                  <h3>{f.title}</h3>
-                  <p>{f.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* ══════════════════════════════════════════════
           COMPLIANCE MODULES
@@ -217,7 +201,7 @@ export default function MarketingPage() {
               </span>
               <span className={styles.moduleName}>Stair Compliance</span>
               <span className={styles.moduleDesc}>Rise, run, headroom, width, handrail height, nosing, and baluster spacing checked against OBC, NBC, IBC, and more.</span>
-              <span className={`${styles.modulePill} ${styles.live}`}>Live</span>
+              <span className={`${styles.modulePill} ${styles.live}`}>Beta</span>
             </a>
 
             {/* ── LIVE: Foundation ── */}
@@ -232,7 +216,7 @@ export default function MarketingPage() {
               </span>
               <span className={styles.moduleName}>Foundation Inspection</span>
               <span className={styles.moduleDesc}>Wall type classification, crack detection and sizing, wall thickness, footing width, and moisture documentation.</span>
-              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(65,124,164,0.12)', color: '#417CA4', borderColor: 'rgba(65,124,164,0.3)' }}>Live</span>
+              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(65,124,164,0.12)', color: '#417CA4', borderColor: 'rgba(65,124,164,0.3)' }}>Beta</span>
             </a>
 
             {/* ── LIVE: Accessibility ── */}
@@ -247,7 +231,7 @@ export default function MarketingPage() {
               </span>
               <span className={styles.moduleName}>Accessibility Compliance</span>
               <span className={styles.moduleDesc}>Barrier-free paths, washrooms, visual fire alarms, pool access, and accessible seating — OBC 2024 & AODA.</span>
-              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(123,94,167,0.12)', color: '#7B5EA7', borderColor: 'rgba(123,94,167,0.3)' }}>Live</span>
+              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(123,94,167,0.12)', color: '#7B5EA7', borderColor: 'rgba(123,94,167,0.3)' }}>Beta</span>
             </a>
 
             {/* ── COMING SOON ── */}
@@ -360,18 +344,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           TESTIMONIAL
       ══════════════════════════════════════════════ */}
-      <section style={{ background: '#ffffff', padding: '4rem 1.25rem' }}><div style={{ maxWidth: 720, margin: '0 auto' }}><div className={styles.testimonial}>
-            <blockquote style={{ fontSize: '1.1rem', lineHeight: 1.75, color: '#0D1E2E', fontStyle: 'italic', fontWeight: 500, marginBottom: '1.2rem', borderLeft: '3px solid #F29337', paddingLeft: '1.25rem' }}>&ldquo;The app flagged inconsistent risers, and the building inspector later confirmed it. A quick check was all we needed, and this got things moving in the right direction.&rdquo;
-            </blockquote>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0A1C2E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F29337', fontWeight: 800, fontSize: '1rem', flexShrink: 0, border: '2px solid #F29337' }}>A</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0D1E2E' }}>Licensed Architect</div>
-                <div style={{ fontSize: '0.78rem', color: '#5E7D9B' }}>Toronto, Ontario</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* ══════════════════════════════════════════════
           PRICING
@@ -443,6 +416,24 @@ export default function MarketingPage() {
               {openFaq === i && <p className={styles.faqA}>{f.a}</p>}
             </div>
           ))}
+        </div>
+      </section>
+
+      <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div className={styles.section} style={{ padding: 0 }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Why stAIrcode</div>
+            <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Built for inspectors and compliance professionals</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
+                { title: 'AI Vision Analysis', body: "Claude Vision reads your photos, extracts measurements, and cross-references every dimension against your jurisdiction's building code — no tape measure, no manual calculations." },
+                { title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and more. Pass/fail shown per dimension with the exact code clause cited.' },
+                { title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes — ready for building inspection documentation, code enforcement records, or contractor briefings.' },
+                { title: 'Guided Module Workflow', body: 'Each inspection category is its own guided module. Select what you need to check, follow the on-screen steps, and receive a report scoped to that category.' },
+              ].map(f => (
+                <div key={f.title} className={styles.featureCard}>
+                  <h3>{f.title}</h3>
+                  <p>{f.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -568,7 +559,12 @@ export default function MarketingPage() {
       ══════════════════════════════════════════════ */}
       <section style={{ background: '#fff', borderTop: '1px solid #E5EBF2', padding: '3.5rem 1.25rem 2rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem', marginBottom: '3rem' }}>{/* Brand */}
             <div style={{ flex: '1 1 220px', minWidth: 180 }}>{/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/staircode_logo.png" alt="stAIrcode" style={{ height: 32, marginBottom: '1rem', display: 'block' }} />
+              <div style={{ display:'inline-flex', flexDirection:'column', alignItems:'flex-start', marginBottom:'1rem' }}>
+                <span style={{ fontFamily:"'Syne','DM Sans',system-ui,sans-serif", fontSize:26, fontWeight:800, letterSpacing:'-0.02em', lineHeight:1, userSelect:'none', whiteSpace:'nowrap' }}>
+                  <span style={{ color:'#1B3A6B' }}>st</span><span style={{ color:'#F29337', fontStyle:'italic' }}>AI</span><span style={{ color:'#1B3A6B' }}>rcode</span>
+                </span>
+                <div style={{ fontFamily:"'Syne','DM Sans',system-ui,sans-serif", fontSize:8, fontWeight:500, letterSpacing:'0.07em', textTransform:'uppercase', color:'rgba(27,58,107,0.45)', marginTop:4, lineHeight:1, whiteSpace:'nowrap' }}>Next Step in Building Information</div>
+              </div>
               <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by giving inspectors and compliance professionals instant, AI-powered code analysis — from any phone, on any job site.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>{[
@@ -603,7 +599,7 @@ export default function MarketingPage() {
             {/* About */}
             <div style={{ flex: '1 1 160px', minWidth: 140 }}><div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', color: '#0D1E2E', textTransform: 'uppercase', marginBottom: '0.85rem' }}>About stAIrcode</div>
                   {[
-                { label: 'Our Story',         href: '/our-story' },
+                { label: 'The Blog',          href: '/blog' },
                 { label: 'Blog',              href: '#' },
                 { label: 'Careers',           href: '#' },
                 { label: 'Contact Us',        href: 'mailto:info@staircode.app' },

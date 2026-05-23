@@ -823,7 +823,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
               <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Stair Compliance</div>
               <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail</div>
             </div>
-            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(39,169,107,0.12)',color:'#27A96B',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(39,169,107,0.3)',flexShrink:0}}>LIVE</span>
+            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(39,169,107,0.12)',color:'#27A96B',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(39,169,107,0.3)',flexShrink:0}}>BETA</span>
           </button>
 
           {/* Foundation Inspection — LIVE */}
@@ -841,7 +841,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
               <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Foundation Inspection</div>
               <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Wall type, cracks, thickness, footing, moisture</div>
             </div>
-            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(65,124,164,0.12)',color:'#417CA4',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(65,124,164,0.3)',flexShrink:0}}>LIVE</span>
+            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(65,124,164,0.12)',color:'#417CA4',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(65,124,164,0.3)',flexShrink:0}}>BETA</span>
           </button>
 
           {/* Accessibility Compliance — LIVE */}
@@ -859,7 +859,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
               <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Accessibility Compliance</div>
               <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Paths, washrooms, alarms, seating, pool access · OBC 2024</div>
             </div>
-            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(123,94,167,0.12)',color:'#7B5EA7',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(123,94,167,0.3)',flexShrink:0}}>LIVE</span>
+            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(123,94,167,0.12)',color:'#7B5EA7',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(123,94,167,0.3)',flexShrink:0}}>BETA</span>
           </button>
 
           {/* Coming-soon modules — greyed */}
