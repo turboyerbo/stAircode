@@ -17,6 +17,10 @@ import FoundationScanScreen                  from './components/FoundationScanSc
 import FoundationReportScreen                from './components/FoundationReportScreen'
 import type { FoundationMeasurements }       from './components/FoundationScanScreen'
 import type { FoundationField }              from './components/FoundationReportScreen'
+import AccessibilityScanScreen              from './components/AccessibilityScanScreen'
+import AccessibilityReportScreen            from './components/AccessibilityReportScreen'
+import type { AccessibilityMeasurements }   from './components/AccessibilityScanScreen'
+import type { AccessibilityField }          from './components/AccessibilityReportScreen'
 
 const C = {
   dark:'#EEF3F9', card:'#FFFFFF', blue:'#007FFF', orange:'#FF7F00',
@@ -545,12 +549,56 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
   )
 }
 
+// ── Accessibility compliance field builder ────────────────────────────────────
+function buildAccessibilityFields(m: AccessibilityMeasurements): AccessibilityField[] {
+  const fields: AccessibilityField[] = []
+  const bp = m.barrierFreePath as any
+  const vf = m.visualFireSafety as any
+  const wc = m.washrooms as any
+  const ps = m.poolSpaAccess as any
+  const as_ = m.accessibleSeating as any
+
+  const addField = (label: string, measured: any, required: any, pass: boolean|null, note: string|undefined, severity: 'info'|'warning'|'critical', obcRef?: string) => {
+    fields.push({ label, measured: measured ?? null, required: required ?? null, pass, note, severity, obcRef })
+  }
+
+  // Barrier-free path
+  if (bp?.doorClearMm != null)     addField('Doorway Clear Width',   bp.doorClearMm,   860,  bp.doorClearMm >= 860, bp.doorClearMm < 860 ? `${bp.doorClearMm}mm is below minimum 860mm` : undefined, bp.doorClearMm < 860 ? 'warning' : 'info', 'OBC §3.8.1.4')
+  if (bp?.corridorWidthMm != null) addField('Corridor Width',        bp.corridorWidthMm, 900, bp.corridorWidthMm >= 900, bp.corridorWidthMm < 900 ? `${bp.corridorWidthMm}mm is below minimum 900mm` : undefined, bp.corridorWidthMm < 900 ? 'warning' : 'info', 'OBC §3.8.1.6')
+  if (bp?.turningSpaceMm != null)  addField('Turning Space Diameter', bp.turningSpaceMm, 1500, bp.turningSpaceMm >= 1500, bp.turningSpaceMm < 1500 ? `${bp.turningSpaceMm}mm is below 1500mm turning circle requirement` : undefined, bp.turningSpaceMm < 1500 ? 'warning' : 'info', 'OBC §3.8.1.5')
+  if (bp?.rampWidthMm != null)     addField('Ramp Clear Width',      bp.rampWidthMm,   900,  bp.rampWidthMm >= 900, bp.rampWidthMm < 900 ? 'Below minimum ramp width' : undefined, bp.rampWidthMm < 900 ? 'warning' : 'info', 'OBC §3.8.3.3')
+  if (bp?.slopeRatio != null)      addField('Ramp Slope',            `1:${bp.slopeRatio}`, '1:10 max', bp.slopeRatio >= 10, bp.slopeRatio < 10 ? `1:${bp.slopeRatio} slope exceeds maximum 1:10` : undefined, bp.slopeRatio < 10 ? 'warning' : 'info', 'OBC §3.8.3.1')
+  // Visual fire safety
+  if (vf?.alarmsObservedCount != null) addField('Visual Alarms Observed', vf.alarmsObservedCount, null, null, undefined, 'info', 'OBC §3.2.4')
+  if (vf?.coverageAdequate != null)    addField('Alarm Coverage Adequate', vf.coverageAdequate ? 'Yes' : 'No', 'All areas', vf.coverageAdequate, vf.coverageAdequate ? undefined : 'Visual alarms must cover all areas of the floor', vf.coverageAdequate ? 'info' : 'warning', 'NFPA 72')
+  if (vf?.strobePresent != null)       addField('Sleeping Room Strobe',    vf.strobePresent ? 'Present' : 'Not detected', 'Required', vf.strobePresent, vf.strobePresent ? undefined : 'Visual strobe required in all sleeping rooms', vf.strobePresent ? 'info' : 'critical', 'OBC §3.2.4')
+  // Washrooms
+  if (wc?.doorClearMm != null)          addField('Washroom Door Width',   wc.doorClearMm,   860,  wc.doorClearMm >= 860, wc.doorClearMm < 860 ? 'Below minimum washroom entry width' : undefined, wc.doorClearMm < 860 ? 'warning' : 'info', 'OBC §3.8.4')
+  if (wc?.turningSpaceMm != null)       addField('Washroom Turning Space', wc.turningSpaceMm, 1500, wc.turningSpaceMm >= 1500, wc.turningSpaceMm < 1500 ? 'Insufficient turning radius for wheelchair' : undefined, wc.turningSpaceMm < 1500 ? 'critical' : 'info', 'OBC §3.8.4.5')
+  if (wc?.sideGrabBarPresent != null)   addField('Side Grab Bar',          wc.sideGrabBarPresent ? 'Present' : 'Absent', 'Required', wc.sideGrabBarPresent, wc.sideGrabBarPresent ? undefined : 'Side grab bar required at accessible WC', wc.sideGrabBarPresent ? 'info' : 'critical', 'OBC §3.8.4.7')
+  if (wc?.sideGrabBarHeightMm != null)  addField('Grab Bar Height',        wc.sideGrabBarHeightMm, '840–920mm', wc.sideGrabBarHeightMm >= 840 && wc.sideGrabBarHeightMm <= 920, undefined, 'info', 'OBC §3.8.4.7')
+  if (wc?.counterHeightMm != null)      addField('Counter/Sink Height',    wc.counterHeightMm, '≤865mm', wc.counterHeightMm <= 865, wc.counterHeightMm > 865 ? 'Counter height exceeds accessible maximum' : undefined, wc.counterHeightMm > 865 ? 'warning' : 'info', 'OBC §3.8.4')
+  // Pool/spa
+  if (ps?.deckWidthMm != null)          addField('Pool Deck Width',        ps.deckWidthMm,   1200, ps.deckWidthMm >= 1200, ps.deckWidthMm < 1200 ? 'Barrier-free deck zone too narrow' : undefined, ps.deckWidthMm < 1200 ? 'warning' : 'info', 'OBC §3.8.5')
+  if (ps?.barrierFreeApproach != null)  addField('Barrier-Free Approach',  ps.barrierFreeApproach ? 'Present' : 'Not present', 'Required', ps.barrierFreeApproach, ps.barrierFreeApproach ? undefined : 'No barrier-free path from entrance to pool deck', ps.barrierFreeApproach ? 'info' : 'critical', 'OBC §3.8.5')
+  if (ps?.poolLiftPresent != null)      addField('Pool Lift',               ps.poolLiftPresent ? 'Present' : 'Not observed', 'Required for public pools', ps.poolLiftPresent ?? null, ps.poolLiftPresent ? undefined : 'Pool lift or alternative barrier-free water entry required', ps.poolLiftPresent ? 'info' : 'warning', 'OBC §3.8.5')
+  // Accessible seating
+  if (as_?.wheelchairSpacesCount != null) addField('Wheelchair Spaces Count', as_.wheelchairSpacesCount, null, null, undefined, 'info', 'OBC §3.8.6.1')
+  if (as_?.spaceWidthMm != null)          addField('Wheelchair Space Width',  as_.spaceWidthMm,   900,  as_.spaceWidthMm >= 900, as_.spaceWidthMm < 900 ? 'Below 900mm minimum width' : undefined, as_.spaceWidthMm < 900 ? 'warning' : 'info', 'OBC §3.8.6.1')
+  if (as_?.spaceDepthMm != null)          addField('Wheelchair Space Depth',  as_.spaceDepthMm,   1400, as_.spaceDepthMm >= 1400, as_.spaceDepthMm < 1400 ? 'Below 1400mm minimum depth' : undefined, as_.spaceDepthMm < 1400 ? 'warning' : 'info', 'OBC §3.8.6.1')
+  if (as_?.companionSeatsPresent != null) addField('Companion Seating',       as_.companionSeatsPresent ? 'Present' : 'Not found', 'Required', as_.companionSeatsPresent, as_.companionSeatsPresent ? undefined : 'Companion seat required adjacent to each wheelchair space', as_.companionSeatsPresent ? 'info' : 'warning', 'OBC §3.8.6.3')
+  if (as_?.aisleWidthMm != null)          addField('Approach Aisle Width',    as_.aisleWidthMm,   900,  as_.aisleWidthMm >= 900, as_.aisleWidthMm < 900 ? 'Approach aisle below 900mm minimum' : undefined, as_.aisleWidthMm < 900 ? 'warning' : 'info', 'OBC §3.8.6')
+
+  return fields
+}
+
 // ── App Shell ─────────────────────────────────────────────────────────────────
 function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>('home')
-  const [activeModule, setActiveModule] = useState<'stair'|'foundation'>('stair')
+  const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
   const [foundationMeasurements, setFoundationMeasurements] = useState<FoundationMeasurements|null>(null)
+  const [accessibilityMeasurements, setAccessibilityMeasurements] = useState<AccessibilityMeasurements|null>(null)
   const [loc,setLoc]=useState<Loc|null>(null)
   const [locLoading,setLocLoading]=useState(true)
   const [code,setCode]=useState<Code|null>(null)
@@ -660,6 +708,10 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
     setFoundationMeasurements(m)
     setScreen('report')
   }, [])
+  const handleAccessibilityScan = useCallback((m: AccessibilityMeasurements) => {
+    setAccessibilityMeasurements(m)
+    setScreen('report')
+  }, [])
   const handleStartOver=useCallback(()=>{setMeasurements(null);setScreen('home')},[])
   const handleRetake=useCallback(()=>{
     // Full retake — clears measurements, shows intro
@@ -672,6 +724,15 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   },[])
 
   // Full-screen flows (no bottom nav)
+
+  // Accessibility module routing
+  if(screen==='scan_ready' && activeModule==='accessibility')
+    return <AccessibilityScanScreen onSuccess={handleAccessibilityScan} onBack={()=>setScreen('home')}/>
+  if(screen==='report' && activeModule==='accessibility' && accessibilityMeasurements) {
+    const activeCodeAcc = code ?? {code:'OBC' as const,label:'OBC 2024',ref:'§3.8',reason:'Ontario Building Code',links:[],limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+    const aFields = buildAccessibilityFields(accessibilityMeasurements)
+    return <AccessibilityReportScreen measurements={accessibilityMeasurements} fields={aFields} codeLabel={activeCodeAcc.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  onRetake={()=>{setAccessibilityMeasurements(null);setScreen('scan_ready')}} onStartOver={()=>{setAccessibilityMeasurements(null);setActiveModule('stair');setScreen('home')}}/>
+  }
 
   // Foundation module routing
   if(screen==='scan_ready' && activeModule==='foundation')
@@ -698,7 +759,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 }
 
 // ── Home Tab ──────────────────────────────────────────────────────────────────
-function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:(mod:'stair'|'foundation')=>void;onLogout:()=>void;activeModule:'stair'|'foundation';onModuleChange:(m:'stair'|'foundation')=>void}){
+function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:(mod:'stair'|'foundation'|'accessibility')=>void;onLogout:()=>void;activeModule:'stair'|'foundation'|'accessibility';onModuleChange:(m:'stair'|'foundation'|'accessibility')=>void}){
   const confirmed=!locLoading&&loc!=null&&isOntario(loc)
   const locStr=loc?`${loc.city}${loc.province?', '+loc.province:''}`:locLoading?'Detecting location…':'Location unavailable'
 
@@ -781,6 +842,24 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
               <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Wall type, cracks, thickness, footing, moisture</div>
             </div>
             <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(65,124,164,0.12)',color:'#417CA4',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(65,124,164,0.3)',flexShrink:0}}>LIVE</span>
+          </button>
+
+          {/* Accessibility Compliance — LIVE */}
+          <button
+            onClick={()=>{ if(!atLimit) onStartScan('accessibility') }}
+            style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='accessibility'?'rgba(123,94,167,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='accessibility'?'rgba(123,94,167,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='accessibility'?'0 2px 10px rgba(123,94,167,0.15)':'none'}}
+          >
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
+              <circle cx="11" cy="4" r="2.5" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5"/>
+              <path d="M11 7v6l-4 4M11 13l4 4" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="6" y1="22" x2="6" y2="16" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="16" y1="22" x2="16" y2="16" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Accessibility Compliance</div>
+              <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Paths, washrooms, alarms, seating, pool access · OBC 2024</div>
+            </div>
+            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(123,94,167,0.12)',color:'#7B5EA7',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(123,94,167,0.3)',flexShrink:0}}>LIVE</span>
           </button>
 
           {/* Coming-soon modules — greyed */}

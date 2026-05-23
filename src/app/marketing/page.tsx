@@ -201,7 +201,7 @@ export default function MarketingPage() {
           <div className={styles.sectionLabel}>Compliance Modules</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>One platform. Every inspection category.</h2>
           <p style={{ fontSize: '1rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 620, marginBottom: 0 }}>
-            stAIrcode is building the next generation of building information software — one module at a time. Select a category, follow the guided scan, and generate a cited compliance report. Stair compliance and foundation inspection are live today. More modules launching soon.
+            stAIrcode is building the next generation of building information software — one module at a time. Select a category, follow the guided scan, and generate a cited compliance report. Stair compliance, foundation inspection, and accessibility compliance are live today. More modules launching soon.
           </p>
 
           <div className={styles.modulesGrid}>
@@ -233,6 +233,21 @@ export default function MarketingPage() {
               <span className={styles.moduleName}>Foundation Inspection</span>
               <span className={styles.moduleDesc}>Wall type classification, crack detection and sizing, wall thickness, footing width, and moisture documentation.</span>
               <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(65,124,164,0.12)', color: '#417CA4', borderColor: 'rgba(65,124,164,0.3)' }}>Live</span>
+            </a>
+
+            {/* ── LIVE: Accessibility ── */}
+            <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`} style={{ borderColor: '#7B5EA7', boxShadow: '0 2px 10px rgba(123,94,167,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
+              <span className={styles.moduleIcon}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="11" cy="4" r="2.5" stroke="#7B5EA7" strokeWidth="1.5"/>
+                  <path d="M11 7v6l-4 4M11 13l4 4" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="6" y1="22" x2="6" y2="16" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="16" y1="22" x2="16" y2="16" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </span>
+              <span className={styles.moduleName}>Accessibility Compliance</span>
+              <span className={styles.moduleDesc}>Barrier-free paths, washrooms, visual fire alarms, pool access, and accessible seating — OBC 2024 & AODA.</span>
+              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(123,94,167,0.12)', color: '#7B5EA7', borderColor: 'rgba(123,94,167,0.3)' }}>Live</span>
             </a>
 
             {/* ── COMING SOON ── */}
