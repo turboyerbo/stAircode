@@ -436,7 +436,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           backdropFilter:'blur(8px)',
         }}>←</button>
         <div style={{flex:1,textAlign:'center'}}><span style={{
-            fontSize:'0.62rem',fontFamily:'monospace',letterSpacing:'0.2em',
+            fontSize:'0.62rem',letterSpacing: '0.04em',
             color:'rgba(255,255,255,0.55)',
           }}>STAIR DETECTION</span>
         </div>
@@ -461,7 +461,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             }}>Point at the staircase</div>
             <div style={{
               fontSize:'0.78rem',color:'rgba(255,255,255,0.45)',
-              fontFamily:'monospace',lineHeight:1.6,maxWidth:260,
+              lineHeight:1.6,maxWidth:260,
             }}>The AI will detect the stair and count the risers automatically.
             </div>
           </div>
@@ -469,14 +469,13 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             padding:'1.05rem 2.4rem',
             background:`linear-gradient(135deg,${C.planeStroke},#0D7A5F)`,
             border:'none',borderRadius:16,
-            color:'#fff',fontSize:'0.92rem',fontFamily:'monospace',
-            fontWeight:700,letterSpacing:'0.1em',cursor:'pointer',
+            color:'#fff',fontSize:'0.92rem',fontWeight:700,letterSpacing:'0.1em',cursor:'pointer',
             boxShadow:`0 6px 28px rgba(74,144,226,0.38)`,
           }}>Start Camera →</button>
           <button onClick={handleSkip} style={{
             background:'none',border:'none',
             color:'rgba(255,255,255,0.25)',fontSize:'0.65rem',
-            fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.06em',
+            cursor:'pointer',letterSpacing:'0.06em',
           }}>Skip detection →</button>
         </div>
       )}
@@ -509,22 +508,19 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                 animation:  (status==='scanning'||status==='counting'||status==='slow') ? 'sdBlink 1.1s ease-in-out infinite' : 'none',
               }} />
               <span style={{
-                fontSize:'0.78rem',fontFamily:'monospace',
-                letterSpacing:'0.1em',color:'rgba(255,255,255,0.68)',
+                fontSize:'0.78rem',letterSpacing:'0.1em',color:'rgba(255,255,255,0.68)',
               }}>{statusLabel[status]}</span>
             </div>
             {status === 'counting' && (
               <span style={{
-                fontSize:'0.65rem',fontFamily:'monospace',
-                color:C.planeStroke,letterSpacing:'0.08em',
+                fontSize:'0.65rem',color:C.planeStroke,letterSpacing:'0.08em',
                 animation:'sdBlink 0.9s ease-in-out infinite',
               }}>Staircase detected — counting risers…
               </span>
             )}
             {status === 'slow' && (
               <span style={{
-                fontSize:'0.65rem',fontFamily:'monospace',
-                color:C.warn,letterSpacing:'0.06em',textAlign:'center',
+                fontSize:'0.65rem',color:C.warn,letterSpacing:'0.06em',textAlign:'center',
               }}>Slow connection — please wait, this can take up to 25 s
               </span>
             )}
@@ -532,7 +528,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
               background:'none',border:'1px solid rgba(21,101,192,0.20)',
               borderRadius:12,padding:'0.55rem 1.4rem',
               color:'rgba(255,255,255,0.28)',fontSize:'0.65rem',
-              fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.06em',
+              cursor:'pointer',letterSpacing:'0.06em',
             }}>Skip detection →</button>
           </div>
         </>
@@ -544,7 +540,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           <div style={{fontSize:'2rem',textAlign:'center',marginBottom:'0.25rem'}}></div>
           <div style={{fontSize:'1.05rem',fontWeight:700,color:'#fff',textAlign:'center',marginBottom:'0.35rem'}}>No staircase detected
           </div>
-          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',fontFamily:'monospace',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>Point your camera at the stairs so the risers are clearly visible, then try again.
+          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>Point your camera at the stairs so the risers are clearly visible, then try again.
           </div>
           <div style={{height:'0.4rem'}} />
           <SheetButton primary onClick={handleRetry}>↺  Try Again</SheetButton>
@@ -560,7 +556,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           <div style={{fontSize:'2rem',textAlign:'center',marginBottom:'0.25rem'}}></div>
           <div style={{fontSize:'1.05rem',fontWeight:700,color:C.warn,textAlign:'center',marginBottom:'0.35rem'}}>Detection failed
           </div>
-          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',fontFamily:'monospace',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>Could not reach the analysis service. Check your connection and try again.
+          <div style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.44)',lineHeight:1.55,textAlign:'center',maxWidth:300,margin:'0 auto'}}>Could not reach the analysis service. Check your connection and try again.
           </div>
           <div style={{height:'0.4rem'}} />
           <SheetButton primary onClick={handleRetry}>↺  Retry</SheetButton>
@@ -584,8 +580,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                 <div style={{fontSize:'0.85rem',fontWeight:700,color:'#fff'}}>Enter riser count manually
                 </div>
                 <div style={{
-                  fontSize:'0.62rem',fontFamily:'monospace',
-                  color:'rgba(255,255,255,0.35)',marginTop:'0.1rem',
+                  fontSize:'0.62rem',color:'rgba(255,255,255,0.35)',marginTop:'0.1rem',
                 }}>Count the risers you can see and adjust below
                 </div>
               </div>
@@ -604,12 +599,11 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
                   display:'flex',alignItems:'center',justifyContent:'center',
                 }}>−</button>
               <div style={{textAlign:'center'}}><div style={{
-                  fontSize:'3.8rem',fontWeight:900,color:'#fff',
+                  fontSize:'3.8rem',fontWeight: 700,color:'#fff',
                   lineHeight:1,fontVariantNumeric:'tabular-nums',letterSpacing:'-0.04em',
                 }}>{manualRiserCount}</div>
                 <div style={{
-                  fontSize:'0.6rem',fontFamily:'monospace',
-                  color:'rgba(255,255,255,0.3)',marginTop:'0.25rem',letterSpacing:'0.1em',
+                  fontSize:'0.6rem',color:'rgba(255,255,255,0.3)',marginTop:'0.25rem',letterSpacing:'0.1em',
                 }}>RISERS</div>
               </div>
               <button
@@ -630,15 +624,13 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
               borderRadius:10,marginBottom:'0.4rem',
             }}><div>
                 <div style={{
-                  fontSize:'0.56rem',fontFamily:'monospace',
-                  color:'rgba(255,255,255,0.32)',letterSpacing:'0.14em',
+                  fontSize:'0.56rem',color:'rgba(255,255,255,0.32)',letterSpacing: '0.04em',
                 }}>HANDRAIL REQUIREMENT</div>
                 <div style={{
                   fontSize:'0.85rem',fontWeight:700,color:hColor,marginTop:'0.2rem',
                 }}>{hLabel}</div>
                 <div style={{
-                  fontSize:'0.56rem',fontFamily:'monospace',
-                  color:'rgba(255,255,255,0.28)',marginTop:'0.15rem',
+                  fontSize:'0.56rem',color:'rgba(255,255,255,0.28)',marginTop:'0.15rem',
                 }}>{handrailBothSides
                     ? `${manualRiserCount} risers · width > 1100 mm`
                     : handrailOneSide
@@ -670,8 +662,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
               background:C.pass,boxShadow:`0 0 10px ${C.pass}`,
             }} />
             <span style={{
-              fontSize:'0.6rem',fontFamily:'monospace',
-              letterSpacing:'0.18em',color:C.pass,
+              fontSize:'0.6rem',letterSpacing: '0.04em',color:C.pass,
             }}>STAIRCASE CONFIRMED</span>
           </div>
 
@@ -684,22 +675,21 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             borderRadius:12,marginBottom:'0.6rem',
           }}><div>
               <div style={{
-                fontSize:'0.58rem',fontFamily:'monospace',
-                color:'rgba(255,255,255,0.35)',letterSpacing:'0.14em',
+                fontSize:'0.58rem',color:'rgba(255,255,255,0.35)',letterSpacing: '0.04em',
               }}>RISERS COUNTED</div>
               <div style={{display:'flex',alignItems:'baseline',gap:'0.4rem',marginTop:'0.2rem'}}><span style={{
-                  fontSize:'2.6rem',fontWeight:900,lineHeight:1,
+                  fontSize:'2.6rem',fontWeight: 700,lineHeight:1,
                   color:'#fff',fontVariantNumeric:'tabular-nums',
                 }}>{result.riserCount}</span>
                 {isApprox && (
-                  <span style={{fontSize:'0.62rem',color:C.warn,fontFamily:'monospace'}}>approx
+                  <span style={{fontSize:'0.62rem',color:C.warn}}>approx
                   </span>
                 )}
               </div>
               {reasoning && (
                 <div style={{
                   fontSize:'0.58rem',color:'rgba(255,255,255,0.28)',
-                  fontFamily:'monospace',marginTop:'0.25rem',lineHeight:1.45,maxWidth:215,
+                  marginTop:'0.25rem',lineHeight:1.45,maxWidth:215,
                 }}>{reasoning}</div>
               )}
             </div>
@@ -715,16 +705,14 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
             borderRadius:12,marginBottom:'1rem',
           }}><div>
               <div style={{
-                fontSize:'0.58rem',fontFamily:'monospace',
-                color:'rgba(255,255,255,0.35)',letterSpacing:'0.14em',
+                fontSize:'0.58rem',color:'rgba(255,255,255,0.35)',letterSpacing: '0.04em',
               }}>HANDRAIL REQUIREMENT</div>
               <div style={{
                 fontSize:'0.9rem',fontWeight:700,
                 color:handrailColor,marginTop:'0.25rem',
               }}>{handrailLabel}</div>
               <div style={{
-                fontSize:'0.58rem',fontFamily:'monospace',
-                color:'rgba(255,255,255,0.3)',marginTop:'0.2rem',lineHeight:1.45,
+                fontSize:'0.58rem',color:'rgba(255,255,255,0.3)',marginTop:'0.2rem',lineHeight:1.45,
               }}>{handrailBothSides
                   ? `${result.riserCount} risers · stair width > 1100 mm`
                   : handrailOneSide
@@ -741,8 +729,7 @@ export default function StairDetect({ onComplete, onBack, knownWidth }: Props) {
           {/* Width note */}
           {knownWidth != null && (
             <div style={{
-              fontSize:'0.6rem',fontFamily:'monospace',
-              color:'rgba(255,255,255,0.25)',textAlign:'center',marginBottom:'0.6rem',
+              fontSize:'0.6rem',color:'rgba(255,255,255,0.25)',textAlign:'center',marginBottom:'0.6rem',
             }}>Using stair width {knownWidth} mm from prior session
             </div>
           )}
@@ -786,7 +773,7 @@ function SheetButton({
       borderRadius:16,
       color: primary ? '#fff' : 'rgba(255,255,255,0.42)',
       fontSize: primary ? '0.88rem' : '0.72rem',
-      fontFamily:'monospace',fontWeight: primary ? 700 : 400,
+      fontWeight: primary ? 700 : 400,
       letterSpacing: primary ? '0.08em' : '0.04em',
       cursor:'pointer',
       boxShadow: primary ? '0 6px 24px rgba(74,144,226,0.38)' : 'none',
@@ -810,7 +797,7 @@ function ConfidenceRing({ value }: { value: number }) {
         <text x="23" y="27" textAnchor="middle" fill="#fff"
           fontSize="9" fontFamily="monospace" fontWeight="bold">{pct}%</text>
       </svg>
-      <span style={{fontSize:'0.52rem',color:'rgba(255,255,255,0.28)',fontFamily:'monospace'}}>conf</span>
+      <span style={{fontSize:'0.52rem',color:'rgba(255,255,255,0.28)'}}>conf</span>
     </div>
   )
 }

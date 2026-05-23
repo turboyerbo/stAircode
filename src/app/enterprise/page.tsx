@@ -11,18 +11,18 @@ const C = { blue: '#007FFF', orange: '#FF7F00', dark: '#0D2B45' }
 
 export default function EnterprisePage() {
   return (
-    <main style={{ minHeight: '100dvh', background: C.dark, color: '#fff', fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}><nav style={{ padding: '1.2rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}><a href="/" style={{ fontSize: '0.55rem', fontFamily: 'monospace', letterSpacing: '0.3em', color: C.orange, textDecoration: 'none' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
+    <main style={{ minHeight: '100dvh', background: C.dark, color: '#fff', fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}><nav style={{ padding: '1.2rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)' }}><a href="/" style={{ fontSize: '0.55rem', letterSpacing: '0.04em', color: C.orange, textDecoration: 'none' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
               <img src='/staircode_header.jpg' alt='stAIrcode' style={{height:24,objectFit:'contain'}} /></a>
         <a href="/" style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'none' }}>← Back to app</a>
       </nav>
 
-      <section style={{ maxWidth: 520, margin: '0 auto', padding: '3rem 1.5rem 1.5rem', textAlign: 'center' }}><div style={{ display: 'inline-block', background: 'rgba(255,127,0,0.15)', border: '1px solid rgba(255,127,0,0.3)', borderRadius: 20, padding: '0.3rem 1rem', fontSize: '0.62rem', fontFamily: 'monospace', letterSpacing: '0.14em', color: C.orange, marginBottom: '1rem' }}>ENTERPRISE
+      <section style={{ maxWidth: 520, margin: '0 auto', padding: '3rem 1.5rem 1.5rem', textAlign: 'center' }}><div style={{ display: 'inline-block', background: 'rgba(255,127,0,0.15)', border: '1px solid rgba(255,127,0,0.3)', borderRadius: 20, padding: '0.3rem 1rem', fontSize: '0.62rem', letterSpacing: '0.04em', color: C.orange, marginBottom: '1rem' }}>ENTERPRISE
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 0.75rem' }}>Built for architecture<br />firms and studios
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 0.75rem' }}>Built for architecture<br />firms and studios
         </h1>
         <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 2rem' }}>Team-wide access, API integration with your workflow, custom code libraries, and white-label PDF reports.
         </p>
-        <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#fff', marginBottom: '0.2rem' }}>$79<span style={{ fontSize: '1rem', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/month</span>
+        <div style={{ fontSize: '2.4rem', fontWeight: 700, color: '#fff', marginBottom: '0.2rem' }}>$79<span style={{ fontSize: '1rem', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/month</span>
         </div>
         <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginBottom: '2rem' }}>Up to 10 seats · Volume pricing available</p>
 
@@ -30,8 +30,7 @@ export default function EnterprisePage() {
           display: 'block', width: '100%', padding: '1.1rem',
           background: `linear-gradient(135deg,${C.orange},${C.blue})`,
           borderRadius: 16, color: '#fff', textDecoration: 'none',
-          fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace',
-          letterSpacing: '0.1em', textAlign: 'center',
+          fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.1em', textAlign: 'center',
           boxShadow: '0 6px 32px rgba(255,127,0,0.3)',
         }}>Book a 30-min Call →
         </a>
@@ -58,8 +57,7 @@ export default function EnterprisePage() {
           display: 'inline-block', padding: '1rem 2.5rem',
           background: `linear-gradient(135deg,${C.orange},${C.blue})`,
           borderRadius: 16, color: '#fff', textDecoration: 'none',
-          fontSize: '0.88rem', fontWeight: 700, fontFamily: 'monospace',
-          letterSpacing: '0.1em', boxShadow: '0 4px 24px rgba(255,127,0,0.3)',
+          fontSize: '0.88rem', fontWeight: 700, letterSpacing: '0.1em', boxShadow: '0 4px 24px rgba(255,127,0,0.3)',
         }}>Book a 30-min Call →
         </a>
         <p style={{ marginTop: '1rem', fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>© {new Date().getFullYear()} Just Open Technologies Inc. ·{' '}

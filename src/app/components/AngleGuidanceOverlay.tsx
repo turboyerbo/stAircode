@@ -94,9 +94,9 @@ export default function AngleGuidanceOverlay({ mode, isActive, onReady }: Props)
       pointerEvents: 'none',
     }}>{/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}><span style={{ fontSize: 14, color }}>{MODE_ICON[mode]}</span>
-        <span style={{ fontSize: 9, fontFamily: 'monospace', fontWeight: 700, color, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{acceptable ? ' ANGLE OK — HOLD STILL' : 'ADJUST ANGLE'}
+        <span style={{ fontSize: 9, fontWeight: 700, color, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{acceptable ? ' ANGLE OK — HOLD STILL' : 'ADJUST ANGLE'}
         </span>
-        <div style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace' }}>{Math.round(score * 100)}%
+        <div style={{ marginLeft: 'auto', fontSize: 9, color: 'rgba(255,255,255,0.45)' }}>{Math.round(score * 100)}%
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export default function AngleGuidanceOverlay({ mode, isActive, onReady }: Props)
 
       {/* Ideal position reminder */}
       {acceptable && (
-        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4, fontStyle: 'italic' }}>{MODE_IDEAL[mode]}
+        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>{MODE_IDEAL[mode]}
         </div>
       )}
     </div>

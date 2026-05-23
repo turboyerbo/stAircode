@@ -184,7 +184,7 @@ export default function HelpScreen() {
   return (
     <div style={{ flex:1, overflowY:'auto', background:BG, backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', color:TEXT, fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", paddingBottom:'2rem' }}>{/* HEADER */}
       <div style={{ padding:'1.4rem 1.25rem 1.1rem', backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)' }}><div style={{ marginBottom:'0.5rem' }}><BetaLogo size="sm" onDark /></div>
-        <h1 style={{ fontSize:'1.5rem', fontWeight:900, color:TEXT, letterSpacing:'-0.02em', margin:0 }}>AR / AI Guide</h1>
+        <h1 style={{ fontSize:'1.5rem', fontWeight: 700, color:TEXT, letterSpacing:'-0.02em', margin:0 }}>AR / AI Guide</h1>
         <p style={{ fontSize:'0.78rem', color:TEXT2, margin:'0.4rem 0 0', lineHeight:1.55 }}>Your phone&apos;s AR sensor and Claude AI Vision work together to measure your staircase — no tape measure needed.
         </p>
       </div>
@@ -210,7 +210,7 @@ export default function HelpScreen() {
       {/* Pill tabs — no scrollbar */}
       <div style={{ display:'flex', gap:'0.4rem', padding:'0 1rem 0.75rem', overflowX:'auto', WebkitOverflowScrolling:'touch' as any, scrollbarWidth:'none', msOverflowStyle:'none' } as any}>
         {MEASURE_STEPS.map((s, i) => (
-          <button key={s.id} onClick={() => setActiveMeasure(i)} style={{ flexShrink:0, padding:'0.32rem 0.75rem', borderRadius:20, border:`1.5px solid ${activeMeasure===i ? s.color : BORDER}`, background: activeMeasure===i ? `${s.color}22` : 'transparent', color: activeMeasure===i ? s.color : TEXT3, fontFamily:'monospace', fontSize:'0.6rem', fontWeight:700, letterSpacing:'0.08em', cursor:'pointer', transition:'all 0.15s' }}>{s.badge} {s.label}
+          <button key={s.id} onClick={() => setActiveMeasure(i)} style={{ flexShrink:0, padding:'0.32rem 0.75rem', borderRadius:20, border:`1.5px solid ${activeMeasure===i ? s.color : BORDER}`, background: activeMeasure===i ? `${s.color}22` : 'transparent', color: activeMeasure===i ? s.color : TEXT3, fontSize:'0.6rem', fontWeight:700, letterSpacing:'0.08em', cursor:'pointer', transition:'all 0.15s' }}>{s.badge} {s.label}
           </button>
         ))}
       </div>
@@ -228,7 +228,7 @@ export default function HelpScreen() {
             style={{ width:44, height:44, borderRadius:12, background: activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(255,255,255,0.05)' : `${ms.color}22`, border:`2px solid ${activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(255,255,255,0.1)' : ms.color}`, color: activeMeasure===MEASURE_STEPS.length-1 ? 'rgba(255,255,255,0.2)' : ms.color, fontSize:'1.5rem', fontWeight:700, cursor: activeMeasure===MEASURE_STEPS.length-1 ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s', flexShrink:0 }}>›</button>
         </div>
         {/* Step badge + counter */}
-        <div style={{ background:BG2, padding:'0.65rem 1.1rem 0', display:'flex', alignItems:'center', gap:'0.5rem' }}><div style={{ background:ms.color, color: ms.id==='fail' ? '#fff' : '#000', fontFamily:'monospace', fontWeight:800, fontSize:'0.58rem', letterSpacing:'0.12em', borderRadius:8, padding:'0.2rem 0.6rem' }}>{ms.badge} / 05</div>
+        <div style={{ background:BG2, padding:'0.65rem 1.1rem 0', display:'flex', alignItems:'center', gap:'0.5rem' }}><div style={{ background:ms.color, color: ms.id==='fail' ? '#fff' : '#000', fontWeight:800, fontSize:'0.58rem', letterSpacing:'0.12em', borderRadius:8, padding:'0.2rem 0.6rem' }}>{ms.badge} / 05</div>
         </div>
 
         {/* Text */}
@@ -241,7 +241,7 @@ export default function HelpScreen() {
       </div>
 
       {/* What you see on screen — legend */}
-      <div style={{ margin:'0 1rem 1.25rem', background:BG2, border:`1.5px solid ${BORDER}`, borderRadius:14, padding:'0.85rem 1rem' }}><div style={{ fontSize:'0.58rem', fontFamily:'monospace', letterSpacing:'0.15em', color:ORANGE, fontWeight:700, marginBottom:'0.7rem' }}>WHAT YOU SEE ON SCREEN</div>
+      <div style={{ margin:'0 1rem 1.25rem', background:BG2, border:`1.5px solid ${BORDER}`, borderRadius:14, padding:'0.85rem 1rem' }}><div style={{ fontSize:'0.58rem', letterSpacing: '0.04em', color:ORANGE, fontWeight:700, marginBottom:'0.7rem' }}>WHAT YOU SEE ON SCREEN</div>
         {[
           { color:'#E84545', dot:'●', line:'———', label:'Red beam + red dots',   desc:'AR is actively measuring — hold still' },
           { color:AMBER,     dot:'', line:'···',  label:'Orange atom icon',      desc:'AI is checking your camera position' },
@@ -249,8 +249,8 @@ export default function HelpScreen() {
           { color:'#4A90E2', dot:'●', line:'———', label:'Blue beam + blue dots',  desc:'Measurement confirmed and locked ' },
           { color:'#4A90E2', dot:'◈', line:'△△',  label:'Two blue rays',         desc:'Dual-ray width capture — both edges measured' },
         ].map(({ color, dot, line, label, desc }) => (
-          <div key={label} style={{ display:'flex', alignItems:'flex-start', gap:'0.75rem', marginBottom:'0.55rem' }}><div style={{ minWidth:36, display:'flex', alignItems:'center', gap:'0.2rem', paddingTop:'0.05rem' }}><span style={{ color, fontSize:'0.85rem', fontFamily:'monospace', lineHeight:1 }}>{dot}</span>
-              {line && <span style={{ color, fontSize:'0.62rem', fontFamily:'monospace', letterSpacing:'-0.05em', opacity:0.7 }}>{line}</span>}
+          <div key={label} style={{ display:'flex', alignItems:'flex-start', gap:'0.75rem', marginBottom:'0.55rem' }}><div style={{ minWidth:36, display:'flex', alignItems:'center', gap:'0.2rem', paddingTop:'0.05rem' }}><span style={{ color, fontSize:'0.85rem', lineHeight:1 }}>{dot}</span>
+              {line && <span style={{ color, fontSize:'0.62rem', letterSpacing:'-0.05em', opacity:0.7 }}>{line}</span>}
             </div>
             <div style={{ fontSize:'0.75rem', color:TEXT2, lineHeight:1.45 }}><span style={{ fontWeight:700, color, display:'block', marginBottom:'0.1rem' }}>{label}</span>
               {desc}
@@ -307,7 +307,7 @@ export default function HelpScreen() {
         </div>
         <FeedbackButton source="help_screen" />
         <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}><div style={{ flex:1, height:1, background:BORDER }} />
-          <span style={{ fontSize:'0.62rem', color:TEXT3, fontFamily:'monospace' }}>OR</span>
+          <span style={{ fontSize:'0.62rem', color:TEXT3 }}>OR</span>
           <div style={{ flex:1, height:1, background:BORDER }} />
         </div>
         <a href="mailto:info@staircode.app?subject=stAIrcode%20Support" style={{ display:'block', width:'100%', padding:'0.95rem', background:`linear-gradient(135deg, ${BLUE}, ${ORANGE})`, border:'none', borderRadius:12, color:'#fff', fontSize:'0.88rem', fontWeight:700, textAlign:'center', textDecoration:'none', boxShadow:`0 4px 20px rgba(65,124,164,0.3)`, letterSpacing:'0.06em', boxSizing:'border-box' } as any}>
@@ -321,7 +321,7 @@ export default function HelpScreen() {
 function SectionHeader({ label }: { label: string }) {
   return (
     <div style={{ padding:'1.1rem 1.25rem 0.4rem', display:'flex', alignItems:'center', gap:'0.6rem' }}><div style={{ height:1, width:14, background:ORANGE, borderRadius:1 }} />
-      <span style={{ fontSize:'0.58rem', fontWeight:700, letterSpacing:'0.18em', color:ORANGE, fontFamily:'monospace', textTransform:'uppercase' as const }}>{label}</span>
+      <span style={{ fontSize:'0.58rem', fontWeight:700, letterSpacing: '0.04em', color:ORANGE, textTransform:'uppercase' as const }}>{label}</span>
     </div>
   )
 }

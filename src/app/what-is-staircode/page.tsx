@@ -12,10 +12,10 @@ export default function WhatIsStaircodeePage() {
       </header>
 
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '3rem 1.5rem' }}>{/* Label */}
-        <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.14em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Introduction
+        <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Introduction
         </div>
 
-        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.25rem', color: '#E8F4FF' }}>What is st<span style={{ color: '#F29337' }}>AI</span>rcode?
+        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.25rem', color: '#E8F4FF' }}>What is st<span style={{ color: '#F29337' }}>AI</span>rcode?
         </h1>
 
         <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.78)', lineHeight: 1.8, marginBottom: '2.5rem', maxWidth: 620 }}>stAIrcode is an AI-powered stair compliance tool that lets anyone — from homeowners to building managers — check whether a staircase meets local building code requirements using nothing but a smartphone. No tape measure. No technical knowledge. No site visit required from an engineer.

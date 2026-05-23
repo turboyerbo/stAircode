@@ -115,7 +115,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       {/* ── ACCOUNT ── */}
       {/* Header */}
       <div style={{ background:'#0A1C2E', backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', padding:'1.5rem 1.25rem 1.25rem' }}><div style={{ marginBottom: '0.5rem' }}><BetaLogo size="sm" onDark /></div>
-        <div style={{ fontSize:'1.3rem', fontWeight:900, color:'#E8F4FF', letterSpacing:'-0.02em' }}>Settings</div>
+        <div style={{ fontSize:'1.3rem', fontWeight: 700, color:'#E8F4FF', letterSpacing:'-0.02em' }}>Settings</div>
       </div>
       <div style={{ height:5, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px', marginBottom:'0.25rem' }} />
 
@@ -273,8 +273,8 @@ function SectionHeader({ label }: { label: string }) {
     <div style={{
       padding: '1rem 1.25rem 0.35rem',
       fontSize: '0.62rem', fontWeight: 700,
-      letterSpacing: '0.16em', color: T.text3,
-      fontFamily: 'monospace', textTransform: 'uppercase',
+      letterSpacing: '0.04em', color: T.text3,
+      textTransform: 'uppercase',
     }}>{label}
     </div>
   )
@@ -329,7 +329,7 @@ function OptionRow({ label, selected, onSelect }: {
       cursor: 'pointer', textAlign: 'left',
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     }}><span style={{ fontSize: '0.9rem', color: T.text, fontWeight: selected ? 700 : 400 }}>{label}</span>
-      {selected && <span style={{fontSize:'0.8rem',color:'#27A96B',fontWeight:900}}>&#10003;</span>}
+      {selected && <span style={{fontSize:'0.8rem',color:'#27A96B',fontWeight: 700}}>&#10003;</span>}
     </button>
   )
 }

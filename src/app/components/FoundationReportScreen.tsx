@@ -62,13 +62,13 @@ const CRACK_INFO: Record<string, { label: string; structural: string; severity: 
 }
 
 function ResultBadge({ pass, severity }: { pass: boolean | null; severity: 'info' | 'warning' | 'critical' }) {
-  if (pass === null) return <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 700, background: 'rgba(147,186,212,0.15)', color: WHITE2, padding: '0.2rem 0.65rem', borderRadius: 6, letterSpacing: '0.08em' }}>N/A</span>
-  if (pass) return <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 700, background: 'rgba(39,169,107,0.15)', color: GREEN, padding: '0.2rem 0.65rem', borderRadius: 6, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>PASS</span>
+  if (pass === null) return <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(147,186,212,0.15)', color: WHITE2, padding: '0.2rem 0.65rem', borderRadius: 6, letterSpacing: '0.08em' }}>N/A</span>
+  if (pass) return <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(39,169,107,0.15)', color: GREEN, padding: '0.2rem 0.65rem', borderRadius: 6, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>PASS</span>
   const bg  = severity === 'critical' ? 'rgba(232,69,69,0.15)'  : 'rgba(250,116,31,0.15)'
   const col = severity === 'critical' ? '#ff7070'                : AMBER
   const bdr = severity === 'critical' ? 'rgba(232,69,69,0.45)'  : 'rgba(250,116,31,0.4)'
   const lbl = severity === 'critical' ? 'CRITICAL'              : 'FLAG'
-  return <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 700, background: bg, color: col, padding: '0.2rem 0.65rem', borderRadius: 6, border: `1px solid ${bdr}`, letterSpacing: '0.08em' }}>{lbl}</span>
+  return <span style={{ fontSize: '0.65rem', fontWeight: 700, background: bg, color: col, padding: '0.2rem 0.65rem', borderRadius: 6, border: `1px solid ${bdr}`, letterSpacing: '0.08em' }}>{lbl}</span>
 }
 
 export default function FoundationReportScreen({ measurements: m, fields, codeLabel, location, onStartOver, onRetake }: Props) {
@@ -250,31 +250,31 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
       <div style={{ background: NAVY, padding: 'max(env(safe-area-inset-top,0px),1.5rem) 1.25rem 0', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: `repeating-linear-gradient(45deg,${BLUE},${BLUE} 10px,${NAVY} 10px,${NAVY} 20px)` }} />
         <div style={{ paddingTop: '0.75rem', paddingBottom: '1.25rem' }}>
-          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', letterSpacing: '0.14em', marginBottom: '0.4rem' }}>STAIRCODE · BETA · FOUNDATION INSPECTION REPORT</div>
-          <div style={{ fontSize: 'clamp(1.5rem,5vw,2rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '0.5rem' }}>Foundation<br />Inspection Report</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', fontFamily: 'monospace', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>STAIRCODE · BETA · FOUNDATION INSPECTION REPORT</div>
+          <div style={{ fontSize: 'clamp(1.5rem,5vw,2rem)', fontWeight: 700, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '0.5rem' }}>Foundation<br />Inspection Report</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', marginBottom: '1rem' }}>
             <span>{codeLabel}</span><span>·</span><span>{location || 'Location not set'}</span><span>·</span><span>{today}</span>
           </div>
 
           {/* Overall badge */}
           <div style={{ background: overallBg, border: `1.5px solid ${overallColor}44`, borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div>
-              <div style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: overallColor, fontWeight: 700, letterSpacing: '0.12em', marginBottom: '0.2rem' }}>OVERALL ASSESSMENT</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 900, color: overallColor, fontFamily: 'monospace' }}>{overallLabel}</div>
+              <div style={{ fontSize: '0.6rem', color: overallColor, fontWeight: 700, letterSpacing: '0.12em', marginBottom: '0.2rem' }}>OVERALL ASSESSMENT</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: overallColor }}>{overallLabel}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1 }}>{passCount}<span style={{ fontSize: '0.7rem', color: WHITE2, display: 'block', fontWeight: 400 }}>PASS</span></div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>{passCount}<span style={{ fontSize: '0.7rem', color: WHITE2, display: 'block', fontWeight: 400 }}>PASS</span></div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: flagCount > 0 ? overallColor : WHITE2, fontFamily: 'monospace', lineHeight: 1 }}>{flagCount}<span style={{ fontSize: '0.7rem', color: WHITE2, display: 'block', fontWeight: 400 }}>FLAG{flagCount !== 1 ? 'S' : ''}</span></div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 700, color: flagCount > 0 ? overallColor : WHITE2, lineHeight: 1 }}>{flagCount}<span style={{ fontSize: '0.7rem', color: WHITE2, display: 'block', fontWeight: 400 }}>FLAG{flagCount !== 1 ? 'S' : ''}</span></div>
             </div>
           </div>
 
           {/* Wall classification */}
           <div style={{ background: 'rgba(65,124,164,0.12)', border: `1px solid ${BORDER}`, borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: WHITE2, letterSpacing: '0.1em', marginBottom: '0.3rem' }}>WALL CLASSIFICATION</div>
+            <div style={{ fontSize: '0.6rem', color: WHITE2, letterSpacing: '0.1em', marginBottom: '0.3rem' }}>WALL CLASSIFICATION</div>
             <div style={{ fontSize: '0.95rem', fontWeight: 800, color: WHITE }}>{WALL_TYPE_LABELS[m.wallType] ?? m.wallTypeLabel ?? m.wallType}</div>
-            {m.wallTypeConfidence != null && <div style={{ fontSize: '0.65rem', color: WHITE2, marginTop: '0.2rem', fontFamily: 'monospace' }}>AI confidence: {Math.round(m.wallTypeConfidence * 100)}%</div>}
+            {m.wallTypeConfidence != null && <div style={{ fontSize: '0.65rem', color: WHITE2, marginTop: '0.2rem' }}>AI confidence: {Math.round(m.wallTypeConfidence * 100)}%</div>}
           </div>
         </div>
       </div>
@@ -282,18 +282,18 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
       {/* ── CRITICAL WARNING ── */}
       {m.horizontalCrack && (
         <div style={{ background: 'rgba(232,69,69,0.12)', border: '2px solid rgba(232,69,69,0.5)', margin: '1rem', borderRadius: 14, padding: '1rem 1.1rem' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#ff7070', fontFamily: 'monospace', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>CRITICAL — HORIZONTAL CRACK DETECTED</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ff7070', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>CRITICAL — HORIZONTAL CRACK DETECTED</div>
           <div style={{ fontSize: '0.8rem', color: '#ffaaaa', lineHeight: 1.65 }}>Horizontal cracks in foundation walls indicate that lateral earth pressure may be exceeding the wall&apos;s structural capacity. Engage a licensed structural engineer immediately.</div>
         </div>
       )}
 
       {/* ── Quick Summary (always visible — not paywalled) ── */}
       <div style={{ padding: '1rem 1rem 0' }}>
-        <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: BLUE, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.6rem' }}>QUICK SUMMARY</div>
+        <div style={{ fontSize: '0.65rem', color: BLUE, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.6rem' }}>QUICK SUMMARY</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
           {summaryItems.map(item => (
             <div key={item.label} style={{ background: '#fff', border: '1px solid rgba(44,90,122,0.12)', borderRadius: 10, padding: '0.6rem 0.8rem' }}>
-              <div style={{ fontSize: '0.62rem', color: '#9DB4C5', fontFamily: 'monospace', letterSpacing: '0.08em', marginBottom: '0.15rem' }}>{item.label.toUpperCase()}</div>
+              <div style={{ fontSize: '0.62rem', color: '#9DB4C5', letterSpacing: '0.08em', marginBottom: '0.15rem' }}>{item.label.toUpperCase()}</div>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0D1E2E', textTransform: 'capitalize' }}>{item.value}</div>
             </div>
           ))}
@@ -319,17 +319,17 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,28,46,0.97) 0%, rgba(10,28,46,0.6) 55%, transparent 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', padding: '1.25rem', gap: '0.65rem' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.72rem', color: WHITE2, marginBottom: '0.35rem' }}>Your full report is ready</div>
-              <div style={{ fontSize: '1rem', fontWeight: 900, color: WHITE, letterSpacing: '-0.02em', lineHeight: 1.25 }}>Unlock the complete assessment</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: WHITE, letterSpacing: '-0.02em', lineHeight: 1.25 }}>Unlock the complete assessment</div>
               <div style={{ fontSize: '0.68rem', color: WHITE2, marginTop: '0.2rem' }}>Compliance analysis · Crack docs · Code citations · PDF delivered by email</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>$38.99</span>
-              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: GOLD }}>$2.99</span>
-              <span style={{ fontSize: '0.6rem', fontWeight: 800, fontFamily: 'monospace', background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>BETA</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 700, color: GOLD }}>$2.99</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>BETA</span>
             </div>
             <button
               onClick={() => setSheet('paywall')}
-              style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 14, color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 24px rgba(242,147,55,0.5)' }}
+              style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 14, color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(242,147,55,0.5)' }}
             >
               Generate Report — $2.99 →
             </button>
@@ -370,14 +370,14 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
       {sheet === 'done' && (
         <>
           <div style={{ padding: '1rem' }}>
-            <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: BLUE, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.75rem' }}>COMPLIANCE CHECK RESULTS</div>
+            <div style={{ fontSize: '0.65rem', color: BLUE, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.75rem' }}>COMPLIANCE CHECK RESULTS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {fields.map((f, i) => (
                 <div key={i} style={{ background: '#fff', border: `1px solid ${f.pass === false ? (f.severity === 'critical' ? 'rgba(232,69,69,0.4)' : 'rgba(250,116,31,0.35)') : 'rgba(44,90,122,0.12)'}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(44,74,110,0.06)' }}>
                   <div style={{ padding: '0.7rem 0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D1E2E', marginBottom: '0.15rem' }}>{f.label}</div>
-                      {f.value != null && <div style={{ fontSize: '0.72rem', color: '#5E7D9B', fontFamily: 'monospace' }}>{f.value}{f.unit ? ` ${f.unit}` : ''}</div>}
+                      {f.value != null && <div style={{ fontSize: '0.72rem', color: '#5E7D9B' }}>{f.value}{f.unit ? ` ${f.unit}` : ''}</div>}
                       {f.note && <div style={{ fontSize: '0.68rem', color: f.severity === 'critical' ? RED : f.severity === 'warning' ? '#D97B1F' : '#5E7D9B', lineHeight: 1.55, marginTop: '0.2rem' }}>{f.note}</div>}
                     </div>
                     <ResultBadge pass={f.pass} severity={f.severity} />
@@ -389,11 +389,11 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
 
           {/* Crack report */}
           <div style={{ padding: '0 1rem 1rem' }}>
-            <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: BLUE, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.75rem' }}>CRACK DOCUMENTATION</div>
+            <div style={{ fontSize: '0.65rem', color: BLUE, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.75rem' }}>CRACK DOCUMENTATION</div>
             <div style={{ background: '#fff', border: `1px solid ${crackInfo.severity === 'critical' ? 'rgba(232,69,69,0.4)' : crackInfo.severity === 'warning' ? 'rgba(250,116,31,0.3)' : 'rgba(44,90,122,0.12)'}`, borderRadius: 12, padding: '0.9rem 1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0D1E2E' }}>{m.crackPresent ? `Crack Type: ${crackInfo.label}` : 'No Cracks Detected'}</div>
-                {m.crackPresent && <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', fontWeight: 700, background: crackInfo.severity === 'critical' ? 'rgba(232,69,69,0.12)' : crackInfo.severity === 'warning' ? 'rgba(250,116,31,0.12)' : 'rgba(39,169,107,0.12)', color: crackInfo.severity === 'critical' ? RED : crackInfo.severity === 'warning' ? '#D97B1F' : GREEN, padding: '0.2rem 0.65rem', borderRadius: 6, border: `1px solid ${crackInfo.severity === 'critical' ? 'rgba(232,69,69,0.35)' : crackInfo.severity === 'warning' ? 'rgba(250,116,31,0.3)' : 'rgba(39,169,107,0.3)'}`, letterSpacing: '0.08em', textTransform: 'uppercase' as const, flexShrink: 0 }}>{crackInfo.severity}</span>}
+                {m.crackPresent && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: crackInfo.severity === 'critical' ? 'rgba(232,69,69,0.12)' : crackInfo.severity === 'warning' ? 'rgba(250,116,31,0.12)' : 'rgba(39,169,107,0.12)', color: crackInfo.severity === 'critical' ? RED : crackInfo.severity === 'warning' ? '#D97B1F' : GREEN, padding: '0.2rem 0.65rem', borderRadius: 6, border: `1px solid ${crackInfo.severity === 'critical' ? 'rgba(232,69,69,0.35)' : crackInfo.severity === 'warning' ? 'rgba(250,116,31,0.3)' : 'rgba(39,169,107,0.3)'}`, letterSpacing: '0.08em', textTransform: 'uppercase' as const, flexShrink: 0 }}>{crackInfo.severity}</span>}
               </div>
               {m.crackPresent && (
                 <>
@@ -423,10 +423,10 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
 
       {/* ── Actions ── */}
       <div style={{ padding: '0 1rem', paddingBottom: 'max(env(safe-area-inset-bottom,0px),1.5rem)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-        <button onClick={onRetake} style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg,#27A96B,#1A7A50)`, border: 'none', borderRadius: 14, color: '#fff', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 18px rgba(39,169,107,0.38)' }}>
+        <button onClick={onRetake} style={{ width: '100%', padding: '1rem', background: `linear-gradient(135deg,#27A96B,#1A7A50)`, border: 'none', borderRadius: 14, color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 18px rgba(39,169,107,0.38)' }}>
           ↺ Rescan Foundation
         </button>
-        <button onClick={onStartOver} style={{ width: '100%', padding: '0.85rem', background: 'rgba(65,124,164,0.1)', border: '1px solid rgba(65,124,164,0.25)', borderRadius: 14, color: BLUE, fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
+        <button onClick={onStartOver} style={{ width: '100%', padding: '0.85rem', background: 'rgba(65,124,164,0.1)', border: '1px solid rgba(65,124,164,0.25)', borderRadius: 14, color: BLUE, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
           ← Module Select
         </button>
       </div>
@@ -443,15 +443,15 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
             {/* Header */}
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.72rem', color: WHITE2, marginBottom: '0.3rem' }}>Your full report is ready</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 900, color: WHITE, letterSpacing: '-0.02em', lineHeight: 1.25 }}>Unlock the complete assessment</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: WHITE, letterSpacing: '-0.02em', lineHeight: 1.25 }}>Unlock the complete assessment</div>
               <div style={{ fontSize: '0.68rem', color: WHITE2, marginTop: '0.2rem' }}>Code citations · Crack analysis · Moisture docs · PDF by email</div>
             </div>
 
             {/* Price */}
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: GOLD }}>$2.99</span>
-              <span style={{ fontSize: '0.6rem', fontWeight: 800, fontFamily: 'monospace', background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>BETA</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 700, color: GOLD }}>$2.99</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>BETA</span>
             </div>
 
             {/* Email input */}
@@ -460,7 +460,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
               <input
                 type="email" inputMode="email" placeholder="your@email.com"
                 value={emailInput} onChange={e => setEmailInput(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? 'rgba(39,169,107,0.45)' : BORDER}`, borderRadius: 10, color: WHITE, fontFamily: 'monospace', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' as const }}
+                style={{ width: '100%', padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? 'rgba(39,169,107,0.45)' : BORDER}`, borderRadius: 10, color: WHITE, fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' as const }}
               />
             </div>
 
@@ -473,10 +473,10 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
                     type="text" placeholder="Enter code"
                     value={discountCode} onChange={e => { setDiscountCode(e.target.value); setDiscountError(null) }}
                     onKeyDown={e => { if (e.key === 'Enter') handleApplyDiscount() }}
-                    style={{ flex: 1, padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${discountCode ? 'rgba(147,186,212,0.45)' : BORDER}`, borderRadius: 10, color: WHITE, fontSize: '0.88rem', outline: 'none', fontFamily: 'monospace', letterSpacing: '0.04em' }}
+                    style={{ flex: 1, padding: '0.7rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${discountCode ? 'rgba(147,186,212,0.45)' : BORDER}`, borderRadius: 10, color: WHITE, fontSize: '0.88rem', outline: 'none', letterSpacing: '0.04em' }}
                   />
                   <button onClick={handleApplyDiscount} disabled={discountChecking || !discountCode.trim()}
-                    style={{ padding: '0.7rem 1rem', background: discountCode.trim() ? 'rgba(242,147,55,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${discountCode.trim() ? 'rgba(242,147,55,0.4)' : BORDER}`, borderRadius: 10, color: discountCode.trim() ? GOLD : WHITE2, fontSize: '0.8rem', fontWeight: 700, cursor: discountCode.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                    style={{ padding: '0.7rem 1rem', background: discountCode.trim() ? 'rgba(242,147,55,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${discountCode.trim() ? 'rgba(242,147,55,0.4)' : BORDER}`, borderRadius: 10, color: discountCode.trim() ? GOLD : WHITE2, fontSize: '0.8rem', fontWeight: 700, cursor: discountCode.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
                     {discountChecking ? '…' : 'Apply →'}
                   </button>
                 </div>
@@ -485,7 +485,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.9rem', background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 10 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: GREEN }} />
-                <span style={{ fontSize: '0.78rem', color: GREEN, fontWeight: 700, fontFamily: 'monospace' }}>Code applied — report is free</span>
+                <span style={{ fontSize: '0.78rem', color: GREEN, fontWeight: 700 }}>Code applied — report is free</span>
               </div>
             )}
 
@@ -494,13 +494,13 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
               <button
                 onClick={() => handleGenerate(false)}
                 disabled={genLoading}
-                style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 14, color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 24px rgba(39,169,107,0.45)', opacity: genLoading ? 0.7 : 1 }}>
+                style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 14, color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(39,169,107,0.45)', opacity: genLoading ? 0.7 : 1 }}>
                 {genLoading ? 'Generating…' : 'Generate Foundation Report — Free →'}
               </button>
             ) : (
               <button
                 onClick={handleStripeCheckout}
-                style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 14, color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 24px rgba(242,147,55,0.5)' }}>
+                style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 14, color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(242,147,55,0.5)' }}>
                 Unlock Full Report — $2.99 →
               </button>
             )}
@@ -514,7 +514,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
               </button>
             )}
 
-            <button onClick={() => setSheet('hidden')} style={{ background: 'none', border: 'none', color: 'rgba(147,186,212,0.5)', fontSize: '0.68rem', fontFamily: 'monospace', cursor: 'pointer', alignSelf: 'center' }}>← Back to summary</button>
+            <button onClick={() => setSheet('hidden')} style={{ background: 'none', border: 'none', color: 'rgba(147,186,212,0.5)', fontSize: '0.68rem', cursor: 'pointer', alignSelf: 'center' }}>← Back to summary</button>
           </div>
         </>
       )}
@@ -536,7 +536,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
             <input
               type="email" inputMode="email" placeholder="your@email.com (for delivery)"
               value={emailInput} onChange={e => setEmailInput(e.target.value)}
-              style={{ width: '100%', padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? 'rgba(39,169,107,0.45)' : BORDER}`, borderRadius: 10, color: WHITE, fontFamily: 'monospace', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const }}
+              style={{ width: '100%', padding: '0.75rem 0.9rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${emailInput.includes('@') ? 'rgba(39,169,107,0.45)' : BORDER}`, borderRadius: 10, color: WHITE, fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box' as const }}
             />
 
             <textarea
@@ -551,11 +551,11 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
             <button
               onClick={handleTestimonialSubmit}
               disabled={testimSending || testimText.trim().length < 20 || !emailInput.includes('@')}
-              style={{ width: '100%', padding: '1rem', background: testimText.trim().length >= 20 && emailInput.includes('@') ? `linear-gradient(135deg,${GREEN},#1A7A50)` : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 14, color: testimText.trim().length >= 20 && emailInput.includes('@') ? '#fff' : WHITE2, fontFamily: 'monospace', fontSize: '0.88rem', fontWeight: 900, cursor: testimText.trim().length >= 20 && emailInput.includes('@') ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
+              style={{ width: '100%', padding: '1rem', background: testimText.trim().length >= 20 && emailInput.includes('@') ? `linear-gradient(135deg,${GREEN},#1A7A50)` : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 14, color: testimText.trim().length >= 20 && emailInput.includes('@') ? '#fff' : WHITE2, fontSize: '0.88rem', fontWeight: 700, cursor: testimText.trim().length >= 20 && emailInput.includes('@') ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
               {testimSending ? 'Submitting…' : 'Submit Testimonial & Unlock Report →'}
             </button>
 
-            <button onClick={() => setSheet('paywall')} style={{ background: 'none', border: 'none', color: 'rgba(147,186,212,0.5)', fontSize: '0.68rem', fontFamily: 'monospace', cursor: 'pointer', alignSelf: 'center' }}>← Back</button>
+            <button onClick={() => setSheet('paywall')} style={{ background: 'none', border: 'none', color: 'rgba(147,186,212,0.5)', fontSize: '0.68rem', cursor: 'pointer', alignSelf: 'center' }}>← Back</button>
           </div>
         </>
       )}

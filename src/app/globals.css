@@ -87,7 +87,7 @@
 
   /* Typography */
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --mono: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;  /* was JetBrains Mono */
 
   /* Radii */
   --r-sm:  8px;
@@ -138,10 +138,10 @@ html, body {
   background: var(--pass-dim);
   border: 1.5px solid var(--pass);
   color: var(--pass);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   padding: 0.3rem 0.8rem;
   border-radius: var(--r-pill);
   text-transform: uppercase;
@@ -154,10 +154,10 @@ html, body {
   background: var(--fail-dim);
   border: 1.5px solid var(--fail);
   color: var(--fail);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   padding: 0.3rem 0.8rem;
   border-radius: var(--r-pill);
   text-transform: uppercase;
@@ -170,10 +170,10 @@ html, body {
   background: var(--warn-dim);
   border: 1.5px solid var(--warn);
   color: var(--warn);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   padding: 0.3rem 0.8rem;
   border-radius: var(--r-pill);
   text-transform: uppercase;
@@ -264,7 +264,7 @@ html, body {
 
 /* ── Section label (monospace uppercase) ─────────────────────────────────── */
 .section-label {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 0.58rem;
   font-weight: 600;
   letter-spacing: 0.18em;
@@ -294,7 +294,7 @@ html, body {
   align-items: center;
   background: var(--orange);
   color: #fff;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 0.42rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -307,7 +307,7 @@ html, body {
 
 /* ── Wordmark ─────────────────────────────────────────────────────────────── */
 .wordmark {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 0.52rem;
   letter-spacing: 0.34em;
   color: var(--orange);
@@ -318,7 +318,7 @@ html, body {
 
 /* ── Measurement value display ───────────────────────────────────────────── */
 .meas-value {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 3rem;
   font-weight: 700;
   line-height: 1;
@@ -327,7 +327,7 @@ html, body {
 }
 
 .meas-unit {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 1rem;
   font-weight: 400;
   color: var(--text2);

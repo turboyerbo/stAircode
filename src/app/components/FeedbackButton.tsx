@@ -73,7 +73,6 @@ export default function FeedbackButton({ source = 'help_screen' }: Props) {
           cursor: 'pointer',
           color: '#fff',
           fontSize: '0.88rem',
-          fontFamily: 'monospace',
           fontWeight: 700,
           letterSpacing: '0.08em',
           boxShadow: `0 4px 20px rgba(39,169,107,0.35)`,

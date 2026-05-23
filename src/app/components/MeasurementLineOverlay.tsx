@@ -239,7 +239,7 @@ export default function MeasurementLineOverlay({
             color: '#3BAAFF',
             fontSize: 10,
             fontWeight: 700,
-            letterSpacing: '0.18em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             opacity: 0.85,
             textShadow: '0 0 8px rgba(59,170,255,0.8)',

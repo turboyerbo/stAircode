@@ -310,7 +310,7 @@ export default function StairCapture({ calibration, onComplete, onBack }: Props)
 
       {/* Calibration badge */}
       {calibration && phase === 'live' && (
-        <div style={{ position:'absolute', top:'5.5rem', left:'50%', transform:'translateX(-50%)', zIndex:10, padding:'0.25rem 0.8rem', background:'rgba(21,101,192,0.8)', borderRadius:16, fontSize:'0.6rem', fontFamily:'monospace', color:'#fff', letterSpacing:'0.07em', whiteSpace:'nowrap' }}>{calibration.method==='auto'?'AI':'Manual'} · {calibration.confidence} · {calibration.mmPerPixel.toFixed(3)}mm/px
+        <div style={{ position:'absolute', top:'5.5rem', left:'50%', transform:'translateX(-50%)', zIndex:10, padding:'0.25rem 0.8rem', background:'rgba(21,101,192,0.8)', borderRadius:16, fontSize:'0.6rem', color:'#fff', letterSpacing:'0.07em', whiteSpace:'nowrap' }}>{calibration.method==='auto'?'AI':'Manual'} · {calibration.confidence} · {calibration.mmPerPixel.toFixed(3)}mm/px
         </div>
       )}
 
@@ -327,15 +327,15 @@ export default function StairCapture({ calibration, onComplete, onBack }: Props)
       {/* ANALYSING spinner */}
       {phase === 'analysing' && (
         <div style={{ position:'absolute', inset:0, zIndex:12, background:'rgba(13,43,69,0.5)', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'0.75rem' }}><div style={{ width:50, height:50, border:'4px solid rgba(255,255,255,0.1)', borderTop:'4px solid #4A90E2', borderRadius:'50%', animation:'spin 0.75s linear infinite' }}/>
-          <span style={{ color:'rgba(255,255,255,0.75)', fontFamily:'monospace', fontSize:'0.8rem', letterSpacing:'0.12em' }}>MEASURING…</span>
+          <span style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.8rem', letterSpacing:'0.12em' }}>MEASURING…</span>
         </div>
       )}
 
       {/* RESULTS / UNCERTAIN: bottom panel */}
       {(phase === 'results' || phase === 'uncertain') && result && (
         <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:12, background:'rgba(8,14,8,0.96)', backdropFilter:'blur(18px)', borderRadius:'20px 20px 0 0', padding:'1.1rem 1.25rem 2.6rem', display:'flex', flexDirection:'column', gap:'0.6rem' }}>{/* Confidence + calibration header */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}><span style={{ fontFamily:'monospace', fontSize:'0.65rem', letterSpacing:'0.09em', color:confColor }}>{confLabel}</span>
-            {result.calibrated && <span style={{ fontSize:'0.6rem', fontFamily:'monospace', color:'rgba(144,202,249,0.85)' }}> CALIBRATED</span>}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}><span style={{ fontSize:'0.65rem', letterSpacing:'0.09em', color:confColor }}>{confLabel}</span>
+            {result.calibrated && <span style={{ fontSize:'0.6rem', color:'rgba(144,202,249,0.85)' }}> CALIBRATED</span>}
           </div>
 
           {/* Measurement grid */}
@@ -362,9 +362,9 @@ export default function StairCapture({ calibration, onComplete, onBack }: Props)
           )}
 
           {/* Actions */}
-          <div style={{ display:'flex', gap:'0.55rem' }}><button onClick={retake} style={{ flex:1, padding:'0.82rem', background:'rgba(21,101,192,0.08)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:12, color:'rgba(255,255,255,0.7)', fontSize:'0.76rem', fontFamily:'monospace', cursor:'pointer' }}>↩ Retake
+          <div style={{ display:'flex', gap:'0.55rem' }}><button onClick={retake} style={{ flex:1, padding:'0.82rem', background:'rgba(21,101,192,0.08)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:12, color:'rgba(255,255,255,0.7)', fontSize:'0.76rem', cursor:'pointer' }}>↩ Retake
             </button>
-            <button onClick={() => onComplete(result)} style={{ flex:2, padding:'0.82rem', background:'#1565C0', border:'none', borderRadius:12, color:'#fff', fontSize:'0.78rem', fontFamily:'monospace', fontWeight:700, letterSpacing:'0.1em', cursor:'pointer' }}>Use These →
+            <button onClick={() => onComplete(result)} style={{ flex:2, padding:'0.82rem', background:'#1565C0', border:'none', borderRadius:12, color:'#fff', fontSize:'0.78rem', fontWeight:700, letterSpacing:'0.1em', cursor:'pointer' }}>Use These →
             </button>
           </div>
         </div>
@@ -386,21 +386,21 @@ function EditCard({ label, icon, value, onEdit }: { label:string; icon:string; v
 
   return (
     <div style={{ background:'rgba(21,101,192,0.06)', border:'1px solid rgba(21,101,192,0.16)', borderRadius:10, padding:'0.5rem 0.65rem' }}><div style={{ display:'flex', alignItems:'center', gap:'0.3rem', marginBottom:'0.15rem' }}><span style={{ fontSize:'0.72rem', opacity:0.4 }}>{icon}</span>
-        <span style={{ fontSize:'0.6rem', fontFamily:'monospace', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)', textTransform:'uppercase' as const }}>{label}</span>
+        <span style={{ fontSize:'0.6rem', letterSpacing:'0.08em', color:'rgba(255,255,255,0.4)', textTransform:'uppercase' as const }}>{label}</span>
       </div>
       {editing ? (
         <input id="stair-input" name="measurement" autoFocus type="number" value={raw}
           onChange={e => setRaw(e.target.value)}
           onBlur={commit} onKeyDown={e => e.key==='Enter'&&commit()}
-          style={{ background:'transparent', border:'none', borderBottom:'1px solid #4A90E2', outline:'none', color:'#fff', fontFamily:'monospace', fontSize:'1.1rem', fontWeight:700, width:'100%' }}/>
+          style={{ background:'transparent', border:'none', borderBottom:'1px solid #4A90E2', outline:'none', color:'#fff', fontSize:'1.1rem', fontWeight:700, width:'100%' }}/>
       ) : (
         <div onClick={() => { setRaw(value?String(Math.round(value)):''); setEditing(true) }}
-          style={{ fontSize:'1.15rem', fontWeight:700, fontFamily:'monospace', color:value?'#93c5fd':'rgba(255,255,255,0.25)', cursor:'pointer', lineHeight:1.2 }}>{value ? `${Math.round(value)} mm` : 'tap to enter'}
+          style={{ fontSize:'1.15rem', fontWeight:700, color:value?'#93c5fd':'rgba(255,255,255,0.25)', cursor:'pointer', lineHeight:1.2 }}>{value ? `${Math.round(value)} mm` : 'tap to enter'}
         </div>
       )}
     </div>
   )
 }
 
-function greenBtn() { return { padding:'0.9rem 1.5rem', background:'#1565C0', border:'none', borderRadius:12, cursor:'pointer', color:'#fff', fontSize:'0.8rem', fontFamily:'monospace', fontWeight:700 } }
+function greenBtn() { return { padding:'0.9rem 1.5rem', background:'#1565C0', border:'none', borderRadius:12, cursor:'pointer', color:'#fff', fontSize:'0.8rem', fontWeight:700 } }
 function iconBtn() { return { width:36, height:36, background:'rgba(21,101,192,0.22)', border:'none', borderRadius:'50%', color:'#fff', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' } }

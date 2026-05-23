@@ -61,7 +61,7 @@ function PhoneMockup() {
             padding: '1.5rem 0.75rem 0.7rem',
             opacity: fading ? 0 : 1,
             transition: 'opacity 0.35s ease',
-          }}><div style={{ fontSize: '0.58rem', fontWeight: 800, color: '#F29337', letterSpacing: '0.12em', fontFamily: 'monospace' }}>{screen.label.toUpperCase()}
+          }}><div style={{ fontSize: '0.58rem', fontWeight: 800, color: '#F29337', letterSpacing: '0.12em' }}>{screen.label.toUpperCase()}
             </div>
           </div>
         </div>

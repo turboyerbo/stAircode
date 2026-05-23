@@ -835,9 +835,9 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#fff', display: 'flex', flexDirection: 'column', zIndex: 9999, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
         <div style={{ padding: '1rem 1.25rem 0.75rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'monospace', padding: '0.25rem 0' }}>← Exit</button>
-          <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#9ca3af', letterSpacing: '0.1em' }}>FOUNDATION SCAN GUIDE</span>
-          <button onClick={() => setShowIntro(false)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'monospace' }}>Skip →</button>
+          <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '0.85rem', cursor: 'pointer', padding: '0.25rem 0' }}>← Exit</button>
+          <span style={{ fontSize: '0.72rem', color: '#9ca3af', letterSpacing: '0.1em' }}>FOUNDATION SCAN GUIDE</span>
+          <button onClick={() => setShowIntro(false)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '0.75rem', cursor: 'pointer' }}>Skip →</button>
         </div>
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', gap: '1rem', background: '#f8fafc' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{slide.icon}</div>
@@ -850,9 +850,9 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
           ))}
         </div>
         <div style={{ padding: '0 1.25rem', paddingBottom: 'calc(env(safe-area-inset-bottom,0px) + 1rem)', display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
-          {introSlide > 0 && <button onClick={() => setIntroSlide(i => i - 1)} style={{ flex: 1, padding: '0.9rem', background: 'rgba(10,28,46,0.08)', border: 'none', borderRadius: 14, color: '#0A1C2E', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}>‹ Back</button>}
+          {introSlide > 0 && <button onClick={() => setIntroSlide(i => i - 1)} style={{ flex: 1, padding: '0.9rem', background: 'rgba(10,28,46,0.08)', border: 'none', borderRadius: 14, color: '#0A1C2E', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}>‹ Back</button>}
           <button onClick={() => { if (isLast) setShowIntro(false); else setIntroSlide(i => i + 1) }}
-            style={{ flex: 2, padding: '0.9rem', background: isLast ? 'linear-gradient(135deg,#0A1C2E,#1a3a5c)' : 'linear-gradient(135deg,#27A96B,#1A7A50)', border: 'none', borderRadius: 14, color: '#fff', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.04em' }}>
+            style={{ flex: 2, padding: '0.9rem', background: isLast ? 'linear-gradient(135deg,#0A1C2E,#1a3a5c)' : 'linear-gradient(135deg,#27A96B,#1A7A50)', border: 'none', borderRadius: 14, color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.04em' }}>
             {isLast ? 'Start Foundation Scan →' : 'Next →'}
           </button>
         </div>
@@ -880,7 +880,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
 
           {/* Wall Type */}
           <div style={{ borderRadius: 14, border: `1.5px solid ${BORDER}`, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-            <div style={{ padding: '0.7rem 0.9rem', fontSize: '0.8rem', fontWeight: 700, color: WHITE2, letterSpacing: '0.08em', fontFamily: 'monospace' }}>WALL TYPE</div>
+            <div style={{ padding: '0.7rem 0.9rem', fontSize: '0.8rem', fontWeight: 700, color: WHITE2, letterSpacing: '0.08em' }}>WALL TYPE</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', padding: '0 0.9rem 0.8rem' }}>
               {wallTypeOptions.map(opt => (
                 <button key={opt.value} onClick={() => setReviewVals(p => ({ ...p, wallType: opt.value, wallTypeLabel: opt.label }))}
@@ -907,7 +907,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
                   <div style={{ flex: 1, fontSize: '0.82rem', fontWeight: 700, color: WHITE }}>{label}</div>
                   <button
                     onClick={() => { setShowReview(false); busyRef.current = false; goTo(scanIdx) }}
-                    style={{ padding: '0.25rem 0.6rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 8, color: WHITE2, fontFamily: 'monospace', fontSize: '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    style={{ padding: '0.25rem 0.6rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 8, color: WHITE2, fontSize: '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                     title={`Re-scan ${posLabel}`}
                   >↺ {posLabel}</button>
                 </div>
@@ -916,8 +916,8 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
                     value={val != null ? String(val) : ''}
                     placeholder={isMissing ? 'Not captured' : '—'}
                     onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) setReviewVals(p => ({ ...p, [key]: v })) }}
-                    style={{ flex: 1, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${isMissing ? 'rgba(250,116,31,0.3)' : BORDER}`, borderRadius: 10, color: isMissing ? 'rgba(255,255,255,0.3)' : WHITE, fontFamily: 'monospace', fontWeight: 700, fontSize: '0.95rem' }} />
-                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>{unit}</span>
+                    style={{ flex: 1, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.06)', border: `1px solid ${isMissing ? 'rgba(250,116,31,0.3)' : BORDER}`, borderRadius: 10, color: isMissing ? 'rgba(255,255,255,0.3)' : WHITE, fontWeight: 700, fontSize: '0.95rem' }} />
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>{unit}</span>
                 </div>
               </div>
             )
@@ -925,7 +925,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
 
           {/* Boolean fields */}
           <div style={{ borderRadius: 14, border: `1.5px solid ${BORDER}`, background: 'rgba(255,255,255,0.04)', padding: '0.75rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: WHITE2, fontFamily: 'monospace', letterSpacing: '0.08em' }}>CONDITIONS</div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: WHITE2, letterSpacing: '0.08em' }}>CONDITIONS</div>
             {([
               { key: 'crackPresent',     label: 'Cracks present' },
               { key: 'horizontalCrack',  label: 'Horizontal crack (CRITICAL)' },
@@ -937,7 +937,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
                 <div style={{ display: 'flex', gap: '0.3rem' }}>
                   {(['Yes', 'No'] as const).map(opt => (
                     <button key={opt} onClick={() => setReviewVals(p => ({ ...p, [key]: opt === 'Yes' }))}
-                      style={{ padding: '0.3rem 0.7rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, fontFamily: 'monospace', background: (reviewVals[key] === true && opt === 'Yes') || (reviewVals[key] === false && opt === 'No') ? (opt === 'Yes' ? '#E8454522' : `${GREEN}22`) : 'rgba(255,255,255,0.07)', color: (reviewVals[key] === true && opt === 'Yes') ? '#ff9999' : (reviewVals[key] === false && opt === 'No') ? GREEN : WHITE2 }}>
+                      style={{ padding: '0.3rem 0.7rem', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, background: (reviewVals[key] === true && opt === 'Yes') || (reviewVals[key] === false && opt === 'No') ? (opt === 'Yes' ? '#E8454522' : `${GREEN}22`) : 'rgba(255,255,255,0.07)', color: (reviewVals[key] === true && opt === 'Yes') ? '#ff9999' : (reviewVals[key] === false && opt === 'No') ? GREEN : WHITE2 }}>
                       {opt}
                     </button>
                   ))}
@@ -950,13 +950,13 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
           {reviewVals.horizontalCrack && (
             <div style={{ background: 'rgba(232,69,69,0.12)', border: '2px solid rgba(232,69,69,0.5)', borderRadius: 12, padding: '0.85rem 1rem', display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#ff6b6b', marginBottom: '0.3rem', fontFamily: 'monospace' }}>CRITICAL — HORIZONTAL CRACK DETECTED</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ff6b6b', marginBottom: '0.3rem' }}>CRITICAL — HORIZONTAL CRACK DETECTED</div>
                 <div style={{ fontSize: '0.72rem', color: WHITE2, lineHeight: 1.6 }}>Horizontal cracks in foundation walls indicate lateral earth pressure potentially exceeding wall capacity. Immediate professional structural assessment is required before this building is occupied.</div>
               </div>
             </div>
           )}
 
-          <button onClick={submitReview} style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 16, color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.04em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(242,147,55,0.4)', marginTop: '0.25rem' }}>
+          <button onClick={submitReview} style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 16, color: '#fff', fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.04em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(242,147,55,0.4)', marginTop: '0.25rem' }}>
             Generate Report — $2.99 →
           </button>
         </div>
@@ -1000,7 +1000,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.6rem', fontFamily: 'monospace', letterSpacing: '0.1em', color: WHITE2 }}>STEP {currentPos.step} / {POSITIONS.length}</span>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '0.1em', color: WHITE2 }}>STEP {currentPos.step} / {POSITIONS.length}</span>
             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: WHITE }}>{currentPos.label}</span>
           </div>
           <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
@@ -1011,7 +1011,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
           style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: `1px solid ${BORDER}`, color: WHITE, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>→</button>
         <div style={{ background: 'rgba(65,124,164,0.15)', border: `1px solid rgba(65,124,164,0.4)`, borderRadius: 10, padding: '0.18rem 0.6rem', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: BLUE, boxShadow: `0 0 4px ${BLUE}` }} />
-          <span style={{ fontSize: '0.5rem', fontFamily: 'monospace', letterSpacing: '0.1em', color: BLUE, fontWeight: 700 }}>FOUNDATION</span>
+          <span style={{ fontSize: '0.5rem', letterSpacing: '0.1em', color: BLUE, fontWeight: 700 }}>FOUNDATION</span>
         </div>
       </div>
 
@@ -1025,21 +1025,21 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
             <div style={{ fontSize: '0.78rem', color: WHITE2, lineHeight: 1.6 }}>{currentPos.detail}</div>
           </div>
           <div style={{ display: 'flex', gap: '0.45rem' }}>
-            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex: 1, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 13, color: WHITE2, fontFamily: 'monospace', fontSize: '0.75rem', cursor: 'pointer' }}>Skip →</button>}
-            <button onClick={finishScan} style={{ flex: currentPos.optional ? 1 : 2, padding: '0.75rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 13, color: AMBER, fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
+            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex: 1, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 13, color: WHITE2, fontSize: '0.75rem', cursor: 'pointer' }}>Skip →</button>}
+            <button onClick={finishScan} style={{ flex: currentPos.optional ? 1 : 2, padding: '0.75rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 13, color: AMBER, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
           </div>
         </>}
 
         {/* READY */}
         {stage === 'ready' && <>
           <div style={{ background: `${col}11`, borderRadius: 14, padding: '0.75rem 1rem', border: `1px solid ${col}33` }}>
-            <div style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: col, fontWeight: 700, letterSpacing: '0.08em', marginBottom: '0.3rem' }}>STEP {currentPos.step} / {POSITIONS.length} — {currentPos.label.toUpperCase()}</div>
+            <div style={{ fontSize: '0.72rem', color: col, fontWeight: 700, letterSpacing: '0.08em', marginBottom: '0.3rem' }}>STEP {currentPos.step} / {POSITIONS.length} — {currentPos.label.toUpperCase()}</div>
             <div style={{ fontSize: '0.78rem', color: WHITE2, lineHeight: 1.55 }}>{currentPos.detail}</div>
           </div>
-          <button onClick={handleReady} style={{ width: '100%', padding: '1.15rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 16, color: '#fff', fontFamily: 'monospace', fontSize: '1rem', fontWeight: 900, letterSpacing: '0.04em', cursor: 'pointer', boxShadow: '0 6px 28px rgba(39,169,107,0.5)' }}>{currentPos.readyLabel}</button>
+          <button onClick={handleReady} style={{ width: '100%', padding: '1.15rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 16, color: '#fff', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.04em', cursor: 'pointer', boxShadow: '0 6px 28px rgba(39,169,107,0.5)' }}>{currentPos.readyLabel}</button>
           <div style={{ display: 'flex', gap: '0.45rem' }}>
-            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 12, color: WHITE2, fontFamily: 'monospace', fontSize: '0.72rem', cursor: 'pointer' }}>Skip →</button>}
-            <button onClick={finishScan} style={{ flex: 1, padding: '0.65rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 12, color: AMBER, fontFamily: 'monospace', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
+            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, borderRadius: 12, color: WHITE2, fontSize: '0.72rem', cursor: 'pointer' }}>Skip →</button>}
+            <button onClick={finishScan} style={{ flex: 1, padding: '0.65rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 12, color: AMBER, fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
           </div>
         </>}
 
@@ -1054,25 +1054,25 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
                   strokeDashoffset={`${2 * Math.PI * 26 * (countdown / currentPos.holdSeconds)}`}
                   strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.9s linear' }} />
               </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: WHITE, fontFamily: 'monospace' }}>{countdown}</div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 700, color: WHITE }}>{countdown}</div>
             </div>
             <div>
               <div style={{ fontSize: '0.88rem', fontWeight: 800, color: GREEN, letterSpacing: '0.05em', marginBottom: '0.2rem' }}>HOLD STILL</div>
               <div style={{ fontSize: '0.72rem', color: WHITE2, lineHeight: 1.4 }}>Keep the phone steady for a clear capture</div>
             </div>
           </div>
-          <button onClick={finishScan} style={{ width: '100%', padding: '0.72rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 13, color: '#fff', fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>View Report →</button>
+          <button onClick={finishScan} style={{ width: '100%', padding: '0.72rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 13, color: '#fff', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>View Report →</button>
         </>}
 
         {/* CAPTURE */}
         {stage === 'capture' && <>
           <div style={{ fontSize: '0.78rem', color: WHITE2, lineHeight: 1.5 }}>Phone is steady — tap the button to capture.</div>
-          <button onClick={camWarm ? handleCapture : undefined} style={{ width: '100%', padding: '1.15rem', background: camWarm ? `linear-gradient(135deg,${col},#2C6FBF)` : 'rgba(255,255,255,0.07)', border: camWarm ? 'none' : `1px solid ${BORDER}`, borderRadius: 16, color: camWarm ? '#fff' : WHITE2, fontFamily: 'monospace', fontSize: '1rem', fontWeight: 900, letterSpacing: '0.06em', cursor: camWarm ? 'pointer' : 'default', boxShadow: camWarm ? `0 6px 28px ${col}80` : 'none', transition: 'all 0.4s ease' }}>
+          <button onClick={camWarm ? handleCapture : undefined} style={{ width: '100%', padding: '1.15rem', background: camWarm ? `linear-gradient(135deg,${col},#2C6FBF)` : 'rgba(255,255,255,0.07)', border: camWarm ? 'none' : `1px solid ${BORDER}`, borderRadius: 16, color: camWarm ? '#fff' : WHITE2, fontSize: '1rem', fontWeight: 700, letterSpacing: '0.06em', cursor: camWarm ? 'pointer' : 'default', boxShadow: camWarm ? `0 6px 28px ${col}80` : 'none', transition: 'all 0.4s ease' }}>
             {camWarm ? currentPos.captureLabel : 'Camera focusing…'}
           </button>
           <div style={{ display: 'flex', gap: '0.45rem' }}>
-            <button onClick={() => { busyRef.current = false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(() => setCamWarm(true), 2000) }} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 12, color: WHITE2, fontFamily: 'monospace', fontSize: '0.72rem', cursor: 'pointer' }}>↺ Re-steady</button>
-            <button onClick={finishScan} style={{ flex: 1, padding: '0.65rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 12, color: AMBER, fontFamily: 'monospace', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
+            <button onClick={() => { busyRef.current = false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(() => setCamWarm(true), 2000) }} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 12, color: WHITE2, fontSize: '0.72rem', cursor: 'pointer' }}>↺ Re-steady</button>
+            <button onClick={finishScan} style={{ flex: 1, padding: '0.65rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 12, color: AMBER, fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
           </div>
         </>}
 
@@ -1101,30 +1101,30 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
             <div style={{ background: `${col}11`, borderRadius: 14, padding: '0.9rem 1rem', border: `1px solid ${col}33` }}>
               {isOverview && r.wallType && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', fontWeight: 700, color: col, background: `${col}22`, padding: '0.2rem 0.6rem', borderRadius: 6, border: `1px solid ${col}44` }}>{r.wallTypeLabel ?? r.wallType}</span>
-                  <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', fontWeight: 700, color: r.overallCondition === 'critical' ? '#ff6b6b' : r.overallCondition === 'poor' ? AMBER : GREEN, background: r.overallCondition === 'critical' ? 'rgba(232,69,69,0.15)' : r.overallCondition === 'poor' ? 'rgba(250,116,31,0.15)' : 'rgba(39,169,107,0.15)', padding: '0.2rem 0.6rem', borderRadius: 6, border: `1px solid ${r.overallCondition === 'critical' ? 'rgba(232,69,69,0.4)' : r.overallCondition === 'poor' ? 'rgba(250,116,31,0.4)' : 'rgba(39,169,107,0.4)'}`, textTransform: 'uppercase' }}>{r.overallCondition ?? 'assessing'}</span>
-                  {r.horizontalCrack && <span style={{ fontSize: '0.7rem', fontFamily: 'monospace', fontWeight: 900, color: '#ff6b6b', background: 'rgba(232,69,69,0.18)', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid rgba(232,69,69,0.5)' }}>HORIZ. CRACK</span>}
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: col, background: `${col}22`, padding: '0.2rem 0.6rem', borderRadius: 6, border: `1px solid ${col}44` }}>{r.wallTypeLabel ?? r.wallType}</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: r.overallCondition === 'critical' ? '#ff6b6b' : r.overallCondition === 'poor' ? AMBER : GREEN, background: r.overallCondition === 'critical' ? 'rgba(232,69,69,0.15)' : r.overallCondition === 'poor' ? 'rgba(250,116,31,0.15)' : 'rgba(39,169,107,0.15)', padding: '0.2rem 0.6rem', borderRadius: 6, border: `1px solid ${r.overallCondition === 'critical' ? 'rgba(232,69,69,0.4)' : r.overallCondition === 'poor' ? 'rgba(250,116,31,0.4)' : 'rgba(39,169,107,0.4)'}`, textTransform: 'uppercase' }}>{r.overallCondition ?? 'assessing'}</span>
+                  {r.horizontalCrack && <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ff6b6b', background: 'rgba(232,69,69,0.18)', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid rgba(232,69,69,0.5)' }}>HORIZ. CRACK</span>}
                 </div>
               )}
-              {isOverview && r.wallHeight && <div style={{ fontSize: '1.8rem', fontWeight: 900, color: WHITE, fontFamily: 'monospace', marginBottom: '0.2rem' }}>{r.wallHeight}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>wall height</span></div>}
-              {isCrack  && r.crackWidthMm != null && <div style={{ fontSize: '1.8rem', fontWeight: 900, color: r.crackType === 'horizontal' ? '#ff6b6b' : AMBER, fontFamily: 'monospace' }}>{r.crackWidthMm}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>crack width · {r.crackType ?? 'crack'}</span></div>}
-              {isThickness && r.wallThickness != null && <div style={{ fontSize: '1.8rem', fontWeight: 900, color: WHITE, fontFamily: 'monospace' }}>{r.wallThickness}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>wall thickness</span></div>}
-              {isFooting  && r.footingWidth  != null && <div style={{ fontSize: '1.8rem', fontWeight: 900, color: WHITE, fontFamily: 'monospace' }}>{r.footingWidth}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>footing width</span></div>}
+              {isOverview && r.wallHeight && <div style={{ fontSize: '1.8rem', fontWeight: 700, color: WHITE, marginBottom: '0.2rem' }}>{r.wallHeight}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>wall height</span></div>}
+              {isCrack  && r.crackWidthMm != null && <div style={{ fontSize: '1.8rem', fontWeight: 700, color: r.crackType === 'horizontal' ? '#ff6b6b' : AMBER }}>{r.crackWidthMm}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>crack width · {r.crackType ?? 'crack'}</span></div>}
+              {isThickness && r.wallThickness != null && <div style={{ fontSize: '1.8rem', fontWeight: 700, color: WHITE }}>{r.wallThickness}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>wall thickness</span></div>}
+              {isFooting  && r.footingWidth  != null && <div style={{ fontSize: '1.8rem', fontWeight: 700, color: WHITE }}>{r.footingWidth}<span style={{ fontSize: '0.9rem', color: WHITE2 }}>mm</span> <span style={{ fontSize: '0.7rem', color: WHITE2, fontWeight: 400 }}>footing width</span></div>}
               {aiMessage && <div style={{ fontSize: '0.72rem', color: WHITE2, lineHeight: 1.5, marginTop: '0.35rem' }}>{aiMessage}</div>}
             </div>
 
             {/* Critical warning */}
             {r.horizontalCrack && (
               <div style={{ background: 'rgba(232,69,69,0.15)', border: '2px solid rgba(232,69,69,0.55)', borderRadius: 10, padding: '0.7rem 0.9rem', fontSize: '0.72rem', color: '#ff9999', lineHeight: 1.55 }}>
-                <strong style={{ display: 'block', marginBottom: '0.2rem', fontFamily: 'monospace', fontSize: '0.75rem' }}>CRITICAL — HORIZONTAL CRACK</strong>
+                <strong style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.75rem' }}>CRITICAL — HORIZONTAL CRACK</strong>
                 Lateral earth pressure may exceed wall capacity. Immediate structural assessment required.
               </div>
             )}
 
-            <button onClick={() => goTo(posIdx + 1)} style={{ width: '100%', padding: '0.85rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 14, color: '#fff', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 900, cursor: 'pointer', letterSpacing: '0.04em', boxShadow: '0 4px 18px rgba(39,169,107,0.45)' }}>Confirm & Next →</button>
+            <button onClick={() => goTo(posIdx + 1)} style={{ width: '100%', padding: '0.85rem', background: `linear-gradient(135deg,${GREEN},#1A7A50)`, border: 'none', borderRadius: 14, color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.04em', boxShadow: '0 4px 18px rgba(39,169,107,0.45)' }}>Confirm & Next →</button>
             <div style={{ display: 'flex', gap: '0.45rem' }}>
-              <button onClick={() => { busyRef.current = false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(() => setCamWarm(true), 2000) }} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 12, color: WHITE2, fontFamily: 'monospace', fontSize: '0.72rem', cursor: 'pointer' }}>↺ Retry</button>
-              <button onClick={finishScan} style={{ flex: 1, padding: '0.65rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 12, color: AMBER, fontFamily: 'monospace', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
+              <button onClick={() => { busyRef.current = false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(() => setCamWarm(true), 2000) }} style={{ flex: 1, padding: '0.65rem', background: 'rgba(255,255,255,0.07)', border: `1px solid ${BORDER}`, borderRadius: 12, color: WHITE2, fontSize: '0.72rem', cursor: 'pointer' }}>↺ Retry</button>
+              <button onClick={finishScan} style={{ flex: 1, padding: '0.65rem', background: 'rgba(250,116,31,0.12)', border: `1px solid rgba(250,116,31,0.3)`, borderRadius: 12, color: AMBER, fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>View Report →</button>
             </div>
           </>
         })()}

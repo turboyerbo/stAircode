@@ -98,7 +98,7 @@ export default function PaymentSuccessScreen() {
       }} />
 
       <div style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>{/* Logo wordmark */}
-        <div style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: '2rem' }}>st<span style={{ color: C.orange }}>AI</span>rcode
+        <div style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '2rem' }}>st<span style={{ color: C.orange }}>AI</span>rcode
         </div>
 
         {/* Success card */}
@@ -119,7 +119,7 @@ export default function PaymentSuccessScreen() {
           }}></div>
 
           <h1 style={{
-            fontSize: '1.6rem', fontWeight: 900,
+            fontSize: '1.6rem', fontWeight: 700,
             letterSpacing: '-0.02em', marginBottom: '0.5rem',
             color: C.green,
           }}>Payment complete

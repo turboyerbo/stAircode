@@ -570,8 +570,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
                 <button key={i} onClick={item.action} style={{display:'flex',alignItems:'center',gap:'.7rem',
                   width:'100%',padding:'.88rem 1.1rem',background:'none',border:'none',
                   borderTop:i>0?'1px solid rgba(21,101,192,0.08)':'none',
-                  color:'rgba(255,255,255,0.82)',fontSize:'.82rem',fontFamily:'inherit',
-                  textAlign:'left',cursor:'pointer'}}><span style={{fontSize:'1rem',width:20,textAlign:'center'}}>{item.icon}</span>
+                  color:'rgba(255,255,255,0.82)',fontSize:'.82rem',textAlign:'left',cursor:'pointer'}}><span style={{fontSize:'1rem',width:20,textAlign:'center'}}>{item.icon}</span>
                   {item.label}
                 </button>
               ))}
@@ -620,8 +619,7 @@ export default function MeasureWalk({onComplete,onBack}:Props){
       {/* Skip button */}
       {!confirmed&&!step.silent&&camReady&&(<div style={{position:'absolute',bottom:104,right:'1.2rem',zIndex:30}}><button onClick={skipStep} style={{background:'rgba(13,43,69,0.55)',
           border:'1px solid rgba(21,101,192,0.22)',borderRadius:20,padding:'.4rem 1rem',
-          color:'rgba(255,255,255,0.35)',fontSize:'.7rem',fontFamily:'monospace',
-          cursor:'pointer',backdropFilter:'blur(8px)'}}>Skip →</button>
+          color:'rgba(255,255,255,0.35)',fontSize:'.7rem',cursor:'pointer',backdropFilter:'blur(8px)'}}>Skip →</button>
       </div>)}
 
       {/* Confirm tray */}
@@ -631,13 +629,13 @@ export default function MeasureWalk({onComplete,onBack}:Props){
         paddingBottom:'max(env(safe-area-inset-bottom,0px),2.4rem)',
         display:'flex',flexDirection:'column',alignItems:'center',gap:'1rem',
         animation:'fadeUp .3s ease-out'}}><div style={{display:'flex',alignItems:'center',gap:'.5rem'}}><div style={{width:8,height:8,borderRadius:'50%',background:step.color,boxShadow:`0 0 10px ${step.color}`}}/>
-          <span style={{fontSize:'.6rem',fontFamily:'monospace',letterSpacing:'.2em',color:step.color,fontWeight:700}}>{step.label.toUpperCase()} — MEASURED
+          <span style={{fontSize:'.6rem',letterSpacing:'.2em',color:step.color,fontWeight:700}}>{step.label.toUpperCase()} — MEASURED
           </span>
         </div>
 
         {openAbove?(
-          <div style={{textAlign:'center'}}><div style={{fontSize:'2rem',fontWeight:900,color:C.pass}}>Headroom Clear</div>
-            <div style={{fontSize:'.72rem',color:'rgba(255,255,255,0.35)',marginTop:'.3rem',fontFamily:'monospace'}}>Open to above</div>
+          <div style={{textAlign:'center'}}><div style={{fontSize:'2rem',fontWeight: 700,color:C.pass}}>Headroom Clear</div>
+            <div style={{fontSize:'.72rem',color:'rgba(255,255,255,0.35)',marginTop:'.3rem'}}>Open to above</div>
           </div>
         ):(
           <div style={{display:'flex',alignItems:'center',gap:'1rem',width:'100%',justifyContent:'center'}}><button onClick={()=>setResultMm(v=>v!=null?Math.max(step.rangeMin,v-1):v)}
@@ -645,13 +643,13 @@ export default function MeasureWalk({onComplete,onBack}:Props){
                 background:'rgba(21,101,192,0.09)',border:'1.5px solid rgba(21,101,192,0.25)',
                 color:'#fff',fontSize:'1.6rem',cursor:'pointer',
                 display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
-            <div style={{textAlign:'center'}}><div style={{display:'flex',alignItems:'baseline',gap:'.3rem',justifyContent:'center'}}><span style={{fontSize:'4rem',fontWeight:900,color:'#fff',letterSpacing:'-.04em',
+            <div style={{textAlign:'center'}}><div style={{display:'flex',alignItems:'baseline',gap:'.3rem',justifyContent:'center'}}><span style={{fontSize:'4rem',fontWeight: 700,color:'#fff',letterSpacing:'-.04em',
                   lineHeight:1,fontVariantNumeric:'tabular-nums',transition:'all .15s'}}>{resultMm??'—'}</span>
-                <span style={{fontSize:'1.1rem',color:'rgba(255,255,255,0.35)',fontFamily:'monospace'}}>mm</span>
+                <span style={{fontSize:'1.1rem',color:'rgba(255,255,255,0.35)'}}>mm</span>
               </div>
-              {secondaryMm&&(<div style={{fontSize:'.7rem',fontFamily:'monospace',color:'rgba(96,165,250,0.8)',marginTop:'.2rem'}}>Width also captured: {secondaryMm}mm
+              {secondaryMm&&(<div style={{fontSize:'.7rem',color:'rgba(96,165,250,0.8)',marginTop:'.2rem'}}>Width also captured: {secondaryMm}mm
               </div>)}
-              <div style={{fontSize:'.6rem',color:'rgba(21,101,192,0.25)',fontFamily:'monospace',marginTop:'.15rem'}}>Adjust with − / + if needed
+              <div style={{fontSize:'.6rem',color:'rgba(21,101,192,0.25)',marginTop:'.15rem'}}>Adjust with − / + if needed
               </div>
             </div>
             <button onClick={()=>setResultMm(v=>v!=null?Math.min(step.rangeMax,v+1):v)}
@@ -665,11 +663,11 @@ export default function MeasureWalk({onComplete,onBack}:Props){
         <div style={{display:'flex',gap:'.6rem',width:'100%',maxWidth:340}}><button onClick={rescan} style={{flex:1,padding:'.8rem',
             background:'rgba(21,101,192,0.08)',border:'1px solid rgba(21,101,192,0.22)',
             borderRadius:14,color:'rgba(255,255,255,0.55)',fontSize:'.8rem',
-            fontFamily:'monospace',cursor:'pointer'}}>↺ Rescan</button>
+            cursor:'pointer'}}>↺ Rescan</button>
           <button onClick={confirmMeasurement} style={{flex:2,padding:'.8rem',
             background:`linear-gradient(135deg,${step.color},${rgba(step.color,.7)})`,
             border:'none',borderRadius:14,color:'#fff',fontSize:'.88rem',
-            fontFamily:'monospace',fontWeight:700,letterSpacing:'.06em',cursor:'pointer',
+            fontWeight:700,letterSpacing:'.06em',cursor:'pointer',
             boxShadow:`0 4px 20px ${rgba(step.color,.45)}`}}>&nbsp;{pi<primary.length-1?'Next':'Finish'}
           </button>
         </div>

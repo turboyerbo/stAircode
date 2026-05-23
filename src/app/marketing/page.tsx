@@ -371,7 +371,7 @@ export default function MarketingPage() {
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}><div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$38.99</div>
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>$2.99</div>
               </div>
-              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
+              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
               </div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $38.99</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with clients or authority having jurisdiction', 'Email delivery within minutes'].map(f => (
@@ -387,7 +387,7 @@ export default function MarketingPage() {
               <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#27A96B', marginBottom: '0.5rem' }}>Pro Subscription</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}><div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#5E7D9B' }}>Coming Soon</div>
               </div>
-              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>COMING SOON</span>
+              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>COMING SOON</span>
               </div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>20 stair reports/month · $199/mo after beta · Cancel anytime</div>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Everything in Full Report', '20 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
@@ -455,7 +455,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           ARTICLES
       ══════════════════════════════════════════════ */}
-      <section style={{ background: '#F0F5FA', padding: '4rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.5rem' }}>In the news &amp; research</div>
+      <section style={{ background: '#F0F5FA', padding: '4rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.5rem' }}>In the news &amp; research</div>
           <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: '#0D1E2E', letterSpacing: '-0.02em', marginBottom: '2rem' }}>Building safety and code compliance
           </h2>
 

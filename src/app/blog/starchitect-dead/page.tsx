@@ -24,7 +24,7 @@ export default function StarchitectDeadPage() {
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, maxWidth: 580, margin: '0 0 1.5rem', fontStyle: 'italic' }}>
             And we are left with the question of what comes next.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
+          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>
             <span>April 2026</span>
             <span>·</span>
             <span>6 min read</span>

@@ -160,7 +160,7 @@ export default function UnlockPage() {
       <div style={{ height: 4, background: 'repeating-linear-gradient(-45deg,#F29337 0,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)' }} />
 
       {/* Header */}
-      <div style={{ background: C.bg2, borderBottom: `1px solid ${C.border}`, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><a href="/marketing" style={{ textDecoration: 'none' }}><span style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.02em' }}>st<span style={{ color: C.orange }}>AI</span>rcode
+      <div style={{ background: C.bg2, borderBottom: `1px solid ${C.border}`, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><a href="/marketing" style={{ textDecoration: 'none' }}><span style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.02em' }}>st<span style={{ color: C.orange }}>AI</span>rcode
           </span>
         </a>
         <span style={{ color: C.text3, fontSize: '0.75rem', marginLeft: 'auto' }}>{codeLabel}{location ? ` · ${location}` : ''}
@@ -173,7 +173,7 @@ export default function UnlockPage() {
           border: `1.5px solid ${overall ? 'rgba(39,169,107,0.4)' : 'rgba(232,69,69,0.4)'}`,
           borderRadius: 16, padding: '1.25rem', textAlign: 'center', marginBottom: '1.5rem',
         }}><div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>{overall ? '' : ''}</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 900, color: overall ? C.green : C.red, marginBottom: '0.25rem' }}>{fields.length === 0 ? 'Scan results' : overall ? 'No issues detected' : `${failed.length} item${failed.length > 1 ? 's' : ''} flagged`}
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: overall ? C.green : C.red, marginBottom: '0.25rem' }}>{fields.length === 0 ? 'Scan results' : overall ? 'No issues detected' : `${failed.length} item${failed.length > 1 ? 's' : ''} flagged`}
           </div>
           <div style={{ fontSize: '0.8rem', color: C.text2 }}>{passed.length} passed · {failed.length} failed · {fields.length} measured
           </div>
@@ -190,9 +190,9 @@ export default function UnlockPage() {
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '0.7rem 1rem', borderBottom: i < fields.length - 1 ? `1px solid ${C.border}` : 'none', gap: '0.6rem' }}><span style={{ fontSize: '0.85rem', width: 20 }}>{f.icon || ''}</span>
                   <span style={{ flex: 1, fontSize: '0.82rem', color: C.text }}>{f.label}</span>
-                  <span style={{ fontSize: '0.78rem', fontFamily: 'monospace', color: f.pass === false ? 'rgba(255,255,255,0.3)' : C.text2 }}>{f.pass === false ? '████' : f.value != null ? `${f.value}mm` : f.clearAbove ? 'Clear' : '—'}
+                  <span style={{ fontSize: '0.78rem', color: f.pass === false ? 'rgba(255,255,255,0.3)' : C.text2 }}>{f.pass === false ? '████' : f.value != null ? `${f.value}mm` : f.clearAbove ? 'Clear' : '—'}
                   </span>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: col, fontFamily: 'monospace', width: 34, textAlign: 'right' }}>{st}</span>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: col, width: 34, textAlign: 'right' }}>{st}</span>
                 </div>
               )
             })}
@@ -207,7 +207,7 @@ export default function UnlockPage() {
 
         {/* ── PAYWALL ── */}
         <div style={{ background: C.bg2, border: `1.5px solid rgba(242,147,55,0.4)`, borderRadius: 18, padding: '1.5rem', marginBottom: '1.5rem' }}><div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}><div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 900, color: C.text }}>Full compliance report</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: C.text }}>Full compliance report</div>
               <div style={{ fontSize: '0.72rem', color: C.text2 }}>Photos · Code citations · Pre-inspection summary</div>
             </div>
           </div>
@@ -229,14 +229,14 @@ export default function UnlockPage() {
 
           {/* Beta pricing */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}><span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
-            <span style={{ fontSize: '1.6rem', fontWeight: 900, color: C.orange }}>$2.99</span>
-            <span style={{ fontSize: '0.62rem', fontWeight: 800, fontFamily: 'monospace', color: C.green, background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '0.15rem 0.5rem', letterSpacing: '0.06em' }}>BETA DISCOUNT</span>
+            <span style={{ fontSize: '1.6rem', fontWeight: 700, color: C.orange }}>$2.99</span>
+            <span style={{ fontSize: '0.62rem', fontWeight: 800, color: C.green, background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '0.15rem 0.5rem', letterSpacing: '0.06em' }}>BETA DISCOUNT</span>
           </div>
 
           <button
             onClick={handlePay}
             disabled={paying}
-            style={{ width: '100%', padding: '1.1rem', background: paying ? 'rgba(255,255,255,0.06)' : `linear-gradient(135deg,${C.orange},#C4721E)`, border: 'none', borderRadius: 13, color: paying ? C.text3 : '#000', fontSize: '1rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.06em', cursor: paying ? 'wait' : 'pointer', boxShadow: paying ? 'none' : '0 4px 24px rgba(242,147,55,0.4)', marginBottom: '0.65rem' }}
+            style={{ width: '100%', padding: '1.1rem', background: paying ? 'rgba(255,255,255,0.06)' : `linear-gradient(135deg,${C.orange},#C4721E)`, border: 'none', borderRadius: 13, color: paying ? C.text3 : '#000', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.06em', cursor: paying ? 'wait' : 'pointer', boxShadow: paying ? 'none' : '0 4px 24px rgba(242,147,55,0.4)', marginBottom: '0.65rem' }}
           >
             {paying ? '⏳ Redirecting to checkout…' : 'Pay $2.99 — Unlock Full Report →'}
           </button>

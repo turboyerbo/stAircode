@@ -342,7 +342,7 @@ export default function CardCalibration({ onCalibrated, onSkip, onBack }: Props)
       <canvas ref={canvasRef} style={S.canvas} onPointerDown={onPD} onPointerMove={onPM} onPointerUp={onPU}/>
 
       {locked && <div style={{position:'absolute',inset:0,zIndex:12,background:'rgba(0,127,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'0.5rem'}}><div style={{width:64,height:64,borderRadius:'50%',background:'#007FFF',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.8rem'}}></div>
-        <span style={{color:'#fff',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.14em',fontSize:'0.85rem'}}>SCALE LOCKED — card no longer needed</span>
+        <span style={{color:'#fff',fontWeight:700,letterSpacing: '0.04em',fontSize:'0.85rem'}}>SCALE LOCKED — card no longer needed</span>
       </div>}
 
       {camErr && <div style={{position:'absolute',inset:0,background:'rgba(13,43,69,0.96)',zIndex:12,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1rem',padding:'2rem'}}><p style={{color:'#fff',textAlign:'center',lineHeight:1.6,fontSize:'0.88rem'}}>Camera access required.</p>
@@ -355,37 +355,37 @@ export default function CardCalibration({ onCalibrated, onSkip, onBack }: Props)
           <span style={{color:'rgba(255,255,255,0.9)',fontSize:'0.82rem',fontWeight:600}}>Hold Card at Arm&apos;s Length</span>
         </div>
         <button onClick={()=>setMode(m=>m==='auto'?'manual':'auto')}
-          style={{background:mode==='manual'?'rgba(0,127,255,0.3)':'rgba(21,101,192,0.22)',border:'none',borderRadius:20,color:'rgba(255,255,255,0.85)',fontSize:'0.6rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.1em',padding:'0.3rem 0.75rem',cursor:'pointer'}}>{mode==='auto'?'MANUAL':'AUTO'}
+          style={{background:mode==='manual'?'rgba(0,127,255,0.3)':'rgba(21,101,192,0.22)',border:'none',borderRadius:20,color:'rgba(255,255,255,0.85)',fontSize:'0.6rem',fontWeight:700,letterSpacing:'0.1em',padding:'0.3rem 0.75rem',cursor:'pointer'}}>{mode==='auto'?'MANUAL':'AUTO'}
         </button>
       </div>
 
       {/* Centre instruction */}
-      <div style={{position:'absolute',top:'5.5rem',left:'50%',transform:'translateX(-50%)',zIndex:9,textAlign:'center',whiteSpace:'nowrap'}}><div style={{background:'rgba(13,43,69,0.55)',backdropFilter:'blur(8px)',borderRadius:16,padding:'0.3rem 1rem',fontSize:'0.63rem',fontFamily:'monospace',color:'rgba(255,255,255,0.7)',letterSpacing:'0.05em'}}>Card detected once → pocket it → walk the stairs
+      <div style={{position:'absolute',top:'5.5rem',left:'50%',transform:'translateX(-50%)',zIndex:9,textAlign:'center',whiteSpace:'nowrap'}}><div style={{background:'rgba(13,43,69,0.55)',backdropFilter:'blur(8px)',borderRadius:16,padding:'0.3rem 1rem',fontSize:'0.63rem',color:'rgba(255,255,255,0.7)',letterSpacing:'0.05em'}}>Card detected once → pocket it → walk the stairs
         </div>
       </div>
 
       <div style={S.bot}>
-        <div style={{padding:'0.3rem 0.85rem',background:'rgba(13,43,69,0.5)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,fontSize:'0.64rem',fontFamily:'monospace',color:'rgba(255,255,255,0.7)',letterSpacing:'0.06em'}}>{mode==='auto'
+        <div style={{padding:'0.3rem 0.85rem',background:'rgba(13,43,69,0.5)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,fontSize:'0.64rem',color:'rgba(255,255,255,0.7)',letterSpacing:'0.06em'}}>{mode==='auto'
             ? ai==='loading' ? 'Loading AI detector…'
               : det ? `Card found ${stable}/5` : 'Hold card flat, centred — arm\'s length away'
             : 'Drag corners to match your card exactly'}
         </div>
 
         {/* Distance adjustment slider */}
-        <div style={{width:'100%',display:'flex',flexDirection:'column',gap:'0.25rem'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.45)',letterSpacing:'0.06em'}}>HOLD DISTANCE ADJUST</span>
-            <span style={{fontSize:'0.65rem',fontFamily:'monospace',color:'#FF7F00'}}>{Math.round(HOLD_DIST_MM * distAdj)}mm</span>
+        <div style={{width:'100%',display:'flex',flexDirection:'column',gap:'0.25rem'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontSize:'0.58rem',color:'rgba(255,255,255,0.45)',letterSpacing:'0.06em'}}>HOLD DISTANCE ADJUST</span>
+            <span style={{fontSize:'0.65rem',color:'#FF7F00'}}>{Math.round(HOLD_DIST_MM * distAdj)}mm</span>
           </div>
           <input type="range" min={0.6} max={1.6} step={0.05} value={distAdj}
             onChange={e => setDistAdj(Number(e.target.value))}
             style={{width:'100%',accentColor:'#007FFF',cursor:'pointer'}}/>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.52rem',fontFamily:'monospace',color:'rgba(255,255,255,0.25)'}}><span>Near (20cm)</span><span>← Adjust if card looks wrong →</span><span>Far (55cm)</span>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.52rem',color:'rgba(255,255,255,0.25)'}}><span>Near (20cm)</span><span>← Adjust if card looks wrong →</span><span>Far (55cm)</span>
           </div>
         </div>
 
         {mode==='manual' && !locked && <Btn onClick={confirmManual}>  Lock Scale</Btn>}
 
         <button onClick={()=>{streamRef.current?.getTracks().forEach(t=>t.stop());onSkip()}}
-          style={{background:'none',border:'none',color:'rgba(255,255,255,0.32)',fontSize:'0.63rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em'}}>Skip calibration (lower accuracy)
+          style={{background:'none',border:'none',color:'rgba(255,255,255,0.32)',fontSize:'0.63rem',cursor:'pointer',letterSpacing:'0.08em'}}>Skip calibration (lower accuracy)
         </button>
       </div>
     </div>
@@ -393,7 +393,7 @@ export default function CardCalibration({ onCalibrated, onSkip, onBack }: Props)
 }
 
 function Btn({onClick,children}:{onClick:()=>void,children:React.ReactNode}) {
-  return <button onClick={onClick} style={{width:'100%',padding:'0.95rem',background:'#007FFF',border:'none',borderRadius:14,cursor:'pointer',color:'#fff',fontSize:'0.82rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.14em',boxShadow:'0 4px 20px rgba(0,127,255,0.4)'}}>{children}</button>
+  return <button onClick={onClick} style={{width:'100%',padding:'0.95rem',background:'#007FFF',border:'none',borderRadius:14,cursor:'pointer',color:'#fff',fontSize:'0.82rem',fontWeight:700,letterSpacing: '0.04em',boxShadow:'0 4px 20px rgba(0,127,255,0.4)'}}>{children}</button>
 }
 function IBtn({onClick,children}:{onClick:()=>void,children:React.ReactNode}) {
   return <button onClick={onClick} style={{width:36,height:36,background:'rgba(21,101,192,0.22)',border:'none',borderRadius:'50%',color:'#fff',fontSize:'1rem',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{children}</button>

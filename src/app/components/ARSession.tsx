@@ -169,7 +169,7 @@ export default function ARSession({
       <div style={styles.overlay}>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         <div style={styles.card}>
-          <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', letterSpacing: '0.15em', color: stepColor, marginBottom: '0.6rem' }}>STARTING AR SESSION
+          <div style={{ fontSize: '0.7rem', letterSpacing: '0.04em', color: stepColor, marginBottom: '0.6rem' }}>STARTING AR SESSION
           </div>
           <div style={styles.spinner(stepColor)} />
           <p style={styles.hint}>Requesting camera + AR access…</p>
@@ -194,7 +194,7 @@ export default function ARSession({
     <div ref={overlayRef} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>{/* Top bar */}
       <div style={styles.topBar}>
         <button onClick={handleBack} style={styles.iconBtn}>←</button>
-        <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', letterSpacing: '0.16em', color: stepColor }}>{stepLabel.toUpperCase()} — AR MODE
+        <div style={{ fontSize: '0.65rem', letterSpacing: '0.04em', color: stepColor }}>{stepLabel.toUpperCase()} — AR MODE
         </div>
         <div style={{ width: 38 }} />
       </div>
@@ -213,9 +213,9 @@ export default function ARSession({
       <div style={styles.bottomTray}>
         {lockedMm ? (
           <>
-            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>{lockedMm}
+            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '3.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.04em' }}>{lockedMm}
               </div>
-              <div style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)' }}>mm</div>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>mm</div>
             </div>
             <div style={{ display: 'flex', gap: '0.7rem', width: '100%', maxWidth: 320 }}><button onClick={handleBack} style={styles.secondaryBtn}>
                 ↺ Rescan
@@ -230,7 +230,7 @@ export default function ARSession({
             </div>
           </>
         ) : (
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', textAlign: 'center', fontFamily: 'monospace' }}>{MODE_HINT[mode]}
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', textAlign: 'center' }}>{MODE_HINT[mode]}
           </p>
         )}
       </div>
@@ -267,8 +267,7 @@ const styles = {
   secondaryBtn: {
     flex: 1, padding: '0.9rem', background: 'rgba(21,101,192,0.12)',
     border: '1px solid rgba(21,101,192,0.3)', borderRadius: 14, color: 'rgba(255,255,255,0.6)',
-    fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'monospace',
-  } as React.CSSProperties,
+    fontSize: '0.82rem', cursor: 'pointer', } as React.CSSProperties,
   topBar: {
     position: 'absolute' as const, top: 0, left: 0, right: 0, zIndex: 70,
     paddingTop: 'max(env(safe-area-inset-top,0px),2.4rem)',

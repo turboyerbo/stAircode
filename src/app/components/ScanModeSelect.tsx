@@ -46,7 +46,7 @@ export default function ScanModeSelect({ onSelect }: Props) {
       <div style={{ width: '100%', maxWidth: 420, height: 5, background: STRIPE, borderRadius: 2, marginBottom: '1.5rem' }} />
 
       {/* Heading */}
-      <h1 style={{ fontSize: '1.55rem', fontWeight: 900, color: TEXT, textAlign: 'center', margin: '0 0 0.4rem', letterSpacing: '-0.02em' }}>Who is this scan for?
+      <h1 style={{ fontSize: '1.55rem', fontWeight: 700, color: TEXT, textAlign: 'center', margin: '0 0 0.4rem', letterSpacing: '-0.02em' }}>Who is this scan for?
       </h1>
       <p style={{ fontSize: '0.78rem', color: TEXT2, textAlign: 'center', margin: '0 0 2rem', lineHeight: 1.55, maxWidth: 320 }}>Choose based on your situation. Both modes produce a full compliance report.
       </p>
@@ -71,8 +71,8 @@ export default function ScanModeSelect({ onSelect }: Props) {
           <div style={{ display:'flex', alignItems:'flex-start', gap:'1rem' }}>{/* Icon */}
             <div style={{ width:54, height:54, borderRadius:14, background:`rgba(250,116,31,0.15)`, border:`1.5px solid ${ORANGE}55`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'1.6rem' }}></div>
 
-            <div style={{ flex:1 }}><div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}><span style={{ fontSize:'1.1rem', fontWeight:900, color:TEXT }}>Individual</span>
-                <span style={{ fontSize:'0.6rem', background:`rgba(250,116,31,0.2)`, color:ORANGE, fontFamily:'monospace', fontWeight:800, letterSpacing:'0.1em', padding:'0.15rem 0.5rem', borderRadius:6 }}>~90 SEC</span>
+            <div style={{ flex:1 }}><div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}><span style={{ fontSize:'1.1rem', fontWeight: 700, color:TEXT }}>Individual</span>
+                <span style={{ fontSize:'0.6rem', background:`rgba(250,116,31,0.2)`, color:ORANGE, fontWeight:800, letterSpacing:'0.1em', padding:'0.15rem 0.5rem', borderRadius:6 }}>~90 SEC</span>
               </div>
               <p style={{ fontSize:'0.78rem', color:TEXT2, margin:0, lineHeight:1.65 }}>Quick and simple — good for a personal check.
               </p>
@@ -102,8 +102,8 @@ export default function ScanModeSelect({ onSelect }: Props) {
             <div style={{ width:54, height:54, borderRadius:14, background:`rgba(39,169,107,0.15)`, border:`1.5px solid ${GREEN}55`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'1.6rem' }}>‍
             </div>
 
-            <div style={{ flex:1 }}><div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}><span style={{ fontSize:'1.1rem', fontWeight:900, color:TEXT }}>Professional</span>
-                <span style={{ fontSize:'0.6rem', background:`rgba(39,169,107,0.2)`, color:GREEN, fontFamily:'monospace', fontWeight:800, letterSpacing:'0.1em', padding:'0.15rem 0.5rem', borderRadius:6 }}>3–5 MIN</span>
+            <div style={{ flex:1 }}><div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}><span style={{ fontSize:'1.1rem', fontWeight: 700, color:TEXT }}>Professional</span>
+                <span style={{ fontSize:'0.6rem', background:`rgba(39,169,107,0.2)`, color:GREEN, fontWeight:800, letterSpacing:'0.1em', padding:'0.15rem 0.5rem', borderRadius:6 }}>3–5 MIN</span>
               </div>
               <p style={{ fontSize:'0.78rem', color:TEXT2, margin:0, lineHeight:1.65 }}>For architects, contractors, building managers, and real estate. AI coaches each frame for best accuracy.
               </p>

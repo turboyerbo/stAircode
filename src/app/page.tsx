@@ -330,7 +330,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
         paddingTop: '3rem',
       }}><div style={{
           fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)',
-          fontFamily: 'monospace', letterSpacing: '0.2em',
+          letterSpacing: '0.04em',
           animation: 'pulse 2s ease-in-out infinite',
         }}>TAP TO CONTINUE
         </div>
@@ -509,7 +509,7 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
     <div style={{minHeight:'100dvh',background:'#0A1C2E',backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'2rem 1.25rem',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{display:'flex',justifyContent:'center',marginBottom:'1.25rem'}}><Logo size="md" onDark /></div>
       <div style={{width:'100%',maxWidth:420,background:'#0F2438',border:'1px solid rgba(65,124,164,0.20)',borderRadius:20,overflow:'hidden'}}>{/* Header */}
         <div style={{background:'#F29337',padding:'1rem 1.25rem',display:'flex',alignItems:'center',gap:'0.6rem'}}><div>
-            <div style={{fontSize:'0.95rem',fontWeight:900,color:'#fff',letterSpacing:'-0.01em'}}>Terms of Use & Disclaimer</div>
+            <div style={{fontSize:'0.95rem',fontWeight: 700,color:'#fff',letterSpacing:'-0.01em'}}>Terms of Use & Disclaimer</div>
             <div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.8)',marginTop:'0.1rem'}}>Please read before continuing</div>
           </div>
         </div>
@@ -527,7 +527,7 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
         </div>
         {/* Agree checkbox */}
         <div style={{padding:'1rem 1.25rem',borderTop:'1px solid rgba(65,124,164,0.15)',display:'flex',alignItems:'flex-start',gap:'0.75rem',cursor:'pointer'}} onClick={()=>setChecked(v=>!v)}>
-          <div style={{width:20,height:20,borderRadius:6,border:`2px solid ${checked?'#27A96B':'rgba(147,186,212,0.4)'}`,background:checked?'#27A96B':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:2,transition:'all 0.15s'}}>{checked && <span style={{color:'#fff',fontSize:'0.85rem',fontWeight:900,lineHeight:1}}>&#10003;</span>}
+          <div style={{width:20,height:20,borderRadius:6,border:`2px solid ${checked?'#27A96B':'rgba(147,186,212,0.4)'}`,background:checked?'#27A96B':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:2,transition:'all 0.15s'}}>{checked && <span style={{color:'#fff',fontSize:'0.85rem',fontWeight: 700,lineHeight:1}}>&#10003;</span>}
           </div>
           <span style={{fontSize:'0.76rem',color:'#E8F4FF',lineHeight:1.55}}>I understand that stAIrcode is a visual aid only and not a professional compliance tool. I agree to the{' '}
             <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} style={{color:'#F29337',fontWeight:600}}>Terms of Service</a>.
@@ -537,7 +537,7 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
         <div style={{padding:'0 1.25rem 1.25rem'}}><button
             onClick={()=>{ if(checked)onAgree() }}
             disabled={!checked}
-            style={{width:'100%',padding:'1rem',background:checked?'linear-gradient(135deg,#27A96B,#1A7A50)':'rgba(255,255,255,0.06)',border:'none',borderRadius:14,color:checked?'#fff':'#4E7A9B',fontSize:'0.95rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.06em',cursor:checked?'pointer':'not-allowed',boxShadow:checked?'0 4px 20px rgba(39,169,107,0.4)':'none',transition:'all 0.2s'}}
+            style={{width:'100%',padding:'1rem',background:checked?'linear-gradient(135deg,#27A96B,#1A7A50)':'rgba(255,255,255,0.06)',border:'none',borderRadius:14,color:checked?'#fff':'#4E7A9B',fontSize:'0.95rem',fontWeight:800,letterSpacing:'0.06em',cursor:checked?'pointer':'not-allowed',boxShadow:checked?'0 4px 20px rgba(39,169,107,0.4)':'none',transition:'all 0.2s'}}
           >
             {checked?' I Agree — Continue →':'Check the box above to continue'}
           </button>
@@ -785,8 +785,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column'}}>{/* Hero */}
       <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.8rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.5rem',borderBottom:`1px solid ${C.border}`}}><div style={{display:'flex',justifyContent:'center'}}><BetaLogo size="md" onDark /></div>
-        <h1 style={{fontSize:'1.65rem',fontWeight:800,lineHeight:1.1,textAlign:'center',margin:0,letterSpacing:'-0.02em'}}><span style={{color:'#ffffff',textShadow:`0 0 28px ${C.orange}88`}}>Building Compliance</span> Scanner
-        </h1>
+        <h1 style={{fontSize:'1.5rem',fontWeight:700,lineHeight:1.2,textAlign:'center',margin:0,color:'#fff'}}>Building Compliance Scanner</h1>
         <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.55)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
       </div>
 
@@ -800,66 +799,66 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
                 {code.code==='IBC' && <>Building Codes: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
                 {code.code!=='OBC'&&code.code!=='NBC'&&code.code!=='IBC' && <span>{code.ref}</span>}
               </span>
-              <span style={{fontSize:'0.65rem',fontFamily:'monospace',fontWeight:600,letterSpacing:'0.08em',color:confirmed?'#0D7A5F':'#2C5A7A',background:confirmed?'#E6F5F1':'#EBF2FF',padding:'0.22rem 0.65rem',borderRadius:8,border:`1px solid ${confirmed?'rgba(13,122,95,0.3)':'rgba(44,90,122,0.25)'}`}}>{code.label}</span>
+              <span style={{fontSize:'0.65rem',fontWeight:600,letterSpacing:'0.08em',color:confirmed?'#0D7A5F':'#2C5A7A',background:confirmed?'#E6F5F1':'#EBF2FF',padding:'0.22rem 0.65rem',borderRadius:8,border:`1px solid ${confirmed?'rgba(13,122,95,0.3)':'rgba(44,90,122,0.25)'}`}}>{code.label}</span>
             </div>
           )}
         </div>
 
         {/* ── MODULE SELECTOR ── */}
-        <div style={{display:'flex',flexDirection:'column',gap:'0.35rem'}}>
-          <div style={{fontSize:'0.6rem',fontFamily:'monospace',fontWeight:700,letterSpacing:'0.1em',color:'#5E7D9B',marginBottom:'0.1rem'}}>SELECT INSPECTION MODULE</div>
+        <div style={{display:'flex',flexDirection:'column',gap:'0.4rem'}}>
+          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Inspection module</div>
 
-          {/* Stair Compliance — LIVE */}
+          {/* Stair Compliance */}
           <button
             onClick={()=>{ if(!atLimit) onStartScan('stair') }}
-            style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='stair'?'rgba(39,169,107,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'rgba(39,169,107,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='stair'?'0 2px 10px rgba(39,169,107,0.15)':'none'}}
+            style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='stair'?'#F0FBF6':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'#27A96B':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
           >
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
-              <rect x="1" y="13" width="6" height="8" rx="1" fill="rgba(39,169,107,0.2)" stroke="#27A96B" strokeWidth="1.5"/>
-              <rect x="7" y="7" width="6" height="14" rx="1" fill="rgba(39,169,107,0.2)" stroke="#27A96B" strokeWidth="1.5"/>
-              <rect x="13" y="1" width="8" height="20" rx="1" fill="rgba(39,169,107,0.2)" stroke="#27A96B" strokeWidth="1.5"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='stair'?1:0.5}}>
+              <rect x="1" y="12" width="5" height="7" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+              <rect x="6" y="7" width="5" height="12" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+              <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
             </svg>
             <div style={{flex:1}}>
-              <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Stair Compliance</div>
-              <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail</div>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance</div>
+              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail</div>
             </div>
-            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(39,169,107,0.12)',color:'#27A96B',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(39,169,107,0.3)',flexShrink:0}}>BETA</span>
+            <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Beta</span>
           </button>
 
-          {/* Foundation Inspection — LIVE */}
+          {/* Foundation Inspection */}
           <button
             onClick={()=>{ if(!atLimit) onStartScan('foundation') }}
-            style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='foundation'?'rgba(65,124,164,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='foundation'?'rgba(65,124,164,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='foundation'?'0 2px 10px rgba(65,124,164,0.15)':'none'}}
+            style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='foundation'?'#EEF4FB':'#FFFFFF',border:`1.5px solid ${activeModule==='foundation'?'#417CA4':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
           >
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
-              <rect x="4" y="2" width="14" height="13" rx="1" fill="rgba(65,124,164,0.2)" stroke="#417CA4" strokeWidth="1.5"/>
-              <rect x="1" y="15" width="20" height="6" rx="1" fill="rgba(65,124,164,0.35)" stroke="#417CA4" strokeWidth="1.5"/>
-              <line x1="4" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1"/>
-              <line x1="4" y1="11" x2="18" y2="11" stroke="#417CA4" strokeWidth="1"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='foundation'?1:0.5}}>
+              <rect x="3" y="2" width="14" height="11" rx="0.5" stroke="#417CA4" strokeWidth="1.5"/>
+              <rect x="1" y="13" width="18" height="6" rx="0.5" stroke="#417CA4" strokeWidth="1.5"/>
+              <line x1="3" y1="6" x2="17" y2="6" stroke="#417CA4" strokeWidth="1"/>
+              <line x1="3" y1="10" x2="17" y2="10" stroke="#417CA4" strokeWidth="1"/>
             </svg>
             <div style={{flex:1}}>
-              <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Foundation Inspection</div>
-              <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Wall type, cracks, thickness, footing, moisture</div>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Foundation Inspection</div>
+              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Wall type, cracks, thickness, footing, moisture</div>
             </div>
-            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(65,124,164,0.12)',color:'#417CA4',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(65,124,164,0.3)',flexShrink:0}}>BETA</span>
+            <span style={{fontSize:'0.62rem',fontWeight:600,color:'#417CA4',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(65,124,164,0.35)',flexShrink:0}}>Beta</span>
           </button>
 
-          {/* Accessibility Compliance — LIVE */}
+          {/* Accessibility Compliance */}
           <button
             onClick={()=>{ if(!atLimit) onStartScan('accessibility') }}
-            style={{width:'100%',padding:'0.9rem 1rem',background:activeModule==='accessibility'?'rgba(123,94,167,0.08)':'#FFFFFF',border:`1.5px solid ${activeModule==='accessibility'?'rgba(123,94,167,0.55)':'rgba(44,90,122,0.18)'}`,borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.15s',boxShadow:activeModule==='accessibility'?'0 2px 10px rgba(123,94,167,0.15)':'none'}}
+            style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='accessibility'?'#F4F1FA':'#FFFFFF',border:`1.5px solid ${activeModule==='accessibility'?'#7B5EA7':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
           >
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
-              <circle cx="11" cy="4" r="2.5" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5"/>
-              <path d="M11 7v6l-4 4M11 13l4 4" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="6" y1="22" x2="6" y2="16" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="16" y1="22" x2="16" y2="16" stroke="rgba(123,94,167,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='accessibility'?1:0.5}}>
+              <circle cx="10" cy="4" r="2" stroke="#7B5EA7" strokeWidth="1.5"/>
+              <path d="M10 6.5v5.5l-3.5 3.5M10 12l3.5 3.5" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="5" y1="20" x2="5" y2="15" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="15" y1="20" x2="15" y2="15" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <div style={{flex:1}}>
-              <div style={{fontSize:'0.85rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.2}}>Accessibility Compliance</div>
-              <div style={{fontSize:'0.65rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Paths, washrooms, alarms, seating, pool access · OBC 2024</div>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Accessibility Compliance</div>
+              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Paths, washrooms, alarms, seating — OBC 2024</div>
             </div>
-            <span style={{fontSize:'0.6rem',fontWeight:800,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(123,94,167,0.12)',color:'#7B5EA7',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(123,94,167,0.3)',flexShrink:0}}>BETA</span>
+            <span style={{fontSize:'0.62rem',fontWeight:600,color:'#7B5EA7',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(123,94,167,0.35)',flexShrink:0}}>Beta</span>
           </button>
 
           {/* Coming-soon modules — greyed */}
@@ -868,13 +867,13 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
             {name:'Windows',desc:'Egress openings, sill heights, well dimensions'},
             {name:'Smoke & CO Detectors',desc:'Placement, distance-to-ceiling, spacing'},
           ].map(mod=>(
-            <div key={mod.name} style={{width:'100%',padding:'0.8rem 1rem',background:'rgba(0,0,0,0.02)',border:'1.5px solid rgba(44,90,122,0.1)',borderRadius:13,display:'flex',alignItems:'center',gap:'0.75rem',opacity:0.55}}>
-              <div style={{width:22,height:22,borderRadius:6,background:'rgba(44,90,122,0.08)',border:'1px solid rgba(44,90,122,0.15)',flexShrink:0}}/>
+            <div key={mod.name} style={{width:'100%',padding:'0.75rem 1rem',background:'rgba(0,0,0,0.02)',border:'1px solid rgba(44,90,122,0.1)',borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',opacity:0.5}}>
+              <div style={{width:20,height:20,borderRadius:4,background:'rgba(44,90,122,0.06)',flexShrink:0}}/>
               <div style={{flex:1}}>
-                <div style={{fontSize:'0.82rem',fontWeight:700,color:'#7A96AF',lineHeight:1.2}}>{mod.name}</div>
-                <div style={{fontSize:'0.62rem',color:'#9DB4C5',marginTop:'0.1rem'}}>{mod.desc}</div>
+                <div style={{fontSize:'0.82rem',fontWeight:500,color:'#7A96AF',lineHeight:1.2}}>{mod.name}</div>
+                <div style={{fontSize:'0.68rem',color:'#9DB4C5',marginTop:'0.1rem'}}>{mod.desc}</div>
               </div>
-              <span style={{fontSize:'0.58rem',fontWeight:700,fontFamily:'monospace',letterSpacing:'0.1em',background:'rgba(147,186,212,0.1)',color:'#9DB4C5',padding:'0.18rem 0.55rem',borderRadius:6,border:'1px solid rgba(147,186,212,0.2)',flexShrink:0,whiteSpace:'nowrap'}}>SOON</span>
+              <span style={{fontSize:'0.62rem',fontWeight:500,color:'#9DB4C5',padding:'0.18rem 0.5rem',borderRadius:4,border:'1px solid rgba(147,186,212,0.2)',flexShrink:0}}>Soon</span>
             </div>
           ))}
         </div>
@@ -891,7 +890,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
 
         <div style={{flex:1}}/>
 
-        <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,fontFamily:'monospace',margin:0}}>Compliance aid only · Not a substitute for professional inspection
+        <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,margin:0}}>Compliance aid only · Not a substitute for professional inspection
         </p>
 
         {/* Social + store buttons — official logos */}
@@ -937,7 +936,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
           </a>
         </div>
 
-        <button onClick={onLogout} style={{display:'block',margin:'0.6rem auto 0',background:'rgba(65,124,164,0.10)',border:'1px solid rgba(65,124,164,0.25)',color:'#2C5A7A',fontSize:'0.65rem',fontFamily:'monospace',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 1rem',borderRadius:20,fontWeight:600}}>↩ Sign out
+        <button onClick={onLogout} style={{display:'block',margin:'0.6rem auto 0',background:'rgba(65,124,164,0.10)',border:'1px solid rgba(65,124,164,0.25)',color:'#2C5A7A',fontSize:'0.65rem',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 1rem',borderRadius:20,fontWeight:600}}>↩ Sign out
         </button>
       </div>
     </div>
@@ -974,7 +973,7 @@ function BottomNav({active,onChange}:{active:Tab;onChange:(t:Tab)=>void}){
                 </svg>
               )}
             </span>
-            <span style={{fontSize:'0.62rem',fontFamily:'monospace',fontWeight:on?700:400,color:on?'#2C5A7A':'rgba(44,74,110,0.5)',letterSpacing:'0.06em'}}>{t.label}</span>
+            <span style={{fontSize:'0.62rem',fontWeight:on?700:400,color:on?'#2C5A7A':'rgba(44,74,110,0.5)',letterSpacing:'0.06em'}}>{t.label}</span>
             {on&&<div style={{width:4,height:4,borderRadius:'50%',background:C.blue,boxShadow:`0 0 6px ${C.blue}`}}/>}
           </button>
         )

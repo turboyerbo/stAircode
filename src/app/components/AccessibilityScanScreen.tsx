@@ -1149,42 +1149,40 @@ export default function AccessibilityScanScreen({ onSuccess, onBack }: Props) {
     return (
       <div style={{ position:'fixed', inset:0, background:NAVY, overflowY:'auto', fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
         <div style={{ padding:'max(env(safe-area-inset-top,0px),1.5rem) 1.25rem 3rem' }}>
-          <button onClick={onBack} style={{ background:'none', border:'none', color:WHITE2, fontSize:'0.85rem', cursor:'pointer', fontFamily:'monospace', padding:'0 0 0.5rem' }}>← Exit</button>
+          <button onClick={onBack} style={{ background:'none', border:'none', color:WHITE2, fontSize:'0.85rem', cursor:'pointer', padding:'0 0 0.5rem' }}>← Exit</button>
 
           {/* Header */}
           <div style={{ marginBottom:'1.5rem' }}>
-            <div style={{ fontSize:'0.6rem', fontFamily:'monospace', color:PURPLE, fontWeight:700, letterSpacing:'0.14em', marginBottom:'0.4rem' }}>ACCESSIBILITY MODULE · OBC 2024 / AODA</div>
-            <h1 style={{ fontSize:'1.5rem', fontWeight:900, color:WHITE, letterSpacing:'-0.03em', lineHeight:1.1, margin:'0 0 0.5rem' }}>Select Inspection<br/>Category</h1>
-            <p style={{ fontSize:'0.78rem', color:WHITE2, lineHeight:1.6, margin:0 }}>Choose the accessibility category you want to inspect. Each category guides you through the required measurements and generates a cited compliance report.</p>
+            <div style={{ fontSize:'0.7rem', color:'rgba(147,186,212,0.6)', fontWeight:500, letterSpacing:'0.04em', marginBottom:'0.5rem', textTransform:'uppercase' as const }}>Accessibility — OBC 2024 / AODA</div>
+            <h1 style={{ fontSize:'1.4rem', fontWeight:700, color:WHITE, lineHeight:1.2, margin:'0 0 0.5rem' }}>Select a category</h1>
+            <p style={{ fontSize:'0.82rem', color:WHITE2, lineHeight:1.65, margin:0 }}>Each category generates a separate cited compliance report. Scan one or all five.</p>
           </div>
 
           {/* Category cards */}
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.65rem' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
             {(Object.keys(CATEGORY_META) as AccessibilityCategory[]).map(cat => {
               const meta = CATEGORY_META[cat]
               return (
                 <button key={cat} onClick={() => selectCategory(cat)}
-                  style={{ width:'100%', padding:'1rem 1.1rem', background:'rgba(255,255,255,0.04)', border:`1.5px solid rgba(255,255,255,0.1)`, borderRadius:14, display:'flex', alignItems:'center', gap:'0.9rem', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = meta.color + '88')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
+                  style={{ width:'100%', padding:'0.9rem 1rem', background:'rgba(255,255,255,0.05)', border:`1px solid rgba(255,255,255,0.1)`, borderRadius:10, display:'flex', alignItems:'center', gap:'0.8rem', cursor:'pointer', textAlign:'left' as const, transition:'all 0.12s' }}
                 >
-                  <div style={{ width:44, height:44, borderRadius:12, background:`${meta.color}18`, border:`1.5px solid ${meta.color}44`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <CategoryIcon cat={cat} size={24} active />
+                  <div style={{ width:36, height:36, borderRadius:8, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <CategoryIcon cat={cat} size={20} active />
                   </div>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:'0.88rem', fontWeight:800, color:WHITE, marginBottom:'0.15rem' }}>{meta.label}</div>
-                    <div style={{ fontSize:'0.68rem', color:WHITE2, lineHeight:1.4 }}>{meta.description}</div>
+                    <div style={{ fontSize:'0.875rem', fontWeight:600, color:WHITE, marginBottom:'0.1rem' }}>{meta.label}</div>
+                    <div style={{ fontSize:'0.7rem', color:WHITE2, lineHeight:1.45 }}>{meta.description}</div>
                   </div>
-                  <div style={{ fontSize:'0.6rem', fontFamily:'monospace', fontWeight:700, color:meta.color, background:`${meta.color}18`, padding:'0.15rem 0.5rem', borderRadius:6, border:`1px solid ${meta.color}33`, flexShrink:0 }}>
-                    {meta.obcRef.split(' ')[0]}
+                  <div style={{ fontSize:'0.62rem', fontWeight:500, color:'rgba(147,186,212,0.6)', flexShrink:0, whiteSpace:'nowrap' as const }}>
+                    {meta.obcRef.split('–')[0].trim()}
                   </div>
                 </button>
               )
             })}
           </div>
 
-          <p style={{ fontSize:'0.65rem', color:'rgba(147,186,212,0.45)', textAlign:'center', marginTop:'1.5rem', lineHeight:1.55, fontFamily:'monospace' }}>
-            Each category can be scanned independently.<br/>Reports can be combined into a full compliance package.
+          <p style={{ fontSize:'0.68rem', color:'rgba(147,186,212,0.4)', textAlign:'center' as const, marginTop:'1.5rem', lineHeight:1.6 }}>
+            Each category can be scanned independently.
           </p>
         </div>
       </div>
@@ -1229,7 +1227,7 @@ export default function AccessibilityScanScreen({ onSuccess, onBack }: Props) {
         </div>
         <div style={{ flex:1, display:'flex', flexDirection:'column', gap:'0.25rem' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontSize:'0.6rem', fontFamily:'monospace', letterSpacing:'0.1em', color:WHITE2 }}>STEP {currentPos.step} / {positions.length}</span>
+            <span style={{ fontSize:'0.6rem', letterSpacing:'0.1em', color:WHITE2 }}>STEP {currentPos.step} / {positions.length}</span>
             <span style={{ fontSize:'0.72rem', fontWeight:700, color:WHITE }}>{currentPos.label}</span>
           </div>
           <div style={{ height:3, background:'rgba(255,255,255,0.1)', borderRadius:2, overflow:'hidden' }}>
@@ -1239,7 +1237,7 @@ export default function AccessibilityScanScreen({ onSuccess, onBack }: Props) {
         <button onClick={() => goTo(posIdx + 1)} disabled={posIdx >= positions.length - 1}
           style={{ width:34, height:34, borderRadius:'50%', background:'rgba(0,0,0,0.5)', border:`1px solid ${BORDER}`, color:WHITE, fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>→</button>
         <div style={{ background:`${PURPLE}22`, border:`1px solid ${PURPLE}66`, borderRadius:10, padding:'0.18rem 0.6rem', flexShrink:0 }}>
-          <span style={{ fontSize:'0.5rem', fontFamily:'monospace', letterSpacing:'0.1em', color:PURPLE, fontWeight:700 }}>ACCESS</span>
+          <span style={{ fontSize:'0.5rem', letterSpacing:'0.1em', color:PURPLE, fontWeight:700 }}>ACCESS</span>
         </div>
       </div>
 
@@ -1250,25 +1248,25 @@ export default function AccessibilityScanScreen({ onSuccess, onBack }: Props) {
         {stage === 'position' && <>
           <PositionIllustration posId={currentPos.id} color={col} />
           <div style={{ background:`${col}11`, borderRadius:12, padding:'0.75rem 1rem', border:`1px solid ${col}33` }}>
-            <div style={{ fontSize:'0.65rem', fontFamily:'monospace', color:col, fontWeight:700, marginBottom:'0.25rem' }}>{CATEGORY_META[category].obcRef}</div>
+            <div style={{ fontSize:'0.65rem', color:col, fontWeight:700, marginBottom:'0.25rem' }}>{CATEGORY_META[category].obcRef}</div>
             <div style={{ fontSize:'0.78rem', color:WHITE2, lineHeight:1.6 }}>{currentPos.detail}</div>
           </div>
           <div style={{ display:'flex', gap:'0.45rem' }}>
-            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex:1, padding:'0.75rem', background:'rgba(255,255,255,0.05)', border:`1px solid ${BORDER}`, borderRadius:13, color:WHITE2, fontFamily:'monospace', fontSize:'0.75rem', cursor:'pointer' }}>Skip →</button>}
-            <button onClick={finishScan} style={{ flex:currentPos.optional?1:2, padding:'0.75rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:13, color:AMBER, fontFamily:'monospace', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
+            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex:1, padding:'0.75rem', background:'rgba(255,255,255,0.05)', border:`1px solid ${BORDER}`, borderRadius:13, color:WHITE2, fontSize:'0.75rem', cursor:'pointer' }}>Skip →</button>}
+            <button onClick={finishScan} style={{ flex:currentPos.optional?1:2, padding:'0.75rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:13, color:AMBER, fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
           </div>
         </>}
 
         {/* READY */}
         {stage === 'ready' && <>
           <div style={{ background:`${col}11`, borderRadius:14, padding:'0.75rem 1rem', border:`1px solid ${col}33` }}>
-            <div style={{ fontSize:'0.65rem', fontFamily:'monospace', color:col, fontWeight:700, letterSpacing:'0.08em', marginBottom:'0.3rem' }}>STEP {currentPos.step}/{positions.length} — {currentPos.label.toUpperCase()}</div>
+            <div style={{ fontSize:'0.65rem', color:col, fontWeight:700, letterSpacing:'0.08em', marginBottom:'0.3rem' }}>STEP {currentPos.step}/{positions.length} — {currentPos.label.toUpperCase()}</div>
             <div style={{ fontSize:'0.78rem', color:WHITE2, lineHeight:1.55 }}>{currentPos.detail}</div>
           </div>
-          <button onClick={handleReady} style={{ width:'100%', padding:'1.15rem', background:`linear-gradient(135deg,${GREEN},#1A7A50)`, border:'none', borderRadius:16, color:'#fff', fontFamily:'monospace', fontSize:'1rem', fontWeight:900, letterSpacing:'0.04em', cursor:'pointer', boxShadow:'0 6px 28px rgba(39,169,107,0.5)' }}>{currentPos.readyLabel}</button>
+          <button onClick={handleReady} style={{ width:'100%', padding:'1.15rem', background:`linear-gradient(135deg,${GREEN},#1A7A50)`, border:'none', borderRadius:16, color:'#fff', fontSize:'1rem', fontWeight: 700, letterSpacing:'0.04em', cursor:'pointer', boxShadow:'0 6px 28px rgba(39,169,107,0.5)' }}>{currentPos.readyLabel}</button>
           <div style={{ display:'flex', gap:'0.45rem' }}>
-            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex:1, padding:'0.65rem', background:'rgba(255,255,255,0.05)', border:`1px solid ${BORDER}`, borderRadius:12, color:WHITE2, fontFamily:'monospace', fontSize:'0.72rem', cursor:'pointer' }}>Skip →</button>}
-            <button onClick={finishScan} style={{ flex:1, padding:'0.65rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:12, color:AMBER, fontFamily:'monospace', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
+            {currentPos.optional && <button onClick={() => goTo(posIdx + 1)} style={{ flex:1, padding:'0.65rem', background:'rgba(255,255,255,0.05)', border:`1px solid ${BORDER}`, borderRadius:12, color:WHITE2, fontSize:'0.72rem', cursor:'pointer' }}>Skip →</button>}
+            <button onClick={finishScan} style={{ flex:1, padding:'0.65rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:12, color:AMBER, fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
           </div>
         </>}
 
@@ -1283,28 +1281,28 @@ export default function AccessibilityScanScreen({ onSuccess, onBack }: Props) {
                   strokeDashoffset={`${2*Math.PI*26*(countdown/currentPos.holdSeconds)}`}
                   strokeLinecap="round" style={{ transition:'stroke-dashoffset 0.9s linear' }}/>
               </svg>
-              <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem', fontWeight:900, color:WHITE, fontFamily:'monospace' }}>{countdown}</div>
+              <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem', fontWeight: 700, color:WHITE }}>{countdown}</div>
             </div>
             <div>
               <div style={{ fontSize:'0.88rem', fontWeight:800, color:GREEN, letterSpacing:'0.05em', marginBottom:'0.2rem' }}>HOLD STILL</div>
               <div style={{ fontSize:'0.72rem', color:WHITE2, lineHeight:1.4 }}>Keep the phone steady for a clear capture</div>
             </div>
           </div>
-          <button onClick={finishScan} style={{ width:'100%', padding:'0.72rem', background:`linear-gradient(135deg,${AMBER},#C4721E)`, border:'none', borderRadius:13, color:'#fff', fontFamily:'monospace', fontSize:'0.82rem', fontWeight:700, cursor:'pointer' }}>View Report →</button>
+          <button onClick={finishScan} style={{ width:'100%', padding:'0.72rem', background:`linear-gradient(135deg,${AMBER},#C4721E)`, border:'none', borderRadius:13, color:'#fff', fontSize:'0.82rem', fontWeight:700, cursor:'pointer' }}>View Report →</button>
         </>}
 
         {/* CAPTURE */}
         {stage === 'capture' && <>
           <div style={{ fontSize:'0.78rem', color:WHITE2, lineHeight:1.5 }}>Phone is steady — tap to capture.</div>
           <button onClick={camWarm ? handleCapture : undefined}
-            style={{ width:'100%', padding:'1.15rem', background:camWarm?`linear-gradient(135deg,${col},${PURPLE})`:'rgba(255,255,255,0.07)', border:camWarm?'none':`1px solid ${BORDER}`, borderRadius:16, color:camWarm?'#fff':WHITE2, fontFamily:'monospace', fontSize:'1rem', fontWeight:900, letterSpacing:'0.06em', cursor:camWarm?'pointer':'default', boxShadow:camWarm?`0 6px 28px ${col}80`:'none', transition:'all 0.4s ease' }}>
+            style={{ width:'100%', padding:'1.15rem', background:camWarm?`linear-gradient(135deg,${col},${PURPLE})`:'rgba(255,255,255,0.07)', border:camWarm?'none':`1px solid ${BORDER}`, borderRadius:16, color:camWarm?'#fff':WHITE2, fontSize:'1rem', fontWeight: 700, letterSpacing:'0.06em', cursor:camWarm?'pointer':'default', boxShadow:camWarm?`0 6px 28px ${col}80`:'none', transition:'all 0.4s ease' }}>
             {camWarm ? currentPos.captureLabel : 'Camera focusing…'}
           </button>
           <div style={{ display:'flex', gap:'0.45rem' }}>
             <button onClick={() => { busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
-              style={{ flex:1, padding:'0.65rem', background:'rgba(255,255,255,0.07)', border:`1px solid ${BORDER}`, borderRadius:12, color:WHITE2, fontFamily:'monospace', fontSize:'0.72rem', cursor:'pointer' }}>↺ Re-steady</button>
+              style={{ flex:1, padding:'0.65rem', background:'rgba(255,255,255,0.07)', border:`1px solid ${BORDER}`, borderRadius:12, color:WHITE2, fontSize:'0.72rem', cursor:'pointer' }}>↺ Re-steady</button>
             <button onClick={finishScan}
-              style={{ flex:1, padding:'0.65rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:12, color:AMBER, fontFamily:'monospace', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
+              style={{ flex:1, padding:'0.65rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:12, color:AMBER, fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
           </div>
         </>}
 
@@ -1344,25 +1342,25 @@ export default function AccessibilityScanScreen({ onSuccess, onBack }: Props) {
           return <>
             <div style={{ background:`${col}11`, borderRadius:14, padding:'0.9rem 1rem', border:`1px solid ${col}33` }}>
               <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.4rem' }}>
-                <span style={{ fontSize:'0.7rem', fontFamily:'monospace', fontWeight:700, color:resultColor, background:`${resultColor}22`, padding:'0.2rem 0.6rem', borderRadius:6, border:`1px solid ${resultColor}44`, textTransform:'uppercase' as const }}>
+                <span style={{ fontSize:'0.7rem', fontWeight:700, color:resultColor, background:`${resultColor}22`, padding:'0.2rem 0.6rem', borderRadius:6, border:`1px solid ${resultColor}44`, textTransform:'uppercase' as const }}>
                   {passes === true ? 'PASS' : passes === false ? 'FLAG' : 'ASSESSED'}
                 </span>
-                <span style={{ fontSize:'0.68rem', color:WHITE2, fontFamily:'monospace' }}>{currentPos.label}</span>
+                <span style={{ fontSize:'0.68rem', color:WHITE2 }}>{currentPos.label}</span>
               </div>
               {bigVal != null && (
-                <div style={{ fontSize:'1.8rem', fontWeight:900, color:WHITE, fontFamily:'monospace' }}>
+                <div style={{ fontSize:'1.8rem', fontWeight: 700, color:WHITE }}>
                   {Math.round(bigVal)}<span style={{ fontSize:'0.9rem', color:WHITE2 }}>mm</span>
                   {bigLabel && <span style={{ fontSize:'0.68rem', color:WHITE2, fontWeight:400, marginLeft:'0.4rem' }}>{bigLabel}</span>}
                 </div>
               )}
               {aiMessage && <div style={{ fontSize:'0.72rem', color:WHITE2, lineHeight:1.5, marginTop:'0.35rem' }}>{aiMessage}</div>}
             </div>
-            <button onClick={() => goTo(posIdx + 1)} style={{ width:'100%', padding:'0.85rem', background:`linear-gradient(135deg,${GREEN},#1A7A50)`, border:'none', borderRadius:14, color:'#fff', fontFamily:'monospace', fontSize:'0.9rem', fontWeight:900, cursor:'pointer', letterSpacing:'0.04em', boxShadow:'0 4px 18px rgba(39,169,107,0.45)' }}>Confirm & Next →</button>
+            <button onClick={() => goTo(posIdx + 1)} style={{ width:'100%', padding:'0.85rem', background:`linear-gradient(135deg,${GREEN},#1A7A50)`, border:'none', borderRadius:14, color:'#fff', fontSize:'0.9rem', fontWeight: 700, cursor:'pointer', letterSpacing:'0.04em', boxShadow:'0 4px 18px rgba(39,169,107,0.45)' }}>Confirm & Next →</button>
             <div style={{ display:'flex', gap:'0.45rem' }}>
               <button onClick={() => { busyRef.current=false; setCamWarm(false); setStage('hold'); setCountdown(currentPos.holdSeconds); setTimeout(()=>setCamWarm(true),2000) }}
-                style={{ flex:1, padding:'0.65rem', background:'rgba(255,255,255,0.07)', border:`1px solid ${BORDER}`, borderRadius:12, color:WHITE2, fontFamily:'monospace', fontSize:'0.72rem', cursor:'pointer' }}>↺ Retry</button>
+                style={{ flex:1, padding:'0.65rem', background:'rgba(255,255,255,0.07)', border:`1px solid ${BORDER}`, borderRadius:12, color:WHITE2, fontSize:'0.72rem', cursor:'pointer' }}>↺ Retry</button>
               <button onClick={finishScan}
-                style={{ flex:1, padding:'0.65rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:12, color:AMBER, fontFamily:'monospace', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
+                style={{ flex:1, padding:'0.65rem', background:'rgba(250,116,31,0.12)', border:`1px solid rgba(250,116,31,0.3)`, borderRadius:12, color:AMBER, fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View Report →</button>
             </div>
           </>
         })()}

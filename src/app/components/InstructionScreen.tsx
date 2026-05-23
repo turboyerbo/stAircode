@@ -293,7 +293,7 @@ export function StairPartIndicator({ fieldKey }: { fieldKey: string }) {
         )}
       </svg>
       <span style={{
-        fontSize: '0.48rem', fontFamily: 'monospace', letterSpacing: '0.08em',
+        fontSize: '0.48rem', letterSpacing: '0.08em',
         color: h.color, fontWeight: 700,
       }}>{h.label}
       </span>
@@ -368,17 +368,17 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
         position: 'relative', zIndex: 2,
       }}><button onClick={onBack} style={{
           background: 'none', color: 'rgba(255,255,255,0.5)',
-          fontSize: '0.75rem', fontFamily: 'monospace', cursor: 'pointer',
+          fontSize: '0.75rem', cursor: 'pointer',
           letterSpacing: '0.1em', padding: '0.3rem 0.6rem',
           border: '1px solid rgba(21,101,192,0.22)', borderRadius: 6,
         }}>← BACK</button>
         <span style={{
-          fontFamily: 'monospace', fontSize: '0.6rem', letterSpacing: '0.2em',
+          fontSize: '0.6rem', letterSpacing: '0.04em',
           color: 'rgba(74,144,226,0.7)', textTransform: 'uppercase',
         }}>HOW TO MEASURE
         </span>
         <span style={{
-          fontFamily: 'monospace', fontSize: '0.6rem',
+          fontSize: '0.6rem',
           color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em',
         }}>{fieldLabel ? fieldLabel.toUpperCase() : 'STAIRCASE'}
         </span>
@@ -406,7 +406,7 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
               opacity: animStep === item.key ? 1 : 0.3,
               transition: 'opacity 0.4s',
             }}><div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }}/>
-              <span style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: item.color, letterSpacing: '0.1em' }}>{item.label}
+              <span style={{ fontSize: '0.55rem', color: item.color, letterSpacing: '0.1em' }}>{item.label}
               </span>
             </div>
           ))}
@@ -424,7 +424,7 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             }}><span style={{ fontSize: '1rem' }}>{s.icon}</span>
               <span style={{
-                fontSize: '0.5rem', fontFamily: 'monospace', letterSpacing: '0.08em',
+                fontSize: '0.5rem', letterSpacing: '0.08em',
                 color: step === i ? '#4A90E2' : 'rgba(255,255,255,0.35)',
                 fontWeight: step === i ? 700 : 400,
               }}>STEP {i+1}</span>
@@ -446,14 +446,13 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
               background: 'rgba(74,144,226,0.15)',
               border: '1px solid rgba(74,144,226,0.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.72rem', fontFamily: 'monospace', color: '#4A90E2', fontWeight: 700,
+              fontSize: '0.72rem', color: '#4A90E2', fontWeight: 700,
               flexShrink: 0,
             }}>{step + 1}
             </div>
             <div>
               <p style={{
-                fontFamily: 'var(--display)', fontSize: '0.95rem', fontWeight: 700,
-                fontStyle: 'italic', color: '#fff', margin: 0, marginBottom: '0.35rem',
+                fontFamily: 'var(--display)', fontSize: '0.95rem', fontWeight: 700, color: '#fff', margin: 0, marginBottom: '0.35rem',
               }}>{STEPS[step].title}
               </p>
               <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.65 }}>{STEPS[step].body}
@@ -512,7 +511,7 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
             </svg>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: '0.7rem', color: '#93c5fd', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.05em' }}>WHAT YOU&apos;LL SEE
+            <p style={{ margin: 0, fontSize: '0.7rem', color: '#93c5fd', fontWeight: 700, letterSpacing: '0.05em' }}>WHAT YOU&apos;LL SEE
             </p>
             <p style={{ margin: '0.2rem 0 0', fontSize: '0.68rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.55 }}>Green dashed lines mark detected edges. Tap and drag to draw a measurement. The dimension appears instantly.
             </p>
@@ -531,16 +530,15 @@ export default function InstructionScreen({ onOpenCamera, onBack, fieldLabel }: 
           width: '100%', padding: '1.05rem',
           background: 'linear-gradient(135deg, #1565C0 0%, #1976D2 100%)',
           border: 'none', borderRadius: 14, cursor: 'pointer',
-          fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700,
-          letterSpacing: '0.18em', color: '#fff', textTransform: 'uppercase',
+          fontSize: '0.85rem', fontWeight: 700,
+          letterSpacing: '0.04em', color: '#fff', textTransform: 'uppercase',
           boxShadow: '0 4px 24px rgba(14,70,160,0.45)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
         }}>Open Camera
         </button>
         <p style={{
           textAlign: 'center', marginTop: '0.6rem',
-          fontSize: '0.58rem', fontFamily: 'monospace',
-          color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em',
+          fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em',
         }}>CAMERA OPENS ON THE RISE HEIGHT FIRST
         </p>
       </div>

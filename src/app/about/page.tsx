@@ -23,8 +23,8 @@ export default function AboutPage() {
       {/* ── Hero ── */}
       <div style={{ background: NAVY, padding: '5rem 1.5rem 4.5rem' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.16em', color: ORANGE, textTransform: 'uppercase', marginBottom: '1rem' }}>About</div>
-          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, color: '#E8F4FF', margin: 0 }}>Who We Are</h1>
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', color: ORANGE, textTransform: 'uppercase', marginBottom: '1rem' }}>About</div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, color: '#E8F4FF', margin: 0 }}>Who We Are</h1>
         </div>
       </div>
 
@@ -43,10 +43,10 @@ export default function AboutPage() {
 
         {/* JOA Section */}
         <section style={{ marginBottom: '4rem' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.14em', color: ORANGE, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', color: ORANGE, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
             Just Open Architecture
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em', color: NAVY, marginBottom: '1.25rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em', color: NAVY, marginBottom: '1.25rem' }}>
             Just Open Architecture
           </h2>
           <p style={{ fontSize: '1rem', color: NAVY2, lineHeight: 1.85, marginBottom: '1.25rem', maxWidth: 660 }}>
@@ -61,10 +61,10 @@ export default function AboutPage() {
 
         {/* stAIrcode Section */}
         <section style={{ marginBottom: '4rem' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.14em', color: ORANGE, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', color: ORANGE, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
             Our Product
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em', color: NAVY, marginBottom: '1.25rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em', color: NAVY, marginBottom: '1.25rem' }}>
             stAIrcode
           </h2>
           <p style={{ fontSize: '1rem', color: NAVY2, lineHeight: 1.85, marginBottom: '1.25rem', maxWidth: 660 }}>
@@ -79,17 +79,17 @@ export default function AboutPage() {
 
         {/* Team Section */}
         <section style={{ marginBottom: '4rem' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.14em', color: ORANGE, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', color: ORANGE, textTransform: 'uppercase', marginBottom: '0.75rem' }}>
             The Team
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em', color: NAVY, marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em', color: NAVY, marginBottom: '2rem' }}>
             The Team
           </h2>
 
           {/* Jordan Yerbury */}
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', padding: '2rem', background: BG2, borderRadius: 16, border: `1px solid ${BORDER}`, maxWidth: 680 }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: `linear-gradient(135deg, ${NAVY}, #2C5A7A)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>JY</span>
+              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff' }}>JY</span>
             </div>
             <div>
               <div style={{ fontSize: '1rem', fontWeight: 800, color: NAVY, marginBottom: '0.2rem' }}>Jordan Yerbury</div>
@@ -106,7 +106,7 @@ export default function AboutPage() {
         {/* CTA / Link to justopen.tech */}
         <div style={{ background: NAVY, borderRadius: 20, padding: '2.5rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: '1rem', fontWeight: 900, color: '#E8F4FF', marginBottom: '0.35rem' }}>Just Open Technologies</div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#E8F4FF', marginBottom: '0.35rem' }}>Just Open Technologies</div>
             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: 0, maxWidth: 360 }}>
               Learn more about our company, our architecture practice, and the principles behind our work.
             </p>

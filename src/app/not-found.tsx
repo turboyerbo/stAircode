@@ -19,8 +19,7 @@ export default function NotFound() {
         marginTop: '1rem', padding: '0.85rem 2rem',
         background: 'linear-gradient(135deg,#007FFF,#FF7F00)',
         borderRadius: 14, color: '#fff', textDecoration: 'none',
-        fontSize: '0.85rem', fontWeight: 700, fontFamily: 'monospace',
-        letterSpacing: '0.1em',
+        fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.1em',
       }}>← Back to App
       </a>
     </main>

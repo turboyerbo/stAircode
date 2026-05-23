@@ -31,7 +31,7 @@ export default function RoleSelectScreen({ onSelect }: Props) {
       {/* Safety stripe */}
       <div style={{ width:'100%', maxWidth:420, height:5, borderRadius:3, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px', marginBottom:'1.5rem' }} />
 
-      <div style={{ textAlign:'center', marginBottom:'2rem', maxWidth:340 }}><h1 style={{ fontSize:'1.5rem', fontWeight:900, color:'#E8F4FF', margin:0, letterSpacing:'-0.02em', lineHeight:1.2 }}>What best describes you?</h1>
+      <div style={{ textAlign:'center', marginBottom:'2rem', maxWidth:340 }}><h1 style={{ fontSize:'1.5rem', fontWeight: 700, color:'#E8F4FF', margin:0, letterSpacing:'-0.02em', lineHeight:1.2 }}>What best describes you?</h1>
         <div style={{ display:'flex', alignItems:'flex-start', gap:'0.5rem', background:'rgba(65,124,164,0.12)', border:'1px solid rgba(65,124,164,0.25)', borderRadius:16, borderTopLeftRadius:4, padding:'0.6rem 0.85rem', marginTop:'0.6rem', maxWidth:340 }}><span style={{ fontSize:'0.9rem', flexShrink:0, lineHeight:1 }}>&#x1F4AC;</span>
           <span style={{ fontSize:'0.75rem', color:'#E8F4FF', lineHeight:1.55 }}><span style={{ color:'#93BAD4' }}>&#x2026;</span> stAIrcode adjusts its language to match your background.
           </span>

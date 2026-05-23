@@ -74,7 +74,7 @@ COMPLIANCE FIELD RESULTS:
 ${rows}
 
 ${criticalFlags ? `CRITICAL FLAGS: ${criticalFlags}` : 'No critical flags.'}
-${measurements.horizontalCrack ? '\n⚠ HORIZONTAL CRACK DETECTED — structural emergency.' : ''}
+${measurements.horizontalCrack ? '\nHORIZONTAL CRACK DETECTED — structural emergency.' : ''}
 
 Write a professional report with exactly these 5 sections. Plain text only — no markdown, no asterisks, no bullet symbols.
 

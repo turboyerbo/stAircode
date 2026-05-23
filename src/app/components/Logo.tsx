@@ -235,7 +235,6 @@ export function BetaLogo({
             letterSpacing: '0.13em',
             padding:       `${Math.round(ps * 0.3)}px ${Math.round(ps * 0.65)}px`,
             borderRadius:  999,
-            fontFamily:    'monospace',
             boxShadow:     '0 1px 6px rgba(242,147,55,0.45)',
             flexShrink:    0,
             lineHeight:    1,

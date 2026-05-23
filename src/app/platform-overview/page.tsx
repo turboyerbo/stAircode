@@ -62,8 +62,8 @@ export default function PlatformOverviewPage() {
         <a href="/marketing" style={{ fontSize: '0.78rem', color: C.navy2, textDecoration: 'none', marginLeft: 'auto' }}>← Back</a>
       </header>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}><div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.14em', color: C.orange, textTransform: 'uppercase' as const, marginBottom: '0.75rem' }}>Platform Overview</div>
-        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1rem' }}>How the app works</h1>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}><div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', color: C.orange, textTransform: 'uppercase' as const, marginBottom: '0.75rem' }}>Platform Overview</div>
+        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1rem' }}>How the app works</h1>
         <p style={{ fontSize: '1rem', color: C.navy2, lineHeight: 1.75, marginBottom: '3.5rem', maxWidth: 620 }}>stAIrcode is a Progressive Web App — it runs directly in your mobile browser with no download required. Here is what the experience looks like.
         </p>
 
@@ -72,7 +72,7 @@ export default function PlatformOverviewPage() {
                 <img src={s.src} alt={s.title} style={{ width: '100%', borderRadius: 20, boxShadow: '0 8px 40px rgba(44,74,110,0.15)', border: `1px solid ${C.border}`, objectFit: 'cover' as const, objectPosition: '50% 10%' }} />
               </div>
               <div style={{ flex: '1 1 300px' }}><div style={{ fontSize: '0.68rem', fontWeight: 800, color: C.orange, letterSpacing: '0.12em', textTransform: 'uppercase' as const, marginBottom: '0.5rem' }}>Step {i + 1}</div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.2, color: C.navy, marginBottom: '0.75rem' }}>{s.title}</h2>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, color: C.navy, marginBottom: '0.75rem' }}>{s.title}</h2>
                 <p style={{ fontSize: '0.9rem', color: C.navy2, lineHeight: 1.8, margin: 0 }}>{s.body}</p>
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function PlatformOverviewPage() {
         </div>
 
         {/* Feature grid */}
-        <div style={{ marginTop: '5rem', padding: '2.5rem', background: C.bg2, borderRadius: 20 }}><h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: C.navy, marginBottom: '1.5rem', textAlign: 'center' as const }}>What&apos;s included</h2>
+        <div style={{ marginTop: '5rem', padding: '2.5rem', background: C.bg2, borderRadius: 20 }}><h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: C.navy, marginBottom: '1.5rem', textAlign: 'center' as const }}>What&apos;s included</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>{[
               ['', 'No app download required', 'Runs in any mobile browser as a PWA'],
               ['', 'AI Vision measurement',     'Camera-based dimension estimation'],

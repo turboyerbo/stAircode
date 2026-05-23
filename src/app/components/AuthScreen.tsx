@@ -319,7 +319,7 @@ export default function AuthScreen({ onAuth }: Props) {
       <div style={{ width: '100%', maxWidth: 380, height: 5, borderRadius: '2px 2px 0 0', background: 'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)' }} />
 
       {/* Header */}
-      <div style={{ textAlign: 'center', margin: '1.6rem 0 1.2rem' }}><div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#F29337', color: '#fff', fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.14em', padding: '0.2rem 0.65rem', borderRadius: 20, marginBottom: '0.6rem' }}>BETA</div>
+      <div style={{ textAlign: 'center', margin: '1.6rem 0 1.2rem' }}><div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#F29337', color: '#fff', fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.04em', padding: '0.2rem 0.65rem', borderRadius: 20, marginBottom: '0.6rem' }}>BETA</div>
         <div style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>st<span style={{ color: C.orange }}>AI</span>rcode
         </div>
         <div style={{ fontSize: '0.8rem', color: 'rgba(28,64,88,0.5)', marginTop: '0.35rem' }}>Sign in to check your stairs
@@ -448,7 +448,7 @@ export default function AuthScreen({ onAuth }: Props) {
       </div>
 
       {/* Store badges */}
-      <div style={{ marginTop: '1.6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem', width: '100%', maxWidth: 380 }}><div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.35)', letterSpacing: '0.12em', fontFamily: 'monospace' }}>AVAILABLE ON</div>
+      <div style={{ marginTop: '1.6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem', width: '100%', maxWidth: 380 }}><div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.35)', letterSpacing: '0.12em' }}>AVAILABLE ON</div>
         <div style={{ display: 'flex', gap: '0.65rem', width: '100%' }}>{/* Google Play */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}><a href="https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem', background: '#000', border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '0.7rem 0.75rem', textDecoration: 'none' }}><svg width="20" height="22" viewBox="0 0 20 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -462,7 +462,7 @@ export default function AuthScreen({ onAuth }: Props) {
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', lineHeight: 1.25, letterSpacing: '-0.01em' }}>Google Play</div>
               </div>
             </a>
-            <div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.6)', textAlign: 'center', lineHeight: 1.4, fontStyle: 'italic' }}>Android beta — available now
+            <div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.6)', textAlign: 'center', lineHeight: 1.4 }}>Android beta — available now
             </div>
           </div>
 
@@ -476,7 +476,7 @@ export default function AuthScreen({ onAuth }: Props) {
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', lineHeight: 1.25, letterSpacing: '-0.01em' }}>App Store</div>
               </div>
             </a>
-            <div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.6)', textAlign: 'center', lineHeight: 1.4, fontStyle: 'italic' }}>iOS — launching June 2025
+            <div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.6)', textAlign: 'center', lineHeight: 1.4 }}>iOS — launching June 2025
             </div>
           </div>
 
