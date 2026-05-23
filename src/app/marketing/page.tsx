@@ -560,10 +560,9 @@ export default function MarketingPage() {
       <section style={{ background: '#fff', borderTop: '1px solid #E5EBF2', padding: '3.5rem 1.25rem 2rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div style={{ display: 'flex', flexWrap: 'wrap', gap: '2.5rem', marginBottom: '3rem' }}>{/* Brand */}
             <div style={{ flex: '1 1 220px', minWidth: 180 }}>{/* eslint-disable-next-line @next/next/no-img-element */}
               <div style={{ display:'inline-flex', flexDirection:'column', alignItems:'flex-start', marginBottom:'1rem' }}>
-                <span style={{ fontFamily:"'Syne','DM Sans',system-ui,sans-serif", fontSize:26, fontWeight:800, letterSpacing:'-0.02em', lineHeight:1, userSelect:'none', whiteSpace:'nowrap' }}>
-                  <span style={{ color:'#1B3A6B' }}>st</span><span style={{ color:'#F29337', fontStyle:'italic' }}>AI</span><span style={{ color:'#1B3A6B' }}>rcode</span>
-                </span>
-                <div style={{ fontFamily:"'Syne','DM Sans',system-ui,sans-serif", fontSize:8, fontWeight:500, letterSpacing:'0.07em', textTransform:'uppercase', color:'rgba(27,58,107,0.45)', marginTop:4, lineHeight:1, whiteSpace:'nowrap' }}>Next Step in Building Information</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/staircode_logo.png" alt="stAIrcode" style={{ height: 32, display: 'block' }} />
+                <div style={{ fontSize: 8, fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif', fontWeight: 400, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(27,58,107,0.48)', marginTop: 4, lineHeight: 1, whiteSpace: 'nowrap' }}>Next Step in Building Information</div>
               </div>
               <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by giving inspectors and compliance professionals instant, AI-powered code analysis — from any phone, on any job site.
               </p>

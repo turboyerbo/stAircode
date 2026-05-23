@@ -23,9 +23,7 @@ export default function ResearchPage() {
 
       {/* Nav */}
       <header style={{ background: '#fff', borderBottom: '1px solid #E2EAF0', padding: '0 1.25rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}><a href="/marketing" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
-          <span style={{ fontFamily:"'Syne','DM Sans',system-ui,sans-serif", fontSize:22, fontWeight:800, letterSpacing:'-0.02em', lineHeight:1, userSelect:'none', whiteSpace:'nowrap' }}>
-              <span style={{ color:'#1B3A6B' }}>st</span><span style={{ color:'#F29337', fontStyle:'italic' }}>AI</span><span style={{ color:'#1B3A6B' }}>rcode</span>
-            </span>
+          <img src="/staircode_header.jpg" alt="stAIrcode" style={{ height: 28 }} />
         </a>
         <a href="/?signin=1" className="nav-cta">Try stAIrcode FREE →</a>
       </header>
