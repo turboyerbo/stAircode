@@ -21,6 +21,9 @@ import AccessibilityScanScreen              from './components/AccessibilityScan
 import AccessibilityReportScreen            from './components/AccessibilityReportScreen'
 import type { AccessibilityMeasurements }   from './components/AccessibilityScanScreen'
 import type { AccessibilityField }          from './components/AccessibilityReportScreen'
+import InspectionSetupScreen                from './components/InspectionSetupScreen'
+import InspectionDashboard                  from './components/InspectionDashboard'
+import type { InspectionJob }               from '@/lib/inspection-types'
 
 const C = {
   dark:'#EEF3F9', card:'#FFFFFF', blue:'#007FFF', orange:'#FF7F00',
@@ -28,7 +31,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'
+type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_setup'|'inspection_dashboard'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -596,6 +599,7 @@ function buildAccessibilityFields(m: AccessibilityMeasurements): AccessibilityFi
 function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>('home')
+  const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
   const [foundationMeasurements, setFoundationMeasurements] = useState<FoundationMeasurements|null>(null)
   const [accessibilityMeasurements, setAccessibilityMeasurements] = useState<AccessibilityMeasurements|null>(null)
@@ -725,6 +729,12 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 
   // Full-screen flows (no bottom nav)
 
+  // Inspection dashboard routing
+  if(screen==='inspection_setup')
+    return <InspectionSetupScreen onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('home')}/>
+  if(screen==='inspection_dashboard'&&inspectionJob)
+    return <InspectionDashboard job={inspectionJob} onUpdate={setInspectionJob} onBack={()=>setScreen('home')}/>
+
   // Accessibility module routing
   if(screen==='scan_ready' && activeModule==='accessibility')
     return <AccessibilityScanScreen onSuccess={handleAccessibilityScan} onBack={()=>setScreen('home')}/>
@@ -749,7 +759,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>setScreen('inspection_setup')} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
@@ -759,7 +769,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
 }
 
 // ── Home Tab ──────────────────────────────────────────────────────────────────
-function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:(mod:'stair'|'foundation'|'accessibility')=>void;onLogout:()=>void;activeModule:'stair'|'foundation'|'accessibility';onModuleChange:(m:'stair'|'foundation'|'accessibility')=>void}){
+function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogout,activeModule,onModuleChange}:{user:AppUser;loc:Loc|null;locLoading:boolean;code:Code|null;onStartScan:(mod:'stair'|'foundation'|'accessibility')=>void;onStartInspection:()=>void;onLogout:()=>void;activeModule:'stair'|'foundation'|'accessibility';onModuleChange:(m:'stair'|'foundation'|'accessibility')=>void}){
   const confirmed=!locLoading&&loc!=null&&isOntario(loc)
   const locStr=loc?`${loc.city}${loc.province?', '+loc.province:''}`:locLoading?'Detecting location…':'Location unavailable'
 
@@ -889,6 +899,25 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onLogout,activeModule,onM
         )}
 
         <div style={{flex:1}}/>
+
+        {/* Full Inspection Dashboard */}
+        <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.85rem',marginTop:'0.25rem'}}>
+          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.5rem',letterSpacing:'0.02em'}}>Full building inspection</div>
+          <button onClick={()=>onStartInspection()}
+            style={{width:'100%',padding:'0.85rem 1rem',background:'rgba(44,90,122,0.05)',border:'1.5px solid rgba(44,90,122,0.2)',borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left'}}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0}}>
+              <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
+              <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
+              <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
+              <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
+            </svg>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Full Building Inspection</div>
+              <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.1rem'}}>9 phases · guided report · 30-page PDF</div>
+            </div>
+            <div style={{fontSize:'0.62rem',fontWeight:500,color:'#417CA4',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(65,124,164,0.35)',flexShrink:0}}>New</div>
+          </button>
+        </div>
 
         <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,margin:0}}>Compliance aid only · Not a substitute for professional inspection
         </p>
