@@ -9,7 +9,7 @@
  *  - Navigate into any phase → InspectionPhaseScreen
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { InspectionJob, PhaseId } from '@/lib/inspection-types'
 import { PHASE_META, getPhaseProgress, getJobProgress } from '@/lib/inspection-types'
 import { NavLogo } from './Logo'
@@ -17,9 +17,32 @@ import InspectionPhaseScreen from './InspectionPhaseScreen'
 import InspectionAIChat      from './InspectionAIChat'
 
 interface Props {
-  job:      InspectionJob
-  onUpdate: (job: InspectionJob) => void
-  onBack:   () => void
+  job:       InspectionJob
+  onUpdate:  (job: InspectionJob) => void
+  onBack:    () => void
+  userEmail: string
+}
+
+// Auto-save debounce: save to Supabase 3s after last update
+function useAutoSave(job: InspectionJob, userEmail: string) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const save = useCallback(async (j: InspectionJob) => {
+    try {
+      await fetch('/api/inspection/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job: j, userId: userEmail }),
+      })
+    } catch (e) {
+      console.warn('[InspectionDashboard] Auto-save failed:', e)
+    }
+  }, [userEmail])
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => save(job), 3000)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [job, save])
 }
 
 const NAVY   = '#0A1C2E'
@@ -33,6 +56,54 @@ const BG     = '#F4F7FB'
 function PhaseIcon({ type, size = 20, color }: { type: string; size?: number; color: string }) {
   const s = { width: size, height: size, flexShrink: 0 }
   const icons: Record<string, React.ReactNode> = {
+    drawings: (
+      <svg {...s} viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="1" width="12" height="18" rx="1.5" stroke={color} strokeWidth="1.5"/>
+        <line x1="5" y1="6" x2="11" y2="6" stroke={color} strokeWidth="1.2"/>
+        <line x1="5" y1="9" x2="11" y2="9" stroke={color} strokeWidth="1.2"/>
+        <line x1="5" y1="12" x2="9" y2="12" stroke={color} strokeWidth="1.2"/>
+        <path d="M13 11l5 5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="16" cy="14" r="3" stroke={color} strokeWidth="1.5"/>
+      </svg>
+    ),
+    footing: (
+      <svg {...s} viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="13" width="14" height="5" rx="1" stroke={color} strokeWidth="1.5"/>
+        <line x1="7" y1="13" x2="7" y2="8" stroke={color} strokeWidth="1.5"/>
+        <line x1="13" y1="13" x2="13" y2="8" stroke={color} strokeWidth="1.5"/>
+        <line x1="5" y1="8" x2="15" y2="8" stroke={color} strokeWidth="1.2"/>
+      </svg>
+    ),
+    foundation: (
+      <svg {...s} viewBox="0 0 20 20" fill="none">
+        <rect x="4" y="2" width="12" height="10" rx="0.5" stroke={color} strokeWidth="1.5"/>
+        <rect x="1" y="12" width="18" height="6" rx="1" stroke={color} strokeWidth="1.5"/>
+        <line x1="4" y1="6" x2="16" y2="6" stroke={color} strokeWidth="1"/>
+        <line x1="4" y1="9" x2="16" y2="9" stroke={color} strokeWidth="1"/>
+      </svg>
+    ),
+    framing: (
+      <svg {...s} viewBox="0 0 20 20" fill="none">
+        <line x1="3" y1="18" x2="3" y2="6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="17" y1="18" x2="17" y2="6" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M3 6L10 2l7 4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <line x1="3" y1="11" x2="17" y2="11" stroke={color} strokeWidth="1.2"/>
+        <line x1="3" y1="15" x2="17" y2="15" stroke={color} strokeWidth="1.2"/>
+        <line x1="10" y1="6" x2="10" y2="18" stroke={color} strokeWidth="1.2"/>
+      </svg>
+    ),
+    insulation: (
+      <svg {...s} viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="5" width="16" height="10" rx="1" stroke={color} strokeWidth="1.5"/>
+        <path d="M2 10 Q5 7 8 10 Q11 13 14 10 Q17 7 18 10" stroke={color} strokeWidth="1.2" fill="none"/>
+      </svg>
+    ),
+    final: (
+      <svg {...s} viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="16" height="16" rx="2" stroke={color} strokeWidth="1.5"/>
+        <path d="M6 10l3 3 5-5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
     setup: (
       <svg {...s} viewBox="0 0 20 20" fill="none">
         <rect x="2" y="2" width="16" height="16" rx="2" stroke={color} strokeWidth="1.5"/>
@@ -150,7 +221,8 @@ function PhaseCard({ phase, onClick }: { phase: InspectionJob['phases'][0]; onCl
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function InspectionDashboard({ job, onUpdate, onBack }: Props) {
+export default function InspectionDashboard({ job, onUpdate, onBack, userEmail }: Props) {
+  useAutoSave(job, userEmail)
   const [activePhase, setActivePhase] = useState<PhaseId | null>(null)
   const [chatOpen,    setChatOpen]    = useState(false)
 

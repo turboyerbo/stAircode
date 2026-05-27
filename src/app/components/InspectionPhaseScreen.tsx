@@ -225,6 +225,11 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack }
             Complete required modules (*) or at least 50% to finish this phase
           </div>
         )}
+        {phase.holdPoint && phase.status !== 'complete' && (
+          <div style={{ fontSize:'0.68rem', color:'#C4721E', background:'rgba(242,147,55,0.08)', border:'1px solid rgba(242,147,55,0.25)', borderRadius:8, padding:'0.6rem 0.85rem', marginTop:'0.5rem', lineHeight:1.55 }}>
+            OBC Hold Point — inspector sign-off required before proceeding to the next phase.
+          </div>
+        )}
       </div>
     </div>
   )

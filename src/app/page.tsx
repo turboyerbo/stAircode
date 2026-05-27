@@ -23,6 +23,7 @@ import type { AccessibilityMeasurements }   from './components/AccessibilityScan
 import type { AccessibilityField }          from './components/AccessibilityReportScreen'
 import InspectionSetupScreen                from './components/InspectionSetupScreen'
 import InspectionDashboard                  from './components/InspectionDashboard'
+import InspectionProjectList                from './components/InspectionProjectList'
 import type { InspectionJob }               from '@/lib/inspection-types'
 
 const C = {
@@ -31,7 +32,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_setup'|'inspection_dashboard'
+type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -730,10 +731,12 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   // Full-screen flows (no bottom nav)
 
   // Inspection dashboard routing
+  if(screen==='inspection_projects')
+    return <InspectionProjectList userEmail={user.email??''} onBack={()=>setScreen('home')} onStartNew={()=>setScreen('inspection_setup')} onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}/>
   if(screen==='inspection_setup')
-    return <InspectionSetupScreen onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('home')}/>
+    return <InspectionSetupScreen onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_dashboard'&&inspectionJob)
-    return <InspectionDashboard job={inspectionJob} onUpdate={setInspectionJob} onBack={()=>setScreen('home')}/>
+    return <InspectionDashboard job={inspectionJob} onUpdate={j=>{setInspectionJob(j);try{sessionStorage.setItem(`insp_${j.id}`,JSON.stringify(j))}catch{}}} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''}/>
 
   // Accessibility module routing
   if(screen==='scan_ready' && activeModule==='accessibility')
@@ -759,7 +762,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>setScreen('inspection_setup')} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>setScreen('inspection_projects')} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
@@ -815,10 +818,10 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         </div>
 
         {/* ── MODULE SELECTOR ── */}
-        <div style={{display:'flex',flexDirection:'column',gap:'0.4rem'}}>
-          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Inspection module</div>
+        <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Free demo</div>
 
-          {/* Stair Compliance */}
+          {/* Stair Compliance Demo — only free standalone module */}
           <button
             onClick={()=>{ if(!atLimit) onStartScan('stair') }}
             style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='stair'?'#F0FBF6':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'#27A96B':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
@@ -829,63 +832,11 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
               <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
             </svg>
             <div style={{flex:1}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance</div>
-              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail</div>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance Demo</div>
+              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail — free</div>
             </div>
             <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Beta</span>
           </button>
-
-          {/* Foundation Inspection */}
-          <button
-            onClick={()=>{ if(!atLimit) onStartScan('foundation') }}
-            style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='foundation'?'#EEF4FB':'#FFFFFF',border:`1.5px solid ${activeModule==='foundation'?'#417CA4':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='foundation'?1:0.5}}>
-              <rect x="3" y="2" width="14" height="11" rx="0.5" stroke="#417CA4" strokeWidth="1.5"/>
-              <rect x="1" y="13" width="18" height="6" rx="0.5" stroke="#417CA4" strokeWidth="1.5"/>
-              <line x1="3" y1="6" x2="17" y2="6" stroke="#417CA4" strokeWidth="1"/>
-              <line x1="3" y1="10" x2="17" y2="10" stroke="#417CA4" strokeWidth="1"/>
-            </svg>
-            <div style={{flex:1}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Foundation Inspection</div>
-              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Wall type, cracks, thickness, footing, moisture</div>
-            </div>
-            <span style={{fontSize:'0.62rem',fontWeight:600,color:'#417CA4',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(65,124,164,0.35)',flexShrink:0}}>Beta</span>
-          </button>
-
-          {/* Accessibility Compliance */}
-          <button
-            onClick={()=>{ if(!atLimit) onStartScan('accessibility') }}
-            style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='accessibility'?'#F4F1FA':'#FFFFFF',border:`1.5px solid ${activeModule==='accessibility'?'#7B5EA7':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='accessibility'?1:0.5}}>
-              <circle cx="10" cy="4" r="2" stroke="#7B5EA7" strokeWidth="1.5"/>
-              <path d="M10 6.5v5.5l-3.5 3.5M10 12l3.5 3.5" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="5" y1="20" x2="5" y2="15" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="15" y1="20" x2="15" y2="15" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            <div style={{flex:1}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Accessibility Compliance</div>
-              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Paths, washrooms, alarms, seating — OBC 2024</div>
-            </div>
-            <span style={{fontSize:'0.62rem',fontWeight:600,color:'#7B5EA7',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(123,94,167,0.35)',flexShrink:0}}>Beta</span>
-          </button>
-
-          {/* Coming-soon modules — greyed */}
-          {[
-            {name:'Guardrails & Handrails',desc:'Height, baluster spacing, graspability'},
-            {name:'Windows',desc:'Egress openings, sill heights, well dimensions'},
-            {name:'Smoke & CO Detectors',desc:'Placement, distance-to-ceiling, spacing'},
-          ].map(mod=>(
-            <div key={mod.name} style={{width:'100%',padding:'0.75rem 1rem',background:'rgba(0,0,0,0.02)',border:'1px solid rgba(44,90,122,0.1)',borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',opacity:0.5}}>
-              <div style={{width:20,height:20,borderRadius:4,background:'rgba(44,90,122,0.06)',flexShrink:0}}/>
-              <div style={{flex:1}}>
-                <div style={{fontSize:'0.82rem',fontWeight:500,color:'#7A96AF',lineHeight:1.2}}>{mod.name}</div>
-                <div style={{fontSize:'0.68rem',color:'#9DB4C5',marginTop:'0.1rem'}}>{mod.desc}</div>
-              </div>
-              <span style={{fontSize:'0.62rem',fontWeight:500,color:'#9DB4C5',padding:'0.18rem 0.5rem',borderRadius:4,border:'1px solid rgba(147,186,212,0.2)',flexShrink:0}}>Soon</span>
-            </div>
-          ))}
         </div>
 
         {/* Limit warning */}
@@ -901,21 +852,25 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         <div style={{flex:1}}/>
 
         {/* Full Inspection Dashboard */}
-        <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.85rem',marginTop:'0.25rem'}}>
-          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.5rem',letterSpacing:'0.02em'}}>Full building inspection</div>
+        <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.85rem',marginTop:'0.35rem'}}>
+          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.5rem',letterSpacing:'0.02em'}}>Full building inspection — 6 OBC phases</div>
           <button onClick={()=>onStartInspection()}
-            style={{width:'100%',padding:'0.85rem 1rem',background:'rgba(44,90,122,0.05)',border:'1.5px solid rgba(44,90,122,0.2)',borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left'}}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0}}>
-              <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
-              <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
-              <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
-              <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
-            </svg>
-            <div style={{flex:1}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Full Building Inspection</div>
-              <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.1rem'}}>9 phases · guided report · 30-page PDF</div>
+            style={{width:'100%',padding:'0.95rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.08),rgba(65,124,164,0.04))',border:'1.5px solid rgba(65,124,164,0.35)',borderRadius:11,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 8px rgba(65,124,164,0.1)'}}>
+            <div style={{width:38,height:38,borderRadius:9,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
+                <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
+                <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
+                <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
+              </svg>
             </div>
-            <div style={{fontSize:'0.62rem',fontWeight:500,color:'#417CA4',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(65,124,164,0.35)',flexShrink:0}}>New</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'0.9rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>Full Building Inspection</div>
+              <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>6 OBC phases · AI guidance · 30-page PDF</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
+              <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
         </div>
 
