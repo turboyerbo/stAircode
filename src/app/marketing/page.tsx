@@ -17,6 +17,31 @@ export default function MarketingPage() {
   const [scrolled,  setScrolled]  = useState(false)
   const [openFaq,   setOpenFaq]   = useState(null as number | null)
   const [cookieBanner, setCookieBanner] = useState(false)
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false)
+  const [betaCode,  setBetaCode]  = useState('')
+  const [betaError, setBetaError] = useState<string|null>(null)
+  const [betaChecking, setBetaChecking] = useState(false)
+
+  async function handleBetaCode() {
+    if (!betaCode.trim()) return
+    setBetaChecking(true); setBetaError(null)
+    try {
+      const res  = await fetch('/api/discount/verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: betaCode.trim() }),
+      })
+      const data = await res.json()
+      if (data.valid) {
+        // Redirect to app with beta unlock token
+        window.location.href = `/?signin=1&beta=1&token=${encodeURIComponent(data.unlockToken ?? 'beta-unlock')}`
+      } else {
+        setBetaError(data.error ?? 'Invalid code. Please try again.')
+      }
+    } catch {
+      setBetaError('Could not verify code. Check your connection.')
+    }
+    setBetaChecking(false)
+  }
 
   // Show cookie banner only if not yet answered
   useEffect(() => {
@@ -145,16 +170,17 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════ */}
-      <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#0A1C2E' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>{/* ── Left: headline + CTAs ── */}
-          <div style={{ flex: '1 1 320px' }}><div className={styles.obadge}>Building Compliance Tools for Inspectors &amp; Professionals</div>
-            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.5rem', color: '#FFFFFF' }}>Live building code guidance — using any phone.
+      <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#FFFFFF', borderBottom: '1px solid #E5EBF2' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>{/* ── Left: headline + CTAs ── */}
+          <div style={{ flex: '1 1 320px' }}><div style={{ display: 'inline-block', background: '#F29337', color: '#fff', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.25rem' }}>Assisted Building Compliance Reports for Residential Building Inspections</div>
+            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.25rem', color: '#0A1C2E' }}>The AI-guided building compliance platform.
             </h1>
-            <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.82)', maxWidth: 520, marginBottom: '1.75rem' }}>Guided, documented building code compliance — from any phone. The next step in building information software.
+            <p style={{ fontSize: '1rem', lineHeight: 1.75, color: '#3A5A78', maxWidth: 520, marginBottom: '2rem' }}>AI vision. Live code analysis. Photo records. Phased guided inspections. One comprehensive building compliance report — from any phone.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}><a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '13px 28px' }}>Start a Compliance Scan →
-              </a>
-
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+              <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '0.95rem', padding: '12px 24px' }}>Try Free Demo — Stair Scan →</a>
+              <button onClick={() => setShowSubscribeModal(true)} style={{ fontSize: '0.95rem', padding: '12px 24px', background: '#0A1C2E', color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(10,28,46,0.18)' }}>Full Inspection — Subscribe</button>
             </div>
+            <p style={{ fontSize: '0.72rem', color: '#9DB4C5', marginTop: '0.85rem', lineHeight: 1.5 }}>Stair scan is free · Full inspection requires monthly subscription · Beta code available</p>
           </div>
 
           {/* ── Right: animated phone mockup ── */}
@@ -167,7 +193,7 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           AS SEEN IN / TRUST BAR
       ══════════════════════════════════════════════ */}
-      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}><span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0D1E2E' }}>AI-powered building code compliance — jurisdiction detected automatically, report generated in minutes
+      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid #E2EAF0', padding: '1.1rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0D1E2E' }}>AI-powered building code compliance — jurisdiction detected automatically, report generated in minutes
           </span>
         </div>
       </div>
@@ -178,113 +204,108 @@ export default function MarketingPage() {
 
 
       {/* ══════════════════════════════════════════════
-          COMPLIANCE MODULES
+          PRODUCT INTRO — what stAIrcode is
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '5rem 1.25rem', background: '#ffffff', borderTop: '1px solid #EEF3F9' }}>
+      <section style={{ background: '#0A1C2E', padding: '5rem 1.25rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
-          <div className={styles.sectionLabel}>Compliance Modules</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>One platform. Every inspection category.</h2>
-          <p style={{ fontSize: '1rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 620, marginBottom: 0 }}>
-            stAIrcode is building the next generation of building information software — one module at a time. Select a category, follow the guided scan, and generate a cited compliance report. Stair compliance, foundation inspection, and accessibility compliance are live today. More modules launching soon.
-          </p>
-
-          <div className={styles.modulesGrid}>
-
-            {/* ── LIVE: Stairs ── */}
-            <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`}>
-              <span className={styles.moduleIcon}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="13" width="6" height="8" rx="1" fill="#F29337" fillOpacity="0.2" stroke="#F29337" strokeWidth="1.5"/>
-                  <rect x="7" y="7" width="6" height="14" rx="1" fill="#F29337" fillOpacity="0.2" stroke="#F29337" strokeWidth="1.5"/>
-                  <rect x="13" y="1" width="8" height="20" rx="1" fill="#F29337" fillOpacity="0.2" stroke="#F29337" strokeWidth="1.5"/>
-                </svg>
-              </span>
-              <span className={styles.moduleName}>Stair Compliance</span>
-              <span className={styles.moduleDesc}>Rise, run, headroom, width, handrail height, nosing, and baluster spacing checked against OBC, NBC, IBC, and more.</span>
-              <span className={`${styles.modulePill} ${styles.live}`}>Beta</span>
-            </a>
-
-            {/* ── LIVE: Foundation ── */}
-            <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`} style={{ borderColor: '#417CA4', boxShadow: '0 2px 10px rgba(65,124,164,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
-              <span className={styles.moduleIcon}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="4" y="2" width="14" height="13" rx="1" fill="rgba(65,124,164,0.2)" stroke="#417CA4" strokeWidth="1.5"/>
-                  <rect x="1" y="15" width="20" height="6" rx="1" fill="rgba(65,124,164,0.35)" stroke="#417CA4" strokeWidth="1.5"/>
-                  <line x1="4" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1"/>
-                  <line x1="4" y1="11" x2="18" y2="11" stroke="#417CA4" strokeWidth="1"/>
-                </svg>
-              </span>
-              <span className={styles.moduleName}>Foundation Inspection</span>
-              <span className={styles.moduleDesc}>Wall type classification, crack detection and sizing, wall thickness, footing width, and moisture documentation.</span>
-              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(65,124,164,0.12)', color: '#417CA4', borderColor: 'rgba(65,124,164,0.3)' }}>Beta</span>
-            </a>
-
-            {/* ── LIVE: Accessibility ── */}
-            <a href="/?signin=1" className={`${styles.moduleCard} ${styles.active}`} style={{ borderColor: '#7B5EA7', boxShadow: '0 2px 10px rgba(123,94,167,0.18), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
-              <span className={styles.moduleIcon}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="11" cy="4" r="2.5" stroke="#7B5EA7" strokeWidth="1.5"/>
-                  <path d="M11 7v6l-4 4M11 13l4 4" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="6" y1="22" x2="6" y2="16" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
-                  <line x1="16" y1="22" x2="16" y2="16" stroke="#7B5EA7" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              </span>
-              <span className={styles.moduleName}>Accessibility Compliance</span>
-              <span className={styles.moduleDesc}>Barrier-free paths, washrooms, visual fire alarms, pool access, and accessible seating — OBC 2024 & AODA.</span>
-              <span className={`${styles.modulePill} ${styles.live}`} style={{ background: 'rgba(123,94,167,0.12)', color: '#7B5EA7', borderColor: 'rgba(123,94,167,0.3)' }}>Beta</span>
-            </a>
-
-            {/* ── COMING SOON ── */}
-            {([
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1" width="14" height="18" rx="1.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="5" y1="6" x2="13" y2="6" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="5" y1="9" x2="13" y2="9" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="5" y1="12" x2="10" y2="12" stroke="#9DB4C5" strokeWidth="1.2"/><path d="M14 12l6 6" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="17" cy="15" r="3.5" stroke="#9DB4C5" strokeWidth="1.5"/></svg>,
-                name: 'Architectural Plans Review',
-                desc: 'Upload AHJ-approved drawings. AI cross-references stamped plans against as-built conditions and flags deviations.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="5" x2="21" y2="5" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="18" x2="21" y2="18" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><line x1="3" y1="5" x2="3" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="8" y1="5" x2="8" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="14" y1="5" x2="14" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="19" y1="5" x2="19" y2="18" stroke="#9DB4C5" strokeWidth="1.5"/></svg>,
-                name: 'Guardrails & Handrails',
-                desc: 'Height, baluster spacing, and graspability checks for guards on decks, balconies, mezzanines, and landings.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="18" height="18" rx="1.5" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="11" y1="2" x2="11" y2="20" stroke="#9DB4C5" strokeWidth="1.2"/><line x1="2" y1="11" x2="20" y2="11" stroke="#9DB4C5" strokeWidth="1.2"/><circle cx="11" cy="11" r="2" fill="#9DB4C5" fillOpacity="0.3"/></svg>,
-                name: 'Windows',
-                desc: 'Egress opening sizes, sill heights, clear opening dimensions, and window well requirements per jurisdiction.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="9" stroke="#9DB4C5" strokeWidth="1.5"/><path d="M11 6v5l3 3" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="11" cy="3" r="1.2" fill="#9DB4C5"/><circle cx="11" cy="19" r="1.2" fill="#9DB4C5"/></svg>,
-                name: 'Smoke & CO Detectors',
-                desc: 'Placement verification relative to bedrooms, storeys, and mechanical rooms. Distance-to-ceiling and spacing checks.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="3" stroke="#9DB4C5" strokeWidth="1.5"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><path d="M4.93 4.93l2.12 2.12M14.95 14.95l2.12 2.12M4.93 17.07l2.12-2.12M14.95 7.05l2.12-2.12" stroke="#9DB4C5" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-                name: 'Bathroom Ventilation',
-                desc: 'Fan CFM requirements, duct termination, makeup air, and humidity control compliance per code.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="11" y1="1" x2="11" y2="21" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><path d="M7 5l4-4 4 4" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 17l4 4 4-4" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><line x1="4" y1="1" x2="18" y2="1" stroke="#9DB4C5" strokeWidth="1.2" strokeLinecap="round"/><line x1="4" y1="21" x2="18" y2="21" stroke="#9DB4C5" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-                name: 'Ceiling Heights',
-                desc: 'Minimum clearances for habitable rooms, corridors, bathrooms, and basement conversions.',
-              },
-              {
-                svg: <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="1" width="13" height="20" rx="1" stroke="#9DB4C5" strokeWidth="1.5"/><line x1="3" y1="21" x2="20" y2="21" stroke="#9DB4C5" strokeWidth="1.5" strokeLinecap="round"/><circle cx="14" cy="11" r="1.2" fill="#9DB4C5"/></svg>,
-                name: 'Door Widths & Clearances',
-                desc: 'Accessible and egress door widths, swing clearances, threshold heights, and hardware reach ranges.',
-              },
-            ] as { svg: React.ReactNode; name: string; desc: string }[]).map(m => (
-              <div key={m.name} className={`${styles.moduleCard} ${styles.soon}`}>
-                <span className={styles.moduleIcon}>{m.svg}</span>
-                <span className={styles.moduleName}>{m.name}</span>
-                <span className={styles.moduleDesc}>{m.desc}</span>
-                <span className={`${styles.modulePill} ${styles.soon}`}>Coming Soon</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem', marginBottom: '3.5rem' }}>
+            {[
+              { n: '01', label: 'AI Vision', desc: 'Photogrammetric measurements from your phone camera — no tape measure required.' },
+              { n: '02', label: 'Live Code Analysis', desc: 'Every finding cross-referenced against the applicable building code in real time.' },
+              { n: '03', label: 'Photo Records', desc: 'Inspection photos stored per phase and module — fully timestamped and retrievable.' },
+              { n: '04', label: 'Comprehensive Report', desc: 'A structured 30-page PDF covering all 9 inspection phases, code citations, and recommendations.' },
+            ].map(item => (
+              <div key={item.n} style={{ borderLeft: '2px solid rgba(242,147,55,0.4)', paddingLeft: '1.25rem' }}>
+                <div style={{ fontSize: '0.62rem', color: '#F29337', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.4rem' }}>{item.n}</div>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: '0.35rem' }}>{item.label}</div>
+                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.65 }}>{item.desc}</div>
               </div>
             ))}
-
           </div>
 
-          <p style={{ marginTop: '1.5rem', fontSize: '0.78rem', color: '#9DB4C5', lineHeight: 1.6 }}>
-            Module roadmap is updated as each category reaches beta. Early access available for licensed inspection firms. <a href="mailto:info@staircode.app?subject=Module%20Early%20Access" style={{ color: '#F29337', textDecoration: 'none', fontWeight: 600 }}>Contact us →</a>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
+            <a href="/?signin=1" style={{ padding: '0.75rem 1.75rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600 }}>Try Free Stair Demo</a>
+            <button onClick={() => setShowSubscribeModal(true)} style={{ padding: '0.75rem 1.75rem', background: '#F29337', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>Get Full Inspection Access →</button>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          INSPECTION PHASES — the full product
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '5rem 1.25rem', background: '#fff', borderTop: '1px solid #E5EBF2' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.6rem' }}>Full Residential Inspection</div>
+          <h2 style={{ fontSize: 'clamp(1.5rem,4vw,2.2rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#0A1C2E', marginBottom: '0.75rem' }}>9 inspection phases. Every element of the building.</h2>
+          <p style={{ fontSize: '0.95rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 640, marginBottom: '2.5rem' }}>
+            stAIrcode guides inspectors through every phase of a residential building inspection — from roof to site — with AI vision measurements, live code analysis, photo documentation, and a comprehensive report matching AS 4349.1 / OBC inspection standards.
           </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+            {[
+              {
+                n: '01', phase: 'Roof — External',
+                modules: ['Roof covering & condition', 'Flashings & sealants', 'Gutters & downpipes', 'Eaves, fascias & barge boards', 'Ridge & hip condition'],
+              },
+              {
+                n: '02', phase: 'Roof — Internal',
+                modules: ['Roof framing & trusses', 'Insulation coverage', 'Sarking & membrane'],
+              },
+              {
+                n: '03', phase: 'Interior',
+                modules: ['Ceilings', 'Internal walls', 'Windows & doors', 'Floors', 'Stairs (AI Compliance Scan ✓)'],
+              },
+              {
+                n: '04', phase: 'Wet Areas',
+                modules: ['Kitchen', 'Laundry', 'Bathroom(s)', 'Ensuite', 'Toilet', 'Accessibility compliance (AI Scan ✓)'],
+              },
+              {
+                n: '05', phase: 'Exterior',
+                modules: ['External walls & cladding', 'External cracking', 'Windows & doors exterior', 'Foundation (AI Scan ✓)'],
+              },
+              {
+                n: '06', phase: 'Garage & Structures',
+                modules: ['Garage condition', 'Decks, pergolas & balconies', 'Outbuildings'],
+              },
+              {
+                n: '07', phase: 'Site',
+                modules: ['Driveway', 'Fences & gates', 'Paths & paving', 'Surface drainage', 'Yard & gardens', 'Swimming pool (specialist referral)'],
+              },
+              {
+                n: '08', phase: 'Services',
+                modules: ['Electrical (visual)', 'Plumbing (visual)', 'Gas connections', 'Smoke & CO detectors', 'Hot water system', 'HVAC'],
+              },
+              {
+                n: '09', phase: 'Compliance Modules',
+                modules: ['Guardrails & handrails (coming soon)', 'Windows egress (coming soon)', 'Bathroom ventilation (coming soon)', 'Ceiling heights (coming soon)', 'Door widths (coming soon)'],
+                comingSoon: true,
+              },
+            ].map((phase: { n: string; phase: string; modules: string[]; comingSoon?: boolean }) => (
+              <div key={phase.n} style={{ background: phase.comingSoon ? '#F4F7FB' : '#fff', border: `1px solid ${phase.comingSoon ? 'rgba(44,90,122,0.1)' : 'rgba(44,90,122,0.15)'}`, borderRadius: 12, padding: '1.25rem', opacity: phase.comingSoon ? 0.7 : 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.18rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.25)' }}>{phase.n}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0A1C2E' }}>{phase.phase}</div>
+                  {phase.comingSoon && <div style={{ marginLeft: 'auto', fontSize: '0.6rem', color: '#9DB4C5', border: '1px solid rgba(147,186,212,0.3)', padding: '0.1rem 0.45rem', borderRadius: 4 }}>Expanding</div>}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  {phase.modules.map(m => (
+                    <div key={m} style={{ fontSize: '0.78rem', color: m.includes('AI Scan ✓') ? '#417CA4' : m.includes('coming soon') ? '#9DB4C5' : '#5E7D9B', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: m.includes('AI Scan ✓') ? '#417CA4' : m.includes('coming soon') ? '#C8D8E4' : '#9DB4C5', flexShrink: 0 }} />
+                      {m}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#F7FAFC', borderRadius: 14, border: '1px solid #E5EBF2', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0A1C2E', marginBottom: '0.25rem' }}>Free Demo: Stair Compliance Scan</div>
+              <div style={{ fontSize: '0.82rem', color: '#5E7D9B' }}>Try AI-vision stair measurement free — no account required. Includes pass/fail vs local building code.</div>
+            </div>
+            <a href="/?signin=1" style={{ padding: '0.75rem 1.5rem', background: '#0A1C2E', color: '#fff', borderRadius: 9, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>Try Free Demo →</a>
+          </div>
         </div>
       </section>
 
@@ -349,59 +370,79 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           PRICING
       ══════════════════════════════════════════════ */}
-      <section id="pricing" style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Pricing</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Simple, transparent pricing</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>{/* Free */}
-            <div className={styles.priceCard}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5E7D9B', marginBottom: '0.5rem' }}>Free</div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E', marginBottom: '0.25rem' }}>$0</div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>No credit card required</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Full guided scan flow', 'AI vision measurement', 'Pass/fail per building code', 'Supports OBC, NBC, IBC + more'].map(f => (
-                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
+      <section id="pricing" style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#5E7D9B', marginBottom: '0.6rem' }}>Pricing</div>
+          <h2 style={{ fontSize: 'clamp(1.4rem,4vw,2rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#0A1C2E', marginBottom: '0.75rem' }}>Simple, transparent pricing</h2>
+          <p style={{ fontSize: '0.95rem', color: '#5E7D9B', maxWidth: 540, marginBottom: '2.5rem', lineHeight: 1.7 }}>Start free with the stair demo. Upgrade to a monthly subscription for the full residential inspection platform.</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+
+            {/* ── Free Demo ── */}
+            <div style={{ background: '#fff', border: '1px solid rgba(44,90,122,0.15)', borderRadius: 16, padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#5E7D9B', marginBottom: '0.5rem' }}>Free Demo</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0A1C2E', lineHeight: 1 }}>$0</div>
+                <div style={{ fontSize: '0.78rem', color: '#5E7D9B', marginTop: '0.25rem' }}>No credit card required</div>
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                {[
+                  'Stair Compliance Scan only',
+                  'AI vision measurement',
+                  'Pass/fail vs OBC, NBC, IBC',
+                  'Instant results on screen',
+                  'No account required',
+                ].map(f => (
+                  <li key={f} style={{ fontSize: '0.85rem', color: '#3A5A78', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', flexShrink: 0, marginTop: 2 }}/>
+                    {f}
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: 'linear-gradient(160deg, #1a3150 0%, #0D1E2E 60%)', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.10)' }}>Start Free Scan
+              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '0.85rem', background: '#0A1C2E', color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none', marginTop: 'auto' }}>
+                Try Stair Demo Free →
               </a>
             </div>
 
-            {/* Full Report */}
-            <div className={`${styles.priceCard} ${styles.priceCardFeatured}`}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Report</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}><div style={{ fontSize: '1.4rem', fontWeight: 400, letterSpacing: '-0.02em', color: '#9BA8B4', textDecoration: 'line-through' }}>$38.99</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0D1E2E' }}>$2.99</div>
+            {/* ── Full Inspection — Monthly ── */}
+            <div style={{ background: '#0A1C2E', border: '2px solid #F29337', borderRadius: 16, padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, background: '#F29337', color: '#fff', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em', padding: '0.3rem 0.8rem', borderRadius: '0 14px 0 8px' }}>BETA</div>
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Residential Inspection</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>$38.99</div>
+                  <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)' }}>/month</div>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.25rem' }}>Beta access · Cancel anytime</div>
               </div>
-              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#F29337', background: 'rgba(242,147,55,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)', letterSpacing: '0.08em' }}>BETA DISCOUNT</span>
-              </div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>One-time per report · Regular price $38.99</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Pass/fail compliance results', 'PDF compliance report', 'Cited measurements & code references', 'Shareable with clients or authority having jurisdiction', 'Email delivery within minutes'].map(f => (
-                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                {[
+                  '9-phase guided inspection workflow',
+                  'All AI scan modules (stair, foundation, accessibility)',
+                  'Photo documentation per module',
+                  'Live code analysis & citations',
+                  '30-page PDF compliance report',
+                  'AI inspection assistant (in-field chat)',
+                  'Supabase-stored reports, retrievable anytime',
+                  'Email delivery of reports',
+                  'OBC, NBC, IBC, IRC, UK Part K support',
+                ].map(f => (
+                  <li key={f} style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(242,147,55,0.2)', border: '1px solid rgba(242,147,55,0.5)', flexShrink: 0, marginTop: 2 }}/>
+                    {f}
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" className={styles.navCta} style={{ display: 'block', textAlign: 'center', padding: '11px' }}>Get Full Report →
-              </a>
+              <button onClick={() => setShowSubscribeModal(true)}
+                style={{ display: 'block', width: '100%', padding: '0.95rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 10, fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer', marginTop: 'auto', boxShadow: '0 4px 20px rgba(242,147,55,0.45)' }}>
+                Subscribe — $38.99/month →
+              </button>
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>Have a beta code? Enter it on the next screen.</div>
             </div>
-            {/* Pro Subscription */}
-            <div className={styles.priceCard}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#27A96B', marginBottom: '0.5rem' }}>Pro Subscription</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}><div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#5E7D9B' }}>Coming Soon</div>
-              </div>
-              <div style={{ marginBottom: '1rem' }}><span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.65rem', borderRadius: 4, border: '1px solid rgba(39,169,107,0.3)', letterSpacing: '0.08em' }}>COMING SOON</span>
-              </div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>20 stair reports/month · $199/mo after beta · Cancel anytime</div>
-              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.75rem' }}>{['Everything in Full Report', '20 scans per month', 'All building codes included', 'Priority AI analysis', 'Full report history'].map(f => (
-                  <li key={f} style={{ fontSize: '0.875rem', color: '#0D1E2E', display: 'flex', gap: '0.5rem' }}>{f}
-                  </li>
-                ))}
-              </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '11px', background: 'rgba(94,125,155,0.15)', color: '#5E7D9B', borderRadius: 8, fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(94,125,155,0.3)', cursor: 'default' }}>Notify Me →
-              </a>
-            </div>
+
           </div>
         </div>
       </section>
-
       {/* ══════════════════════════════════════════════
           FAQ
       ══════════════════════════════════════════════ */}
@@ -741,6 +782,72 @@ export default function MarketingPage() {
           </div>
         </div>
       )}
+    {/* ══════════════════════════════════════════════
+        SUBSCRIPTION MODAL
+    ══════════════════════════════════════════════ */}
+    {showSubscribeModal && (
+      <>
+        <div onClick={() => { setShowSubscribeModal(false); setBetaCode(''); setBetaError(null) }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 900 }} />
+        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '92%', maxWidth: 460, background: '#fff', borderRadius: 20, zIndex: 901, boxShadow: '0 24px 80px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+
+          {/* Modal header */}
+          <div style={{ background: '#0A1C2E', padding: '1.5rem', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: '#F29337', color: '#fff', fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.1em', padding: '0.2rem 0.6rem', borderRadius: 4 }}>BETA</div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.4rem' }}>Full Residential Inspection</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Subscribe for full access</div>
+            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>9-phase guided inspection · AI vision · 30-page PDF report</div>
+          </div>
+
+          {/* Modal body */}
+          <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+
+            {/* Price */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+              <div style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0A1C2E', lineHeight: 1 }}>$38.99</div>
+              <div style={{ fontSize: '0.9rem', color: '#5E7D9B' }}>/ month · Cancel anytime</div>
+            </div>
+
+            {/* Stripe CTA */}
+            <a href="/api/stripe/checkout?product=inspection_subscription&returnTo=/?module=inspection"
+              style={{ display: 'block', textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 12, fontWeight: 800, fontSize: '1rem', textDecoration: 'none', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>
+              Subscribe — $38.99/month →
+            </a>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ flex: 1, height: 1, background: '#E5EBF2' }} />
+              <span style={{ fontSize: '0.72rem', color: '#9DB4C5' }}>or enter a beta code</span>
+              <div style={{ flex: 1, height: 1, background: '#E5EBF2' }} />
+            </div>
+
+            {/* Beta code */}
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#5E7D9B', marginBottom: '0.4rem' }}>Beta access code</div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Enter beta code"
+                  value={betaCode}
+                  onChange={e => { setBetaCode(e.target.value); setBetaError(null) }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleBetaCode() }}
+                  style={{ flex: 1, padding: '0.7rem 0.9rem', background: '#F4F7FB', border: `1px solid ${betaCode ? 'rgba(65,124,164,0.4)' : 'rgba(44,90,122,0.18)'}`, borderRadius: 9, fontSize: '0.9rem', color: '#0A1C2E', outline: 'none', fontFamily: 'inherit' }}
+                />
+                <button onClick={handleBetaCode} disabled={betaChecking || !betaCode.trim()}
+                  style={{ padding: '0.7rem 1.1rem', background: betaCode.trim() ? '#0A1C2E' : 'rgba(44,90,122,0.1)', border: 'none', borderRadius: 9, color: betaCode.trim() ? '#fff' : '#9DB4C5', fontWeight: 700, fontSize: '0.85rem', cursor: betaCode.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                  {betaChecking ? '…' : 'Apply →'}
+                </button>
+              </div>
+              {betaError && <div style={{ fontSize: '0.72rem', color: '#E84545', marginTop: '0.4rem', padding: '0.35rem 0.65rem', background: 'rgba(232,69,69,0.06)', borderRadius: 6, border: '1px solid rgba(232,69,69,0.2)' }}>{betaError}</div>}
+            </div>
+
+            <button onClick={() => { setShowSubscribeModal(false); setBetaCode(''); setBetaError(null) }}
+              style={{ background: 'none', border: 'none', color: '#9DB4C5', fontSize: '0.75rem', cursor: 'pointer', padding: 0, textAlign: 'center' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </>
+    )}
     </>
   )
 }
