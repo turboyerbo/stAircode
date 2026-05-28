@@ -809,10 +809,17 @@ export default function MarketingPage() {
             </div>
 
             {/* Stripe CTA */}
-            <a href="/api/stripe/checkout?product=inspection_subscription&returnTo=/?module=inspection"
-              style={{ display: 'block', textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 12, fontWeight: 800, fontSize: '1rem', textDecoration: 'none', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>
+            <button
+              onClick={async () => {
+                try {
+                  const res  = await fetch('/api/stripe/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ product:'subscription', email:'' }) })
+                  const data = await res.json()
+                  if (data.url) window.location.href = data.url
+                } catch { alert('Could not start checkout. Please try again.') }
+              }}
+              style={{ display: 'block', width: '100%', textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 12, fontWeight: 800, fontSize: '1rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>
               Subscribe — $38.99/month →
-            </a>
+            </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{ flex: 1, height: 1, background: '#E5EBF2' }} />

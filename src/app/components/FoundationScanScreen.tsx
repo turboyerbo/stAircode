@@ -957,7 +957,7 @@ export default function FoundationScanScreen({ onSuccess, onBack, startAtReview 
           )}
 
           <button onClick={submitReview} style={{ width: '100%', padding: '1.1rem', background: `linear-gradient(135deg,${AMBER},#C4721E)`, border: 'none', borderRadius: 16, color: '#fff', fontSize: '0.95rem', fontWeight: 700, letterSpacing: '0.04em', cursor: 'pointer', boxShadow: '0 4px 24px rgba(242,147,55,0.4)', marginTop: '0.25rem' }}>
-            Generate Report — $2.99 →
+            Generate Report →
           </button>
         </div>
       </div>

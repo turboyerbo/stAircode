@@ -95,7 +95,7 @@ export default function StarchitectDeadPage() {
 
         <div style={{ background: '#0A1C2E', borderRadius: 20, padding: '2.5rem', textAlign: 'center' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#E8F4FF', marginBottom: '0.5rem' }}>stAIrcode &mdash; built by architects, for the industry</h3>
-          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, marginBottom: '1.5rem' }}>Free to scan. $2.99 to unlock the full compliance report.</p>
+          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, marginBottom: '1.5rem' }}>Free demo scan · Full platform from $38.99/month.</p>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/?signin=1" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none', padding: '0.85rem 2rem', borderRadius: 12, letterSpacing: '0.04em' }}>
               Start a Compliance Scan &rarr;

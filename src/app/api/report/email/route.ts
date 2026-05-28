@@ -8,7 +8,7 @@
  *   - Brief stair description (first 2-3 sentences of reportText)
  *   - Pass/fail table per dimension (from fields[])
  *   - Blurred/locked section
- *   - Paywall CTA: "Get Full Report — $2.99"
+ *   - Subscription CTA: "Subscribe for Full Access"
  *
  * Body:
  *   { email, reportText, fields, codeLabel, location, teaserOnly? }
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
   <!-- Beta pricing banner -->
   <div style="background:linear-gradient(135deg,#F29337,#C4721E);padding:0.75rem 2rem;text-align:center;">
     <p style="margin:0;font-size:0.85rem;font-weight:800;color:#fff;">
-       Get your full report for <span style="text-decoration:line-through;opacity:0.65;font-weight:400;">$38.99</span> &nbsp;<strong>$2.99</strong> — Beta testing discount
+       Access with your stAIrcode subscription — $38.99/month · Cancel anytime
     </p>
   </div>
 
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
       </p>
       <!-- CTA -->
       <a href="${unlockUrl}" style="display:inline-block;background:linear-gradient(135deg,#F29337,#C4721E);color:#fff;font-weight:800;font-size:1rem;text-decoration:none;padding:0.85rem 2.5rem;border-radius:14px;letter-spacing:0.04em;box-shadow:0 4px 20px rgba(242,147,55,0.4);">
-        Get Full Report — $2.99 →
+        Subscribe for Full Access →
       </a>
       <p style="font-size:0.68rem;color:#9BB5C8;margin:0.6rem 0 0;">
         <span style="text-decoration:line-through;opacity:0.65;">Regular price $38.99</span> · Beta testing discount applied at checkout

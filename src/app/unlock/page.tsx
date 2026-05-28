@@ -7,7 +7,7 @@
  *
  * Shows:
  *  - Pass/fail summary (loaded from token or URL params)
- *  - Clear $2.99 payment button → Stripe
+ *  - Clear subscribe payment button → Stripe
  *  - After payment → full PDF with photos, analysis, code refs
  *  - Links to find building inspector, architect, contractor
  *  - Links to further reading
@@ -122,7 +122,7 @@ export default function UnlockPage() {
       const res  = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product: 'report', userEmail: email }),
+        body: JSON.stringify({ product: 'subscription', userEmail: email }),
       })
       const data = await res.json()
       if (data.url) window.location.href = data.url
@@ -229,7 +229,7 @@ export default function UnlockPage() {
 
           {/* Beta pricing */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}><span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
-            <span style={{ fontSize: '1.6rem', fontWeight: 700, color: C.orange }}>$2.99</span>
+            <span style={{ fontSize: '1.6rem', fontWeight: 700, color: C.orange }}>subscribe</span>
             <span style={{ fontSize: '0.62rem', fontWeight: 800, color: C.green, background: 'rgba(39,169,107,0.12)', border: '1px solid rgba(39,169,107,0.3)', borderRadius: 12, padding: '0.15rem 0.5rem', letterSpacing: '0.06em' }}>BETA DISCOUNT</span>
           </div>
 
@@ -238,7 +238,7 @@ export default function UnlockPage() {
             disabled={paying}
             style={{ width: '100%', padding: '1.1rem', background: paying ? 'rgba(255,255,255,0.06)' : `linear-gradient(135deg,${C.orange},#C4721E)`, border: 'none', borderRadius: 13, color: paying ? C.text3 : '#000', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.06em', cursor: paying ? 'wait' : 'pointer', boxShadow: paying ? 'none' : '0 4px 24px rgba(242,147,55,0.4)', marginBottom: '0.65rem' }}
           >
-            {paying ? '⏳ Redirecting to checkout…' : 'Pay $2.99 — Unlock Full Report →'}
+            {paying ? '⏳ Redirecting to checkout…' : 'Pay subscribe — Unlock Full Report →'}
           </button>
 
           {error && <div style={{ fontSize: '0.75rem', color: C.red, textAlign: 'center', marginBottom: '0.5rem' }}>{error}</div>}

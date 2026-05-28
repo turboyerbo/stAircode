@@ -28,6 +28,7 @@ import { rateLimit, getClientIp }     from '@/lib/rate-limit'
 import { generateFoundationPDF }      from '@/lib/generate-foundation-pdf'
 import { createClient }               from '@supabase/supabase-js'
 import { trackServer }                from '@/lib/analytics-server'
+import { canGenerateReport } from '@/lib/subscription'
 
 export const maxDuration = 60
 
@@ -201,13 +202,14 @@ export async function POST(req: NextRequest) {
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
 
   const { email, measurements, fields, codeLabel, location } = body
-  const isPaid = body.paid === true || !!body.testimonialToken
 
   if (!fields || !measurements) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
   const reportEmail = (email || '').toLowerCase().trim()
+  const discountCode = body.discountCode ?? body.testimonialToken ?? ''
+  const { allowed: isPaid, reason: accessReason } = await canGenerateReport(reportEmail, discountCode)
 
   // ── Decode frames ──────────────────────────────────────────────────────────
   let capturedFrames: Record<string, string> = {}

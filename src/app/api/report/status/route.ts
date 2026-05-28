@@ -4,7 +4,7 @@
  * GET /api/report/status?email=user@example.com
  *
  * Returns whether the user has a paid report credit available.
- * Pro users have unlimited reports. Free users get 0 — each costs $2.99.
+ * Subscription users have unlimited reports. Free users can only run the stair demo.
  *
  * Response:
  *   { canGenerate: boolean, reason: 'pro' | 'credit' | 'none', creditsUsed: number }
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       .from('report_purchases')
       .select('id, used, created_at')
       .eq('email', email)
-      .eq('product', 'report')
+      .eq('membership', 'subscription')
       .order('created_at', { ascending: false })
 
     if (error) {

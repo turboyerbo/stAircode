@@ -157,7 +157,7 @@ export default function SampleReportPage() {
 
         {/* ── CTA ───────────────────────────────────────────────────────────── */}
         <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', textAlign: 'center', border: '1.5px solid #E5EBF2' }}><div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0D1E2E', marginBottom: '0.5rem' }}>Get a report like this for your stairs</div>
-          <div style={{ fontSize: '0.88rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>Free scan · Full report $2.99 · PDF emailed instantly</div>
+          <div style={{ fontSize: '0.88rem', color: '#5E7D9B', marginBottom: '1.5rem' }}>Free demo scan · Full platform $38.99/month</div>
           <a href="/?signin=1" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', fontWeight: 800, fontSize: '1rem', textDecoration: 'none', padding: '0.9rem 2.5rem', borderRadius: 14, letterSpacing: '0.04em', boxShadow: '0 4px 20px rgba(242,147,55,0.4)' }}>Scan My Stairs Now →
           </a>
         </div>

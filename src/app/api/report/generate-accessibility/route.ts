@@ -13,6 +13,7 @@ import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 import { generateAccessibilityPDF }  from '@/lib/generate-accessibility-pdf'
 import { createClient }              from '@supabase/supabase-js'
 import { trackServer }               from '@/lib/analytics-server'
+import { canGenerateReport } from '@/lib/subscription'
 
 export const maxDuration = 60
 

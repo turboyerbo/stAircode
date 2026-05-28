@@ -48,7 +48,7 @@ export default function WhatIsStaircodeePage() {
             {
               icon: '',
               title: 'Professional PDF report',
-              body: 'After scanning, you can unlock a full compliance report for $2.99 — a professionally formatted PDF including measurement photos, code citations, pass/fail analysis, and a pre-inspection summary ready to share with your architect, contractor, or building inspector.',
+              body: 'After scanning, you can access the full platform with a subscription — a professionally formatted PDF including measurement photos, code citations, pass/fail analysis, and a pre-inspection summary ready to share with your architect, contractor, or building inspector.',
             },
           ].map(item => (
             <div key={item.title} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(65,124,164,0.15)', borderRadius: 14, padding: '1.25rem' }}><span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{item.icon}</span>

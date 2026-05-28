@@ -2,7 +2,7 @@
 /**
  * AccessibilityReportScreen.tsx — Accessibility Compliance Report
  *
- * Paywall: $2.99 via Stripe OR free via extended testimonial
+ * Paywall: Included with subscription via Stripe OR free via extended testimonial
  * Extended testimonial requires: name, email, phone, company, title, 50+ char comment
  *
  * Stores report with module_type = 'accessibility' for multi-module combining.
@@ -157,7 +157,7 @@ export default function AccessibilityReportScreen({ measurements: m, fields, cod
     const userEmail = tEmail.trim()
     if (!userEmail || !userEmail.includes('@')) { setGenError('Please enter your email above.'); return }
     try {
-      const res = await fetch('/api/stripe/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ product:'report', email:userEmail, module:'accessibility', returnTo:'/?module=accessibility&payment=success' }) })
+      const res = await fetch('/api/stripe/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ product:'subscription', email:userEmail, module:'accessibility', returnTo:'/?module=accessibility&payment=success' }) })
       const data = await res.json()
       if (data.url) window.location.href = data.url
       else setGenError('Could not start checkout. Please try again.')
@@ -237,17 +237,17 @@ export default function AccessibilityReportScreen({ measurements: m, fields, cod
           <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top,rgba(10,28,46,0.97) 0%,rgba(10,28,46,0.6) 55%,transparent 100%)', display:'flex', flexDirection:'column', justifyContent:'flex-end', alignItems:'center', padding:'1.25rem', gap:'0.65rem' }}>
             <div style={{ textAlign:'center' }}>
               <div style={{ fontSize:'0.72rem', color:WHITE2, marginBottom:'0.35rem' }}>Your full accessibility report is ready</div>
-              <div style={{ fontSize:'1rem', fontWeight: 700, color:WHITE, letterSpacing:'-0.02em', lineHeight:1.25 }}>Unlock the complete assessment</div>
+              <div style={{ fontSize:'1rem', fontWeight: 700, color:WHITE, letterSpacing:'-0.02em', lineHeight:1.25 }}>Unlock with Subscription</div>
               <div style={{ fontSize:'0.68rem', color:WHITE2, marginTop:'0.2rem' }}>OBC citations · Compliance table · Recommendations · PDF by email</div>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
               <span style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.35)', textDecoration:'line-through' }}>$38.99</span>
-              <span style={{ fontSize:'1.4rem', fontWeight: 700, color:GOLD }}>$2.99</span>
+              <span style={{ fontSize:'1.4rem', fontWeight: 700, color:GOLD }}>Included with subscription</span>
               <span style={{ fontSize:'0.6rem', fontWeight:800, background:'rgba(242,147,55,0.2)', color:GOLD, padding:'0.15rem 0.5rem', borderRadius:4, border:'1px solid rgba(242,147,55,0.3)' }}>BETA</span>
             </div>
             <button onClick={() => setSheet('paywall')}
               style={{ width:'100%', padding:'1rem', background:`linear-gradient(135deg,${AMBER},#C4721E)`, border:'none', borderRadius:14, color:'#fff', fontSize:'0.95rem', fontWeight: 700, cursor:'pointer', boxShadow:'0 6px 24px rgba(242,147,55,0.5)' }}>
-              Generate Report — $2.99 →
+              Generate Report — Included with subscription →
             </button>
             <button onClick={() => setSheet('testimonial')} style={{ background:'none', border:'none', color:WHITE2, fontSize:'0.75rem', cursor:'pointer' }}>
               or get it free — leave a testimonial →
@@ -327,12 +327,12 @@ export default function AccessibilityReportScreen({ measurements: m, fields, cod
             <div style={{ width:36, height:4, borderRadius:2, background:'rgba(147,186,212,0.25)', alignSelf:'center', marginBottom:'0.1rem' }} />
             <div style={{ textAlign:'center' }}>
               <div style={{ fontSize:'0.72rem', color:WHITE2, marginBottom:'0.3rem' }}>Your accessibility report is ready</div>
-              <div style={{ fontSize:'1.05rem', fontWeight: 700, color:WHITE, letterSpacing:'-0.02em', lineHeight:1.25 }}>Unlock the complete assessment</div>
+              <div style={{ fontSize:'1.05rem', fontWeight: 700, color:WHITE, letterSpacing:'-0.02em', lineHeight:1.25 }}>Unlock with Subscription</div>
               <div style={{ fontSize:'0.68rem', color:WHITE2, marginTop:'0.2rem' }}>OBC citations · Compliance table · Recommendations · PDF by email</div>
             </div>
             <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:'0.6rem' }}>
               <span style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.3)', textDecoration:'line-through' }}>$38.99</span>
-              <span style={{ fontSize:'1.5rem', fontWeight: 700, color:GOLD }}>$2.99</span>
+              <span style={{ fontSize:'1.5rem', fontWeight: 700, color:GOLD }}>Included with subscription</span>
               <span style={{ fontSize:'0.6rem', fontWeight:800, background:'rgba(242,147,55,0.2)', color:GOLD, padding:'0.15rem 0.5rem', borderRadius:4, border:'1px solid rgba(242,147,55,0.3)' }}>BETA</span>
             </div>
             {/* Email */}
@@ -370,7 +370,7 @@ export default function AccessibilityReportScreen({ measurements: m, fields, cod
             ) : (
               <button onClick={handleStripeCheckout}
                 style={{ width:'100%', padding:'1.1rem', background:`linear-gradient(135deg,${AMBER},#C4721E)`, border:'none', borderRadius:14, color:'#fff', fontSize:'0.95rem', fontWeight: 700, cursor:'pointer', boxShadow:'0 6px 24px rgba(242,147,55,0.5)' }}>
-                Unlock Full Report — $2.99 →
+                Unlock Full Report — Included with subscription →
               </button>
             )}
             {genError && <div style={{ fontSize:'0.75rem', color:'#E85555', textAlign:'center' as const, padding:'0.35rem 0' }}>{genError}</div>}

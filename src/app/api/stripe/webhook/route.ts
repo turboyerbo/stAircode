@@ -3,22 +3,27 @@
  *
  * POST /api/stripe/webhook
  *
- * Stripe sends events here after payment. We handle:
- *   checkout.session.completed  → fulfill report or activate Pro
- *   customer.subscription.deleted → downgrade user to free
+ * Handles Stripe events:
+ *   checkout.session.completed       → activate subscription, send welcome email
+ *   customer.subscription.created    → mark user active in Supabase
+ *   customer.subscription.updated    → sync status changes
+ *   customer.subscription.deleted    → downgrade user to free tier
+ *
+ * All products funnel into the single $38.99/month subscription.
+ * No per-report payments exist.
  *
  * Required env vars:
  *   STRIPE_SECRET_KEY
  *   STRIPE_WEBHOOK_SECRET      whsec_xxx  (from Stripe dashboard → Webhooks)
- *
- * For email delivery of the report, also set:
- *   RESEND_API_KEY             re_xxx  (free at resend.com — 3000 emails/mo)
+ *   RESEND_API_KEY             re_xxx
  *   EMAIL_FROM                 info@staircode.app
  *
- * Register this webhook URL in Stripe dashboard:
+ * Register this webhook URL:
  *   https://staircode.app/api/stripe/webhook
- *   Events to listen for:
+ *   Events:
  *     checkout.session.completed
+ *     customer.subscription.created
+ *     customer.subscription.updated
  *     customer.subscription.deleted
  */
 
@@ -60,9 +65,9 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
   }
 
   const from    = process.env.EMAIL_FROM ?? 'info@staircode.app'
-  const subject = product === 'report'
-    ? 'Your Staircode Compliance Report'
-    : 'Welcome to Staircode Pro'
+  const subject = product === 'subscription' || product === 'pro'
+    ? 'Welcome to stAIrcode — Subscription Active'
+    : 'Your stAIrcode Compliance Report'
 
   const html = product === 'report'
     ? `
@@ -82,10 +87,10 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
     : `
       <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:2rem;color:#1a2b3c">
         <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 1rem;" />
-        <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to Staircode Pro </h1>
-        <p style="color:#555;line-height:1.6">Your Pro subscription is now active. You have 20 scans/month, full compliance reports, and access to all supported building codes.</p>
-        <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#1565C0;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Open Staircode →</a>
-        <p style="margin-top:2rem;font-size:0.8rem;color:#999">Manage your subscription at staircode.app/settings · Cancel anytime.</p>
+        <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to stAIrcode</h1>
+        <p style="color:#555;line-height:1.6">Your subscription is active at $38.99/month. You now have full access to the complete building inspection platform — all 6 OBC phases, AI vision scans, photo documentation, and comprehensive compliance reports.</p>
+        <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#0A1C2E;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Start Your Inspection →</a>
+        <p style="margin-top:2rem;font-size:0.8rem;color:#999">Manage or cancel at staircode.app/settings · Cancel anytime.</p>
       </div>
     `
 
@@ -152,88 +157,59 @@ export async function POST(req: NextRequest) {
           await trackServer(email, 'purchase_completed_server', {
             product,
             stripe_session: session.id,
-            amount_cents:   product === 'report' ? 299 : 3899,
+            amount_cents:   3899,
           })
         }
 
         const sb = await getSupabaseAdmin()
 
-        if (product === 'report' && email) {
-          // 1. Save purchase record to Supabase
+        // All products activate the subscription
+        if (email) {
           if (sb) {
-            await sb.from('report_purchases').insert({
+            // Activate subscription in profiles table
+            await sb.from('profiles').upsert({
               email,
-              product:        'report',
-              stripe_session: session.id,
-              amount_cents:   299,
-              used:           false,
-              created_at:     new Date().toISOString(),
-            }).then(({ error }) => {
-              if (error) console.error('[webhook] Failed to save purchase:', error)
+              membership:             'subscription',
+              subscription_active:    true,
+              subscription_start:     new Date().toISOString(),
+              stripe_customer_id:     session.customer as string ?? null,
+              stripe_subscription_id: session.subscription as string ?? null,
+              updated_at:             new Date().toISOString(),
+            }, { onConflict: 'email' }).then(({ error }) => {
+              if (error) console.error('[webhook] Failed to activate subscription:', error)
+              else console.log(`[webhook] Subscription activated for ${email}`)
             })
           }
-
-          // 2. Generate the full report using saved scan data, then email it
-          const saveToken = meta.saveToken
-          const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
-
-          if (saveToken) {
-            try {
-              // Fetch the saved scan fields from the server
-              const savedRes  = await fetch(`${appUrl}/api/report/save?token=${saveToken}`)
-              const savedData = await savedRes.json()
-
-              if (savedData.ok && savedData.fields?.length > 0) {
-                // Generate the full AI report with the real measurements
-                const genRes = await fetch(`${appUrl}/api/report/generate`, {
-                  method:  'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    email,
-                    fields:    savedData.fields,
-                    frames:    savedData.frames ?? {},    // ← include measurement photos
-                    codeLabel: savedData.codeLabel,
-                    location:  savedData.location,
-                    isOntario: savedData.isOntario,
-                    paid:      true,
-                  }),
-                })
-                const genData = await genRes.json()
-                if (genData.ok) {
-                  console.log(`[webhook] Full report generated and emailed to ${email}`)
-                } else {
-                  console.error('[webhook] Report generation failed:', genData.error)
-                  // Fallback: send notification
-                  await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-                }
-              } else {
-                console.warn('[webhook] saveToken found but no fields returned — sending fallback')
-                await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-              }
-            } catch (err) {
-              console.error('[webhook] Failed to fetch saved scan data:', err)
-              await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-            }
-          } else if (report) {
-            // Legacy path: report text was chunked in metadata
-            await sendReportEmail(email, report, 'report')
-          } else {
-            await sendReportEmail(email, '[Your full report is ready — please open staircode.app to view and download it.]', 'report')
-          }
-        }
-
-        if (product === 'pro' && email) {
-          // Upgrade user to Pro in Supabase
-          if (sb) {
-            await sb.from('profiles')
-              .upsert({ email, membership: 'pro', updated_at: new Date().toISOString() }, { onConflict: 'email' })
-              .then(({ error }) => { if (error) console.error('[webhook] Failed to update membership:', error) })
-          }
-          // Unlock 20 scans/month in scan_usage table
+          // Unlock unlimited scans
           await unlockProScans(email)
-          await sendReportEmail(email, '', 'pro')
+          // Send welcome email
+          await sendReportEmail(email, '', 'subscription')
         }
 
+        break
+      }
+
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub    = event.data.object as Stripe.Subscription
+        const email  = sub.metadata?.userEmail
+        const active = (sub.status === 'active' || sub.status === 'trialing')
+        if (email) {
+          const sb = await getSupabaseAdmin()
+          if (sb) {
+            await sb.from('profiles').upsert({
+              email,
+              membership:          active ? 'subscription' : 'free',
+              subscription_active: active,
+              stripe_subscription_id: sub.id,
+              updated_at:          new Date().toISOString(),
+            }, { onConflict: 'email' }).then(({ error }) => {
+              if (error) console.error('[webhook] Failed to sync subscription:', error)
+              else console.log(`[webhook] Subscription ${sub.status} for ${email}`)
+            })
+          }
+          if (active) await unlockProScans(email)
+        }
         break
       }
 
@@ -242,8 +218,16 @@ export async function POST(req: NextRequest) {
         const email = sub.metadata?.userEmail
         if (email) {
           console.log(`[webhook] Subscription cancelled for ${email}`)
-          // Downgrade in Supabase:
-          // await supabase.from('profiles').update({ membership: 'free' }).eq('email', email)
+          const sb = await getSupabaseAdmin()
+          if (sb) {
+            await sb.from('profiles').update({
+              membership:          'free',
+              subscription_active: false,
+              updated_at:          new Date().toISOString(),
+            }).eq('email', email).then(({ error }) => {
+              if (error) console.error('[webhook] Failed to downgrade:', error)
+            })
+          }
         }
         break
       }

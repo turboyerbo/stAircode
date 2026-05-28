@@ -31,6 +31,7 @@ import { checkScanUsage, incrementScanUsage } from '@/lib/scan-usage'
 import { trackServer }               from '@/lib/analytics-server'
 import { PostHog }                    from 'posthog-node'
 import { generatePDFReport }          from '@/lib/generate-pdf-report'
+import { canGenerateReport } from '@/lib/subscription'
 import { createClient }               from '@supabase/supabase-js'
 
 // Tell Next.js / Netlify to allow up to 60s for this function
