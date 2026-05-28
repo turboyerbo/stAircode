@@ -39,7 +39,12 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query
 
+
   if (error) {
+    if (error.message?.includes('does not exist') || error.message?.includes('schema cache') || (error as any).code === '42P01') {
+      console.warn('[inspection/list] inspection_jobs table not found. Run supabase-migration.sql.')
+      return NextResponse.json({ ok: true, jobs: [] })
+    }
     console.error('[inspection/list] Supabase error:', error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

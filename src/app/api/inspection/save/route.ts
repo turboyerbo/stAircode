@@ -95,7 +95,12 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('[inspection/save] Supabase error:', error.message)
-    // Don't fail the client — return the ID anyway so the job stays in sessionStorage
+    // Table may not exist yet — return success anyway so the job stays in sessionStorage.
+    // Run supabase-migration.sql in Supabase SQL Editor to create the table.
+    if (error.message?.includes('does not exist') || error.message?.includes('schema cache') || error.code === '42P01') {
+      console.warn('[inspection/save] inspection_jobs table not found. Run supabase-migration.sql to create it.')
+      return NextResponse.json({ ok: true, id: job.id, warning: 'Table not yet created — job stored locally only' })
+    }
     return NextResponse.json({ ok: true, id: job.id, warning: error.message })
   }
 
