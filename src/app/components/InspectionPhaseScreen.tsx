@@ -13,6 +13,7 @@ import { useState } from 'react'
 import type { InspectionJob, PhaseId, ModuleId, InspectionModule } from '@/lib/inspection-types'
 import { PHASE_META, MODULE_META, getPhaseProgress } from '@/lib/inspection-types'
 import InspectionModuleCapture from './InspectionModuleCapture'
+import DrawingsReviewModule    from './DrawingsReviewModule'
 
 interface Props {
   job:      InspectionJob
@@ -20,6 +21,9 @@ interface Props {
   onUpdate: (job: InspectionJob) => void
   onBack:   () => void
 }
+
+// Modules that use the specialised DrawingsReviewModule instead of generic capture
+const DRAWINGS_MODULES = new Set(['drawings_review', 'permit_issuance', 'site_plan_review'])
 
 const NAVY   = '#0A1C2E'
 const BLUE   = '#417CA4'
@@ -95,10 +99,11 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack }
   const done    = phase.modules.filter(m => m.status === 'complete').length
   const total   = phase.modules.length
 
-  function handleModuleUpdate(updatedModule: InspectionModule) {
+  function handleModuleUpdate(updatedModule: InspectionModule, drawingsData?: InspectionJob['drawingsData']) {
     const newJob: InspectionJob = {
       ...job,
       updatedAt: new Date().toISOString(),
+      ...(drawingsData ? { drawingsData } : {}),
       phases: job.phases.map(p =>
         p.id !== phaseId ? p : {
           ...p,
@@ -135,6 +140,17 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack }
   // If a module is open, render that
   if (activeModule) {
     const mod = phase.modules.find(m => m.id === activeModule)!
+    // Route pre-construction drawing modules to the specialised DrawingsReviewModule
+    if (DRAWINGS_MODULES.has(activeModule)) {
+      return (
+        <DrawingsReviewModule
+          job={job}
+          module={mod}
+          onSave={handleModuleUpdate}
+          onBack={() => setActiveModule(null)}
+        />
+      )
+    }
     return (
       <InspectionModuleCapture
         job={job}

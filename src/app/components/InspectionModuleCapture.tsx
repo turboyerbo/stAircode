@@ -14,7 +14,7 @@ interface Props {
   job:    InspectionJob
   phase:  InspectionPhase
   module: InspectionModule
-  onSave: (m: InspectionModule) => void
+  onSave: (m: InspectionModule, drawingsData?: InspectionJob['drawingsData']) => void
   onBack: () => void
 }
 

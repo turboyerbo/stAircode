@@ -25,6 +25,36 @@
  *   storage bucket: inspection-photos — keyed by job_id/module_id/photo_index
  */
 
+// ─── Drawings data types ─────────────────────────────────────────────────────
+
+export interface DrawingsFields {
+  permitNumber?:       string | null
+  permitDate?:         string | null
+  applicant?:          string | null
+  architect?:          string | null
+  engineer?:           string | null
+  projectAddress?:     string | null
+  zoneClass?:          string | null
+  lotArea?:            number | null   // m²
+  buildingArea?:       number | null   // m²
+  grossFloorArea?:     number | null   // m²
+  lotCoverage?:        string | null   // e.g. "35%"
+  frontSetback?:       number | null   // metres
+  rearSetback?:        number | null
+  sideSetbackLeft?:    number | null
+  sideSetbackRight?:   number | null
+  buildingHeight?:     number | null   // metres
+  stories?:            number | null
+  parkingSpaces?:      number | null
+  fireSeparation?:     string | null
+  occupancyClass?:     string | null
+  constructionType?:   string | null
+  drawingSheets?:      string[]
+  revisionDate?:       string | null
+  codeNotes?:          string[]
+  summary?:            string
+}
+
 // ─── Property / Job ──────────────────────────────────────────────────────────
 
 export interface PropertyAddress {
@@ -111,6 +141,16 @@ export interface InspectionJob {
 
   // AI chat history
   chatMessages:    ChatMessage[]
+
+  // Drawings data — extracted from approved plans, referenced throughout inspection
+  drawingsData?: {
+    pages:          string[]        // base64 JPEGs of drawing pages (stored compressed)
+    fields:         DrawingsFields  // auto-extracted structured data
+    chatMessages:   Array<{ role: 'user'|'assistant'; content: string }>
+    uploadedAt:     string
+    pageCount:      number
+    fileNames:      string[]
+  }
 
   // Report
   reportGenerated: boolean
