@@ -736,7 +736,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='inspection_setup')
     return <InspectionSetupScreen onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_dashboard'&&inspectionJob)
-    return <InspectionDashboard job={inspectionJob} onUpdate={j=>{setInspectionJob(j);try{sessionStorage.setItem(`insp_${j.id}`,JSON.stringify(j))}catch{}}} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''}/>
+    return <InspectionDashboard job={inspectionJob} onUpdate={j=>{setInspectionJob(j);try{sessionStorage.setItem(`insp_${j.id}`,JSON.stringify(j))}catch{}}} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''} userRole={user.role}/>
 
   // Accessibility module routing
   if(screen==='scan_ready' && activeModule==='accessibility')

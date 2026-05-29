@@ -16,11 +16,14 @@ import { NavLogo } from './Logo'
 import InspectionPhaseScreen from './InspectionPhaseScreen'
 import InspectionAIChat      from './InspectionAIChat'
 
+import type { UserRole } from './AuthScreen'
+
 interface Props {
   job:       InspectionJob
   onUpdate:  (job: InspectionJob) => void
   onBack:    () => void
   userEmail: string
+  userRole?: UserRole
 }
 
 // Auto-save debounce: save to Supabase 3s after last update
@@ -221,14 +224,33 @@ function PhaseCard({ phase, onClick }: { phase: InspectionJob['phases'][0]; onCl
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function InspectionDashboard({ job, onUpdate, onBack, userEmail }: Props) {
+export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, userRole = 'diy' }: Props) {
   useAutoSave(job, userEmail)
-  const [activePhase, setActivePhase] = useState<PhaseId | null>(null)
+  const [activePhase,  setActivePhase]  = useState<PhaseId | null>(null)
+  const [saveStatus,  setSaveStatus]  = useState<'idle'|'saving'|'saved'|'error'>('idle')
   const [chatOpen,    setChatOpen]    = useState(false)
 
   const overallPct = getJobProgress(job)
   const phaseDone  = job.phases.filter(p => p.status === 'complete').length
   const phaseTotal = job.phases.length
+
+  // ── Explicit save ────────────────────────────────────────────────────────
+  async function handleManualSave() {
+    setSaveStatus('saving')
+    try {
+      const res = await fetch('/api/inspection/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job, userId: userEmail }),
+      })
+      const data = await res.json()
+      setSaveStatus(data.ok ? 'saved' : 'error')
+      setTimeout(() => setSaveStatus('idle'), 2500)
+    } catch {
+      setSaveStatus('error')
+      setTimeout(() => setSaveStatus('idle'), 2500)
+    }
+  }
 
   // If a phase is open, render that screen
   if (activePhase) {
@@ -236,6 +258,7 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail }
       <InspectionPhaseScreen
         job={job}
         phaseId={activePhase}
+        userRole={userRole}
         onUpdate={onUpdate}
         onBack={() => setActivePhase(null)}
       />
@@ -304,6 +327,23 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail }
           )}
         </div>
       </div>
+
+      {/* ── Save button ── */}
+      <button
+        onClick={handleManualSave}
+        style={{ position:'fixed', bottom:'max(env(safe-area-inset-bottom,0px),1.25rem)', left:'1.25rem', height:44, paddingLeft:'1rem', paddingRight:'1rem', borderRadius:22, background: saveStatus==='saved'?GREEN:saveStatus==='error'?'#E84545':saveStatus==='saving'?'rgba(65,124,164,0.8)':BLUE, border:'none', boxShadow:'0 2px 10px rgba(65,124,164,0.35)', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', zIndex:40, transition:'all 0.2s' }}>
+        {saveStatus === 'saving' ? (
+          <div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/>
+        ) : saveStatus === 'saved' ? (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5 6.5-7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9V11.5a0.5 0.5 0 000.5 0.5h9a0.5 0.5 0 000.5-0.5V9M7 2v7M4.5 5l2.5-3 2.5 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        )}
+        <span style={{ fontSize:'0.75rem', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>
+          {saveStatus==='saving'?'Saving…':saveStatus==='saved'?'Saved ✓':saveStatus==='error'?'Error':'Save'}
+        </span>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </button>
 
       {/* ── AI Chat button ── */}
       <button

@@ -9,13 +9,16 @@
 import { useState, useRef, useCallback } from 'react'
 import type { InspectionJob, InspectionPhase, InspectionModule, ModuleFinding, OverallCondition, DefectSeverity } from '@/lib/inspection-types'
 import { MODULE_META } from '@/lib/inspection-types'
+import ScanReadyScreen from './ScanReadyScreen'
+import type { UserRole } from './AuthScreen'
 
 interface Props {
-  job:    InspectionJob
-  phase:  InspectionPhase
-  module: InspectionModule
-  onSave: (m: InspectionModule, drawingsData?: InspectionJob['drawingsData']) => void
-  onBack: () => void
+  job:      InspectionJob
+  phase:    InspectionPhase
+  module:   InspectionModule
+  onSave:   (m: InspectionModule, drawingsData?: InspectionJob['drawingsData']) => void
+  onBack:   () => void
+  userRole?: UserRole
 }
 
 const NAVY   = '#0A1C2E'
@@ -43,7 +46,7 @@ const SEVERITIES: { value: DefectSeverity; label: string }[] = [
   { value:'critical', label:'Critical' },
 ]
 
-export default function InspectionModuleCapture({ job, phase, module, onSave, onBack }: Props) {
+export default function InspectionModuleCapture({ job, phase, module, onSave, onBack, userRole = 'diy' }: Props) {
   const meta     = MODULE_META[module.id]
   const fileRef  = useRef<HTMLInputElement>(null)
 
@@ -139,12 +142,48 @@ Reply ONLY with valid JSON:
     onSave(updated)
   }
 
-  // ── Built-in module card ─────────────────────────────────────────────────
+  // ── Built-in module: Stair Compliance — inline ScanReadyScreen ───────────
+  if (module.id === 'stair_compliance') {
+    return (
+      <ScanReadyScreen
+        userRole={userRole}
+        onBack={onBack}
+        onSuccess={(measurements) => {
+          // Save raw measurements as findings + mark complete
+          const finding: ModuleFinding = {
+            id:         `find-${Date.now()}`,
+            label:      'Stair Compliance Scan',
+            condition:  'typical' as any,
+            severity:   'none' as any,
+            notes:      Object.entries(measurements)
+                          .filter(([k]) => !k.startsWith('_'))
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join(' · '),
+            recommendation: undefined,
+            photos:     [],
+          }
+          const updated: InspectionModule = {
+            ...module,
+            status:     'complete',
+            findings:   [finding],
+            notes:      'Stair compliance scan completed via AI measurement.',
+            capturedAt: new Date().toISOString(),
+          }
+          onSave(updated)
+        }}
+      />
+    )
+  }
+
+  // ── Other built-in modules (foundation, accessibility) ────────────────────
   if (meta?.isBuiltIn) {
-    const scanLabels: Record<string, string> = {
-      stair_compliance:      'Launch Stair Compliance Scan',
-      foundation_inspection: 'Launch Foundation Scan',
-      accessibility:         'Launch Accessibility Scan',
+    const urls: Record<string, string> = {
+      foundation_inspection: '/?module=foundation',
+      accessibility:         '/?module=accessibility',
+    }
+    const labels: Record<string, string> = {
+      foundation_inspection: 'Launch Foundation AI Scan',
+      accessibility:         'Launch Accessibility AI Scan',
     }
     return (
       <div style={{ minHeight:'100dvh', background:'#F4F7FB', fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color:'#0D1E2E' }}>
@@ -155,15 +194,14 @@ Reply ONLY with valid JSON:
         </div>
         <div style={{ padding:'1.5rem 1.25rem' }}>
           <div style={{ background:'#fff', border:`1.5px solid rgba(65,124,164,0.3)`, borderRadius:14, padding:'1.5rem', display:'flex', flexDirection:'column', gap:'0.85rem' }}>
-            <div style={{ fontSize:'0.72rem', color:BLUE, fontWeight:600 }}>This module uses stAIrcode&apos;s guided AI scan.</div>
+            <div style={{ fontSize:'0.72rem', color:BLUE, fontWeight:600 }}>AI-guided scan module.</div>
             <p style={{ fontSize:'0.82rem', color:'#5E7D9B', lineHeight:1.65, margin:0 }}>{meta.description}</p>
-            <a
-              href={module.id === 'stair_compliance' ? '/?module=stair' : module.id === 'foundation_inspection' ? '/?module=foundation' : '/?module=accessibility'}
+            <a href={urls[module.id] ?? '/'}
               style={{ display:'block', padding:'0.9rem', background:`linear-gradient(135deg,${BLUE},#2C5A7A)`, borderRadius:10, color:'#fff', fontWeight:700, fontSize:'0.875rem', textDecoration:'none', textAlign:'center' }}>
-              {scanLabels[module.id] ?? 'Launch Scan'} →
+              {labels[module.id] ?? 'Launch Scan'} →
             </a>
             <div style={{ height:1, background:BORDER }}/>
-            <div style={{ fontSize:'0.7rem', color:'#9DB4C5' }}>Or mark this module manually:</div>
+            <div style={{ fontSize:'0.7rem', color:'#9DB4C5' }}>Or mark manually:</div>
             <div style={{ display:'flex', gap:'0.5rem' }}>
               <button onClick={() => handleSave('skipped')}
                 style={{ flex:1, padding:'0.7rem', background:'rgba(44,90,122,0.07)', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.78rem', fontWeight:600, color:'#5E7D9B', cursor:'pointer' }}>Skip</button>

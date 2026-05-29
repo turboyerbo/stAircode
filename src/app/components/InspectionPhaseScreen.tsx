@@ -15,11 +15,14 @@ import { PHASE_META, MODULE_META, getPhaseProgress } from '@/lib/inspection-type
 import InspectionModuleCapture from './InspectionModuleCapture'
 import DrawingsReviewModule    from './DrawingsReviewModule'
 
+import type { UserRole } from './AuthScreen'
+
 interface Props {
-  job:      InspectionJob
-  phaseId:  PhaseId
-  onUpdate: (job: InspectionJob) => void
-  onBack:   () => void
+  job:       InspectionJob
+  phaseId:   PhaseId
+  onUpdate:  (job: InspectionJob) => void
+  onBack:    () => void
+  userRole?: UserRole
 }
 
 // Modules that use the specialised DrawingsReviewModule instead of generic capture
@@ -90,8 +93,9 @@ function ModuleCard({ module, onClick }: { module: InspectionModule; onClick: ()
   )
 }
 
-export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack }: Props) {
+export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, userRole = 'diy' }: Props) {
   const [activeModule, setActiveModule] = useState<ModuleId | null>(null)
+  const [saveStatus,  setSaveStatus]  = useState<'idle'|'saving'|'saved'|'error'>('idle')
 
   const phase   = job.phases.find(p => p.id === phaseId)!
   const meta    = PHASE_META[phaseId]
@@ -117,6 +121,23 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack }
     onUpdate(newJob)
     try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(newJob)) } catch {}
     setActiveModule(null)
+  }
+
+  async function handleManualSave() {
+    setSaveStatus('saving')
+    try {
+      // Persist the job (including updated phases) to Supabase
+      const res = await fetch('/api/inspection/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job }),
+      })
+      const data = await res.json()
+      setSaveStatus(data.ok ? 'saved' : 'error')
+    } catch {
+      setSaveStatus('error')
+    }
+    setTimeout(() => setSaveStatus('idle'), 2500)
   }
 
   function markPhaseComplete() {
@@ -156,6 +177,7 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack }
         job={job}
         phase={phase}
         module={mod}
+        userRole={userRole}
         onSave={handleModuleUpdate}
         onBack={() => setActiveModule(null)}
       />
