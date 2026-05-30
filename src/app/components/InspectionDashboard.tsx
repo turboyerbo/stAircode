@@ -340,7 +340,7 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9V11.5a0.5 0.5 0 000.5 0.5h9a0.5 0.5 0 000.5-0.5V9M7 2v7M4.5 5l2.5-3 2.5 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         )}
         <span style={{ fontSize:'0.75rem', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>
-          {saveStatus==='saving'?'Saving…':saveStatus==='saved'?'Saved ✓':saveStatus==='error'?'Error':'Save'}
+          {saveStatus==='saving'?'Saving…':saveStatus==='saved'?'Saved':saveStatus==='error'?'Error':'Save'}
         </span>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </button>

@@ -17,14 +17,15 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createNewJob, BuildingType, WeatherCondition } from '@/lib/inspection-types'
-import type { InspectionJob, PropertyAddress } from '@/lib/inspection-types'
+import type { InspectionJob, PropertyAddress, ProjectType } from '@/lib/inspection-types'
 import { NavLogo } from './Logo'
 import PropertySiteScanScreen from './PropertySiteScanScreen'
 import type { PropertyScanResult } from './PropertySiteScanScreen'
 
 interface Props {
-  onJobCreated: (job: InspectionJob) => void
-  onBack:       () => void
+  onJobCreated:  (job: InspectionJob) => void
+  onBack:        () => void
+  projectType?:  ProjectType
 }
 
 const NAVY   = '#0A1C2E'
@@ -83,7 +84,7 @@ interface Suggestion {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function InspectionSetupScreen({ onJobCreated, onBack }: Props) {
+export default function InspectionSetupScreen({ onJobCreated, onBack, projectType = 'new_construction' }: Props) {
   // Step
   const [step, setStep] = useState<1|2|3>(1)
 
@@ -243,6 +244,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack }: Props) {
       lat: lat ?? undefined, lng: lon ?? undefined,
     }
     const job = createNewJob({
+      projectType,
       clientName: clientName.trim(), clientEmail: clientEmail.trim() || undefined,
       clientPhone: clientPhone.trim() || undefined,
       inspectorName: inspectorName.trim(), licenceNumber: licenceNumber.trim() || undefined,
@@ -291,7 +293,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack }: Props) {
             <div key={s.n} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem', cursor: s.n < step ? 'pointer' : 'default' }}
               onClick={() => { if (s.n < step) setStep(s.n as 1|2|3) }}>
               <div style={{ width:28, height:28, borderRadius:'50%', background:step===s.n?ORANGE:step>s.n?BLUE:'rgba(255,255,255,0.12)', border:`2px solid ${step===s.n?ORANGE:step>s.n?BLUE:'rgba(255,255,255,0.2)'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.72rem', fontWeight:700, color:step>=s.n?'#fff':'rgba(255,255,255,0.4)', transition:'all 0.2s' }}>
-                {step > s.n ? '✓' : s.n}
+                {step > s.n ? 'Done' : s.n}
               </div>
               <div style={{ fontSize:'0.6rem', color:step>=s.n?'rgba(255,255,255,0.7)':'rgba(255,255,255,0.3)' }}>{s.label}</div>
             </div>

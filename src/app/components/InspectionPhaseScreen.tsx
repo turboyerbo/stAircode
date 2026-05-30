@@ -87,7 +87,7 @@ function ModuleCard({ module, onClick }: { module: InspectionModule; onClick: ()
         {module.notes && done && <div style={{ fontSize:'0.65rem', color:'#7A96AF', marginTop:'0.2rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{module.notes}</div>}
       </div>
       <div style={{ color:'#9DB4C5', fontSize:'0.85rem', flexShrink:0 }}>
-        {done ? '✓' : skipped ? '–' : '›'}
+        {done ? 'Done' : skipped ? 'Skip' : '>'}
       </div>
     </button>
   )

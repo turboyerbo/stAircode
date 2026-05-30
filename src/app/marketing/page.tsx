@@ -253,15 +253,15 @@ export default function MarketingPage() {
               },
               {
                 n: '03', phase: 'Interior',
-                modules: ['Ceilings', 'Internal walls', 'Windows & doors', 'Floors', 'Stairs (AI Compliance Scan ✓)'],
+                modules: ['Ceilings', 'Internal walls', 'Windows & doors', 'Floors', 'Stairs (AI Compliance Scan)'],
               },
               {
                 n: '04', phase: 'Wet Areas',
-                modules: ['Kitchen', 'Laundry', 'Bathroom(s)', 'Ensuite', 'Toilet', 'Accessibility compliance (AI Scan ✓)'],
+                modules: ['Kitchen', 'Laundry', 'Bathroom(s)', 'Ensuite', 'Toilet', 'Accessibility compliance (AI Scan)'],
               },
               {
                 n: '05', phase: 'Exterior',
-                modules: ['External walls & cladding', 'External cracking', 'Windows & doors exterior', 'Foundation (AI Scan ✓)'],
+                modules: ['External walls & cladding', 'External cracking', 'Windows & doors exterior', 'Foundation (AI Scan)'],
               },
               {
                 n: '06', phase: 'Garage & Structures',
@@ -289,8 +289,8 @@ export default function MarketingPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                   {phase.modules.map(m => (
-                    <div key={m} style={{ fontSize: '0.78rem', color: m.includes('AI Scan ✓') ? '#417CA4' : m.includes('coming soon') ? '#9DB4C5' : '#5E7D9B', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: m.includes('AI Scan ✓') ? '#417CA4' : m.includes('coming soon') ? '#C8D8E4' : '#9DB4C5', flexShrink: 0 }} />
+                    <div key={m} style={{ fontSize: '0.78rem', color: m.includes('AI Scan') ? '#417CA4' : m.includes('coming soon') ? '#9DB4C5' : '#5E7D9B', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: m.includes('AI Scan') ? '#417CA4' : m.includes('coming soon') ? '#C8D8E4' : '#9DB4C5', flexShrink: 0 }} />
                       {m}
                     </div>
                   ))}

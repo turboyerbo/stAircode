@@ -1238,7 +1238,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
                       <div style={{ width:48, height:48, borderRadius:'50%', background:NAVY }}/>
                     </button>
                     <button onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); setCamActive(false) }}
-                      style={{ position:'absolute', top:'-2.5rem', right:'1rem', background:'rgba(0,0,0,0.5)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, color:'#fff', fontSize:'0.72rem', padding:'0.35rem 0.7rem', cursor:'pointer' }}>✕ Cancel</button>
+                      style={{ position:'absolute', top:'-2.5rem', right:'1rem', background:'rgba(0,0,0,0.5)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, color:'#fff', fontSize:'0.72rem', padding:'0.35rem 0.7rem', cursor:'pointer' }}>Cancel</button>
                   </div>
                 )}
               </div>
@@ -1344,7 +1344,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
                 </svg>
                 <div style={{ fontSize:'0.75rem', color:'#1A7A50', lineHeight:1.5 }}>
                   <strong>AI analysis complete</strong> — fields pre-filled below. Review and edit as needed.
-                  {aiFields.passesCode === false && <span style={{ color:RED, fontWeight:700 }}> ⚠ Possible code non-compliance detected.</span>}
+                  {aiFields.passesCode === false && <span style={{ color:RED, fontWeight:700 }}> Warning: Possible code non-compliance detected.</span>}
                   {aiFields.passesCode === true  && <span style={{ color:GREEN, fontWeight:700 }}> Appears code compliant.</span>}
                 </div>
               </div>
@@ -1456,7 +1456,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
           )}
           <button onClick={() => { setSaveStatus('saving'); handleSave('in_progress'); setTimeout(() => setSaveStatus('saved'), 600) }}
             style={{ flex:1, padding:'0.8rem', background: saveStatus==='saved'?GREEN:'rgba(65,124,164,0.1)', border:`1.5px solid ${saveStatus==='saved'?'rgba(39,169,107,0.4)':'rgba(65,124,164,0.25)'}`, borderRadius:10, fontSize:'0.78rem', fontWeight:700, color: saveStatus==='saved'?'#fff':BLUE, cursor:'pointer', transition:'all 0.2s' }}>
-            {saveStatus==='saved'?'Saved ✓':'Save Draft'}
+            {saveStatus==='saved'?'Saved':'Save Draft'}
           </button>
           <button onClick={() => handleSave('complete')}
             style={{ flex:2, padding:'0.8rem', background:`linear-gradient(135deg,${GREEN},#1A7A50)`, border:'none', borderRadius:10, fontSize:'0.82rem', fontWeight:700, color:'#fff', cursor:'pointer', boxShadow:'0 2px 8px rgba(39,169,107,0.35)' }}>

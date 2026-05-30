@@ -93,6 +93,8 @@ export type WallConstruction =
 export type WeatherCondition =
   | 'fine' | 'overcast' | 'light_rain' | 'heavy_rain' | 'windy' | 'other'
 
+export type ProjectType = 'new_construction' | 'renovation'
+
 export type InspectionJobStatus =
   | 'active'        // in progress
   | 'on_hold'       // awaiting inspector or materials
@@ -104,6 +106,9 @@ export interface InspectionJob {
   createdAt:   string
   updatedAt:   string
   status:      InspectionJobStatus
+
+  // Project classification
+  projectType: ProjectType     // 'new_construction' | 'renovation'
 
   // Client & inspector
   clientName:     string
@@ -460,6 +465,7 @@ export function createNewJob(partial: Partial<InspectionJob> = {}): InspectionJo
     createdAt:  now,
     updatedAt:  now,
     status:     'active',
+    projectType: 'new_construction',
     clientName:      '',
     inspectorName:   '',
     address: { street: '', city: '', province: 'Ontario', postalCode: '', country: 'Canada' },

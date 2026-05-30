@@ -24,6 +24,8 @@ import type { AccessibilityField }          from './components/AccessibilityRepo
 import InspectionSetupScreen                from './components/InspectionSetupScreen'
 import InspectionDashboard                  from './components/InspectionDashboard'
 import InspectionProjectList                from './components/InspectionProjectList'
+import ProjectTypeScreen                    from './components/ProjectTypeScreen'
+import type { ProjectType }                 from '@/lib/inspection-types'
 import type { InspectionJob }               from '@/lib/inspection-types'
 
 const C = {
@@ -32,7 +34,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
+type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -601,6 +603,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>('home')
   const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
+  const [projectType,setProjectType]=useState<ProjectType>('new_construction')
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
   const [foundationMeasurements, setFoundationMeasurements] = useState<FoundationMeasurements|null>(null)
   const [accessibilityMeasurements, setAccessibilityMeasurements] = useState<AccessibilityMeasurements|null>(null)
@@ -731,10 +734,12 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   // Full-screen flows (no bottom nav)
 
   // Inspection dashboard routing
+  if(screen==='inspection_type')
+    return <ProjectTypeScreen onSelect={t=>{setProjectType(t);setScreen('inspection_setup')}} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_projects')
-    return <InspectionProjectList userEmail={user.email??''} onBack={()=>setScreen('home')} onStartNew={()=>setScreen('inspection_setup')} onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}/>
+    return <InspectionProjectList userEmail={user.email??''} onBack={()=>setScreen('home')} onStartNew={()=>setScreen('inspection_type')} onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}/>
   if(screen==='inspection_setup')
-    return <InspectionSetupScreen onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('inspection_projects')}/>
+    return <InspectionSetupScreen projectType={projectType} onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('inspection_type')}/>
   if(screen==='inspection_dashboard'&&inspectionJob)
     return <InspectionDashboard job={inspectionJob} onUpdate={j=>{setInspectionJob(j);try{sessionStorage.setItem(`insp_${j.id}`,JSON.stringify(j))}catch{}}} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''} userRole={user.role}/>
 
