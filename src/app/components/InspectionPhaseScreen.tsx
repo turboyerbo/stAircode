@@ -14,6 +14,7 @@ import type { InspectionJob, PhaseId, ModuleId, InspectionModule } from '@/lib/i
 import { PHASE_META, MODULE_META, getPhaseProgress } from '@/lib/inspection-types'
 import InspectionModuleCapture from './InspectionModuleCapture'
 import DrawingsReviewModule    from './DrawingsReviewModule'
+import PhaseCompleteSummary   from './PhaseCompleteSummary'
 
 import type { UserRole } from './AuthScreen'
 
@@ -95,6 +96,7 @@ function ModuleCard({ module, onClick }: { module: InspectionModule; onClick: ()
 
 export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, userRole = 'diy' }: Props) {
   const [activeModule, setActiveModule] = useState<ModuleId | null>(null)
+  const [editMode,     setEditMode]     = useState(false)  // force edit mode on complete phase
   const [saveStatus,  setSaveStatus]  = useState<'idle'|'saving'|'saved'|'error'>('idle')
 
   const phase   = job.phases.find(p => p.id === phaseId)!
@@ -210,7 +212,7 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, 
           job={job}
           module={mod}
           onSave={handleModuleUpdate}
-          onBack={() => setActiveModule(null)}
+          onBack={() => { setActiveModule(null); /* stay in edit mode so user can edit other modules */ }}
         />
       )
     }
@@ -221,7 +223,23 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, 
         module={mod}
         userRole={userRole}
         onSave={handleModuleUpdate}
-        onBack={() => setActiveModule(null)}
+        onBack={() => { setActiveModule(null); /* stay in edit mode so user can edit other modules */ }}
+      />
+    )
+  }
+
+  // ── Completed phase — show summary view unless in edit mode ────────────────
+  if (phase.status === 'complete' && !editMode && !activeModule) {
+    return (
+      <PhaseCompleteSummary
+        job={job}
+        phase={phase}
+        onUpdate={onUpdate}
+        onBack={onBack}
+        onEditModule={(moduleId) => {
+          setEditMode(true)
+          setActiveModule(moduleId)
+        }}
       />
     )
   }
@@ -236,7 +254,9 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, 
       {/* ── Header ── */}
       <div style={{ background:NAVY, paddingTop:'max(env(safe-area-inset-top,0px),1rem)', paddingBottom:'1.25rem', paddingLeft:'1.25rem', paddingRight:'1.25rem' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.75rem' }}>
-          <button onClick={onBack} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>← Dashboard</button>
+          <button onClick={() => { if (editMode) { setEditMode(false); setActiveModule(null) } else onBack() }} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>
+            {editMode ? '← Summary' : '← Dashboard'}
+          </button>
           <div style={{ flex:1 }}/>
           <div style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.4)', padding:'0.18rem 0.55rem', border:'1px solid rgba(255,255,255,0.12)', borderRadius:5 }}>
             {meta.reportSection}

@@ -473,15 +473,18 @@ export default function Home(){
   const [isSigninFlow,    setIsSigninFlow]    = React.useState(false)
   // Store goto param for post-auth routing
   const [gotoProjects, setGotoProjects] = React.useState(false)
+  const [gotoProjectId, setGotoProjectId] = React.useState<string|null>(null)
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const signin  = params.get('signin') === '1'
     const payment = params.get('payment')
     const goto    = params.get('goto')
+    const project = params.get('project')
     const isPaymentReturn = payment === 'success' || payment === 'cancelled'
     setIsSigninFlow(signin || isPaymentReturn)
     if (goto === 'projects') setGotoProjects(true)
+    if (project) setGotoProjectId(project)
     setRedirectChecked(true)
     if (!signin && !isPaymentReturn && !user) {
       window.location.replace('/marketing')
@@ -518,7 +521,7 @@ export default function Home(){
     try{localStorage.setItem(legalKey,'1')}catch{}
     setLegalAgreed(true)
   }}/>
-  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined}/>
+  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined} initialProjectId={gotoProjectId}/>
 }
 
 // ── Legal Disclaimer Screen ───────────────────────────────────────────────────
@@ -612,7 +615,7 @@ function buildAccessibilityFields(m: AccessibilityMeasurements): AccessibilityFi
 }
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
-function AppShell({user,onLogout,onUpdateUser,initialScreen}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void;initialScreen?:Screen}){
+function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void;initialScreen?:Screen;initialProjectId?:string|null}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>(() => {
     // If user has inspection access and goto=projects was requested, start there
@@ -624,6 +627,24 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen}:{user:AppUser;onLog
     return 'home'
   })
   const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
+
+  // Auto-load specific project if opened via magic link (?project=JOB_ID)
+  React.useEffect(() => {
+    if (!initialProjectId) return
+    // Try sessionStorage first (instant)
+    try {
+      const raw = sessionStorage.getItem(`insp_${initialProjectId}`)
+      if (raw) { const j = JSON.parse(raw); setInspectionJob(j); setScreen('inspection_dashboard'); return }
+    } catch {}
+    // Fall back to server
+    fetch(`/api/inspection/load?id=${initialProjectId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.ok && data.job) { setInspectionJob(data.job); setScreen('inspection_dashboard') }
+        else setScreen('inspection_projects') // fallback to list
+      })
+      .catch(() => setScreen('inspection_projects'))
+  }, [initialProjectId]) // eslint-disable-line
   const [projectType,setProjectType]=useState<ProjectType>('new_construction')
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
   const [foundationMeasurements, setFoundationMeasurements] = useState<FoundationMeasurements|null>(null)
@@ -758,8 +779,17 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen}:{user:AppUser;onLog
   // Check if user has beta access or subscription
   function hasInspectionAccess(): boolean {
     if (user.membership === 'pro' || user.membership === 'subscription') return true
+    // Check all storage locations — betacode67 grants full session access
     try { if (localStorage.getItem('sc_beta_access') === '1') return true } catch {}
     try { if (sessionStorage.getItem('sc_beta_access') === '1') return true } catch {}
+    // Also check stored user object for membership
+    try {
+      const stored = localStorage.getItem('sc_user')
+      if (stored) {
+        const u = JSON.parse(stored)
+        if (u?.membership === 'subscription' || u?.membership === 'pro') return true
+      }
+    } catch {}
     return false
   }
 
@@ -793,6 +823,19 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen}:{user:AppUser;onLog
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job: stubJob, userId: user.email }),
       }).catch(() => {})
+      // Send project magic link email so user can return directly without re-signing-in
+      if (user.email) {
+        fetch('/api/inspection/magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email:         user.email,
+            jobId:         stubJob.id,
+            address:       '(new project)',
+            inspectorName: user.name || 'Inspector',
+          }),
+        }).catch(() => {})
+      }
       setScreen('inspection_setup')
     }} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_projects')
@@ -812,12 +855,24 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen}:{user:AppUser;onLog
       existingJobId={inspectionJob?.id}
       onJobCreated={job=>{
         setInspectionJob(job)
-        // Save immediately to Supabase
+        // Save + send updated magic link with real address
         fetch('/api/inspection/save', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({job, userId:user.email}),
         }).catch(()=>{})
+        if (user.email && job.address?.street) {
+          fetch('/api/inspection/magic-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email:         user.email,
+              jobId:         job.id,
+              address:       `${job.address.street}, ${job.address.city}`,
+              inspectorName: job.inspectorName || user.name || 'Inspector',
+            }),
+          }).catch(()=>{})
+        }
         setScreen('inspection_dashboard')
       }}
       onBack={()=>setScreen('inspection_type')}
