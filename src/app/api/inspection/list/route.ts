@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     .limit(50)
 
   if (userId) query = query.eq('user_id', userId)
-  else if (email) query = query.eq('inspector_email', email)
+  else if (email) query = query.or(`user_id.eq.${email},inspector_email.eq.${email}`)
 
   const { data, error } = await query
 

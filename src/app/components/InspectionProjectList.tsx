@@ -69,13 +69,39 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
 
   const loadJobs = useCallback(async () => {
     setLoading(true); setError(null)
+
+    // Always load sessionStorage jobs first for instant display
+    const sessionJobs: SummaryRow[] = []
+    try {
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key?.startsWith('insp_')) {
+          const j = JSON.parse(sessionStorage.getItem(key) ?? '')
+          if (j?.id) sessionJobs.push({
+            id: j.id, client_name: j.clientName ?? '',
+            address_street: j.address?.street ?? '', address_city: j.address?.city ?? '',
+            address_province: j.address?.province ?? '', building_type: j.buildingType ?? '',
+            status: j.status ?? 'active', phase_progress: 0, active_phase: null,
+            inspection_date: j.inspectionDate ?? '', updated_at: j.updatedAt ?? j.createdAt ?? '',
+            permit_number: j.permitNumber ?? null,
+          })
+        }
+      }
+    } catch {}
+    if (sessionJobs.length) setJobs(sessionJobs)
+
     try {
       const res  = await fetch(`/api/inspection/list?email=${encodeURIComponent(userEmail)}`)
       const data = await res.json()
-      if (data.ok) setJobs(data.jobs ?? [])
-      else setError(data.error ?? 'Could not load projects')
+      if (data.ok) {
+        const serverJobs = data.jobs ?? []
+        // Merge: server rows take priority, then add any session-only jobs not yet synced
+        const serverIds = new Set(serverJobs.map((j: SummaryRow) => j.id))
+        const localOnly = sessionJobs.filter(j => !serverIds.has(j.id))
+        setJobs([...serverJobs, ...localOnly])
+      }
     } catch {
-      // Fall back to sessionStorage jobs
+      // Fall back to sessionStorage jobs already set above
       const localJobs: SummaryRow[] = []
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i)
