@@ -22,6 +22,23 @@ export default function MarketingPage() {
   const [betaError, setBetaError] = useState<string|null>(null)
   const [betaChecking, setBetaChecking] = useState(false)
 
+  // Smart sign-in: if user already has a session + access, go straight to projects
+  function handleSignIn(e?: React.MouseEvent) {
+    e?.preventDefault()
+    try {
+      const stored = localStorage.getItem('sc_user')
+      const betaOk = localStorage.getItem('sc_beta_access') === '1'
+      if (stored) {
+        const u = JSON.parse(stored)
+        if (u?.email && (betaOk || u.membership === 'subscription' || u.membership === 'pro')) {
+          window.location.href = '/?signin=1&goto=projects'
+          return
+        }
+      }
+    } catch {}
+    window.location.href = '/?signin=1'
+  }
+
   async function handleBetaCode() {
     if (!betaCode.trim()) return
     setBetaChecking(true); setBetaError(null)
@@ -133,8 +150,8 @@ export default function MarketingPage() {
           <nav className={styles.desktopNav} style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>{navLinks.slice(0, 5).map(l => (
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
-            <a href="/?signin=1" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
-            <a href="/?signin=1" className={styles.navCta}>Get a compliance report →</a>
+            <a onClick={handleSignIn} href="#" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
+            <a onClick={handleSignIn} href="#" className={styles.navCta}>Get a compliance report →</a>
           </nav>
 
           {/* Hamburger */}
@@ -161,7 +178,7 @@ export default function MarketingPage() {
                 style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 500, color: 'rgba(255,255,255,0.85)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
               >{l.label}</a>
             ))}
-            <a href="/?signin=1" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>Get a compliance report →
+            <a onClick={handleSignIn} href="#" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>Get a compliance report →
             </a>
           </div>
         )}
@@ -177,7 +194,7 @@ export default function MarketingPage() {
             <p style={{ fontSize: '1rem', lineHeight: 1.75, color: '#3A5A78', maxWidth: 520, marginBottom: '2rem' }}>AI vision. Live code analysis. Photo records. Phased guided inspections. One comprehensive building compliance report — from any phone.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-              <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '0.95rem', padding: '12px 24px' }}>Try Free Demo — Stair Scan →</a>
+              <a onClick={handleSignIn} href="#" className={styles.navCta} style={{ fontSize: '0.95rem', padding: '12px 24px' }}>Try Free Demo — Stair Scan →</a>
               <button onClick={() => setShowSubscribeModal(true)} style={{ fontSize: '0.95rem', padding: '12px 24px', background: '#0A1C2E', color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(10,28,46,0.18)' }}>Full Inspection — Subscribe</button>
             </div>
             <p style={{ fontSize: '0.72rem', color: '#9DB4C5', marginTop: '0.85rem', lineHeight: 1.5 }}>Stair scan is free · Full inspection requires monthly subscription · Beta code available</p>
@@ -224,7 +241,7 @@ export default function MarketingPage() {
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
-            <a href="/?signin=1" style={{ padding: '0.75rem 1.75rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600 }}>Try Free Stair Demo</a>
+            <a onClick={handleSignIn} href="#" style={{ padding: '0.75rem 1.75rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: '#fff', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 600 }}>Try Free Stair Demo</a>
             <button onClick={() => setShowSubscribeModal(true)} style={{ padding: '0.75rem 1.75rem', background: '#F29337', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>Get Full Inspection Access →</button>
           </div>
         </div>
@@ -304,7 +321,7 @@ export default function MarketingPage() {
               <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0A1C2E', marginBottom: '0.25rem' }}>Free Demo: Stair Compliance Scan</div>
               <div style={{ fontSize: '0.82rem', color: '#5E7D9B' }}>Try AI-vision stair measurement free — no account required. Includes pass/fail vs local building code.</div>
             </div>
-            <a href="/?signin=1" style={{ padding: '0.75rem 1.5rem', background: '#0A1C2E', color: '#fff', borderRadius: 9, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>Try Free Demo →</a>
+            <a onClick={handleSignIn} href="#" style={{ padding: '0.75rem 1.5rem', background: '#0A1C2E', color: '#fff', borderRadius: 9, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>Try Free Demo →</a>
           </div>
         </div>
       </section>
@@ -399,7 +416,7 @@ export default function MarketingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/?signin=1" style={{ display: 'block', textAlign: 'center', padding: '0.85rem', background: '#0A1C2E', color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none', marginTop: 'auto' }}>
+              <a onClick={handleSignIn} href="#" style={{ display: 'block', textAlign: 'center', padding: '0.85rem', background: '#0A1C2E', color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none', marginTop: 'auto' }}>
                 Try Stair Demo Free →
               </a>
             </div>
@@ -486,7 +503,7 @@ export default function MarketingPage() {
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.65, marginBottom: '2rem' }}>Scan for free in under 5 minutes. No app download. No tape measure.<br />
             Just your phone and the building element in question.
           </p>
-          <a href="/?signin=1" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
+          <a onClick={handleSignIn} href="#" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
           </a>
           <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>Compliance aid tool. Always confirm with a licensed inspector or authority having jurisdiction before renovation or occupancy decisions.
           </p>

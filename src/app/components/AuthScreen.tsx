@@ -322,7 +322,10 @@ export default function AuthScreen({ onAuth }: Props) {
       <div style={{ textAlign: 'center', margin: '1.6rem 0 1.2rem' }}><div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#F29337', color: '#fff', fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.04em', padding: '0.2rem 0.65rem', borderRadius: 20, marginBottom: '0.6rem' }}>BETA</div>
         <div style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>st<span style={{ color: C.orange }}>AI</span>rcode
         </div>
-        <div style={{ fontSize: '0.8rem', color: 'rgba(28,64,88,0.5)', marginTop: '0.35rem' }}>Sign in to check your stairs
+        <div style={{ fontSize: '0.8rem', color: 'rgba(28,64,88,0.5)', marginTop: '0.35rem' }}>
+          {(()=>{ try{ return localStorage.getItem('sc_beta_access')==='1' || JSON.parse(localStorage.getItem('sc_user')||'{}')?.membership === 'subscription' }catch{return false}})()
+            ? 'Welcome back — signing you in'
+            : 'Sign in to access your inspections'}
         </div>
       </div>
 

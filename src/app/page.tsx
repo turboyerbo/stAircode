@@ -420,6 +420,11 @@ export default function Home(){
     try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}
     identifyUser(u.email, { provider: u.provider, membership: u.membership })
     Analytics.userSignedIn(u.provider === 'otp' ? 'otp' : u.provider)
+    // If user has beta/subscription access, route straight to projects
+    const hasBeta = (()=>{ try{ return localStorage.getItem('sc_beta_access')==='1'}catch{return false}})()
+    if (hasBeta || u.membership === 'subscription' || u.membership === 'pro') {
+      setGotoProjects(true)
+    }
   }
 
   // Handle Stripe payment return (?payment=success&product=report|pro|subscription)
@@ -466,16 +471,19 @@ export default function Home(){
   // We use a state+useEffect pattern to avoid SSR/hydration mismatch.
   const [redirectChecked, setRedirectChecked] = React.useState(false)
   const [isSigninFlow,    setIsSigninFlow]    = React.useState(false)
+  // Store goto param for post-auth routing
+  const [gotoProjects, setGotoProjects] = React.useState(false)
+
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const signin = params.get('signin') === '1'
+    const signin  = params.get('signin') === '1'
     const payment = params.get('payment')
-    // Never redirect away if returning from Stripe payment
+    const goto    = params.get('goto')
     const isPaymentReturn = payment === 'success' || payment === 'cancelled'
     setIsSigninFlow(signin || isPaymentReturn)
+    if (goto === 'projects') setGotoProjects(true)
     setRedirectChecked(true)
     if (!signin && !isPaymentReturn && !user) {
-      // Hard redirect to marketing — no flicker, no hydration issue
       window.location.replace('/marketing')
     }
   }, []) // eslint-disable-line
@@ -510,7 +518,7 @@ export default function Home(){
     try{localStorage.setItem(legalKey,'1')}catch{}
     setLegalAgreed(true)
   }}/>
-  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser}/>
+  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined}/>
 }
 
 // ── Legal Disclaimer Screen ───────────────────────────────────────────────────
@@ -604,9 +612,17 @@ function buildAccessibilityFields(m: AccessibilityMeasurements): AccessibilityFi
 }
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
-function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void}){
+function AppShell({user,onLogout,onUpdateUser,initialScreen}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void;initialScreen?:Screen}){
   const [tab,setTab]=useState<Tab>('home')
-  const [screen,setScreen]=useState<Screen>('home')
+  const [screen,setScreen]=useState<Screen>(() => {
+    // If user has inspection access and goto=projects was requested, start there
+    if (initialScreen) return initialScreen
+    // If subscribed user, check localStorage for beta access and start at projects
+    if (user.membership === 'subscription' || user.membership === 'pro') {
+      try { if (localStorage.getItem('sc_beta_access') === '1') return 'inspection_projects' } catch {}
+    }
+    return 'home'
+  })
   const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
   const [projectType,setProjectType]=useState<ProjectType>('new_construction')
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
