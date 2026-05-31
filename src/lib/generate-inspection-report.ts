@@ -442,6 +442,83 @@ async function buildSummaryPage(
 }
 
 // ── Phase section ─────────────────────────────────────────────────────────────
+// ── PageWriter — tracks current page; auto-creates continuation pages ────────
+interface PageWriter {
+  doc:   PDFDocument
+  page:  PDFPage
+  y:     number
+  sectionTitle: string
+  sectionColor: RGB
+  fonts: Record<string, PDFFont>
+  job:   InspectionJob
+}
+
+function newWriter(
+  doc: PDFDocument, sectionTitle: string, sectionColor: RGB,
+  fonts: Record<string, PDFFont>, job: InspectionJob
+): PageWriter {
+  const page = doc.addPage([PW, PH])
+  let y = PH - MT
+  y = _sectionHeader(page, sectionTitle.toUpperCase(), sectionColor, fonts)
+  y -= 8
+  page.drawText(`${job.address.street}, ${job.address.city}, ${job.address.province}`, { x: ML, y, font: fonts.reg, size: 9, color: C.midgrey })
+  page.drawText(formatDate(job.inspectionDate), { x: PW - MR - 100, y, font: fonts.reg, size: 9, color: C.midgrey })
+  y -= 20
+  return { doc, page, y, sectionTitle, sectionColor, fonts, job }
+}
+
+// Ensure there is at least `needed` pts of space; add a new page if not
+function ensureSpace(w: PageWriter, needed: number): PageWriter {
+  if (w.y >= MB + needed) return w
+  const page = w.doc.addPage([PW, PH])
+  let y = PH - MT
+  y = _sectionHeader(page, w.sectionTitle.toUpperCase(), w.sectionColor, w.fonts)
+  y -= 8
+  page.drawText(`${w.job.address.street}, ${w.job.address.city}, ${w.job.address.province}`, { x: ML, y, font: w.fonts.reg, size: 9, color: C.midgrey })
+  page.drawText(formatDate(w.job.inspectionDate), { x: PW - MR - 100, y, font: w.fonts.reg, size: 9, color: C.midgrey })
+  y -= 20
+  return { ...w, page, y }
+}
+
+function _sectionHeader(page: PDFPage, title: string, color: RGB, fonts: Record<string, PDFFont>): number {
+  drawRect(page, ML - 5, PH - MT - 22, TW + 10, 26, color)
+  page.drawText(title, { x: ML, y: PH - MT - 16, font: fonts.bold, size: 12, color: C.white })
+  return PH - MT - 32
+}
+
+function wSectionHeader(w: PageWriter, title: string): PageWriter {
+  drawRect(w.page, ML - 5, w.y - 22, TW + 10, 26, w.sectionColor)
+  w.page.drawText(title, { x: ML, y: w.y - 16, font: w.fonts.bold, size: 12, color: C.white })
+  return { ...w, y: w.y - 32 }
+}
+
+function wSubHeader(w: PageWriter, title: string): PageWriter {
+  const c = w.sectionColor
+  const dim = rgb(c.red*0.85, c.green*0.85, c.blue*0.85)
+  drawRect(w.page, ML - 5, w.y - 18, TW + 10, 22, dim)
+  w.page.drawText(title, { x: ML, y: w.y - 13, font: w.fonts.bold, size: 10, color: C.white })
+  return { ...w, y: w.y - 26 }
+}
+
+function wText(w: PageWriter, text: string, x: number, font: PDFFont, size: number, color: RGB): PageWriter {
+  if (!text) return w
+  w.page.drawText(text, { x, y: w.y, font, size, color })
+  return w
+}
+
+function wWrapped(w: PageWriter, text: string, x: number, font: PDFFont, size: number, color: RGB, maxWidth: number, lineH: number): PageWriter {
+  if (!text) return w
+  const lines = wrapText(text, font, size, maxWidth)
+  let cur = w
+  for (const line of lines) {
+    cur = ensureSpace(cur, lineH + MB)
+    cur.page.drawText(line, { x, y: cur.y, font, size, color })
+    cur = { ...cur, y: cur.y - lineH }
+  }
+  return cur
+}
+
+// ── buildPhaseSection using PageWriter ────────────────────────────────────────
 async function buildPhaseSection(
   pdfDoc: PDFDocument,
   job: InspectionJob,
@@ -452,46 +529,35 @@ async function buildPhaseSection(
   if (!meta) return
 
   const sectionColor = SECTION_COLORS[phase.id] ?? C.navy
-  const page = pdfDoc.addPage([PW, PH])
+  let w = newWriter(pdfDoc, meta.reportSection, sectionColor, fonts, job)
   const { bold, reg, obl } = fonts
 
-  let y = PH - MT
-
-  // Section header bar
-  y = drawSectionHeader(page, meta.reportSection.toUpperCase(), sectionColor, y, fonts)
-  y -= 8
-
-  // Address line
-  page.drawText(`${job.address.street}, ${job.address.city}, ${job.address.province}`, { x: ML, y, font: reg, size: 9, color: C.midgrey })
-  page.drawText(formatDate(job.inspectionDate), { x: PW - MR - 100, y, font: reg, size: 9, color: C.midgrey })
-  y -= 20
-
-  // ── Descriptions block ────────────────────────────────────────────────────
+  // ── Descriptions ──────────────────────────────────────────────────────────
   const descriptions = buildDescriptions(job, phase)
   if (descriptions.length > 0) {
-    y = drawSubHeader(page, 'Descriptions', sectionColor, y, fonts)
-    y -= 6
+    w = ensureSpace(w, 40)
+    w = wSubHeader(w, 'Descriptions')
+    w = { ...w, y: w.y - 6 }
 
     for (const desc of descriptions) {
-      if (y < MB + 30) {
-        y = addContinuationPage(pdfDoc, meta.reportSection.toUpperCase(), sectionColor, fonts, job)
-      }
-      page.drawText(desc.label + ': ', { x: ML, y, font: bold, size: 9, color: C.text })
+      w = ensureSpace(w, 20)
+      w.page.drawText(desc.label + ': ', { x: ML, y: w.y, font: bold, size: 9, color: C.text })
       const lw = bold.widthOfTextAtSize(desc.label + ': ', 9)
-      page.drawText(desc.value, { x: ML + lw, y, font: reg, size: 9, color: sectionColor })
-      y -= 13
+      w.page.drawText(desc.value, { x: ML + lw, y: w.y, font: reg, size: 9, color: sectionColor })
+      w = { ...w, y: w.y - 13 }
     }
-    y -= 8
+    w = { ...w, y: w.y - 8 }
   }
 
   // ── Observations & Recommendations ───────────────────────────────────────
   const completedModules = phase.modules.filter(m =>
-    (m.status === 'complete') && (m.findings.length > 0 || m.notes)
+    m.status === 'complete' && (m.findings.length > 0 || m.notes)
   )
 
   if (completedModules.length > 0) {
-    y = drawSubHeader(page, 'Observations & Recommendations', sectionColor, y, fonts)
-    y -= 8
+    w = ensureSpace(w, 40)
+    w = wSubHeader(w, 'Observations & Recommendations')
+    w = { ...w, y: w.y - 8 }
 
     let photoNum = 1
 
@@ -500,119 +566,135 @@ async function buildPhaseSection(
       if (!modMeta) continue
 
       for (const finding of mod.findings) {
-        if (y < MB + 100) {
-          y = addContinuationPage(pdfDoc, meta.reportSection.toUpperCase(), sectionColor, fonts, job)
-          y -= 20
-        }
+        w = ensureSpace(w, 80)
 
-        // Module name as header
-        const modLabel = modMeta.label + (finding.label !== modMeta.label ? ` \\ ${finding.label}` : '')
-        page.drawText(modLabel, { x: ML, y, font: bold, size: 10, color: C.navy })
+        // Module name underlined
+        const modLabel = modMeta.label + (finding.label && finding.label !== modMeta.label ? ` \\ ${finding.label}` : '')
+        w.page.drawText(modLabel, { x: ML, y: w.y, font: bold, size: 10, color: C.navy })
         const mw = bold.widthOfTextAtSize(modLabel, 10)
-        drawRect(page, ML, y - 1, mw, 0.5, C.navy)
-        y -= 14
+        drawRect(w.page, ML, w.y - 1, mw, 0.5, C.navy)
+        w = { ...w, y: w.y - 14 }
 
-        // Condition pill
+        // Condition
         const condColor = conditionColor(finding.condition as string)
         const condText  = formatCondition(finding.condition as string)
-        page.drawCircle({ x: ML + 5, y: y - 1, size: 4, color: condColor })
-        page.drawText('Condition: ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-        page.drawText(condText, { x: ML + 14 + bold.widthOfTextAtSize('Condition: ', 9), y, font: reg, size: 9, color: condColor })
-        y -= 12
+        w = ensureSpace(w, 16)
+        w.page.drawCircle({ x: ML + 5, y: w.y - 1, size: 4, color: condColor })
+        w.page.drawText('Condition: ', { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
+        w.page.drawText(condText, { x: ML + 14 + bold.widthOfTextAtSize('Condition: ', 9), y: w.y, font: reg, size: 9, color: condColor })
+        w = { ...w, y: w.y - 12 }
 
         // Observations
         if (finding.notes) {
-          y = drawWrapped(page, finding.notes, ML + 14, y, reg, 9, C.text, TW - 14, 12)
+          w = wWrapped(w, finding.notes, ML + 14, reg, 9, C.text, TW - 14, 12)
         }
 
-        // Recommendation → Implication(s)
+        // Implication(s)
         if (finding.recommendation) {
-          page.drawText('Implication(s): ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-          const impW = bold.widthOfTextAtSize('Implication(s): ', 9)
-          y = drawWrapped(page, finding.recommendation, ML + 14 + impW, y, reg, 9, C.text, TW - 14 - impW, 12)
+          w = ensureSpace(w, 16)
+          const label = 'Implication(s): '
+          const lw2 = bold.widthOfTextAtSize(label, 9)
+          w.page.drawText(label, { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
+          w = wWrapped({ ...w, y: w.y }, finding.recommendation, ML + 14 + lw2, reg, 9, C.text, TW - 14 - lw2, 12)
         }
 
         // Code reference
-        if (finding.codeRef || modMeta.codeRef) {
-          const cr = finding.codeRef || modMeta.codeRef || ''
-          page.drawText('Code reference: ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-          page.drawText(cr, { x: ML + 14 + bold.widthOfTextAtSize('Code reference: ', 9), y, font: obl, size: 9, color: C.blue })
-          y -= 12
+        const cr = finding.codeRef || modMeta.codeRef
+        if (cr) {
+          w = ensureSpace(w, 14)
+          const label = 'Code reference: '
+          w.page.drawText(label, { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
+          w.page.drawText(cr, { x: ML + 14 + bold.widthOfTextAtSize(label, 9), y: w.y, font: obl, size: 9, color: C.blue })
+          w = { ...w, y: w.y - 12 }
         }
 
-        // Severity as Task
+        // Task
         if (finding.severity && finding.severity !== 'none') {
           const sev = finding.severity
-          const taskStr = sev === 'critical' ? 'URGENT — Address immediately' :
-                          sev === 'major'    ? 'Repair or replace' :
-                          sev === 'moderate' ? 'Monitor and repair when possible' : 'Improve'
-          page.drawText('Task: ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-          page.drawText(taskStr, { x: ML + 14 + bold.widthOfTextAtSize('Task: ', 9), y, font: reg, size: 9, color: severityColor(sev) })
-          y -= 14
+          const taskStr = sev === 'critical' ? 'URGENT — Address immediately'
+                        : sev === 'major'    ? 'Repair or replace'
+                        : sev === 'moderate' ? 'Monitor and repair when possible'
+                        : 'Improve'
+          w = ensureSpace(w, 14)
+          const label = 'Task: '
+          w.page.drawText(label, { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
+          w.page.drawText(taskStr, { x: ML + 14 + bold.widthOfTextAtSize(label, 9), y: w.y, font: reg, size: 9, color: severityColor(sev) })
+          w = { ...w, y: w.y - 14 }
         }
 
-        // Photos for this finding
-        const photos = [...(finding.photos || []), ...(mod.photos || [])].filter(Boolean).slice(0, 2)
-        for (const photoB64 of photos) {
-          if (y < MB + 120) {
-            y = addContinuationPage(pdfDoc, meta.reportSection.toUpperCase(), sectionColor, fonts, job)
-            y -= 20
+        // Photos — 2 side by side when possible
+        const photos = [...(finding.photos || []), ...(mod.photos || [])].filter(Boolean).slice(0, 4)
+        if (photos.length > 0) {
+          w = ensureSpace(w, 160)
+          const imgW = Math.min(220, TW / Math.min(photos.length, 2) - 10)
+          let imgX = ML
+          let rowH = 0
+          let rowCount = 0
+
+          for (const photoB64 of photos) {
+            try {
+              const imgBytes = Buffer.from(photoB64, 'base64')
+              const img = photoB64.startsWith('/9j/')
+                ? await pdfDoc.embedJpg(imgBytes)
+                : await pdfDoc.embedPng(imgBytes)
+              const maxH = 140
+              const scale = Math.min(imgW / img.width, maxH / img.height)
+              const iw = img.width * scale
+              const ih = img.height * scale
+
+              if (rowCount > 0 && rowCount % 2 === 0) {
+                // Move to next row
+                w = { ...w, y: w.y - rowH - 18 }
+                w = ensureSpace(w, ih + 20)
+                imgX = ML; rowH = 0
+              }
+
+              w.page.drawImage(img, { x: imgX, y: w.y - ih, width: iw, height: ih })
+              w.page.drawText(`${photoNum}. ${finding.label || modMeta.label}`, {
+                x: imgX, y: w.y - ih - 12, font: obl, size: 8, color: C.text,
+              })
+              rowH = Math.max(rowH, ih)
+              imgX += iw + 12
+              photoNum++
+              rowCount++
+            } catch { /* skip bad image */ }
           }
-          try {
-            const imgBytes = Buffer.from(photoB64, 'base64')
-            const img = photoB64.startsWith('/9j/') || photoB64.startsWith('data:image/jpeg')
-              ? await pdfDoc.embedJpg(imgBytes)
-              : await pdfDoc.embedPng(imgBytes)
-            const maxW = 200, maxH = 150
-            const scale = Math.min(maxW / img.width, maxH / img.height)
-            const iw = img.width * scale, ih = img.height * scale
-            const imgX = ML + (TW/2 - iw) / 2  // center in left half
-            page.drawImage(img, { x: imgX, y: y - ih, width: iw, height: ih })
-            // Caption
-            page.drawText(`${photoNum}. ${finding.label || 'Photo'}`, { x: imgX, y: y - ih - 12, font: obl, size: 8, color: C.text })
-            y -= ih + 22
-            photoNum++
-          } catch { /* skip invalid images */ }
+          if (rowH > 0) w = { ...w, y: w.y - rowH - 18 }
         }
 
-        y -= 10
-        drawRect(page, ML, y + 5, TW, 0.3, C.lightgrey)
+        // Divider
+        w = ensureSpace(w, 12)
+        drawRect(w.page, ML, w.y + 2, TW, 0.3, C.lightgrey)
+        w = { ...w, y: w.y - 10 }
       }
 
-      // Module notes (inspector notes)
-      if (mod.notes && !mod.findings.length) {
-        if (y < MB + 50) {
-          y = addContinuationPage(pdfDoc, meta.reportSection.toUpperCase(), sectionColor, fonts, job)
-          y -= 20
-        }
-        page.drawText(modMeta.label, { x: ML, y, font: bold, size: 10, color: C.navy })
-        y -= 14
-        y = drawWrapped(page, mod.notes, ML + 14, y, reg, 9, C.text, TW - 14, 12)
-        y -= 8
+      // Module notes (no findings)
+      if (mod.notes && mod.findings.length === 0) {
+        w = ensureSpace(w, 50)
+        w.page.drawText(modMeta.label, { x: ML, y: w.y, font: bold, size: 10, color: C.navy })
+        w = { ...w, y: w.y - 14 }
+        w = wWrapped(w, mod.notes, ML + 14, reg, 9, C.text, TW - 14, 12)
+        w = { ...w, y: w.y - 8 }
       }
     }
   }
 
   // ── Inspection Methods & Limitations ─────────────────────────────────────
-  if (phase.phaseNotes || phase.holdPoint) {
-    if (y < MB + 60) {
-      y = addContinuationPage(pdfDoc, meta.reportSection.toUpperCase(), sectionColor, fonts, job)
-      y -= 20
-    }
-    y = drawSubHeader(page, 'Inspection Methods & Limitations', sectionColor, y, fonts)
-    y -= 8
+  const hasLimitations = !!(phase.phaseNotes || phase.holdPoint || meta.obcRef)
+  if (hasLimitations) {
+    w = ensureSpace(w, 60)
+    w = wSubHeader(w, 'Inspection Methods & Limitations')
+    w = { ...w, y: w.y - 8 }
 
-    if (phase.holdPoint) {
-      const holdText = `OBC Hold Point: ${meta.obcRef || 'Inspector sign-off required before proceeding to next phase.'}`
-      y = drawWrapped(page, holdText, ML, y, reg, 9, C.text, TW, 12)
+    if (meta.obcRef || phase.holdPoint) {
+      const holdText = `OBC Hold Point: ${meta.obcRef || 'Inspector sign-off required before proceeding.'}`
+      w = wWrapped(w, holdText, ML, reg, 9, C.text, TW, 12)
     }
-
     if (phase.phaseNotes) {
-      y = drawWrapped(page, phase.phaseNotes, ML, y, reg, 9, C.text, TW, 12)
+      w = wWrapped(w, phase.phaseNotes, ML, reg, 9, C.text, TW, 12)
     }
-
     if (phase.status === 'skipped') {
-      y = drawWrapped(page, 'This phase was not fully inspected or was noted as not applicable.', ML, y, reg, 9, C.midgrey, TW, 12)
+      w = wWrapped(w, 'This phase was not fully inspected or is not applicable.', ML, reg, 9, C.midgrey, TW, 12)
     }
   }
 }

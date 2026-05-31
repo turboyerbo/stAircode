@@ -15,6 +15,30 @@ import { useState, useCallback } from 'react'
 import type { InspectionJob, PhaseId } from '@/lib/inspection-types'
 import { PHASE_META, getPhaseProgress } from '@/lib/inspection-types'
 
+// Strip photos and phase PDFs from job before sending over the wire.
+// Photos are already embedded in phase PDFs; sending them again doubles payload size.
+// Phase PDFs are sent as a separate phasePdfs map in the collate call.
+function stripJobForTransport(job: InspectionJob, keepPhaseId?: string): Omit<InspectionJob, 'drawingsData'> & { drawingsData?: undefined } {
+  return {
+    ...job,
+    drawingsData: undefined,          // drawing pages can be 2-5MB alone
+    phases: job.phases.map(phase => ({
+      ...phase,
+      reportPdfB64:      undefined,   // sent separately in phasePdfs map
+      reportGeneratedAt: phase.reportGeneratedAt,
+      modules: phase.modules.map(mod => ({
+        ...mod,
+        // Keep photos only for the phase we're currently generating
+        photos:   phase.id === keepPhaseId ? (mod.photos  || []).slice(0, 2) : [],
+        findings: mod.findings.map(f => ({
+          ...f,
+          photos: phase.id === keepPhaseId ? (f.photos || []).slice(0, 2) : [],
+        })),
+      })),
+    })),
+  } as any
+}
+
 interface Props {
   job:      InspectionJob
   onUpdate: (job: InspectionJob) => void
@@ -57,7 +81,7 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
       const res  = await fetch('/api/report/generate-phase', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ job, phaseId }),
+        body:    JSON.stringify({ job: stripJobForTransport(job, phaseId), phaseId }),
       })
       const data = await res.json()
       if (!res.ok || !data.ok) throw new Error(data.error ?? 'Generation failed')
@@ -94,16 +118,26 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
     setFinalStatus('assembling'); setFinalMsg(''); setFinalPdfB64(null); setEmailsSent([])
     try {
       const extras = extraEmails.split(',').map(e => e.trim()).filter(Boolean)
+
+      // Build a phasePdfs map separately — don't embed them in the job object
+      const phasePdfs: Record<string, string> = {}
+      for (const phase of job.phases) {
+        if (phase.reportPdfB64) phasePdfs[phase.id] = phase.reportPdfB64
+      }
+
+      const slimJob = {
+        ...stripJobForTransport(job),
+        ahjEmail:       ahjEmail.trim() || undefined,
+        inspectorEmail: inspEmail.trim() || undefined,
+        purposeNote:    coverNotes,
+      }
+
       const res  = await fetch('/api/report/collate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          job: {
-            ...job,
-            ahjEmail:      ahjEmail.trim() || undefined,
-            inspectorEmail: inspEmail.trim() || undefined,
-            purposeNote:   coverNotes,
-          },
+          job:        slimJob,
+          phasePdfs,
           coverNotes: coverNotes.trim() || undefined,
           sendTo: {
             client: sendClient && !!job.clientEmail,

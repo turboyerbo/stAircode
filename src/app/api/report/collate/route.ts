@@ -37,21 +37,38 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
 export async function POST(req: NextRequest) {
   let body: {
     job:         InspectionJob
+    phasePdfs?:  Record<string, string>
     coverNotes?: string
     sendTo:      { client?: boolean; ahj?: boolean; extras?: string[] }
   }
-  try { body = await req.json() }
-  catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
+  try {
+    // Use req.text() + JSON.parse to handle larger bodies more gracefully
+    const text = await req.text()
+    if (!text) return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
+    body = JSON.parse(text)
+  } catch (e) {
+    console.error('[collate] Body parse error:', e)
+    return NextResponse.json({ error: 'Invalid request body — too large or malformed' }, { status: 400 })
+  }
 
-  const { job, coverNotes, sendTo } = body
+  const { job, phasePdfs = {}, coverNotes, sendTo } = body
   if (!job?.id) return NextResponse.json({ error: 'Missing job data' }, { status: 400 })
+
+  // Merge phasePdfs back into job phases so collatePhasePdfs can use them
+  const jobWithPdfs: InspectionJob = {
+    ...job,
+    phases: job.phases.map(p => ({
+      ...p,
+      reportPdfB64: phasePdfs[p.id] ?? p.reportPdfB64,
+    })),
+  }
 
   try {
     // ── 1. Collate phase PDFs into final report ───────────────────────────────
-    console.log(`[collate] Collating report for job ${job.id}`)
-    const pdfBuffer = await collatePhasePdfs(job, coverNotes)
+    console.log(`[collate] Collating report for job ${job.id}, ${Object.keys(phasePdfs).length} pre-generated sections`)
+    const pdfBuffer = await collatePhasePdfs(jobWithPdfs, coverNotes)
     const pdfB64    = pdfBuffer.toString('base64')
-    const pageCount = job.phases.reduce((n, p) => n + (p.reportPdfB64 ? 1 : 0), 3) // rough estimate
+    const pageCount = Object.keys(phasePdfs).length + 3
 
     // ── 2. Upload to Supabase Storage ─────────────────────────────────────────
     let reportUrl: string | null = null

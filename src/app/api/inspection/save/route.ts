@@ -44,22 +44,27 @@ export async function POST(req: NextRequest) {
   }
 
   let body: { job: InspectionJob; userId?: string }
-  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
+  try {
+    const text = await req.text()
+    if (!text) return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
+    body = JSON.parse(text)
+  } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }) }
 
   const { job, userId } = body
   if (!job?.id) return NextResponse.json({ error: 'Missing job data' }, { status: 400 })
 
   const sb = createClient(SUPA_URL, SUPA_KEY)
 
-  // Strip base64 photos from job_json to keep the row small
-  // Photos are stored separately in Supabase Storage
+  // Strip base64 photos, phase PDFs, and drawing pages from job_json to keep the row small
   const jobForStorage: InspectionJob = {
     ...job,
+    drawingsData: job.drawingsData ? { ...job.drawingsData, pages: [] } : undefined,
     phases: job.phases.map(phase => ({
       ...phase,
+      reportPdfB64: undefined,  // stored in memory only, not in DB row
       modules: phase.modules.map(mod => ({
         ...mod,
-        photos: mod.photos.map((_, i) => `[photo-${i}]`), // placeholder
+        photos: mod.photos.map((_, i) => `[photo-${i}]`),
         findings: mod.findings.map(f => ({
           ...f,
           photos: f.photos.map((_, i) => `[photo-${i}]`),

@@ -17,8 +17,14 @@ export const maxDuration = 30
 
 export async function POST(req: NextRequest) {
   let body: { job: InspectionJob; phaseId: string }
-  try { body = await req.json() }
-  catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
+  try {
+    const text = await req.text()
+    if (!text) return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
+    body = JSON.parse(text)
+  } catch (e) {
+    console.error('[generate-phase] Body parse error:', e)
+    return NextResponse.json({ error: 'Request body too large or malformed' }, { status: 400 })
+  }
 
   const { job, phaseId } = body
   if (!job?.id || !phaseId) {
