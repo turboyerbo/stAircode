@@ -39,7 +39,7 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
     if (!betaCode.trim()) return
     setLoading(true); setBetaError(null)
     if (betaCode.trim().toLowerCase() === BETA_CODE) {
-      // Store access in sessionStorage so it persists for the session
+      try { localStorage.setItem('sc_beta_access', '1') } catch {}
       try { sessionStorage.setItem('sc_beta_access', '1') } catch {}
       setTimeout(() => onAccess(), 300)
     } else {

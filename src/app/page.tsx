@@ -428,13 +428,24 @@ export default function Home(){
     const params = new URLSearchParams(window.location.search)
     const payment = params.get('payment')
     const product = params.get('product')
+    const betaParam = params.get('beta')
+
+    // beta=1 in URL means user came through beta access flow — grant immediately
+    if(betaParam === '1'){
+      try{localStorage.setItem('sc_beta_access','1')}catch{}
+      try{sessionStorage.setItem('sc_beta_access','1')}catch{}
+      // Clean the token from the URL
+      window.history.replaceState({}, '', '/?signin=1')
+    }
+
     if(payment==='success'){
       Analytics.purchaseCompleted(product as 'report'|'pro')
       if((product==='pro' || product==='subscription') && user){
         const upgraded = {...user, membership:'subscription' as const}
         setUser(upgraded)
         try{localStorage.setItem('sc_user', JSON.stringify(upgraded))}catch{}
-        // Grant session access so paywall auto-skips
+        // Grant access — persisted to localStorage so it survives page refresh
+        try{localStorage.setItem('sc_beta_access','1')}catch{}
         try{sessionStorage.setItem('sc_beta_access','1')}catch{}
       }
     }
@@ -731,6 +742,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   // Check if user has beta access or subscription
   function hasInspectionAccess(): boolean {
     if (user.membership === 'pro' || user.membership === 'subscription') return true
+    try { if (localStorage.getItem('sc_beta_access') === '1') return true } catch {}
     try { if (sessionStorage.getItem('sc_beta_access') === '1') return true } catch {}
     return false
   }
@@ -868,26 +880,83 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         </div>
 
         {/* ── MODULE SELECTOR ── */}
-        <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Free demo</div>
+        {(() => {
+          const hasAccess = isPro
+            || user.membership === 'subscription'
+            || user.membership === 'pro'
+            || (()=>{ try{ return localStorage.getItem('sc_beta_access')==='1' }catch{ return false }})()
+            || (()=>{ try{ return sessionStorage.getItem('sc_beta_access')==='1' }catch{ return false }})()
 
-          {/* Stair Compliance Demo — only free standalone module */}
-          <button
-            onClick={()=>{ if(!atLimit) onStartScan('stair') }}
-            style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='stair'?'#F0FBF6':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'#27A96B':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='stair'?1:0.5}}>
-              <rect x="1" y="12" width="5" height="7" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-              <rect x="6" y="7" width="5" height="12" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-              <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-            </svg>
-            <div style={{flex:1}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance Demo</div>
-              <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail — free</div>
+          if (hasAccess) {
+            // Subscribed / beta access — show only the full inspection entry point
+            return (
+              <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                <button onClick={()=>onStartInspection()}
+                  style={{width:'100%',padding:'1.1rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.1),rgba(65,124,164,0.05))',border:'2px solid rgba(65,124,164,0.4)',borderRadius:12,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 3px 12px rgba(65,124,164,0.15)'}}>
+                  <div style={{width:42,height:42,borderRadius:10,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                      <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
+                      <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
+                      <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
+                      <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
+                    </svg>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'0.95rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>My Inspections</div>
+                    <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.15rem'}}>6 OBC phases · AI guidance · 30-page PDF</div>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
+                    <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            )
+          }
+
+          // Free / no access — show stair demo + full inspection CTA
+          return (
+            <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Free demo</div>
+
+              <button
+                onClick={()=>{ if(!atLimit) onStartScan('stair') }}
+                style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='stair'?'#F0FBF6':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'#27A96B':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='stair'?1:0.5}}>
+                  <rect x="1" y="12" width="5" height="7" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+                  <rect x="6" y="7" width="5" height="12" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+                  <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+                </svg>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance Demo</div>
+                  <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail — free</div>
+                </div>
+                <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Beta</span>
+              </button>
+
+              <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.75rem',marginTop:'0.1rem'}}>
+                <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.45rem',letterSpacing:'0.02em'}}>Full building inspection — 6 OBC phases</div>
+                <button onClick={()=>onStartInspection()}
+                  style={{width:'100%',padding:'0.95rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.08),rgba(65,124,164,0.04))',border:'1.5px solid rgba(65,124,164,0.35)',borderRadius:11,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 8px rgba(65,124,164,0.1)'}}>
+                  <div style={{width:38,height:38,borderRadius:9,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
+                      <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
+                      <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
+                      <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
+                    </svg>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'0.9rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>Full Building Inspection</div>
+                    <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>Subscribe for access · $38.99/month</div>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
+                    <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Beta</span>
-          </button>
-        </div>
+          )
+        })()}
 
         {/* Limit warning */}
         {atLimit && (
@@ -900,29 +969,6 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         )}
 
         <div style={{flex:1}}/>
-
-        {/* Full Inspection Dashboard */}
-        <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.85rem',marginTop:'0.35rem'}}>
-          <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.5rem',letterSpacing:'0.02em'}}>Full building inspection — 6 OBC phases</div>
-          <button onClick={()=>onStartInspection()}
-            style={{width:'100%',padding:'0.95rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.08),rgba(65,124,164,0.04))',border:'1.5px solid rgba(65,124,164,0.35)',borderRadius:11,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 8px rgba(65,124,164,0.1)'}}>
-            <div style={{width:38,height:38,borderRadius:9,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
-                <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
-                <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
-                <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
-              </svg>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:'0.9rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>Full Building Inspection</div>
-              <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>6 OBC phases · AI guidance · 30-page PDF</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
-              <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
 
         <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,margin:0}}>Compliance aid only · Not a substitute for professional inspection
         </p>
