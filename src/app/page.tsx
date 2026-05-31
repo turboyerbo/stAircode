@@ -25,6 +25,7 @@ import InspectionSetupScreen                from './components/InspectionSetupSc
 import InspectionDashboard                  from './components/InspectionDashboard'
 import InspectionProjectList                from './components/InspectionProjectList'
 import ProjectTypeScreen                    from './components/ProjectTypeScreen'
+import InspectionPaywall                    from './components/InspectionPaywall'
 import type { ProjectType }                 from '@/lib/inspection-types'
 import type { InspectionJob }               from '@/lib/inspection-types'
 
@@ -34,7 +35,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
+type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -734,12 +735,55 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   // Full-screen flows (no bottom nav)
 
   // Inspection dashboard routing
+  // Check if user has beta access or subscription
+  function hasInspectionAccess(): boolean {
+    if (user.membership === 'pro' || user.membership === 'subscription') return true
+    try { if (sessionStorage.getItem('sc_beta_access') === '1') return true } catch {}
+    return false
+  }
+
+  if(screen==='inspection_paywall'){
+    if(hasInspectionAccess()) { setScreen('inspection_projects'); return null }
+    return <InspectionPaywall
+      userEmail={user.email??''}
+      onBack={()=>setScreen('home')}
+      onAccess={()=>setScreen('inspection_projects')}
+    />
+  }
   if(screen==='inspection_type')
-    return <ProjectTypeScreen onSelect={t=>{setProjectType(t);setScreen('inspection_setup')}} onBack={()=>setScreen('inspection_projects')}/>
+    return <ProjectTypeScreen onSelect={async t=>{
+      setProjectType(t)
+      // Create a stub job immediately and save to Supabase so it appears in My Inspections right away
+      const { createNewJob } = await import('@/lib/inspection-types')
+      const stubJob = createNewJob({ projectType: t, status: 'active' })
+      setInspectionJob(stubJob)
+      try { sessionStorage.setItem(`insp_${stubJob.id}`, JSON.stringify(stubJob)) } catch {}
+      // Fire-and-forget save to Supabase
+      fetch('/api/inspection/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job: stubJob, userId: user.email }),
+      }).catch(() => {})
+      setScreen('inspection_setup')
+    }} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_projects')
-    return <InspectionProjectList userEmail={user.email??''} onBack={()=>setScreen('home')} onStartNew={()=>setScreen('inspection_type')} onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}/>
+    return <InspectionProjectList userEmail={user.email??''} onBack={()=>setScreen('home')} onStartNew={()=>setScreen('inspection_paywall')} onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}/>
   if(screen==='inspection_setup')
-    return <InspectionSetupScreen projectType={projectType} onJobCreated={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}} onBack={()=>setScreen('inspection_type')}/>
+    return <InspectionSetupScreen
+      projectType={projectType}
+      existingJobId={inspectionJob?.id}
+      onJobCreated={job=>{
+        setInspectionJob(job)
+        // Save immediately to Supabase
+        fetch('/api/inspection/save', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({job, userId:user.email}),
+        }).catch(()=>{})
+        setScreen('inspection_dashboard')
+      }}
+      onBack={()=>setScreen('inspection_type')}
+    />
   if(screen==='inspection_dashboard'&&inspectionJob)
     return <InspectionDashboard job={inspectionJob} onUpdate={j=>{setInspectionJob(j);try{sessionStorage.setItem(`insp_${j.id}`,JSON.stringify(j))}catch{}}} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''} userRole={user.role}/>
 
@@ -767,7 +811,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>setScreen('inspection_projects')} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>setScreen('inspection_paywall')} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>

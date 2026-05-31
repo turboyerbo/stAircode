@@ -26,6 +26,7 @@ interface Props {
   onJobCreated:  (job: InspectionJob) => void
   onBack:        () => void
   projectType?:  ProjectType
+  existingJobId?: string   // if set, update this job rather than creating a new one
 }
 
 const NAVY   = '#0A1C2E'
@@ -84,7 +85,7 @@ interface Suggestion {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function InspectionSetupScreen({ onJobCreated, onBack, projectType = 'new_construction' }: Props) {
+export default function InspectionSetupScreen({ onJobCreated, onBack, projectType = 'new_construction', existingJobId }: Props) {
   // Step
   const [step, setStep] = useState<1|2|3>(1)
 
@@ -245,6 +246,8 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
     }
     const job = createNewJob({
       projectType,
+      // Preserve the stub job ID created at ProjectTypeScreen so Supabase row is updated not duplicated
+      ...(existingJobId ? { id: existingJobId } : {}),
       clientName: clientName.trim(), clientEmail: clientEmail.trim() || undefined,
       clientPhone: clientPhone.trim() || undefined,
       inspectorName: inspectorName.trim(), licenceNumber: licenceNumber.trim() || undefined,

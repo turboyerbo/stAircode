@@ -25,7 +25,7 @@ export interface AppUser {
   email:      string
   name:       string
   provider:   'otp' | 'google' | 'apple' | 'facebook'
-  membership: 'free' | 'pro' | 'enterprise'
+  membership: 'free' | 'pro' | 'enterprise' | 'subscription'
   units:      'mm' | 'ft'
   role?:      UserRole
 }
