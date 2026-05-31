@@ -151,6 +151,8 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
           <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.4rem' }}>Beta access code</div>
           <div style={{ display:'flex', gap:'0.5rem' }}>
             <input
+              id="beta-code"
+              name="beta-code"
               type="text"
               value={betaCode}
               onChange={e => { setBetaCode(e.target.value); setBetaError(null) }}

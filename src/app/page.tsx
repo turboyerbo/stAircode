@@ -422,7 +422,7 @@ export default function Home(){
     Analytics.userSignedIn(u.provider === 'otp' ? 'otp' : u.provider)
   }
 
-  // Handle Stripe payment return (?payment=success&product=report|pro)
+  // Handle Stripe payment return (?payment=success&product=report|pro|subscription)
   useEffect(()=>{
     if(typeof window==='undefined') return
     const params = new URLSearchParams(window.location.search)
@@ -430,23 +430,16 @@ export default function Home(){
     const product = params.get('product')
     if(payment==='success'){
       Analytics.purchaseCompleted(product as 'report'|'pro')
-      if(product==='pro' && user){
-        const upgraded = {...user, membership:'pro' as const}
+      if((product==='pro' || product==='subscription') && user){
+        const upgraded = {...user, membership:'subscription' as const}
         setUser(upgraded)
         try{localStorage.setItem('sc_user', JSON.stringify(upgraded))}catch{}
-      }
-      // Show payment success screen for all products — handled by PaymentSuccessScreen below
-      // photo_report: leave URL params for ReportScreen's PhotoReportUpsell to detect
-      if(product === 'pro' && user){
-        const upgraded = {...user, membership:'pro' as const}
-        setUser(upgraded)
-        try{localStorage.setItem('sc_user', JSON.stringify(upgraded))}catch{}
+        // Grant session access so paywall auto-skips
+        try{sessionStorage.setItem('sc_beta_access','1')}catch{}
       }
     }
     if(payment==='cancelled'){
       if(product) Analytics.purchaseCancelled(product as 'report'|'pro')
-      // Clear payment params from URL — keep user on whatever screen they're on
-      // sessionStorage still has sc_fields so ReportScreen state is preserved
       window.history.replaceState({}, '', '/')
     }
   },[user])

@@ -340,8 +340,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
                 onChange={e => handleStreetChange(e.target.value)}
                 onFocus={() => { if (suggestions.length) setShowSuggest(true) }}
                 onBlur={() => setTimeout(() => setShowSuggest(false), 200)}
-                placeholder="123 Main Street"
-                autoComplete="off"
+                id="street" name="street" autoComplete="street-address" placeholder="123 Main Street"
                 style={inputStyle()}
               />
               {/* Autocomplete dropdown */}
@@ -359,11 +358,11 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
             </div>
 
             <Field label="Unit / Suite">
-              <input type="text" value={unit} onChange={e => setUnit(e.target.value)} placeholder="4B" style={inputStyle()}/>
+              <input type="text" value={unit} onChange={e => setUnit(e.target.value)} id="unit" name="unit" autoComplete="address-line2" placeholder="4B" style={inputStyle()}/>
             </Field>
 
             <Field label="City / Municipality" required>
-              <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Toronto" style={inputStyle()}/>
+              <input type="text" value={city} onChange={e => setCity(e.target.value)} id="city" name="city" autoComplete="address-level2" placeholder="Toronto" style={inputStyle()}/>
             </Field>
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
@@ -373,7 +372,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
                 </select>
               </Field>
               <Field label="Postal / ZIP Code">
-                <input type="text" value={postalCode} onChange={e => setPostalCode(e.target.value)} placeholder="M5V 2T6" style={inputStyle()}/>
+                <input type="text" value={postalCode} onChange={e => setPostalCode(e.target.value)} id="postal" name="postal" autoComplete="postal-code" placeholder="M5V 2T6" style={inputStyle()}/>
               </Field>
             </div>
 
@@ -385,7 +384,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <Field label="Inspection Date">
-                <input type="date" value={inspDate} onChange={e => setInspDate(e.target.value)} style={inputStyle()}/>
+                <input id="inspection-date" name="inspection-date" type="date" value={inspDate} onChange={e => setInspDate(e.target.value)} style={inputStyle()}/>
               </Field>
               <Field label="Weather">
                 <select value={weather} onChange={e => setWeather(e.target.value as WeatherCondition)} style={selectStyle()}>
@@ -400,11 +399,11 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
 
             <div style={{ display:'flex', gap:'1.25rem' }}>
               <label style={{ display:'flex', alignItems:'center', gap:'0.45rem', fontSize:'0.82rem', cursor:'pointer' }}>
-                <input type="checkbox" checked={occupied} onChange={e => setOccupied(e.target.checked)}/>
+                <input id="occupied" name="occupied" type="checkbox" checked={occupied} onChange={e => setOccupied(e.target.checked)}/>
                 Property occupied
               </label>
               <label style={{ display:'flex', alignItems:'center', gap:'0.45rem', fontSize:'0.82rem', cursor:'pointer' }}>
-                <input type="checkbox" checked={secure} onChange={e => setSecure(e.target.checked)}/>
+                <input id="secure" name="secure" type="checkbox" checked={secure} onChange={e => setSecure(e.target.checked)}/>
                 Property secure
               </label>
             </div>
@@ -471,7 +470,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
             </Field>
 
             <Field label="Estimated Building Age" required>
-              <input type="text" value={estimatedAge} onChange={e => setEstimatedAge(e.target.value)} placeholder="e.g. Approx. 1970s–1980s" style={inputStyle()}/>
+              <input type="text" value={estimatedAge} onChange={e => setEstimatedAge(e.target.value)} id="estimated-age" name="estimated-age" placeholder="e.g. Approx. 1970s–1980s" style={inputStyle()}/>
             </Field>
 
             <SectionHeading>Construction Materials</SectionHeading>
@@ -513,15 +512,15 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <Field label="Internal Walls">
-                <input type="text" value={internalWalls} onChange={e => setInternalWalls(e.target.value)} placeholder="Plasterboard" style={inputStyle()}/>
+                <input type="text" value={internalWalls} onChange={e => setInternalWalls(e.target.value)} id="internal-walls" name="internal-walls" placeholder="Plasterboard" style={inputStyle()}/>
               </Field>
               <Field label="Windows">
-                <input type="text" value={windows} onChange={e => setWindows(e.target.value)} placeholder="Aluminium double-hung" style={inputStyle()}/>
+                <input type="text" value={windows} onChange={e => setWindows(e.target.value)} id="windows" name="windows" placeholder="Aluminium double-hung" style={inputStyle()}/>
               </Field>
             </div>
 
             <Field label="Inspection Purpose">
-              <input type="text" value={purposeNote} onChange={e => setPurposeNote(e.target.value)} placeholder="Pre-purchase building inspection" style={inputStyle()}/>
+              <input type="text" value={purposeNote} onChange={e => setPurposeNote(e.target.value)} id="purpose" name="purpose" placeholder="Pre-purchase building inspection" style={inputStyle()}/>
             </Field>
           </div>
         )}
@@ -536,27 +535,27 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
 
             <SectionHeading>Commissioned By</SectionHeading>
             <Field label="Client Name" required>
-              <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Jane Smith" style={inputStyle()}/>
+              <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} id="client-name" name="client-name" autoComplete="name" placeholder="Jane Smith" style={inputStyle()}/>
             </Field>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <Field label="Email">
-                <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="jane@email.com" style={inputStyle()}/>
+                <input id="client-email" name="client-email" autoComplete="email" type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="jane@email.com" style={inputStyle()}/>
               </Field>
               <Field label="Phone">
-                <input type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(416) 555-0100" style={inputStyle()}/>
+                <input id="client-phone" name="client-phone" autoComplete="tel" type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(416) 555-0100" style={inputStyle()}/>
               </Field>
             </div>
 
             <SectionHeading>Inspector</SectionHeading>
             <Field label="Inspector Name" required>
-              <input type="text" value={inspectorName} onChange={e => setInspectorName(e.target.value)} placeholder="Jordan Yerbury" style={inputStyle()}/>
+              <input type="text" value={inspectorName} onChange={e => setInspectorName(e.target.value)} id="inspector-name" name="inspector-name" placeholder="Jordan Yerbury" style={inputStyle()}/>
             </Field>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <Field label="Licence / Certificate No.">
-                <input type="text" value={licenceNumber} onChange={e => setLicenceNumber(e.target.value)} placeholder="OAA-123456" style={inputStyle()}/>
+                <input type="text" value={licenceNumber} onChange={e => setLicenceNumber(e.target.value)} id="licence" name="licence" placeholder="OAA-123456" style={inputStyle()}/>
               </Field>
               <Field label="Company">
-                <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Just Open Technologies" style={inputStyle()}/>
+                <input type="text" value={company} onChange={e => setCompany(e.target.value)} id="company" name="company" autoComplete="organization" placeholder="Just Open Technologies" style={inputStyle()}/>
               </Field>
             </div>
 
