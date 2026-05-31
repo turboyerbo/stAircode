@@ -780,7 +780,16 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
       setScreen('inspection_setup')
     }} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_projects')
-    return <InspectionProjectList userEmail={user.email??''} onBack={()=>setScreen('home')} onStartNew={()=>setScreen('inspection_paywall')} onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}/>
+    return <InspectionProjectList
+      userEmail={user.email??''}
+      onBack={()=>setScreen('home')}
+      onStartNew={()=>{
+        // Skip paywall if user already has access
+        if(hasInspectionAccess()) setScreen('inspection_type')
+        else setScreen('inspection_paywall')
+      }}
+      onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
+    />
   if(screen==='inspection_setup')
     return <InspectionSetupScreen
       projectType={projectType}
@@ -824,7 +833,7 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
   if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>setScreen('inspection_paywall')} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>{ if(hasInspectionAccess()) setScreen('inspection_projects'); else setScreen('inspection_paywall') }} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
@@ -887,37 +896,10 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
             || (()=>{ try{ return localStorage.getItem('sc_beta_access')==='1' }catch{ return false }})()
             || (()=>{ try{ return sessionStorage.getItem('sc_beta_access')==='1' }catch{ return false }})()
 
-          if (hasAccess) {
-            // Subscribed / beta access — show only the full inspection entry point
-            return (
-              <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-                <button onClick={()=>onStartInspection()}
-                  style={{width:'100%',padding:'1.1rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.1),rgba(65,124,164,0.05))',border:'2px solid rgba(65,124,164,0.4)',borderRadius:12,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 3px 12px rgba(65,124,164,0.15)'}}>
-                  <div style={{width:42,height:42,borderRadius:10,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
-                      <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
-                      <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
-                      <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
-                      <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
-                    </svg>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:'0.95rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>My Inspections</div>
-                    <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.15rem'}}>6 OBC phases · AI guidance · 30-page PDF</div>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
-                    <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-            )
-          }
-
-          // Free / no access — show stair demo + full inspection CTA
           return (
             <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              {/* Stair Compliance Demo — always visible for all users */}
               <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Free demo</div>
-
               <button
                 onClick={()=>{ if(!atLimit) onStartScan('stair') }}
                 style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='stair'?'#F0FBF6':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'#27A96B':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}>
@@ -933,8 +915,11 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                 <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Beta</span>
               </button>
 
+              {/* Full Building Inspection */}
               <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.75rem',marginTop:'0.1rem'}}>
-                <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.45rem',letterSpacing:'0.02em'}}>Full building inspection — 6 OBC phases</div>
+                <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.45rem',letterSpacing:'0.02em'}}>
+                  {hasAccess ? 'Full building inspection' : 'Full building inspection — 6 OBC phases'}
+                </div>
                 <button onClick={()=>onStartInspection()}
                   style={{width:'100%',padding:'0.95rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.08),rgba(65,124,164,0.04))',border:'1.5px solid rgba(65,124,164,0.35)',borderRadius:11,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 8px rgba(65,124,164,0.1)'}}>
                   <div style={{width:38,height:38,borderRadius:9,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -946,8 +931,12 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                     </svg>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:'0.9rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>Full Building Inspection</div>
-                    <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>Subscribe for access · $38.99/month</div>
+                    <div style={{fontSize:'0.9rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>
+                      {hasAccess ? 'My Inspections' : 'Full Building Inspection'}
+                    </div>
+                    <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>
+                      {hasAccess ? '6 OBC phases · AI guidance · 30-page PDF' : 'Subscribe for access · $38.99/month'}
+                    </div>
                   </div>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
                     <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
