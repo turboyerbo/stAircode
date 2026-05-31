@@ -735,8 +735,16 @@ function AppShell({user,onLogout,onUpdateUser}:{user:AppUser;onLogout:()=>void;o
     return false
   }
 
+  // Auto-skip paywall if user already has access
+  React.useEffect(() => {
+    if (screen === 'inspection_paywall' && hasInspectionAccess()) {
+      setScreen('inspection_projects')
+    }
+  }, [screen]) // eslint-disable-line
+
   if(screen==='inspection_paywall'){
-    if(hasInspectionAccess()) { setScreen('inspection_projects'); return null }
+    // hasInspectionAccess redirects via useEffect above; show nothing while it fires
+    if(hasInspectionAccess()) return null
     return <InspectionPaywall
       userEmail={user.email??''}
       onBack={()=>setScreen('home')}
