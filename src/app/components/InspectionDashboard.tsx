@@ -15,6 +15,7 @@ import { PHASE_META, getPhaseProgress, getJobProgress } from '@/lib/inspection-t
 import { NavLogo } from './Logo'
 import InspectionPhaseScreen from './InspectionPhaseScreen'
 import InspectionAIChat      from './InspectionAIChat'
+import InspectionReportScreen from './InspectionReportScreen'
 
 import type { UserRole } from './AuthScreen'
 
@@ -228,6 +229,7 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   useAutoSave(job, userEmail)
   const [activePhase,  setActivePhase]  = useState<PhaseId | null>(null)
   const [saveStatus,   setSaveStatus]   = useState<'idle'|'saving'|'saved'|'error'>('idle')
+  const [showReport,   setShowReport]    = useState(false)
   const [reportStatus, setReportStatus] = useState<'idle'|'generating'|'done'|'error'>('idle')
   const [reportB64,    setReportB64]    = useState<string|null>(null)
   const [reportMsg,    setReportMsg]    = useState<string>('')
@@ -292,6 +294,17 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   }
 
   // If a phase is open, render that screen
+  // If report screen is open
+  if (showReport) {
+    return (
+      <InspectionReportScreen
+        job={job}
+        onUpdate={onUpdate}
+        onBack={() => setShowReport(false)}
+      />
+    )
+  }
+
   if (activePhase) {
     return (
       <InspectionPhaseScreen
@@ -352,57 +365,27 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
           ))}
         </div>
 
-        {/* Generate report — available at any time */}
-        <div style={{ marginTop:'1.25rem', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
-          <button
-            onClick={handleGenerateReport}
-            disabled={reportStatus === 'generating'}
-            style={{ width:'100%', padding:'1rem', background: reportStatus==='generating' ? 'rgba(242,147,55,0.5)' : `linear-gradient(135deg,${ORANGE},#C4721E)`, border:'none', borderRadius:11, fontSize:'0.9rem', fontWeight:700, color:'#fff', cursor: reportStatus==='generating' ? 'default':'pointer', transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.6rem', boxShadow:'0 4px 18px rgba(242,147,55,0.35)' }}>
-            {reportStatus === 'generating' ? (
-              <>
-                <div style={{ width:16, height:16, borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/>
-                Generating report…
-              </>
-            ) : (
-              <>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="1" width="9" height="14" rx="1" stroke="#fff" strokeWidth="1.3"/>
-                  <line x1="4" y1="5" x2="8" y2="5" stroke="#fff" strokeWidth="1"/>
-                  <line x1="4" y1="7.5" x2="8" y2="7.5" stroke="#fff" strokeWidth="1"/>
-                  <line x1="4" y1="10" x2="6.5" y2="10" stroke="#fff" strokeWidth="1"/>
-                  <path d="M10 9l4 4" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/>
-                  <circle cx="11" cy="11" r="3" stroke="#fff" strokeWidth="1.3"/>
-                </svg>
-                {overallPct >= 100 ? 'Generate Final Report →' : `Generate Report (${overallPct}% complete) →`}
-              </>
-            )}
+        {/* Report — open review screen */}
+        <div style={{ marginTop:'1.25rem' }}>
+          <button onClick={() => setShowReport(true)}
+            style={{ width:'100%', padding:'1rem', background:`linear-gradient(135deg,${ORANGE},#C4721E)`, border:'none', borderRadius:11, fontSize:'0.9rem', fontWeight:700, color:'#fff', cursor:'pointer', transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.6rem', boxShadow:'0 4px 18px rgba(242,147,55,0.35)' }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="1" width="9" height="14" rx="1" stroke="#fff" strokeWidth="1.3"/>
+              <line x1="4" y1="5" x2="8" y2="5" stroke="#fff" strokeWidth="1"/>
+              <line x1="4" y1="7.5" x2="8" y2="7.5" stroke="#fff" strokeWidth="1"/>
+              <line x1="4" y1="10" x2="6.5" y2="10" stroke="#fff" strokeWidth="1"/>
+              <path d="M11 8l3 3-3 3M11 11h-4" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {overallPct >= 100 ? 'Review & Send Final Report →' : `Generate Report (${overallPct}% complete) →`}
           </button>
-
-          {reportStatus === 'done' && (
-            <div style={{ background:'rgba(39,169,107,0.08)', border:'1px solid rgba(39,169,107,0.3)', borderRadius:10, padding:'0.75rem 1rem', display:'flex', gap:'0.75rem', alignItems:'center' }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:'0.78rem', fontWeight:700, color:GREEN, marginBottom:'0.15rem' }}>Report ready</div>
-                <div style={{ fontSize:'0.68rem', color:'#5E7D9B', lineHeight:1.5 }}>{reportMsg}</div>
-              </div>
-              {reportB64 && (
-                <button onClick={downloadReport}
-                  style={{ padding:'0.55rem 1rem', background:GREEN, border:'none', borderRadius:8, color:'#fff', fontWeight:700, fontSize:'0.78rem', cursor:'pointer', whiteSpace:'nowrap' as const, flexShrink:0 }}>
-                  Download PDF
-                </button>
-              )}
+          {job.reportGenerated && (
+            <div style={{ fontSize:'0.65rem', color:GREEN, textAlign:'center', marginTop:'0.35rem' }}>
+              Final report generated · {job.reportUrl ? 'Stored in cloud' : ''}
             </div>
           )}
-
-          {reportStatus === 'error' && (
-            <div style={{ fontSize:'0.72rem', color:'#E84545', background:'rgba(232,69,69,0.06)', border:'1px solid rgba(232,69,69,0.2)', borderRadius:8, padding:'0.5rem 0.75rem' }}>
-              {reportMsg}
-            </div>
-          )}
-
-          <div style={{ fontSize:'0.65rem', color:'#9DB4C5', textAlign:'center' }}>
-            Report can be generated at any time. More complete data produces a more comprehensive report.
+          <div style={{ fontSize:'0.65rem', color:'#9DB4C5', textAlign:'center', marginTop:'0.25rem' }}>
+            Generates per-phase sections independently, then assembles into one report
           </div>
-          <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
         </div>
       </div>
 

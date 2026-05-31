@@ -161,6 +161,8 @@ export interface InspectionJob {
   reportGenerated: boolean
   reportUrl?:      string
   reportModuleId?: string
+  ahjEmail?:       string    // Authority Having Jurisdiction email for permit submission
+  inspectorEmail?: string    // inspector's own email
 
   // Server sync
   supabaseId?:     string    // row ID in inspection_jobs table
@@ -191,7 +193,7 @@ export interface InspectionPhase {
   status:       PhaseStatus
   startedAt?:   string
   completedAt?: string
-  holdPoint?:   boolean       // OBC mandatory inspector sign-off required
+  holdPoint?:   boolean
   modules:      InspectionModule[]
   phaseNotes:   string
   inspectorSignOff?: {
@@ -200,6 +202,9 @@ export interface InspectionPhase {
     signedAt?:  string
     permitRef?: string
   }
+  // Per-phase report section — generated independently, collated into final report
+  reportPdfB64?:        string    // base64 PDF section for this phase
+  reportGeneratedAt?:   string    // when this phase section was last generated
 }
 
 // ─── Module types ─────────────────────────────────────────────────────────────

@@ -141,72 +141,149 @@ export async function generateInspectionReport(job: InspectionJob): Promise<Buff
   pdfDoc.setCreator('stAIrcode by Just Open Technologies Inc.')
   pdfDoc.setProducer('stAIrcode')
 
-  // Load fonts
   const fontReg  = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
   const fontObl  = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
-
   const fonts = { reg: fontReg, bold: fontBold, obl: fontObl }
 
-  // Collect all significant findings for the summary
-  const allFindings: Array<{
-    phase:     string
-    module:    string
-    finding:   ModuleFinding
-    notes:     string
-  }> = []
-
-  for (const phase of job.phases) {
-    if (phase.status === 'pending') continue
-    for (const mod of phase.modules) {
-      if (mod.status === 'pending' || mod.status === 'skipped') continue
-      for (const finding of mod.findings) {
-        if (finding.severity === 'major' || finding.severity === 'critical' || finding.severity === 'moderate') {
-          allFindings.push({
-            phase:   PHASE_META[phase.id]?.label ?? phase.id,
-            module:  MODULE_META[mod.id]?.label ?? mod.id,
-            finding,
-            notes:   mod.notes,
-          })
-        }
-      }
-    }
-  }
-
-  // ── PAGE 1: Cover ──────────────────────────────────────────────────────────
+  const allFindings = collectFindings(job)
   await buildCoverPage(pdfDoc, job, fonts)
-
-  // ── PAGE 2: Summary ────────────────────────────────────────────────────────
-  if (allFindings.length > 0) {
-    await buildSummaryPage(pdfDoc, job, allFindings, fonts)
-  }
-
-  // ── SECTION PAGES: One per completed phase ────────────────────────────────
+  if (allFindings.length > 0) await buildSummaryPage(pdfDoc, job, allFindings, fonts)
   for (const phase of job.phases) {
     if (phase.status === 'pending') continue
     const completedModules = phase.modules.filter(m => m.status === 'complete' || m.status === 'skipped')
     if (!completedModules.length && phase.id === 'property_setup') continue
     await buildPhaseSection(pdfDoc, job, phase, fonts)
   }
-
-  // ── FINAL PAGE: Site Information ──────────────────────────────────────────
   await buildSiteInfoPage(pdfDoc, job, fonts)
+  addPageNumbers(pdfDoc, fontReg)
+  return Buffer.from(await pdfDoc.save())
+}
 
-  // Add page numbers to all pages
-  const pages = pdfDoc.getPages()
-  const totalPages = pages.length
-  for (let i = 0; i < totalPages; i++) {
-    const page = pages[i]
-    if (i === 0) continue // skip cover
-    const pageNumText = `Page ${i} of ${totalPages - 1}`
-    const pw = page.getWidth()
-    const textW = fontReg.widthOfTextAtSize(pageNumText, 8)
-    page.drawText(pageNumText, { x: pw/2 - textW/2, y: 25, font: fontReg, size: 8, color: C.midgrey })
-    page.drawText('stAIrcode by Just Open Technologies Inc.', { x: ML, y: 25, font: fontReg, size: 7, color: C.midgrey })
+/**
+ * generatePhaseSection — generates a PDF for a single inspection phase only.
+ * Small, fast, targeted. Results stored on InspectionPhase.reportPdfB64.
+ */
+export async function generatePhaseSection(job: InspectionJob, phaseId: string): Promise<Buffer> {
+  const phase = job.phases.find(p => p.id === phaseId)
+  if (!phase) throw new Error(`Phase ${phaseId} not found`)
+
+  const pdfDoc = await PDFDocument.create()
+  pdfDoc.setTitle(`${PHASE_META[phaseId as keyof typeof PHASE_META]?.reportSection ?? phaseId} — ${job.address.street}`)
+  pdfDoc.setCreator('stAIrcode')
+
+  const fonts = {
+    reg:  await pdfDoc.embedFont(StandardFonts.Helvetica),
+    bold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
+    obl:  await pdfDoc.embedFont(StandardFonts.HelveticaOblique),
   }
 
-  const bytes = await pdfDoc.save()
-  return Buffer.from(bytes)
+  await buildPhaseSection(pdfDoc, job, phase, fonts)
+  addPageNumbers(pdfDoc, fonts.reg)
+  return Buffer.from(await pdfDoc.save())
+}
+
+/**
+ * collatePhasePdfs — merges pre-generated phase PDFs into one final report.
+ * Adds cover page, summary of all findings, and site info page.
+ * Each phase PDF that has been pre-generated is merged in order.
+ * Phases without a pre-generated PDF get freshly generated sections.
+ */
+export async function collatePhasePdfs(
+  job:          InspectionJob,
+  coverNotes?:  string,   // optional inspector notes for cover letter
+): Promise<Buffer> {
+  const final = await PDFDocument.create()
+  final.setTitle(`Building Inspection Report — ${job.address.street}, ${job.address.city}`)
+  final.setAuthor(job.inspectorName || 'stAIrcode Inspector')
+  final.setSubject('Residential Building Inspection Report')
+  final.setCreator('stAIrcode by Just Open Technologies Inc.')
+
+  const fonts = {
+    reg:  await final.embedFont(StandardFonts.Helvetica),
+    bold: await final.embedFont(StandardFonts.HelveticaBold),
+    obl:  await final.embedFont(StandardFonts.HelveticaOblique),
+  }
+
+  // 1. Cover page
+  await buildCoverPage(final, { ...job, purposeNote: coverNotes || job.purposeNote }, fonts)
+
+  // 2. Summary page (all significant findings across all phases)
+  const allFindings = collectFindings(job)
+  if (allFindings.length > 0) {
+    await buildSummaryPage(final, job, allFindings, fonts)
+  }
+
+  // 3. Phase sections — merge pre-generated PDFs or generate fresh
+  for (const phase of job.phases) {
+    if (phase.status === 'pending' || phase.status === 'skipped') continue
+    const completedModules = phase.modules.filter(m => m.status === 'complete')
+    if (!completedModules.length && phase.id !== 'property_setup') continue
+
+    if (phase.reportPdfB64) {
+      // Merge pre-generated PDF section
+      try {
+        const sectionBytes = Buffer.from(phase.reportPdfB64, 'base64')
+        const sectionDoc   = await PDFDocument.load(sectionBytes)
+        const indices      = sectionDoc.getPageIndices()
+        const pages        = await final.copyPages(sectionDoc, indices)
+        pages.forEach(p => final.addPage(p))
+      } catch {
+        // If merge fails, generate fresh
+        await buildPhaseSection(final, job, phase, fonts)
+      }
+    } else {
+      // No pre-generated section — build it now
+      await buildPhaseSection(final, job, phase, fonts)
+    }
+  }
+
+  // 4. Site information page
+  await buildSiteInfoPage(final, job, fonts)
+
+  // 5. Page numbers
+  addPageNumbers(final, fonts.reg)
+
+  return Buffer.from(await final.save())
+}
+
+// ── Shared helpers ─────────────────────────────────────────────────────────────
+
+type FindingRow = { phase: string; module: string; finding: ModuleFinding; notes: string }
+
+function collectFindings(job: InspectionJob): FindingRow[] {
+  const findings: FindingRow[] = []
+  for (const phase of job.phases) {
+    if (phase.status === 'pending') continue
+    for (const mod of phase.modules) {
+      if (mod.status === 'pending' || mod.status === 'skipped') continue
+      for (const finding of mod.findings) {
+        if (['major','critical','moderate'].includes(finding.severity)) {
+          findings.push({
+            phase:  PHASE_META[phase.id]?.label ?? phase.id,
+            module: MODULE_META[mod.id]?.label  ?? mod.id,
+            finding,
+            notes:  mod.notes,
+          })
+        }
+      }
+    }
+  }
+  return findings
+}
+
+function addPageNumbers(pdfDoc: PDFDocument, fontReg: PDFFont) {
+  const pages      = pdfDoc.getPages()
+  const totalPages = pages.length
+  for (let i = 0; i < totalPages; i++) {
+    if (i === 0) continue // skip cover
+    const page       = pages[i]
+    const pageNumTxt = `Page ${i} of ${totalPages - 1}`
+    const pw         = page.getWidth()
+    const tw         = fontReg.widthOfTextAtSize(pageNumTxt, 8)
+    page.drawText(pageNumTxt, { x: pw/2 - tw/2, y: 25, font: fontReg, size: 8, color: C.midgrey })
+    page.drawText('stAIrcode by Just Open Technologies Inc.', { x: 50, y: 25, font: fontReg, size: 7, color: C.midgrey })
+  }
 }
 
 // ── Cover page ────────────────────────────────────────────────────────────────
