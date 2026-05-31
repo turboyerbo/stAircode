@@ -227,7 +227,10 @@ function PhaseCard({ phase, onClick }: { phase: InspectionJob['phases'][0]; onCl
 export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, userRole = 'diy' }: Props) {
   useAutoSave(job, userEmail)
   const [activePhase,  setActivePhase]  = useState<PhaseId | null>(null)
-  const [saveStatus,  setSaveStatus]  = useState<'idle'|'saving'|'saved'|'error'>('idle')
+  const [saveStatus,   setSaveStatus]   = useState<'idle'|'saving'|'saved'|'error'>('idle')
+  const [reportStatus, setReportStatus] = useState<'idle'|'generating'|'done'|'error'>('idle')
+  const [reportB64,    setReportB64]    = useState<string|null>(null)
+  const [reportMsg,    setReportMsg]    = useState<string>('')
   const [chatOpen,    setChatOpen]    = useState(false)
 
   const overallPct = getJobProgress(job)
@@ -250,6 +253,42 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
       setSaveStatus('error')
       setTimeout(() => setSaveStatus('idle'), 2500)
     }
+  }
+
+  // ── Generate report ──────────────────────────────────────────────────────
+  async function handleGenerateReport() {
+    setReportStatus('generating'); setReportMsg(''); setReportB64(null)
+    try {
+      const res  = await fetch('/api/report/generate-inspection', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ job }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.ok) throw new Error(data.error ?? 'Report generation failed')
+      setReportB64(data.pdfBase64 ?? null)
+      setReportMsg(data.message ?? 'Report generated.')
+      setReportStatus('done')
+      // Update job with report URL if returned
+      if (data.reportUrl) {
+        onUpdate({ ...job, reportGenerated: true, reportUrl: data.reportUrl, updatedAt: new Date().toISOString() })
+      }
+    } catch (err: any) {
+      setReportMsg(err.message ?? 'Could not generate report.')
+      setReportStatus('error')
+    }
+  }
+
+  function downloadReport() {
+    if (!reportB64) return
+    const bytes = Uint8Array.from(atob(reportB64), c => c.charCodeAt(0))
+    const blob  = new Blob([bytes], { type: 'application/pdf' })
+    const url   = URL.createObjectURL(blob)
+    const a     = document.createElement('a')
+    a.href      = url
+    a.download  = `inspection-report-${job.address.street.replace(/[^a-zA-Z0-9]/g,'-') || job.id}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // If a phase is open, render that screen
@@ -313,18 +352,57 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
           ))}
         </div>
 
-        {/* Generate report button — enabled when enough phases done */}
-        <div style={{ marginTop:'1.25rem' }}>
+        {/* Generate report — available at any time */}
+        <div style={{ marginTop:'1.25rem', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
           <button
-            disabled={overallPct < 50}
-            style={{ width:'100%', padding:'1rem', background: overallPct >= 50 ? `linear-gradient(135deg,${ORANGE},#C4721E)` : 'rgba(242,147,55,0.1)', border:'none', borderRadius:11, fontSize:'0.9rem', fontWeight:700, color: overallPct >= 50 ? '#fff' : 'rgba(242,147,55,0.4)', cursor: overallPct >= 50 ? 'pointer' : 'not-allowed', transition:'all 0.2s' }}>
-            {overallPct >= 100 ? 'Generate Full Report →' : overallPct >= 50 ? `Generate Report (${overallPct}% complete) →` : `Complete more phases to generate report`}
+            onClick={handleGenerateReport}
+            disabled={reportStatus === 'generating'}
+            style={{ width:'100%', padding:'1rem', background: reportStatus==='generating' ? 'rgba(242,147,55,0.5)' : `linear-gradient(135deg,${ORANGE},#C4721E)`, border:'none', borderRadius:11, fontSize:'0.9rem', fontWeight:700, color:'#fff', cursor: reportStatus==='generating' ? 'default':'pointer', transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.6rem', boxShadow:'0 4px 18px rgba(242,147,55,0.35)' }}>
+            {reportStatus === 'generating' ? (
+              <>
+                <div style={{ width:16, height:16, borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/>
+                Generating report…
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="1" width="9" height="14" rx="1" stroke="#fff" strokeWidth="1.3"/>
+                  <line x1="4" y1="5" x2="8" y2="5" stroke="#fff" strokeWidth="1"/>
+                  <line x1="4" y1="7.5" x2="8" y2="7.5" stroke="#fff" strokeWidth="1"/>
+                  <line x1="4" y1="10" x2="6.5" y2="10" stroke="#fff" strokeWidth="1"/>
+                  <path d="M10 9l4 4" stroke="#fff" strokeWidth="1.3" strokeLinecap="round"/>
+                  <circle cx="11" cy="11" r="3" stroke="#fff" strokeWidth="1.3"/>
+                </svg>
+                {overallPct >= 100 ? 'Generate Final Report →' : `Generate Report (${overallPct}% complete) →`}
+              </>
+            )}
           </button>
-          {overallPct < 50 && (
-            <div style={{ fontSize:'0.68rem', color:'#9DB4C5', textAlign:'center', marginTop:'0.4rem' }}>
-              At least 50% of phases must be completed
+
+          {reportStatus === 'done' && (
+            <div style={{ background:'rgba(39,169,107,0.08)', border:'1px solid rgba(39,169,107,0.3)', borderRadius:10, padding:'0.75rem 1rem', display:'flex', gap:'0.75rem', alignItems:'center' }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:'0.78rem', fontWeight:700, color:GREEN, marginBottom:'0.15rem' }}>Report ready</div>
+                <div style={{ fontSize:'0.68rem', color:'#5E7D9B', lineHeight:1.5 }}>{reportMsg}</div>
+              </div>
+              {reportB64 && (
+                <button onClick={downloadReport}
+                  style={{ padding:'0.55rem 1rem', background:GREEN, border:'none', borderRadius:8, color:'#fff', fontWeight:700, fontSize:'0.78rem', cursor:'pointer', whiteSpace:'nowrap' as const, flexShrink:0 }}>
+                  Download PDF
+                </button>
+              )}
             </div>
           )}
+
+          {reportStatus === 'error' && (
+            <div style={{ fontSize:'0.72rem', color:'#E84545', background:'rgba(232,69,69,0.06)', border:'1px solid rgba(232,69,69,0.2)', borderRadius:8, padding:'0.5rem 0.75rem' }}>
+              {reportMsg}
+            </div>
+          )}
+
+          <div style={{ fontSize:'0.65rem', color:'#9DB4C5', textAlign:'center' }}>
+            Report can be generated at any time. More complete data produces a more comprehensive report.
+          </div>
+          <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
         </div>
       </div>
 
