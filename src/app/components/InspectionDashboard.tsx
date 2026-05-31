@@ -184,43 +184,100 @@ function ProgressRing({ pct, size = 44, stroke = 3.5, color = BLUE }: { pct: num
 }
 
 // ── Phase card ─────────────────────────────────────────────────────────────────
-function PhaseCard({ phase, onClick }: { phase: InspectionJob['phases'][0]; onClick: () => void }) {
+function PhaseCard({
+  phase, seqNum, onClick, onToggleNA,
+}: {
+  phase: InspectionJob['phases'][0]
+  seqNum: number | null     // null when N/A
+  onClick: () => void
+  onToggleNA: () => void
+}) {
   const meta    = PHASE_META[phase.id]
   const pct     = getPhaseProgress(phase)
+  const isNA    = phase.status === 'not_applicable'
   const done    = phase.status === 'complete'
   const active  = phase.status === 'in_progress'
-  const pending = phase.status === 'pending'
-  const modCount = phase.modules.length
+  const modCount  = phase.modules.length
   const doneCount = phase.modules.filter(m => m.status === 'complete' || m.status === 'skipped').length
 
-  const borderColor = done ? 'rgba(39,169,107,0.4)' : active ? `rgba(65,124,164,0.45)` : BORDER
-  const accentColor = done ? GREEN : active ? BLUE : '#9DB4C5'
-  const bgColor     = done ? 'rgba(39,169,107,0.03)' : active ? 'rgba(65,124,164,0.04)' : '#fff'
+  const borderColor = isNA  ? 'rgba(44,90,122,0.08)'
+                    : done  ? 'rgba(39,169,107,0.4)'
+                    : active ? 'rgba(65,124,164,0.45)' : BORDER
+  const accentColor = isNA  ? '#C4CBD6'
+                    : done  ? GREEN
+                    : active ? BLUE : '#9DB4C5'
+  const bgColor     = isNA  ? 'rgba(44,90,122,0.02)'
+                    : done  ? 'rgba(39,169,107,0.03)'
+                    : active ? 'rgba(65,124,164,0.04)' : '#fff'
 
   return (
-    <button onClick={onClick}
-      style={{ width:'100%', padding:'0.9rem 1rem', background:bgColor, border:`1.5px solid ${borderColor}`, borderRadius:11, display:'flex', alignItems:'center', gap:'0.85rem', cursor:'pointer', textAlign:'left', transition:'all 0.12s', boxShadow: active ? '0 2px 8px rgba(65,124,164,0.1)' : 'none' }}>
-      <div style={{ width:38, height:38, borderRadius:9, background:`rgba(65,124,164,0.07)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-        <PhaseIcon type={meta.icon} size={20} color={accentColor} />
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:'0.875rem', fontWeight:600, color:'#0D1E2E', marginBottom:'0.1rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{meta.label}</div>
-        <div style={{ fontSize:'0.68rem', color:'#5E7D9B' }}>
-          {done ? 'Complete' : active ? `${doneCount} of ${modCount} modules done` : `${modCount} modules`}
+    <div style={{ display:'flex', alignItems:'stretch', gap:'0.4rem' }}>
+      {/* Phase card — not clickable when N/A */}
+      <button
+        onClick={isNA ? undefined : onClick}
+        style={{ flex:1, padding:'0.85rem 1rem', background:bgColor, border:`1.5px solid ${borderColor}`, borderRadius:11, display:'flex', alignItems:'center', gap:'0.85rem', cursor: isNA ? 'default':'pointer', textAlign:'left', transition:'all 0.12s', opacity: isNA ? 0.5 : 1, boxShadow: active && !isNA ? '0 2px 8px rgba(65,124,164,0.1)' : 'none' }}>
+
+        {/* Sequence number or N/A badge */}
+        <div style={{ width:38, height:38, borderRadius:9, background: isNA ? 'rgba(44,90,122,0.05)' : 'rgba(65,124,164,0.07)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, position:'relative' }}>
+          {isNA ? (
+            <span style={{ fontSize:'0.55rem', fontWeight:700, color:'#C4CBD6', letterSpacing:'0.03em' }}>N/A</span>
+          ) : (
+            <>
+              <PhaseIcon type={meta.icon} size={20} color={accentColor} />
+              {seqNum !== null && (
+                <div style={{ position:'absolute', top:-4, right:-4, width:15, height:15, borderRadius:'50%', background: done ? GREEN : BLUE, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.48rem', fontWeight:800, color:'#fff', border:'1.5px solid #fff' }}>
+                  {seqNum}
+                </div>
+              )}
+            </>
+          )}
         </div>
-      </div>
-      <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', flexShrink:0 }}>
-        {(active || done) ? (
-          <div style={{ position:'relative', width:36, height:36 }}>
-            <ProgressRing pct={pct} size={36} stroke={3} color={accentColor}/>
-            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', fontWeight:700, color:accentColor }}>{pct}%</div>
+
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:'0.875rem', fontWeight:600, color: isNA ? '#9DB4C5' : '#0D1E2E', marginBottom:'0.1rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textDecoration: isNA ? 'line-through' : 'none' }}>
+            {meta.label}
           </div>
-        ) : (
-          <div style={{ fontSize:'0.68rem', color:'#9DB4C5', padding:'0.2rem 0.5rem', border:`1px solid ${BORDER}`, borderRadius:5 }}>Start</div>
+          <div style={{ fontSize:'0.68rem', color: isNA ? '#C4CBD6' : '#5E7D9B' }}>
+            {isNA ? 'Not applicable to this inspection' : done ? 'Complete' : active ? `${doneCount} of ${modCount} modules done` : `${modCount} modules`}
+          </div>
+        </div>
+
+        {!isNA && (
+          <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', flexShrink:0 }}>
+            {(active || done) ? (
+              <div style={{ position:'relative', width:36, height:36 }}>
+                <ProgressRing pct={pct} size={36} stroke={3} color={accentColor}/>
+                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.55rem', fontWeight:700, color:accentColor }}>{pct}%</div>
+              </div>
+            ) : (
+              <div style={{ fontSize:'0.68rem', color:'#9DB4C5', padding:'0.2rem 0.5rem', border:`1px solid ${BORDER}`, borderRadius:5 }}>Start</div>
+            )}
+            <div style={{ color:'#9DB4C5', fontSize:'0.85rem' }}>›</div>
+          </div>
         )}
-        <div style={{ color:'#9DB4C5', fontSize:'0.85rem' }}>›</div>
-      </div>
-    </button>
+      </button>
+
+      {/* N/A toggle button */}
+      <button
+        onClick={e => { e.stopPropagation(); onToggleNA() }}
+        title={isNA ? 'Reinstate this phase' : 'Mark as Not Applicable'}
+        style={{ width:36, flexShrink:0, background: isNA ? 'rgba(39,169,107,0.08)' : 'rgba(44,90,122,0.04)', border:`1.5px solid ${isNA ? 'rgba(39,169,107,0.3)' : BORDER}`, borderRadius:11, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.12s' }}>
+        {isNA ? (
+          // Reinstate icon (plus)
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke={GREEN} strokeWidth="1.3"/>
+            <line x1="7" y1="4" x2="7" y2="10" stroke={GREEN} strokeWidth="1.3" strokeLinecap="round"/>
+            <line x1="4" y1="7" x2="10" y2="7" stroke={GREEN} strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+        ) : (
+          // N/A icon (slash through circle)
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="#9DB4C5" strokeWidth="1.3"/>
+            <line x1="3.5" y1="10.5" x2="10.5" y2="3.5" stroke="#9DB4C5" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+        )}
+      </button>
+    </div>
   )
 }
 
@@ -238,6 +295,22 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   const overallPct = getJobProgress(job)
   const phaseDone  = job.phases.filter(p => p.status === 'complete').length
   const phaseTotal = job.phases.length
+
+  // ── Toggle phase N/A ──────────────────────────────────────────────────────
+  function handleToggleNA(phaseId: PhaseId) {
+    const phase = job.phases.find(p => p.id === phaseId)
+    if (!phase) return
+    const newStatus = phase.status === 'not_applicable' ? 'pending' : 'not_applicable'
+    const newJob: InspectionJob = {
+      ...job,
+      updatedAt: new Date().toISOString(),
+      phases: job.phases.map(p =>
+        p.id !== phaseId ? p : { ...p, status: newStatus }
+      ),
+    }
+    onUpdate(newJob)
+    try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(newJob)) } catch {}
+  }
 
   // ── Explicit save ────────────────────────────────────────────────────────
   async function handleManualSave() {
@@ -359,11 +432,29 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
       {/* ── Phase list ── */}
       <div style={{ padding:'1.25rem 1.25rem 7rem' }}>
         <div style={{ fontSize:'0.7rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.75rem', letterSpacing:'0.03em' }}>Inspection phases</div>
-        <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
-          {job.phases.map(phase => (
-            <PhaseCard key={phase.id} phase={phase} onClick={() => setActivePhase(phase.id)} />
-          ))}
-        </div>
+        {/* N/A phases don't count in sequence numbering */}
+        {(() => {
+          let seqCounter = 0
+          return (
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+              {job.phases.map(phase => {
+                const isNA = phase.status === 'not_applicable'
+                // property_setup doesn't get a sequence number
+                const isSetup = phase.id === 'property_setup'
+                if (!isNA && !isSetup) seqCounter++
+                return (
+                  <PhaseCard
+                    key={phase.id}
+                    phase={phase}
+                    seqNum={isNA || isSetup ? null : seqCounter}
+                    onClick={() => setActivePhase(phase.id as PhaseId)}
+                    onToggleNA={() => handleToggleNA(phase.id as PhaseId)}
+                  />
+                )
+              })}
+            </div>
+          )
+        })()}
 
         {/* Report — open review screen */}
         <div style={{ marginTop:'1.25rem' }}>

@@ -98,6 +98,48 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, 
   const [saveStatus,  setSaveStatus]  = useState<'idle'|'saving'|'saved'|'error'>('idle')
 
   const phase   = job.phases.find(p => p.id === phaseId)!
+  const meta_ph = PHASE_META[phaseId]
+
+  // ── Not Applicable screen ────────────────────────────────────────────────
+  if (phase?.status === 'not_applicable') {
+    return (
+      <div style={{ minHeight:'100dvh', background:'#F4F7FB', fontFamily:"inherit", color:'#0D1E2E' }}>
+        <div style={{ background:'#0A1C2E', padding:'max(env(safe-area-inset-top,0px),1rem) 1.25rem 1.25rem' }}>
+          <button onClick={onBack} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>← Back</button>
+          <h2 style={{ fontSize:'1.1rem', fontWeight:700, color:'#fff', margin:'0.5rem 0 0.1rem' }}>{meta_ph?.label}</h2>
+          <p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.45)', margin:0 }}>Not applicable to this inspection</p>
+        </div>
+        <div style={{ padding:'2.5rem 1.25rem', display:'flex', flexDirection:'column', gap:'1.25rem', alignItems:'center', textAlign:'center' }}>
+          <div style={{ width:60, height:60, borderRadius:'50%', background:'rgba(44,90,122,0.08)', border:'1.5px solid rgba(44,90,122,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+              <circle cx="13" cy="13" r="11" stroke="#C4CBD6" strokeWidth="1.5"/>
+              <line x1="6" y1="20" x2="20" y2="6" stroke="#C4CBD6" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize:'1rem', fontWeight:700, color:'#0D1E2E', marginBottom:'0.4rem' }}>Excluded from this inspection</div>
+            <div style={{ fontSize:'0.82rem', color:'#5E7D9B', lineHeight:1.65, maxWidth:300 }}>
+              This phase has been marked Not Applicable. It will be omitted from the report.
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const newJob = {
+                ...job, updatedAt: new Date().toISOString(),
+                phases: job.phases.map(p => p.id !== phaseId ? p : { ...p, status: 'pending' as const })
+              }
+              onUpdate(newJob)
+              try { sessionStorage.setItem(`insp_${newJob.id}`, JSON.stringify(newJob)) } catch {}
+              onBack()
+            }}
+            style={{ padding:'0.85rem 1.75rem', background:'linear-gradient(135deg,#417CA4,#2C5A7A)', border:'none', borderRadius:11, color:'#fff', fontWeight:700, fontSize:'0.88rem', cursor:'pointer', boxShadow:'0 4px 14px rgba(65,124,164,0.3)' }}>
+            Reinstate this phase →
+          </button>
+          <button onClick={onBack} style={{ background:'none', border:'none', color:'#9DB4C5', fontSize:'0.8rem', cursor:'pointer' }}>Back to dashboard</button>
+        </div>
+      </div>
+    )
+  }
   const meta    = PHASE_META[phaseId]
   const pct     = getPhaseProgress(phase)
   const done    = phase.modules.filter(m => m.status === 'complete').length

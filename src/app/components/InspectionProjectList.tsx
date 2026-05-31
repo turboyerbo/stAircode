@@ -38,6 +38,7 @@ type SummaryRow = {
   inspection_date: string
   updated_at:      string
   permit_number:   string | null
+  thumbnail?:      string   // base64 first property photo
 }
 
 function statusColor(s: string): string {
@@ -51,6 +52,18 @@ function statusLabel(s: string): string {
   return { active:'In Progress', complete:'Complete', on_hold:'On Hold', archived:'Archived' }[s] ?? s
 }
 
+// Extract the first property photo from a full InspectionJob
+function getJobThumbnail(job: any): string | undefined {
+  if (!job?.phases) return undefined
+  for (const phase of job.phases) {
+    for (const mod of phase.modules ?? []) {
+      const photo = mod.photos?.[0] || mod.findings?.[0]?.photos?.[0]
+      if (photo && typeof photo === 'string' && !photo.startsWith('[')) return photo
+    }
+  }
+  return undefined
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const days = Math.floor(diff / 86400000)
@@ -62,10 +75,12 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function InspectionProjectList({ userEmail, onStartNew, onResumeJob, onBack }: Props) {
-  const [jobs,     setJobs]    = useState<SummaryRow[]>([])
-  const [loading,  setLoading] = useState(true)
-  const [resuming, setResuming] = useState<string | null>(null)
-  const [error,    setError]   = useState<string | null>(null)
+  const [jobs,       setJobs]       = useState<SummaryRow[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [resuming,   setResuming]   = useState<string | null>(null)
+  const [deleting,   setDeleting]   = useState<string | null>(null)
+  const [confirmDel, setConfirmDel] = useState<string | null>(null)
+  const [error,      setError]      = useState<string | null>(null)
 
   const loadJobs = useCallback(async () => {
     setLoading(true); setError(null)
@@ -121,6 +136,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
               inspection_date: j.inspectionDate,
               updated_at:      j.updatedAt ?? j.createdAt,
               permit_number:   j.permitNumber ?? null,
+              thumbnail:       getJobThumbnail(j),
             })
           } catch {}
         }
@@ -147,6 +163,14 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
     } catch {}
     setError('Could not load project. Please try again.')
     setResuming(null)
+  }
+
+  async function handleDelete(id: string) {
+    setDeleting(id); setConfirmDel(null)
+    try { await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' }) } catch {}
+    try { sessionStorage.removeItem(`insp_${id}`) } catch {}
+    setJobs(prev => prev.filter(j => j.id !== id))
+    setDeleting(null)
   }
 
   return (
@@ -214,6 +238,25 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
             {jobs.map(job => (
               <div key={job.id} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(44,74,110,0.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  {/* Thumbnail */}
+                  {job.thumbnail && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`data:image/jpeg;base64,${job.thumbnail}`}
+                      alt="property"
+                      style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: `1px solid ${BORDER}` }}
+                    />
+                  )}
+                  {!job.thumbnail && (
+                    <div style={{ width: 56, height: 56, borderRadius: 8, background: 'rgba(65,124,164,0.08)', border: `1px solid ${BORDER}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <rect x="2" y="4" width="18" height="14" rx="2" stroke={BLUE} strokeWidth="1.3" fill="none"/>
+                        <path d="M2 14l5-4 4 3 3-2 6 5" stroke={BLUE} strokeWidth="1.2" strokeLinejoin="round" fill="none"/>
+                        <circle cx="7" cy="9" r="1.5" fill={BLUE} fillOpacity="0.5"/>
+                      </svg>
+                    </div>
+                  )}
+
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                       <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0D1E2E', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -242,12 +285,35 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: `1px solid ${BORDER}` }}>
                   <div style={{ fontSize: '0.62rem', color: '#9DB4C5' }}>Updated {timeAgo(job.updated_at)}</div>
-                  <button
-                    onClick={() => handleResume(job.id)}
-                    disabled={resuming === job.id}
-                    style={{ padding: '0.45rem 1rem', background: resuming === job.id ? 'rgba(65,124,164,0.1)' : BLUE, border: 'none', borderRadius: 7, color: resuming === job.id ? BLUE : '#fff', fontWeight: 700, fontSize: '0.78rem', cursor: resuming === job.id ? 'default' : 'pointer', transition: 'all 0.15s' }}>
-                    {resuming === job.id ? 'Loading…' : 'Resume →'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    {/* Delete with confirm */}
+                    {confirmDel === job.id ? (
+                      <>
+                        <span style={{ fontSize: '0.7rem', color: '#E84545', marginRight: '0.2rem' }}>Delete?</span>
+                        <button onClick={() => handleDelete(job.id)} disabled={deleting === job.id}
+                          style={{ padding: '0.4rem 0.7rem', background: deleting === job.id ? 'rgba(232,69,69,0.1)' : '#E84545', border: 'none', borderRadius: 7, color: '#fff', fontWeight: 700, fontSize: '0.72rem', cursor: deleting === job.id ? 'default' : 'pointer' }}>
+                          {deleting === job.id ? '…' : 'Yes, delete'}
+                        </button>
+                        <button onClick={() => setConfirmDel(null)}
+                          style={{ padding: '0.4rem 0.6rem', background: 'rgba(44,90,122,0.07)', border: `1px solid ${BORDER}`, borderRadius: 7, color: '#5E7D9B', fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer' }}>
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => setConfirmDel(job.id)}
+                        style={{ padding: '0.4rem 0.55rem', background: 'none', border: `1px solid rgba(232,69,69,0.25)`, borderRadius: 7, color: '#E84545', fontSize: '0.72rem', cursor: 'pointer', lineHeight: 1 }}>
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                          <path d="M2 3h9M5 3V2h3v1M3.5 3l.5 8h5l.5-8" stroke="#E84545" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleResume(job.id)}
+                      disabled={resuming === job.id}
+                      style={{ padding: '0.45rem 1rem', background: resuming === job.id ? 'rgba(65,124,164,0.1)' : BLUE, border: 'none', borderRadius: 7, color: resuming === job.id ? BLUE : '#fff', fontWeight: 700, fontSize: '0.78rem', cursor: resuming === job.id ? 'default' : 'pointer', transition: 'all 0.15s' }}>
+                      {resuming === job.id ? 'Loading…' : 'Resume →'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

@@ -181,7 +181,7 @@ export type PhaseId =
   | 'insulation'              // 5 — before interior finishes
   | 'occupancy_final'         // 6 — full walkthrough, occupancy permit
 
-export type PhaseStatus = 'pending' | 'in_progress' | 'complete' | 'skipped'
+export type PhaseStatus = 'pending' | 'in_progress' | 'complete' | 'skipped' | 'not_applicable'
 
 export type OverallCondition =
   | 'above_average' | 'typical' | 'average' | 'below_average' | 'poor'
@@ -501,7 +501,10 @@ export function getPhaseProgress(phase: InspectionPhase): number {
 }
 
 export function getJobProgress(job: InspectionJob): number {
-  const relevantPhases = job.phases.filter(p => p.id !== 'property_setup')
+  // Exclude property_setup and not_applicable phases from progress
+  const relevantPhases = job.phases.filter(p =>
+    p.id !== 'property_setup' && p.status !== 'not_applicable'
+  )
   if (!relevantPhases.length) return 0
   const done = relevantPhases.filter(p => p.status === 'complete' || p.status === 'skipped').length
   return Math.round((done / relevantPhases.length) * 100)
