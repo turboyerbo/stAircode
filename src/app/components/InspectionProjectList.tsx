@@ -106,7 +106,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
     if (sessionJobs.length) setJobs(sessionJobs)
 
     try {
-      const res  = await fetch(`/api/inspection/list?email=${encodeURIComponent(userEmail)}`)
+      const res  = await fetch(`/api/inspection/list?email=${encodeURIComponent(userEmail)}&userId=${encodeURIComponent(userEmail)}`)
       const data = await res.json()
       if (data.ok) {
         const serverJobs = data.jobs ?? []

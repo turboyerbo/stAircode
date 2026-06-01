@@ -387,30 +387,66 @@ export default function Home(){
       sb.auth.getSession().then(({ data }) => {
         if (data.session?.user) {
           const su = data.session.user
+          const email = su.email ?? su.phone ?? ''
+          // Preserve existing membership from localStorage — don't reset to 'free'
+          let membership: AppUser['membership'] = 'free'
+          try {
+            const stored = localStorage.getItem('sc_user')
+            if (stored) {
+              const prev = JSON.parse(stored)
+              if (prev?.email === email && prev?.membership && prev.membership !== 'free') {
+                membership = prev.membership
+              }
+            }
+          } catch {}
           const u: AppUser = {
-            email: su.email ?? su.phone ?? '',
-            name:  su.user_metadata?.full_name ?? su.email?.split('@')[0] ?? 'User',
+            email,
+            name:  su.user_metadata?.full_name ?? email.split('@')[0] ?? 'User',
             provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'],
-            membership: 'free',
+            membership,
             units: 'mm',
           }
           setUser(u)
           try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
-          // Fire welcome email on first OAuth sign-in return
           maybeSendWelcome(u.email, u.name)
         }
       }).catch(() => {})
       // Listen for auth state changes (OAuth callback, sign-out)
       sb.auth.onAuthStateChange((event, session) => {
-        if (!session) {
+        if (event === 'SIGNED_OUT') {
+          // Only clear on explicit sign-out — NOT on token refresh or magic link processing
           setUser(null)
           try { localStorage.removeItem('sc_user') } catch {}
-        } else if (event === 'SIGNED_IN' && session.user) {
-          // Fires on OAuth redirect return — send welcome if first time
+          try { localStorage.removeItem('sc_beta_access') } catch {}
+        } else if (event === 'SIGNED_IN' && session?.user) {
           const su = session.user
           const email = su.email ?? su.phone ?? ''
           const name  = su.user_metadata?.full_name ?? email.split('@')[0] ?? 'User'
+          // Preserve existing membership — don't reset to 'free' on re-auth
+          let membership: AppUser['membership'] = 'free'
+          try {
+            const stored = localStorage.getItem('sc_user')
+            if (stored) {
+              const prev = JSON.parse(stored)
+              if (prev?.membership && prev.membership !== 'free') membership = prev.membership
+            }
+          } catch {}
+          const u: AppUser = { email, name, provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'], membership, units: 'mm' }
+          setUser(u)
+          try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
           maybeSendWelcome(email, name)
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Silent token refresh — preserve user, just update localStorage timestamp
+          try {
+            const stored = localStorage.getItem('sc_user')
+            if (!stored) {
+              const su = session.user
+              const email = su.email ?? su.phone ?? ''
+              const u: AppUser = { email, name: su.user_metadata?.full_name ?? email.split('@')[0] ?? 'User', provider: 'otp', membership: 'free', units: 'mm' }
+              setUser(u)
+              localStorage.setItem('sc_user', JSON.stringify(u))
+            }
+          } catch {}
         }
       })
     }

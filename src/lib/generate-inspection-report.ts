@@ -1,169 +1,357 @@
 /**
- * generate-inspection-report.ts
+ * generate-inspection-report.ts — v3
  *
- * Generates a professional residential building inspection report PDF
- * using pdf-lib. Modelled on the Carson Dunlop / HORIZON format:
+ * Generates a professional residential building inspection PDF.
+ * All drawing uses PageWriter — a tracked cursor object — so content
+ * ALWAYS goes to the correct page. The stale-page bug is impossible
+ * with this pattern.
  *
- *   Page 1: Cover — address, client, inspector, date, logo
- *   Page 2: Summary — all significant findings (severity major/critical)
- *   Pages 3+: One section per phase/system with:
- *     - Section header (colour-coded)
- *     - Descriptions (materials, specifications from job data)
- *     - Observations & Recommendations (each finding: condition, implication, location, task)
- *     - Inspection photos (up to 3 per module)
- *     - Inspection Methods & Limitations (notes from inspector)
- *   Final page: Site Information
- *
- * Returns a Buffer suitable for emailing as an attachment or uploading
- * to Supabase Storage.
+ * Structure:
+ *   p1:  Cover
+ *   p2:  Table of Contents (with dot-leaders)
+ *   p3:  Summary (significant findings)
+ *   p4+: One section per completed phase (Descriptions / Observations & Recommendations)
+ *   Last: Site Information
  */
 
-import { PDFDocument, rgb, StandardFonts, PageSizes, PDFFont, PDFPage, RGB } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB } from 'pdf-lib'
 import type { InspectionJob, InspectionPhase, InspectionModule, ModuleFinding } from './inspection-types'
 import { PHASE_META, MODULE_META } from './inspection-types'
 
-// ── Brand palette ────────────────────────────────────────────────────────────
+// ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
-  navy:     rgb(0.039, 0.110, 0.180),   // #0A1C2E
-  blue:     rgb(0.255, 0.486, 0.643),   // #417CA4
-  orange:   rgb(0.949, 0.576, 0.216),   // #F29337
-  green:    rgb(0.153, 0.663, 0.420),   // #27A96B
-  red:      rgb(0.910, 0.271, 0.271),   // #E84545
-  amber:    rgb(0.769, 0.451, 0.000),   // #C47200
-  white:    rgb(1, 1, 1),
-  light:    rgb(0.957, 0.969, 0.984),   // #F4F7FB
-  text:     rgb(0.051, 0.118, 0.180),   // #0D1E2E
-  text2:    rgb(0.369, 0.490, 0.608),   // #5E7D9B
-  border:   rgb(0.898, 0.918, 0.945),   // #E5EBF2
-  darkgrey: rgb(0.35, 0.35, 0.35),
-  midgrey:  rgb(0.55, 0.55, 0.55),
+  navy:      rgb(0.039, 0.110, 0.180),
+  blue:      rgb(0.255, 0.486, 0.643),
+  orange:    rgb(0.949, 0.576, 0.216),
+  green:     rgb(0.153, 0.663, 0.420),
+  red:       rgb(0.910, 0.271, 0.271),
+  amber:     rgb(0.769, 0.451, 0.000),
+  white:     rgb(1, 1, 1),
+  light:     rgb(0.957, 0.969, 0.984),
+  text:      rgb(0.051, 0.118, 0.180),
+  text2:     rgb(0.369, 0.490, 0.608),
+  border:    rgb(0.898, 0.918, 0.945),
+  darkgrey:  rgb(0.30, 0.30, 0.30),
+  midgrey:   rgb(0.55, 0.55, 0.55),
   lightgrey: rgb(0.93, 0.93, 0.93),
 }
 
-// Section header colours matching Carson Dunlop style
 const SECTION_COLORS: Record<string, RGB> = {
-  property_setup:       rgb(0.35, 0.45, 0.55),
-  pre_construction:     rgb(0.35, 0.45, 0.55),
-  excavation_footings:  rgb(0.45, 0.35, 0.20),
-  foundation:           rgb(0.30, 0.38, 0.28),
-  framing_rough_in:     rgb(0.45, 0.38, 0.15),
-  insulation:           rgb(0.40, 0.32, 0.18),
-  occupancy_final:      rgb(0.20, 0.35, 0.55),
+  property_setup:       rgb(0.25, 0.35, 0.45),
+  pre_construction:     rgb(0.28, 0.38, 0.48),
+  excavation_footings:  rgb(0.45, 0.35, 0.15),
+  foundation:           rgb(0.30, 0.38, 0.25),
+  framing_rough_in:     rgb(0.45, 0.38, 0.12),
+  insulation:           rgb(0.38, 0.30, 0.15),
+  occupancy_final:      rgb(0.18, 0.32, 0.52),
 }
 
-// Severity to colour mapping
-function severityColor(s: string): RGB {
-  switch (s) {
-    case 'critical': return C.red
-    case 'major':    return rgb(0.85, 0.25, 0.25)
-    case 'moderate': return C.amber
-    case 'minor':    return rgb(0.60, 0.50, 0.10)
-    default:         return C.green
-  }
+// ── Page layout ───────────────────────────────────────────────────────────────
+const PW = 595.28, PH = 841.89
+const ML = 52, MR = 52, MT = 52, MB = 62
+const TW = PW - ML - MR
+
+// ── PageWriter ────────────────────────────────────────────────────────────────
+interface PW_State {
+  doc:          PDFDocument
+  page:         PDFPage
+  y:            number
+  sectionTitle: string
+  sectionColor: RGB
+  fonts:        Record<string, PDFFont>
+  job:          InspectionJob
 }
 
-function conditionColor(c: string): RGB {
-  switch (c) {
-    case 'poor': case 'below_average': return C.red
-    case 'fair': case 'average':       return C.amber
-    case 'good': case 'above_average': return C.green
-    default:                           return C.blue
-  }
+function newPage(state: PW_State): PW_State {
+  const page = state.doc.addPage([PW, PH])
+  // Section header
+  page.drawRectangle({ x: ML - 5, y: PH - MT - 22, width: TW + 10, height: 26, color: state.sectionColor })
+  page.drawText(state.sectionTitle.toUpperCase(), { x: ML, y: PH - MT - 16, font: state.fonts.bold, size: 11, color: C.white })
+  // Address / date sub-line
+  const addr = `${state.job.address.street}, ${state.job.address.city}, ${state.job.address.province}`
+  page.drawText(addr, { x: ML, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
+  const dt = fmtDate(state.job.inspectionDate)
+  const dtW = state.fonts.reg.widthOfTextAtSize(dt, 8.5)
+  page.drawText(dt, { x: PW - MR - dtW, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
+  return { ...state, page, y: PH - MT - 52 }
 }
 
-// ── Page layout constants ─────────────────────────────────────────────────────
-const PW  = 595.28    // A4 width pt
-const PH  = 841.89    // A4 height pt
-const ML  = 50        // margin left
-const MR  = 50        // margin right
-const MT  = 50        // margin top
-const MB  = 60        // margin bottom
-const TW  = PW - ML - MR  // text width
-
-// ── Drawing helpers ──────────────────────────────────────────────────────────
-function drawRect(page: PDFPage, x: number, y: number, w: number, h: number, color: RGB, borderColor?: RGB, borderWidth = 0.5) {
-  page.drawRectangle({ x, y, width: w, height: h, color, borderColor, borderWidth: borderColor ? borderWidth : 0 })
+function startSection(doc: PDFDocument, title: string, color: RGB, fonts: Record<string, PDFFont>, job: InspectionJob): PW_State {
+  const state: PW_State = { doc, page: null as any, y: 0, sectionTitle: title, sectionColor: color, fonts, job }
+  return newPage(state)
 }
 
-function drawText(page: PDFPage, text: string, x: number, y: number, font: PDFFont, size: number, color: RGB = C.text, maxWidth?: number) {
-  if (!text) return
-  const str = maxWidth ? truncateToWidth(text, font, size, maxWidth) : text
-  page.drawText(str, { x, y, font, size, color })
+function need(s: PW_State, pts: number): PW_State {
+  return s.y >= MB + pts ? s : newPage(s)
 }
 
-function truncateToWidth(text: string, font: PDFFont, size: number, maxWidth: number): string {
-  let result = text
-  while (font.widthOfTextAtSize(result, size) > maxWidth && result.length > 3) {
-    result = result.slice(0, -4) + '…'
-  }
-  return result
-}
-
-function textWidth(text: string, font: PDFFont, size: number): number {
-  return font.widthOfTextAtSize(text, size)
-}
-
-// Word-wrap text and return array of lines
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = text.replace(/\n/g, ' \n ').split(' ')
+// ── Text helpers ──────────────────────────────────────────────────────────────
+function wrap(text: string, font: PDFFont, size: number, maxW: number): string[] {
+  const words = text.replace(/\r?\n/g, ' \n ').split(' ')
   const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    if (word === '\n') { lines.push(current.trim()); current = ''; continue }
-    const test = current ? `${current} ${word}` : word
-    if (font.widthOfTextAtSize(test, size) > maxWidth) {
-      if (current) lines.push(current.trim())
-      current = word
-    } else {
-      current = test
-    }
+  let cur = ''
+  for (const w of words) {
+    if (w === '\n') { lines.push(cur.trim()); cur = ''; continue }
+    const test = cur ? `${cur} ${w}` : w
+    if (font.widthOfTextAtSize(test, size) > maxW) { if (cur) lines.push(cur.trim()); cur = w }
+    else cur = test
   }
-  if (current.trim()) lines.push(current.trim())
+  if (cur.trim()) lines.push(cur.trim())
   return lines
 }
 
-// Draw wrapped text, return y position after last line
-function drawWrapped(page: PDFPage, text: string, x: number, y: number, font: PDFFont, size: number, color: RGB, maxWidth: number, lineHeight: number): number {
-  const lines = wrapText(text, font, size, maxWidth)
+function drawWrappedText(s: PW_State, text: string, x: number, font: PDFFont, size: number, color: RGB, maxW: number, lineH: number): PW_State {
+  if (!text) return s
+  const lines = wrap(text, font, size, maxW)
+  let cur = s
   for (const line of lines) {
-    page.drawText(line, { x, y, font, size, color })
-    y -= lineHeight
+    cur = need(cur, lineH + 4)
+    cur.page.drawText(line, { x, y: cur.y, font, size, color })
+    cur = { ...cur, y: cur.y - lineH }
   }
-  return y
+  return cur
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
-export async function generateInspectionReport(job: InspectionJob): Promise<Buffer> {
-  const pdfDoc = await PDFDocument.create()
-  pdfDoc.setTitle(`Building Inspection Report — ${job.address.street}, ${job.address.city}`)
-  pdfDoc.setAuthor(job.inspectorName || 'stAIrcode Inspector')
-  pdfDoc.setSubject('Residential Building Inspection Report')
-  pdfDoc.setCreator('stAIrcode by Just Open Technologies Inc.')
-  pdfDoc.setProducer('stAIrcode')
+function subHeader(s: PW_State, title: string): PW_State {
+  s = need(s, 30)
+  const dim = rgb(s.sectionColor.red * 0.82, s.sectionColor.green * 0.82, s.sectionColor.blue * 0.82)
+  s.page.drawRectangle({ x: ML - 5, y: s.y - 18, width: TW + 10, height: 22, color: dim })
+  s.page.drawText(title, { x: ML, y: s.y - 13, font: s.fonts.bold, size: 9.5, color: C.white })
+  return { ...s, y: s.y - 26 }
+}
 
-  const fontReg  = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-  const fontObl  = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
-  const fonts = { reg: fontReg, bold: fontBold, obl: fontObl }
+function hRule(s: PW_State, indent = 0, opacity = 0.3): PW_State {
+  s.page.drawRectangle({ x: ML + indent, y: s.y + 2, width: TW - indent, height: 0.4, color: C.border })
+  return { ...s, y: s.y - 6 }
+}
 
-  const allFindings = collectFindings(job)
-  await buildCoverPage(pdfDoc, job, fonts)
-  if (allFindings.length > 0) await buildSummaryPage(pdfDoc, job, allFindings, fonts)
+// ── Severity / condition helpers ──────────────────────────────────────────────
+function sevColor(sev: string): RGB {
+  if (sev === 'critical') return C.red
+  if (sev === 'major')    return rgb(0.80, 0.20, 0.20)
+  if (sev === 'moderate') return C.amber
+  if (sev === 'minor')    return rgb(0.60, 0.48, 0.05)
+  return C.green
+}
+function condColor(c: string): RGB {
+  if (c === 'poor' || c === 'below_average') return C.red
+  if (c === 'fair' || c === 'average')       return C.amber
+  if (c === 'good' || c === 'above_average') return C.green
+  return C.blue
+}
+
+// ── Technical reference diagrams (SVG-like drawn in pdf-lib) ─────────────────
+// These illustrate correct vs deficient conditions for common findings.
+
+function drawDrainTileDiagram(s: PW_State): PW_State {
+  s = need(s, 130)
+  const x0 = ML, y0 = s.y - 5, w2 = TW / 2 - 10
+  // Box outline
+  s.page.drawRectangle({ x: x0, y: y0 - 110, width: w2, height: 115, color: C.light, borderColor: C.border, borderWidth: 0.5 })
+  // Gravel bed (dots pattern)
+  for (let row = 0; row < 3; row++) for (let col = 0; col < 6; col++) {
+    s.page.drawCircle({ x: x0 + 10 + col * 14, y: y0 - 85 + row * 12, size: 3, color: rgb(0.7, 0.65, 0.5) })
+  }
+  // Pipe circle (cross-section)
+  s.page.drawCircle({ x: x0 + w2/2, y: y0 - 60, size: 16, color: rgb(0.2, 0.2, 0.8), borderColor: rgb(0.1, 0.1, 0.6), borderWidth: 1.5 })
+  s.page.drawCircle({ x: x0 + w2/2, y: y0 - 60, size: 11, color: rgb(0.4, 0.4, 0.9) })
+  // Perforation dots on pipe
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2
+    s.page.drawCircle({ x: x0 + w2/2 + Math.cos(angle) * 14, y: y0 - 60 + Math.sin(angle) * 14, size: 1.5, color: C.white })
+  }
+  // Filter fabric (dashed line above gravel)
+  for (let i = 0; i < 8; i++) {
+    if (i % 2 === 0) s.page.drawRectangle({ x: x0 + 5 + i * (w2-10)/8, y: y0 - 30, width: (w2-10)/8 - 2, height: 1.5, color: C.green })
+  }
+  // Labels
+  s.page.drawText('Filter fabric (geotextile)', { x: x0 + 4, y: y0 - 22, font: s.fonts.obl, size: 6, color: C.green })
+  s.page.drawText('100mm perforated pipe', { x: x0 + 4, y: y0 - 52, font: s.fonts.obl, size: 6, color: C.white })
+  s.page.drawText('Granular A / clear stone bed', { x: x0 + 4, y: y0 - 100, font: s.fonts.obl, size: 6, color: C.text2 })
+  s.page.drawText('OBC 9.14.3 — Drain tile installation', { x: x0 + 2, y: y0 - 112, font: s.fonts.bold, size: 6.5, color: C.navy })
+  return { ...s, y: s.y - 120 }
+}
+
+function drawFootingDiagram(s: PW_State): PW_State {
+  s = need(s, 130)
+  const x0 = ML, y0 = s.y - 5, w2 = TW / 2 - 10
+  s.page.drawRectangle({ x: x0, y: y0 - 110, width: w2, height: 115, color: C.light, borderColor: C.border, borderWidth: 0.5 })
+  // Foundation wall
+  const wallX = x0 + w2/2 - 15, wallW = 30
+  s.page.drawRectangle({ x: wallX, y: y0 - 70, width: wallW, height: 60, color: rgb(0.75, 0.75, 0.75) })
+  // Footing
+  s.page.drawRectangle({ x: wallX - 25, y: y0 - 90, width: wallW + 50, height: 22, color: rgb(0.65, 0.65, 0.65) })
+  // Dimension arrows
+  s.page.drawRectangle({ x: wallX - 25, y: y0 - 78, width: 25, height: 0.8, color: C.orange })
+  s.page.drawRectangle({ x: wallX + wallW, y: y0 - 78, width: 25, height: 0.8, color: C.orange })
+  // Labels
+  s.page.drawText('Min. projection', { x: x0 + 2, y: y0 - 75, font: s.fonts.obl, size: 5.5, color: C.orange })
+  s.page.drawText('= wall thickness', { x: x0 + 2, y: y0 - 83, font: s.fonts.obl, size: 5.5, color: C.orange })
+  s.page.drawText('Foundation wall', { x: wallX + 2, y: y0 - 30, font: s.fonts.obl, size: 5.5, color: C.text })
+  s.page.drawText('Footing', { x: wallX + 2, y: y0 - 95, font: s.fonts.obl, size: 5.5, color: C.text })
+  s.page.drawText('OBC 9.15.3 — Minimum footing width', { x: x0 + 2, y: y0 - 112, font: s.fonts.bold, size: 6.5, color: C.navy })
+  return { ...s, y: s.y - 120 }
+}
+
+function drawVapourBarrierDiagram(s: PW_State): PW_State {
+  s = need(s, 120)
+  const x0 = ML, y0 = s.y - 5, w2 = TW / 2 - 10
+  s.page.drawRectangle({ x: x0, y: y0 - 105, width: w2, height: 110, color: C.light, borderColor: C.border, borderWidth: 0.5 })
+  // Stud wall
+  for (let i = 0; i < 4; i++) {
+    s.page.drawRectangle({ x: x0 + 8 + i * 22, y: y0 - 90, width: 8, height: 78, color: rgb(0.85, 0.78, 0.65) })
+  }
+  // Insulation (pink fill between studs)
+  for (let i = 0; i < 3; i++) {
+    s.page.drawRectangle({ x: x0 + 16 + i * 22, y: y0 - 90, width: 14, height: 78, color: rgb(1.0, 0.75, 0.8) })
+  }
+  // Poly (warm side — inside = right)
+  s.page.drawRectangle({ x: x0 + w2 - 8, y: y0 - 90, width: 3, height: 78, color: C.blue })
+  // Labels
+  s.page.drawText('Insulation', { x: x0 + 20, y: y0 - 50, font: s.fonts.obl, size: 5.5, color: rgb(0.7, 0.1, 0.3) })
+  s.page.drawText('Polyethylene', { x: x0 + w2 - 30, y: y0 - 35, font: s.fonts.obl, size: 5.5, color: C.blue })
+  s.page.drawText('on WARM side', { x: x0 + w2 - 30, y: y0 - 43, font: s.fonts.obl, size: 5.5, color: C.blue })
+  s.page.drawText('INTERIOR', { x: x0 + w2 - 25, y: y0 - 10, font: s.fonts.bold, size: 6, color: C.navy })
+  s.page.drawText('EXTERIOR', { x: x0 + 5, y: y0 - 10, font: s.fonts.bold, size: 6, color: C.navy })
+  s.page.drawText('OBC 9.25.3 — Vapour barrier on warm side', { x: x0 + 2, y: y0 - 108, font: s.fonts.bold, size: 6.5, color: C.navy })
+  return { ...s, y: s.y - 118 }
+}
+
+function drawGuardrailDiagram(s: PW_State): PW_State {
+  s = need(s, 140)
+  const x0 = ML + TW/2 + 10, y0 = s.y - 5, w2 = TW / 2 - 10
+  s.page.drawRectangle({ x: x0, y: y0 - 130, width: w2, height: 135, color: C.light, borderColor: C.border, borderWidth: 0.5 })
+  // Floor line
+  s.page.drawRectangle({ x: x0 + 5, y: y0 - 120, width: w2 - 10, height: 8, color: rgb(0.75, 0.75, 0.75) })
+  // Posts
+  s.page.drawRectangle({ x: x0 + 15, y: y0 - 115, width: 8, height: 100, color: rgb(0.5, 0.5, 0.55) })
+  s.page.drawRectangle({ x: x0 + w2 - 25, y: y0 - 115, width: 8, height: 100, color: rgb(0.5, 0.5, 0.55) })
+  // Top rail
+  s.page.drawRectangle({ x: x0 + 12, y: y0 - 18, width: w2 - 26, height: 6, color: C.navy })
+  // Balusters (max 100mm gap)
+  for (let i = 0; i < 5; i++) {
+    s.page.drawRectangle({ x: x0 + 22 + i * 18, y: y0 - 112, width: 5, height: 90, color: rgb(0.6, 0.6, 0.65) })
+  }
+  // 900mm dimension arrow
+  s.page.drawRectangle({ x: x0 + 5, y: y0 - 115, width: 0.8, height: 100, color: C.orange })
+  s.page.drawText('900mm', { x: x0 + 8, y: y0 - 65, font: s.fonts.bold, size: 6.5, color: C.orange })
+  s.page.drawText('min.', { x: x0 + 8, y: y0 - 74, font: s.fonts.obl, size: 6, color: C.orange })
+  s.page.drawText('Max. 100mm', { x: x0 + 22, y: y0 - 128, font: s.fonts.obl, size: 5.5, color: C.text2 })
+  s.page.drawText('baluster gap', { x: x0 + 22, y: y0 - 135, font: s.fonts.obl, size: 5.5, color: C.text2 })
+  s.page.drawText('OBC 9.8.7 — Guards & handrails', { x: x0 + 2, y: y0 - 143, font: s.fonts.bold, size: 6.5, color: C.navy })
+  return s // diagram is beside text, don't advance y
+}
+
+function drawFireBlockingDiagram(s: PW_State): PW_State {
+  s = need(s, 120)
+  const x0 = ML, y0 = s.y - 5, w2 = TW / 2 - 10
+  s.page.drawRectangle({ x: x0, y: y0 - 110, width: w2, height: 115, color: C.light, borderColor: C.border, borderWidth: 0.5 })
+  // Studs
+  for (let i = 0; i < 4; i++) s.page.drawRectangle({ x: x0 + 8 + i * 22, y: y0 - 95, width: 8, height: 82, color: rgb(0.85, 0.78, 0.65) })
+  // Floor plate
+  s.page.drawRectangle({ x: x0 + 5, y: y0 - 100, width: w2 - 10, height: 8, color: rgb(0.75, 0.65, 0.45) })
+  // Fire block (horizontal blocking between studs mid-height)
+  s.page.drawRectangle({ x: x0 + 5, y: y0 - 48, width: w2 - 10, height: 7, color: C.orange })
+  // Arrow pointing to block
+  s.page.drawText('Fire blocking', { x: x0 + w2/2 - 18, y: y0 - 38, font: s.fonts.bold, size: 6, color: C.orange })
+  s.page.drawText('OBC 9.10.17 — Fire blocking required at', { x: x0 + 2, y: y0 - 104, font: s.fonts.obl, size: 5.5, color: C.text2 })
+  s.page.drawText('all floor/ceiling lines & concealed spaces', { x: x0 + 2, y: y0 - 112, font: s.fonts.bold, size: 6.5, color: C.navy })
+  return { ...s, y: s.y - 118 }
+}
+
+// Map module IDs to their reference diagram function
+const DIAGRAMS: Partial<Record<string, (s: PW_State) => PW_State>> = {
+  drain_tile:       drawDrainTileDiagram,
+  footing_width:    drawFootingDiagram,
+  footing_depth:    drawFootingDiagram,
+  vapour_barrier:   drawVapourBarrierDiagram,
+  insulation_walls: drawVapourBarrierDiagram,
+  guardrails_handrails: drawGuardrailDiagram,
+  fire_blocking:    drawFireBlockingDiagram,
+}
+
+// ── Formatting helpers ────────────────────────────────────────────────────────
+function fmtDate(d: string): string {
+  if (!d) return new Date().toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+  try { return new Date(d).toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) } catch { return d }
+}
+function fmtBuildingType(t: string) {
+  const m: Record<string,string> = { single_storey_residential:'Single Storey Detached Residential', two_storey_residential:'Two Storey Detached Residential', semi_detached:'Semi-Detached Residential', townhouse:'Townhouse', multi_unit_residential:'Multi-Unit Residential', commercial:'Commercial', industrial:'Industrial', mixed_use:'Mixed Use' }
+  return m[t] ?? t.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+}
+function fmtConstruction(t: string) { const m: Record<string,string> = { brick_veneer:'Brick Veneer',double_brick:'Double Brick',timber_frame:'Wood Frame',concrete_block:'Concrete Block (CMU)',icf:'ICF',steel_frame:'Steel Frame' }; return m[t]??t.replace(/_/g,' ') }
+function fmtRoof(t: string) { const m: Record<string,string> = { concrete_tiles:'Concrete Tiles',clay_tiles:'Clay Tiles',metal_deck:'Metal Deck',asphalt_shingles:'Asphalt Shingles',flat_membrane:'Flat/Membrane' }; return m[t]??t.replace(/_/g,' ') }
+function fmtFooting(t: string) { const m: Record<string,string> = { concrete_slab:'Concrete Footings & Slab',piers_stumps:'Piers / Stumps',strip_footing:'Strip Footing' }; return m[t]??t.replace(/_/g,' ') }
+function fmtCond(c: string) { const m: Record<string,string> = { above_average:'Above Average',good:'Good',typical:'Typical',fair:'Fair',average:'Average',below_average:'Below Average',poor:'Poor',na:'Not Applicable' }; return m[c]??c }
+function fmtWeather(w: string) { const m: Record<string,string>={fine:'Fine',overcast:'Overcast',light_rain:'Light Rain',heavy_rain:'Heavy Rain',windy:'Windy'}; return m[w]??w }
+
+// ── Collect findings across all phases ────────────────────────────────────────
+type FindingRow = { phase: string; phaseId: string; module: string; moduleId: string; finding: ModuleFinding }
+
+function collectFindings(job: InspectionJob): FindingRow[] {
+  const rows: FindingRow[] = []
   for (const phase of job.phases) {
-    if (phase.status === 'pending') continue
-    const completedModules = phase.modules.filter(m => m.status === 'complete' || m.status === 'skipped')
-    if (!completedModules.length && phase.id === 'property_setup') continue
-    await buildPhaseSection(pdfDoc, job, phase, fonts)
+    if (phase.status === 'pending' || phase.status === 'not_applicable') continue
+    for (const mod of phase.modules) {
+      if (mod.status === 'pending') continue
+      for (const finding of mod.findings) {
+        if (['major','critical','moderate'].includes(finding.severity)) {
+          rows.push({
+            phase:    PHASE_META[phase.id]?.label ?? phase.id,
+            phaseId:  phase.id,
+            module:   MODULE_META[mod.id]?.label  ?? mod.id,
+            moduleId: mod.id,
+            finding,
+          })
+        }
+      }
+    }
   }
-  await buildSiteInfoPage(pdfDoc, job, fonts)
-  addPageNumbers(pdfDoc, fontReg)
-  return Buffer.from(await pdfDoc.save())
+  return rows
 }
 
-/**
- * generatePhaseSection — generates a PDF for a single inspection phase only.
- * Small, fast, targeted. Results stored on InspectionPhase.reportPdfB64.
- */
+// ── Page numbers ──────────────────────────────────────────────────────────────
+function stampPageNumbers(pdfDoc: PDFDocument, reg: PDFFont, totalPages: number) {
+  pdfDoc.getPages().forEach((page, i) => {
+    if (i === 0) return // skip cover
+    const txt = `Page ${i} of ${totalPages - 1}`
+    const tw  = reg.widthOfTextAtSize(txt, 7.5)
+    page.drawText(txt, { x: PW/2 - tw/2, y: 22, font: reg, size: 7.5, color: C.midgrey })
+    page.drawText('stAIrcode · Just Open Technologies Inc.', { x: ML, y: 22, font: reg, size: 7, color: C.midgrey })
+    page.drawRectangle({ x: ML, y: 36, width: TW, height: 0.3, color: C.lightgrey })
+  })
+}
+
+// ── buildDescriptions ────────────────────────────────────────────────────────
+function buildDescriptions(job: InspectionJob, phase: InspectionPhase): Array<{label:string;value:string}> {
+  const d: Array<{label:string;value:string}> = []
+  const id = phase.id
+  if (['property_setup','pre_construction'].includes(id)) {
+    if (job.buildingType)     d.push({ label:'Building type',          value:fmtBuildingType(job.buildingType) })
+    if (job.estimatedAge)     d.push({ label:'Estimated age',          value:job.estimatedAge })
+    if (job.wallConstruction) d.push({ label:'Wall construction',      value:fmtConstruction(job.wallConstruction) })
+    if (job.roofCovering)     d.push({ label:'Roof covering',          value:fmtRoof(job.roofCovering) })
+    if (job.footingType)      d.push({ label:'Foundation / footings',  value:fmtFooting(job.footingType) })
+    if (job.permitNumber)     d.push({ label:'Building permit',        value:job.permitNumber })
+    if (job.drawingsData?.fields?.occupancyClass)   d.push({ label:'Occupancy class', value:job.drawingsData.fields.occupancyClass! })
+    if (job.drawingsData?.fields?.constructionType) d.push({ label:'Construction type', value:job.drawingsData.fields.constructionType! })
+    if (job.drawingsData?.fields?.lotCoverage)      d.push({ label:'Lot coverage', value:job.drawingsData.fields.lotCoverage! })
+  }
+  if (id === 'excavation_footings' && job.footingType) d.push({ label:'Footing type', value:fmtFooting(job.footingType) })
+  if (id === 'foundation'          && job.wallConstruction) d.push({ label:'Foundation wall', value:fmtConstruction(job.wallConstruction) })
+  if (['framing_rough_in','insulation','occupancy_final'].includes(id)) {
+    if (job.wallConstruction) d.push({ label:'Wall construction', value:fmtConstruction(job.wallConstruction) })
+    if (job.roofCovering)     d.push({ label:'Roof covering',     value:fmtRoof(job.roofCovering) })
+    if (job.internalWalls)    d.push({ label:'Interior finishes', value:job.internalWalls })
+    if (job.windows)          d.push({ label:'Windows',           value:job.windows })
+  }
+  return d.filter(r => r.value && r.value !== 'unknown')
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN EXPORTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export async function generatePhaseSection(job: InspectionJob, phaseId: string): Promise<Buffer> {
   const phase = job.phases.find(p => p.id === phaseId)
   if (!phase) throw new Error(`Phase ${phaseId} not found`)
@@ -179,24 +367,14 @@ export async function generatePhaseSection(job: InspectionJob, phaseId: string):
   }
 
   await buildPhaseSection(pdfDoc, job, phase, fonts)
-  addPageNumbers(pdfDoc, fonts.reg)
+  stampPageNumbers(pdfDoc, fonts.reg, pdfDoc.getPageCount() + 1)
   return Buffer.from(await pdfDoc.save())
 }
 
-/**
- * collatePhasePdfs — merges pre-generated phase PDFs into one final report.
- * Adds cover page, summary of all findings, and site info page.
- * Each phase PDF that has been pre-generated is merged in order.
- * Phases without a pre-generated PDF get freshly generated sections.
- */
-export async function collatePhasePdfs(
-  job:          InspectionJob,
-  coverNotes?:  string,   // optional inspector notes for cover letter
-): Promise<Buffer> {
+export async function collatePhasePdfs(job: InspectionJob, coverNotes?: string): Promise<Buffer> {
   const final = await PDFDocument.create()
   final.setTitle(`Building Inspection Report — ${job.address.street}, ${job.address.city}`)
   final.setAuthor(job.inspectorName || 'stAIrcode Inspector')
-  final.setSubject('Residential Building Inspection Report')
   final.setCreator('stAIrcode by Just Open Technologies Inc.')
 
   const fonts = {
@@ -205,680 +383,454 @@ export async function collatePhasePdfs(
     obl:  await final.embedFont(StandardFonts.HelveticaOblique),
   }
 
-  // 1. Cover page
   await buildCoverPage(final, { ...job, purposeNote: coverNotes || job.purposeNote }, fonts)
+  await buildTOCPage(final, job, fonts)
 
-  // 2. Summary page (all significant findings across all phases)
   const allFindings = collectFindings(job)
-  if (allFindings.length > 0) {
-    await buildSummaryPage(final, job, allFindings, fonts)
-  }
+  if (allFindings.length > 0) await buildSummaryPage(final, job, allFindings, fonts)
 
-  // 3. Phase sections — merge pre-generated PDFs or generate fresh
   for (const phase of job.phases) {
-    if (phase.status === 'pending' || phase.status === 'skipped') continue
-    const completedModules = phase.modules.filter(m => m.status === 'complete')
-    if (!completedModules.length && phase.id !== 'property_setup') continue
+    if (phase.status === 'pending' || phase.status === 'not_applicable') continue
+    const hasContent = phase.modules.some(m => m.status === 'complete' && (m.findings.length > 0 || m.notes))
+    if (!hasContent && phase.id !== 'property_setup') continue
 
     if (phase.reportPdfB64) {
-      // Merge pre-generated PDF section
       try {
-        const sectionBytes = Buffer.from(phase.reportPdfB64, 'base64')
-        const sectionDoc   = await PDFDocument.load(sectionBytes)
-        const indices      = sectionDoc.getPageIndices()
-        const pages        = await final.copyPages(sectionDoc, indices)
+        const secDoc = await PDFDocument.load(Buffer.from(phase.reportPdfB64, 'base64'))
+        const pages  = await final.copyPages(secDoc, secDoc.getPageIndices())
         pages.forEach(p => final.addPage(p))
-      } catch {
-        // If merge fails, generate fresh
-        await buildPhaseSection(final, job, phase, fonts)
-      }
+      } catch { await buildPhaseSection(final, job, phase, fonts) }
     } else {
-      // No pre-generated section — build it now
       await buildPhaseSection(final, job, phase, fonts)
     }
   }
 
-  // 4. Site information page
   await buildSiteInfoPage(final, job, fonts)
-
-  // 5. Page numbers
-  addPageNumbers(final, fonts.reg)
-
+  stampPageNumbers(final, fonts.reg, final.getPageCount())
   return Buffer.from(await final.save())
 }
 
-// ── Shared helpers ─────────────────────────────────────────────────────────────
-
-type FindingRow = { phase: string; module: string; finding: ModuleFinding; notes: string }
-
-function collectFindings(job: InspectionJob): FindingRow[] {
-  const findings: FindingRow[] = []
-  for (const phase of job.phases) {
-    if (phase.status === 'pending') continue
-    for (const mod of phase.modules) {
-      if (mod.status === 'pending' || mod.status === 'skipped') continue
-      for (const finding of mod.findings) {
-        if (['major','critical','moderate'].includes(finding.severity)) {
-          findings.push({
-            phase:  PHASE_META[phase.id]?.label ?? phase.id,
-            module: MODULE_META[mod.id]?.label  ?? mod.id,
-            finding,
-            notes:  mod.notes,
-          })
-        }
-      }
-    }
-  }
-  return findings
+export async function generateInspectionReport(job: InspectionJob): Promise<Buffer> {
+  return collatePhasePdfs(job)
 }
 
-function addPageNumbers(pdfDoc: PDFDocument, fontReg: PDFFont) {
-  const pages      = pdfDoc.getPages()
-  const totalPages = pages.length
-  for (let i = 0; i < totalPages; i++) {
-    if (i === 0) continue // skip cover
-    const page       = pages[i]
-    const pageNumTxt = `Page ${i} of ${totalPages - 1}`
-    const pw         = page.getWidth()
-    const tw         = fontReg.widthOfTextAtSize(pageNumTxt, 8)
-    page.drawText(pageNumTxt, { x: pw/2 - tw/2, y: 25, font: fontReg, size: 8, color: C.midgrey })
-    page.drawText('stAIrcode by Just Open Technologies Inc.', { x: 50, y: 25, font: fontReg, size: 7, color: C.midgrey })
-  }
-}
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAGE BUILDERS — all use PageWriter (PW_State)
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// ── Cover page ────────────────────────────────────────────────────────────────
+// ── Cover ─────────────────────────────────────────────────────────────────────
 async function buildCoverPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Record<string, PDFFont>) {
-  const page = pdfDoc.addPage([PW, PH])
-  const { bold, reg } = fonts
-
-  // Navy header band
-  drawRect(page, 0, PH - 200, PW, 200, C.navy)
-
-  // Title in header
-  page.drawText('YOUR INSPECTION', { x: ML + 10, y: PH - 80, font: bold, size: 32, color: C.white })
-  page.drawText('REPORT', { x: ML + 10, y: PH - 120, font: bold, size: 32, color: C.orange })
-
-  // Orange accent stripe
-  drawRect(page, 0, PH - 205, PW, 8, C.orange)
-
-  // Property address — large
-  const addr1 = job.address.street + (job.address.unit ? ` #${job.address.unit}` : '')
-  const addr2 = `${job.address.city}, ${job.address.province}`
-  page.drawText(addr1, { x: ML, y: PH - 280, font: bold, size: 22, color: C.navy })
-  page.drawText(addr2, { x: ML, y: PH - 308, font: bold, size: 18, color: C.navy })
-
-  // Divider
-  drawRect(page, ML, PH - 325, TW, 1, C.border)
-
-  // Info block
-  const infoY = PH - 370
-  const labelSize = 9
-  const valSize   = 12
-
-  const infoRows = [
-    { label: 'PREPARED FOR',     value: job.clientName || 'Not specified' },
-    { label: 'INSPECTION DATE',  value: formatDate(job.inspectionDate) },
-    { label: 'INSPECTED BY',     value: job.inspectorName || 'Not specified' },
-    { label: 'COMPANY',          value: job.company || 'Just Open Technologies Inc.' },
-    { label: 'LICENCE NO.',      value: job.licenceNumber || '' },
-    { label: 'PURPOSE',          value: job.purposeNote || 'Building Inspection' },
-    { label: 'BUILDING TYPE',    value: formatBuildingType(job.buildingType) },
-    { label: 'ESTIMATED AGE',    value: job.estimatedAge || 'Not recorded' },
-  ]
-
-  let y = infoY
-  for (const row of infoRows) {
-    if (!row.value) continue
-    page.drawText(row.label, { x: ML, y, font: fonts.obl, size: labelSize, color: C.orange })
-    page.drawText(row.value, { x: ML, y: y - 15, font: bold, size: valSize, color: C.navy })
-    y -= 42
-  }
-
-  // Footer band
-  drawRect(page, 0, 0, PW, 80, C.navy)
-  page.drawText('stAIrcode', { x: ML, y: 50, font: bold, size: 18, color: C.orange })
-  page.drawText('by Just Open Technologies Inc.', { x: ML, y: 32, font: reg, size: 10, color: C.white })
-  page.drawText('staircode.app', { x: PW - MR - 100, y: 32, font: reg, size: 10, color: C.white })
-
-  // Orange bottom stripe
-  drawRect(page, 0, 0, PW, 8, C.orange)
-}
-
-// ── Summary page ──────────────────────────────────────────────────────────────
-async function buildSummaryPage(
-  pdfDoc: PDFDocument,
-  job: InspectionJob,
-  findings: Array<{ phase: string; module: string; finding: ModuleFinding; notes: string }>,
-  fonts: Record<string, PDFFont>
-) {
   const page = pdfDoc.addPage([PW, PH])
   const { bold, reg, obl } = fonts
 
-  let y = PH - MT
+  // Navy header band
+  page.drawRectangle({ x:0, y:PH-210, width:PW, height:210, color:C.navy })
+  // Orange accent
+  page.drawRectangle({ x:0, y:PH-215, width:PW, height:8, color:C.orange })
+  // Brand
+  page.drawText('YOUR INSPECTION', { x:ML+8, y:PH-80,  font:bold, size:30, color:C.white })
+  page.drawText('REPORT',          { x:ML+8, y:PH-118, font:bold, size:30, color:C.orange })
 
-  // Section header
-  y = drawSectionHeader(page, 'SUMMARY', C.darkgrey, y, fonts)
-  y -= 8
+  // Address
+  const addr1 = job.address.street + (job.address.unit ? ` #${job.address.unit}` : '')
+  const addr2 = `${job.address.city}, ${job.address.province}`
+  page.drawText(addr1, { x:ML, y:PH-290, font:bold, size:20, color:C.navy })
+  page.drawText(addr2, { x:ML, y:PH-316, font:bold, size:16, color:C.navy })
+  page.drawRectangle({ x:ML, y:PH-330, width:TW, height:1, color:C.border })
 
-  // Address + date line
-  page.drawText(`${job.address.street}, ${job.address.city}, ${job.address.province}`, { x: ML, y, font: reg, size: 9, color: C.midgrey })
-  page.drawText(formatDate(job.inspectionDate), { x: PW - MR - 100, y, font: reg, size: 9, color: C.midgrey })
-  y -= 20
+  // Info grid
+  const rows = [
+    { label:'PREPARED FOR',    value:job.clientName || 'Not specified' },
+    { label:'INSPECTION DATE', value:fmtDate(job.inspectionDate) },
+    { label:'INSPECTED BY',    value:job.inspectorName || 'Not specified' },
+    { label:'COMPANY',         value:job.company || 'Just Open Technologies Inc.' },
+    { label:'LICENCE NO.',     value:job.licenceNumber || '' },
+    { label:'PURPOSE',         value:job.purposeNote || 'Building Inspection' },
+    { label:'BUILDING TYPE',   value:fmtBuildingType(job.buildingType) },
+    { label:'ESTIMATED AGE',   value:job.estimatedAge || 'Not recorded' },
+  ]
+  let y = PH - 375
+  for (const row of rows) {
+    if (!row.value) continue
+    page.drawText(row.label, { x:ML, y, font:obl, size:8, color:C.orange })
+    page.drawText(row.value, { x:ML, y:y-14, font:bold, size:11, color:C.navy })
+    y -= 40
+  }
 
-  // Intro text
-  y = drawWrapped(page, 'This Summary outlines potentially significant issues identified during the inspection that may need to be addressed. Please read the complete report for full details on each system inspected.', ML, y, reg, 9, C.text, TW, 13)
+  // Footer
+  page.drawRectangle({ x:0, y:0, width:PW, height:75, color:C.navy })
+  page.drawRectangle({ x:0, y:0, width:PW, height:6, color:C.orange })
+  page.drawText('stAIrcode', { x:ML, y:48, font:bold, size:16, color:C.orange })
+  page.drawText('by Just Open Technologies Inc.', { x:ML, y:30, font:reg, size:9, color:C.white })
+  page.drawText('staircode.app', { x:PW-MR-90, y:30, font:reg, size:9, color:C.white })
+}
+
+// ── Table of Contents ─────────────────────────────────────────────────────────
+async function buildTOCPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Record<string, PDFFont>) {
+  const page = pdfDoc.addPage([PW, PH])
+  const { bold, reg, obl } = fonts
+
+  page.drawRectangle({ x:ML-5, y:PH-MT-26, width:TW+10, height:30, color:C.navy })
+  page.drawText('TABLE OF CONTENTS', { x:ML, y:PH-MT-18, font:bold, size:12, color:C.white })
+  page.drawRectangle({ x:0, y:PH-MT-30, width:PW, height:4, color:C.orange })
+
+  let y = PH - MT - 56
+
+  const sections: Array<{title:string; subtitle:string; color:RGB}> = [
+    { title:'Summary',         subtitle:'Significant findings requiring attention', color:C.darkgrey },
+  ]
+
+  const applicablePhases = job.phases.filter(p => p.status !== 'not_applicable')
+  for (const phase of applicablePhases) {
+    const meta = PHASE_META[phase.id]
+    if (!meta) continue
+    sections.push({
+      title:    meta.reportSection,
+      subtitle: meta.description,
+      color:    SECTION_COLORS[phase.id] ?? C.navy,
+    })
+  }
+  sections.push({ title:'Site Information', subtitle:'Property details, inspection conditions, disclaimer', color:C.darkgrey })
+
+  for (let i = 0; i < sections.length; i++) {
+    const sec = sections[i]
+    const num = i === 0 ? '—' : String(i)
+
+    // Row background
+    const rowH = 28
+    if (i % 2 === 0) page.drawRectangle({ x:ML-5, y:y-rowH+4, width:TW+10, height:rowH, color:C.light })
+
+    // Colour tab
+    page.drawRectangle({ x:ML-5, y:y-rowH+4, width:6, height:rowH, color:sec.color })
+
+    // Section number
+    page.drawText(num, { x:ML+8, y:y-14, font:bold, size:11, color:sec.color })
+
+    // Title + subtitle
+    page.drawText(sec.title, { x:ML+28, y:y-8, font:bold, size:10, color:C.navy })
+    page.drawText(sec.subtitle, { x:ML+28, y:y-19, font:obl, size:8, color:C.text2 })
+
+    // Dot leaders
+    const titleW = bold.widthOfTextAtSize(sec.title, 10) + 30 + ML
+    for (let dx = titleW + 4; dx < PW - MR - 20; dx += 5) {
+      page.drawCircle({ x:dx, y:y-10, size:0.8, color:C.border })
+    }
+
+    y -= rowH + 4
+  }
+
+  // Note
   y -= 16
+  page.drawRectangle({ x:ML, y:y-20, width:TW, height:26, color:rgb(0.96, 0.97, 0.99) })
+  page.drawText('This report was generated by stAIrcode. Content is based on visual inspection only.', { x:ML+8, y:y-10, font:obl, size:8, color:C.text2 })
+  page.drawText('All findings should be verified by a licensed inspector or qualified tradesperson.', { x:ML+8, y:y-20, font:obl, size:8, color:C.text2 })
+}
 
-  // Group findings by phase
-  const byPhase: Record<string, typeof findings> = {}
+// ── Summary ───────────────────────────────────────────────────────────────────
+async function buildSummaryPage(
+  pdfDoc: PDFDocument, job: InspectionJob,
+  findings: FindingRow[], fonts: Record<string, PDFFont>
+) {
+  let s = startSection(pdfDoc, 'Summary', C.darkgrey, fonts, job)
+  const { bold, reg } = fonts
+
+  s = drawWrappedText(s,
+    'This Summary outlines potentially significant issues identified during the inspection that may need to be addressed in the near term. Please read the complete report for full details. There may be additional observations not listed here.',
+    ML, reg, 9, C.text, TW, 13)
+  s = { ...s, y: s.y - 16 }
+
+  if (findings.length === 0) {
+    s = drawWrappedText(s, 'No significant issues identified at this stage of the inspection.', ML, reg, 10, C.text2, TW, 14)
+    return
+  }
+
+  const byPhase: Record<string, FindingRow[]> = {}
   for (const f of findings) {
     if (!byPhase[f.phase]) byPhase[f.phase] = []
     byPhase[f.phase].push(f)
   }
 
-  for (const [phase, phasFindings] of Object.entries(byPhase)) {
-    if (y < MB + 80) {
-      y = addContinuationPage(pdfDoc, 'SUMMARY', C.darkgrey, fonts, job)
-    }
+  for (const [phase, pf] of Object.entries(byPhase)) {
+    s = need(s, 50)
+    s = { ...s, y: s.y - 6 }
+    s.page.drawText(phase, { x:ML, y:s.y, font:bold, size:12, color:C.navy })
+    s.page.drawRectangle({ x:ML, y:s.y-2, width:bold.widthOfTextAtSize(phase,12), height:0.5, color:C.navy })
+    s = { ...s, y: s.y - 18 }
 
-    // Phase heading
-    y -= 8
-    page.drawText(phase, { x: ML, y, font: bold, size: 13, color: C.navy })
-    y -= 18
+    for (const { module, moduleId, finding } of pf) {
+      s = need(s, 50)
+      const dot = sevColor(finding.severity)
 
-    for (const { module, finding, notes } of phasFindings) {
-      if (y < MB + 60) {
-        y = addContinuationPage(pdfDoc, 'SUMMARY', C.darkgrey, fonts, job)
-      }
+      // Dot + module name
+      s.page.drawCircle({ x:ML+5, y:s.y-2, size:4.5, color:dot })
+      s.page.drawText(module, { x:ML+16, y:s.y, font:bold, size:10, color:C.navy })
+      s.page.drawRectangle({ x:ML+16, y:s.y-1, width:bold.widthOfTextAtSize(module,10), height:0.5, color:C.navy })
+      s = { ...s, y: s.y - 14 }
 
-      // Severity dot
-      const dotColor = severityColor(finding.severity)
-      page.drawCircle({ x: ML + 4, y: y - 2, size: 4, color: dotColor })
+      // Condition line
+      s = need(s, 13)
+      const cW = bold.widthOfTextAtSize('Condition:  ', 9)
+      s.page.drawText('Condition:  ', { x:ML+16, y:s.y, font:bold, size:9, color:C.text })
+      s.page.drawText(fmtCond(finding.condition as string), { x:ML+16+cW, y:s.y, font:reg, size:9, color:condColor(finding.condition as string) })
+      s = { ...s, y: s.y - 13 }
 
-      // Module name (underlined style via bold)
-      page.drawText(module, { x: ML + 14, y, font: bold, size: 10, color: C.navy })
-      const mw = bold.widthOfTextAtSize(module, 10)
-      drawRect(page, ML + 14, y - 1, mw, 0.5, C.navy)
-      y -= 14
-
-      // Condition
-      page.drawText('Condition: ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-      const condW = bold.widthOfTextAtSize('Condition: ', 9)
-      page.drawText(formatCondition(finding.condition as string), { x: ML + 14 + condW, y, font: reg, size: 9, color: dotColor })
-      y -= 12
-
-      // Observations
+      // Observations (truncated — full in section)
       if (finding.notes) {
-        y = drawWrapped(page, finding.notes, ML + 14, y, reg, 9, C.text, TW - 14, 12)
+        const shortNote = finding.notes.length > 200 ? finding.notes.slice(0, 197) + '…' : finding.notes
+        s = drawWrappedText(s, shortNote, ML+16, reg, 8.5, C.text, TW-16, 12)
       }
 
       // Implication
       if (finding.recommendation) {
-        page.drawText('Implication(s): ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-        const impW = bold.widthOfTextAtSize('Implication(s): ', 9)
-        y = drawWrapped(page, finding.recommendation, ML + 14 + impW, y, reg, 9, C.text2, TW - 14 - impW, 12)
+        s = need(s, 14)
+        s.page.drawText('Implication(s):', { x:ML+16, y:s.y, font:bold, size:9, color:C.text })
+        s = { ...s, y: s.y - 12 }
+        s = drawWrappedText(s, finding.recommendation.slice(0, 300), ML+22, reg, 8.5, C.text2, TW-22, 12)
       }
 
-      // Severity as task
-      if (finding.severity && finding.severity !== 'none') {
-        const taskLabel = finding.severity === 'critical' ? 'URGENT — Address immediately' :
-                          finding.severity === 'major'    ? 'Repair or replace' :
-                          finding.severity === 'moderate' ? 'Monitor and repair' : 'Improve'
-        page.drawText('Task: ', { x: ML + 14, y, font: bold, size: 9, color: C.text })
-        page.drawText(taskLabel, { x: ML + 14 + bold.widthOfTextAtSize('Task: ', 9), y, font: reg, size: 9, color: dotColor })
-        y -= 14
+      // Task
+      if (finding.severity !== 'none') {
+        s = need(s, 13)
+        const taskStr = finding.severity === 'critical' ? 'URGENT — Address immediately'
+                      : finding.severity === 'major'    ? 'Repair or replace'
+                      : 'Monitor and repair'
+        const tW = bold.widthOfTextAtSize('Task:  ', 9)
+        s.page.drawText('Task:  ', { x:ML+16, y:s.y, font:bold, size:9, color:C.text })
+        s.page.drawText(taskStr, { x:ML+16+tW, y:s.y, font:reg, size:9, color:dot })
+        s = { ...s, y: s.y - 14 }
       }
 
-      y -= 8
-      // Separator line
-      drawRect(page, ML + 14, y + 4, TW - 14, 0.3, C.border)
-      y -= 4
+      s = hRule(s, 16)
     }
-  }
-
-  if (findings.length === 0) {
-    drawWrapped(page, 'No significant issues were identified at this stage of the inspection. See the full report sections for all observations.', ML, y, reg, 10, C.text2, TW, 14)
   }
 }
 
 // ── Phase section ─────────────────────────────────────────────────────────────
-// ── PageWriter — tracks current page; auto-creates continuation pages ────────
-interface PageWriter {
-  doc:   PDFDocument
-  page:  PDFPage
-  y:     number
-  sectionTitle: string
-  sectionColor: RGB
-  fonts: Record<string, PDFFont>
-  job:   InspectionJob
-}
-
-function newWriter(
-  doc: PDFDocument, sectionTitle: string, sectionColor: RGB,
-  fonts: Record<string, PDFFont>, job: InspectionJob
-): PageWriter {
-  const page = doc.addPage([PW, PH])
-  let y = PH - MT
-  y = _sectionHeader(page, sectionTitle.toUpperCase(), sectionColor, fonts)
-  y -= 8
-  page.drawText(`${job.address.street}, ${job.address.city}, ${job.address.province}`, { x: ML, y, font: fonts.reg, size: 9, color: C.midgrey })
-  page.drawText(formatDate(job.inspectionDate), { x: PW - MR - 100, y, font: fonts.reg, size: 9, color: C.midgrey })
-  y -= 20
-  return { doc, page, y, sectionTitle, sectionColor, fonts, job }
-}
-
-// Ensure there is at least `needed` pts of space; add a new page if not
-function ensureSpace(w: PageWriter, needed: number): PageWriter {
-  if (w.y >= MB + needed) return w
-  const page = w.doc.addPage([PW, PH])
-  let y = PH - MT
-  y = _sectionHeader(page, w.sectionTitle.toUpperCase(), w.sectionColor, w.fonts)
-  y -= 8
-  page.drawText(`${w.job.address.street}, ${w.job.address.city}, ${w.job.address.province}`, { x: ML, y, font: w.fonts.reg, size: 9, color: C.midgrey })
-  page.drawText(formatDate(w.job.inspectionDate), { x: PW - MR - 100, y, font: w.fonts.reg, size: 9, color: C.midgrey })
-  y -= 20
-  return { ...w, page, y }
-}
-
-function _sectionHeader(page: PDFPage, title: string, color: RGB, fonts: Record<string, PDFFont>): number {
-  drawRect(page, ML - 5, PH - MT - 22, TW + 10, 26, color)
-  page.drawText(title, { x: ML, y: PH - MT - 16, font: fonts.bold, size: 12, color: C.white })
-  return PH - MT - 32
-}
-
-function wSectionHeader(w: PageWriter, title: string): PageWriter {
-  drawRect(w.page, ML - 5, w.y - 22, TW + 10, 26, w.sectionColor)
-  w.page.drawText(title, { x: ML, y: w.y - 16, font: w.fonts.bold, size: 12, color: C.white })
-  return { ...w, y: w.y - 32 }
-}
-
-function wSubHeader(w: PageWriter, title: string): PageWriter {
-  const c = w.sectionColor
-  const dim = rgb(c.red*0.85, c.green*0.85, c.blue*0.85)
-  drawRect(w.page, ML - 5, w.y - 18, TW + 10, 22, dim)
-  w.page.drawText(title, { x: ML, y: w.y - 13, font: w.fonts.bold, size: 10, color: C.white })
-  return { ...w, y: w.y - 26 }
-}
-
-function wText(w: PageWriter, text: string, x: number, font: PDFFont, size: number, color: RGB): PageWriter {
-  if (!text) return w
-  w.page.drawText(text, { x, y: w.y, font, size, color })
-  return w
-}
-
-function wWrapped(w: PageWriter, text: string, x: number, font: PDFFont, size: number, color: RGB, maxWidth: number, lineH: number): PageWriter {
-  if (!text) return w
-  const lines = wrapText(text, font, size, maxWidth)
-  let cur = w
-  for (const line of lines) {
-    cur = ensureSpace(cur, lineH + MB)
-    cur.page.drawText(line, { x, y: cur.y, font, size, color })
-    cur = { ...cur, y: cur.y - lineH }
-  }
-  return cur
-}
-
-// ── buildPhaseSection using PageWriter ────────────────────────────────────────
 async function buildPhaseSection(
-  pdfDoc: PDFDocument,
-  job: InspectionJob,
-  phase: InspectionPhase,
-  fonts: Record<string, PDFFont>
+  pdfDoc: PDFDocument, job: InspectionJob,
+  phase: InspectionPhase, fonts: Record<string, PDFFont>
 ) {
   const meta = PHASE_META[phase.id]
   if (!meta) return
 
   const sectionColor = SECTION_COLORS[phase.id] ?? C.navy
-  let w = newWriter(pdfDoc, meta.reportSection, sectionColor, fonts, job)
+  let s = startSection(pdfDoc, meta.reportSection, sectionColor, fonts, job)
   const { bold, reg, obl } = fonts
 
-  // ── Descriptions ──────────────────────────────────────────────────────────
-  const descriptions = buildDescriptions(job, phase)
-  if (descriptions.length > 0) {
-    w = ensureSpace(w, 40)
-    w = wSubHeader(w, 'Descriptions')
-    w = { ...w, y: w.y - 6 }
-
-    for (const desc of descriptions) {
-      w = ensureSpace(w, 20)
-      w.page.drawText(desc.label + ': ', { x: ML, y: w.y, font: bold, size: 9, color: C.text })
-      const lw = bold.widthOfTextAtSize(desc.label + ': ', 9)
-      w.page.drawText(desc.value, { x: ML + lw, y: w.y, font: reg, size: 9, color: sectionColor })
-      w = { ...w, y: w.y - 13 }
+  // ── Descriptions ────────────────────────────────────────────────────────────
+  const descs = buildDescriptions(job, phase)
+  if (descs.length > 0) {
+    s = subHeader(s, 'Descriptions')
+    s = { ...s, y: s.y - 6 }
+    for (const d of descs) {
+      s = need(s, 14)
+      const lw = bold.widthOfTextAtSize(d.label + ':  ', 9)
+      s.page.drawText(d.label + ':  ', { x:ML, y:s.y, font:bold, size:9, color:C.text })
+      s.page.drawText(d.value,          { x:ML+lw, y:s.y, font:reg, size:9, color:sectionColor })
+      s = { ...s, y: s.y - 13 }
     }
-    w = { ...w, y: w.y - 8 }
+    s = { ...s, y: s.y - 8 }
   }
 
-  // ── Observations & Recommendations ───────────────────────────────────────
-  const completedModules = phase.modules.filter(m =>
-    m.status === 'complete' && (m.findings.length > 0 || m.notes)
-  )
+  // ── Observations & Recommendations ──────────────────────────────────────────
+  const completedMods = phase.modules.filter(m => m.status === 'complete' && (m.findings.length > 0 || m.notes))
+  if (completedMods.length > 0) {
+    s = subHeader(s, 'Observations & Recommendations')
+    s = { ...s, y: s.y - 8 }
 
-  if (completedModules.length > 0) {
-    w = ensureSpace(w, 40)
-    w = wSubHeader(w, 'Observations & Recommendations')
-    w = { ...w, y: w.y - 8 }
+    let photoSeq = 1
 
-    let photoNum = 1
-
-    for (const mod of completedModules) {
+    for (const mod of completedMods) {
       const modMeta = MODULE_META[mod.id]
       if (!modMeta) continue
 
       for (const finding of mod.findings) {
-        w = ensureSpace(w, 80)
+        s = need(s, 70)
 
-        // Module name underlined
-        const modLabel = modMeta.label + (finding.label && finding.label !== modMeta.label ? ` \\ ${finding.label}` : '')
-        w.page.drawText(modLabel, { x: ML, y: w.y, font: bold, size: 10, color: C.navy })
-        const mw = bold.widthOfTextAtSize(modLabel, 10)
-        drawRect(w.page, ML, w.y - 1, mw, 0.5, C.navy)
-        w = { ...w, y: w.y - 14 }
+        // Module heading (underlined bold)
+        const modLabel = modMeta.label
+        s.page.drawText(modLabel, { x:ML, y:s.y, font:bold, size:10, color:C.navy })
+        s.page.drawRectangle({ x:ML, y:s.y-1, width:bold.widthOfTextAtSize(modLabel,10), height:0.6, color:C.navy })
+        s = { ...s, y: s.y - 14 }
 
-        // Condition
-        const condColor = conditionColor(finding.condition as string)
-        const condText  = formatCondition(finding.condition as string)
-        w = ensureSpace(w, 16)
-        w.page.drawCircle({ x: ML + 5, y: w.y - 1, size: 4, color: condColor })
-        w.page.drawText('Condition: ', { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
-        w.page.drawText(condText, { x: ML + 14 + bold.widthOfTextAtSize('Condition: ', 9), y: w.y, font: reg, size: 9, color: condColor })
-        w = { ...w, y: w.y - 12 }
+        // Condition dot
+        s = need(s, 13)
+        const dot = condColor(finding.condition as string)
+        s.page.drawCircle({ x:ML+5, y:s.y-2, size:4, color:dot })
+        const condLabel = 'Condition:  '
+        const cW = bold.widthOfTextAtSize(condLabel, 9)
+        s.page.drawText(condLabel, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+        s.page.drawText(fmtCond(finding.condition as string), { x:ML+14+cW, y:s.y, font:reg, size:9, color:dot })
+        s = { ...s, y: s.y - 13 }
 
         // Observations
         if (finding.notes) {
-          w = wWrapped(w, finding.notes, ML + 14, reg, 9, C.text, TW - 14, 12)
+          s = need(s, 13)
+          s = drawWrappedText(s, finding.notes, ML+14, reg, 9, C.text, TW-14, 12.5)
         }
 
-        // Implication(s)
+        // Implication
         if (finding.recommendation) {
-          w = ensureSpace(w, 16)
-          const label = 'Implication(s): '
-          const lw2 = bold.widthOfTextAtSize(label, 9)
-          w.page.drawText(label, { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
-          w = wWrapped({ ...w, y: w.y }, finding.recommendation, ML + 14 + lw2, reg, 9, C.text, TW - 14 - lw2, 12)
+          s = need(s, 14)
+          const iL = 'Implication(s):  '
+          s.page.drawText(iL, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s = { ...s, y: s.y - 12 }
+          s = drawWrappedText(s, finding.recommendation, ML+20, reg, 9, C.text, TW-20, 12.5)
         }
 
         // Code reference
         const cr = finding.codeRef || modMeta.codeRef
         if (cr) {
-          w = ensureSpace(w, 14)
-          const label = 'Code reference: '
-          w.page.drawText(label, { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
-          w.page.drawText(cr, { x: ML + 14 + bold.widthOfTextAtSize(label, 9), y: w.y, font: obl, size: 9, color: C.blue })
-          w = { ...w, y: w.y - 12 }
+          s = need(s, 12)
+          const crL = 'Code reference:  '
+          const crW = bold.widthOfTextAtSize(crL, 9)
+          s.page.drawText(crL, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s.page.drawText(cr,  { x:ML+14+crW, y:s.y, font:obl, size:9, color:C.blue })
+          s = { ...s, y: s.y - 12 }
         }
 
-        // Task
+        // Task (severity)
         if (finding.severity && finding.severity !== 'none') {
-          const sev = finding.severity
+          s = need(s, 13)
+          const sev    = finding.severity
+          const sevC   = sevColor(sev)
           const taskStr = sev === 'critical' ? 'URGENT — Address immediately'
                         : sev === 'major'    ? 'Repair or replace'
                         : sev === 'moderate' ? 'Monitor and repair when possible'
                         : 'Improve'
-          w = ensureSpace(w, 14)
-          const label = 'Task: '
-          w.page.drawText(label, { x: ML + 14, y: w.y, font: bold, size: 9, color: C.text })
-          w.page.drawText(taskStr, { x: ML + 14 + bold.widthOfTextAtSize(label, 9), y: w.y, font: reg, size: 9, color: severityColor(sev) })
-          w = { ...w, y: w.y - 14 }
+          const tL = 'Task:  '
+          const tW = bold.widthOfTextAtSize(tL, 9)
+          s.page.drawText(tL, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s.page.drawText(taskStr, { x:ML+14+tW, y:s.y, font:bold, size:9, color:sevC })
+          s = { ...s, y: s.y - 14 }
         }
 
-        // Photos — 2 side by side when possible
-        const photos = [...(finding.photos || []), ...(mod.photos || [])].filter(Boolean).slice(0, 4)
+        // Reference diagram (if applicable module)
+        const drawDiagram = DIAGRAMS[mod.id]
+        if (drawDiagram && (finding.severity === 'major' || finding.severity === 'critical' || finding.severity === 'moderate')) {
+          s = need(s, 130)
+          s = { ...s, y: s.y - 6 }
+          const noteLabel = 'Reference diagram:'
+          s.page.drawText(noteLabel, { x:ML, y:s.y, font:bold, size:8, color:C.text2 })
+          s = { ...s, y: s.y - 8 }
+          s = drawDiagram(s)
+          s = { ...s, y: s.y - 8 }
+        }
+
+        // Photos (up to 2 side by side)
+        const photos = [...(finding.photos||[]),...(mod.photos||[])].filter(Boolean).slice(0,4)
         if (photos.length > 0) {
-          w = ensureSpace(w, 160)
-          const imgW = Math.min(220, TW / Math.min(photos.length, 2) - 10)
-          let imgX = ML
-          let rowH = 0
-          let rowCount = 0
+          const iW = Math.min(200, (TW - 10) / Math.min(photos.length, 2))
+          const iH = 150
+          s = need(s, iH + 28)
+          let imgX = ML, rowMaxH = 0
 
-          for (const photoB64 of photos) {
+          for (let pi = 0; pi < photos.length; pi++) {
             try {
-              const imgBytes = Buffer.from(photoB64, 'base64')
-              const img = photoB64.startsWith('/9j/')
-                ? await pdfDoc.embedJpg(imgBytes)
-                : await pdfDoc.embedPng(imgBytes)
-              const maxH = 140
-              const scale = Math.min(imgW / img.width, maxH / img.height)
-              const iw = img.width * scale
-              const ih = img.height * scale
+              const bytes = Buffer.from(photos[pi], 'base64')
+              const img   = photos[pi].startsWith('/9j/') ? await pdfDoc.embedJpg(bytes) : await pdfDoc.embedPng(bytes)
+              const scale = Math.min(iW / img.width, iH / img.height)
+              const w2 = img.width * scale, h2 = img.height * scale
 
-              if (rowCount > 0 && rowCount % 2 === 0) {
-                // Move to next row
-                w = { ...w, y: w.y - rowH - 18 }
-                w = ensureSpace(w, ih + 20)
-                imgX = ML; rowH = 0
+              if (pi > 0 && pi % 2 === 0) {
+                s = { ...s, y: s.y - rowMaxH - 20 }
+                s = need(s, iH + 25)
+                imgX = ML; rowMaxH = 0
               }
-
-              w.page.drawImage(img, { x: imgX, y: w.y - ih, width: iw, height: ih })
-              w.page.drawText(`${photoNum}. ${finding.label || modMeta.label}`, {
-                x: imgX, y: w.y - ih - 12, font: obl, size: 8, color: C.text,
-              })
-              rowH = Math.max(rowH, ih)
-              imgX += iw + 12
-              photoNum++
-              rowCount++
-            } catch { /* skip bad image */ }
+              s.page.drawImage(img, { x:imgX, y:s.y-h2, width:w2, height:h2 })
+              s.page.drawText(`${photoSeq}. ${finding.label || modMeta.label}`, { x:imgX, y:s.y-h2-11, font:obl, size:7.5, color:C.text })
+              rowMaxH = Math.max(rowMaxH, h2)
+              imgX += w2 + 12
+              photoSeq++
+            } catch {}
           }
-          if (rowH > 0) w = { ...w, y: w.y - rowH - 18 }
+          if (rowMaxH > 0) s = { ...s, y: s.y - rowMaxH - 20 }
         }
 
-        // Divider
-        w = ensureSpace(w, 12)
-        drawRect(w.page, ML, w.y + 2, TW, 0.3, C.lightgrey)
-        w = { ...w, y: w.y - 10 }
+        s = hRule(s, 0)
       }
 
       // Module notes (no findings)
       if (mod.notes && mod.findings.length === 0) {
-        w = ensureSpace(w, 50)
-        w.page.drawText(modMeta.label, { x: ML, y: w.y, font: bold, size: 10, color: C.navy })
-        w = { ...w, y: w.y - 14 }
-        w = wWrapped(w, mod.notes, ML + 14, reg, 9, C.text, TW - 14, 12)
-        w = { ...w, y: w.y - 8 }
+        s = need(s, 40)
+        const mL = modMeta.label
+        s.page.drawText(mL, { x:ML, y:s.y, font:bold, size:10, color:C.navy })
+        s.page.drawRectangle({ x:ML, y:s.y-1, width:bold.widthOfTextAtSize(mL,10), height:0.5, color:C.navy })
+        s = { ...s, y: s.y - 14 }
+        s = drawWrappedText(s, mod.notes, ML+14, reg, 9, C.text, TW-14, 12.5)
+        s = hRule(s, 0)
       }
     }
   }
 
-  // ── Inspection Methods & Limitations ─────────────────────────────────────
+  // ── Inspection Methods & Limitations ────────────────────────────────────────
   const hasLimitations = !!(phase.phaseNotes || phase.holdPoint || meta.obcRef)
   if (hasLimitations) {
-    w = ensureSpace(w, 60)
-    w = wSubHeader(w, 'Inspection Methods & Limitations')
-    w = { ...w, y: w.y - 8 }
+    s = need(s, 60)
+    s = subHeader(s, 'Inspection Methods & Limitations')
+    s = { ...s, y: s.y - 8 }
 
     if (meta.obcRef || phase.holdPoint) {
-      const holdText = `OBC Hold Point: ${meta.obcRef || 'Inspector sign-off required before proceeding.'}`
-      w = wWrapped(w, holdText, ML, reg, 9, C.text, TW, 12)
+      s = drawWrappedText(s, `OBC Hold Point: ${meta.obcRef || 'Inspector sign-off required before proceeding to next phase.'}`, ML, reg, 9, C.text, TW, 12.5)
     }
     if (phase.phaseNotes) {
-      w = wWrapped(w, phase.phaseNotes, ML, reg, 9, C.text, TW, 12)
-    }
-    if (phase.status === 'skipped') {
-      w = wWrapped(w, 'This phase was not fully inspected or is not applicable.', ML, reg, 9, C.midgrey, TW, 12)
+      s = drawWrappedText(s, phase.phaseNotes, ML, reg, 9, C.text, TW, 12.5)
     }
   }
 }
 
-// ── Site Information page ─────────────────────────────────────────────────────
+// ── Site Information ──────────────────────────────────────────────────────────
 async function buildSiteInfoPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Record<string, PDFFont>) {
-  const page = pdfDoc.addPage([PW, PH])
+  let s = startSection(pdfDoc, 'Site Information', C.darkgrey, fonts, job)
   const { bold, reg } = fonts
 
-  let y = PH - MT
-  y = drawSectionHeader(page, 'SITE INFORMATION', C.darkgrey, y, fonts)
-  y -= 8
+  s = subHeader(s, 'Descriptions')
+  s = { ...s, y: s.y - 8 }
 
-  page.drawText(`${job.address.street}, ${job.address.city}, ${job.address.province}`, { x: ML, y, font: reg, size: 9, color: C.midgrey })
-  page.drawText(formatDate(job.inspectionDate), { x: PW - MR - 100, y, font: reg, size: 9, color: C.midgrey })
-  y -= 20
-
-  y = drawSubHeader(page, 'Descriptions', C.darkgrey, y, fonts)
-  y -= 8
-
-  const siteRows = [
-    { label: 'Weather at inspection',    value: formatWeather(job.weather) },
-    { label: 'Property occupied',        value: job.isOccupied ? 'Yes' : 'No' },
-    { label: 'Property secured',         value: job.isSecure ? 'Yes' : 'No' },
-    { label: 'Building type',            value: formatBuildingType(job.buildingType) },
-    { label: 'Estimated age of building',value: job.estimatedAge || 'Not recorded' },
-    { label: 'Wall construction',        value: formatConstruction(job.wallConstruction) },
-    { label: 'Roof covering',            value: formatRoofCovering(job.roofCovering) },
-    { label: 'Foundation type',          value: formatFootingType(job.footingType) },
-    { label: 'Internal walls',           value: job.internalWalls || 'Not recorded' },
-    { label: 'Windows',                  value: job.windows || 'Not recorded' },
-    { label: 'Permit number',            value: job.permitNumber || 'Not recorded' },
-    { label: 'Inspection purpose',       value: job.purposeNote || 'Building Inspection' },
-    { label: 'Inspector',                value: job.inspectorName + (job.licenceNumber ? ` (Lic. ${job.licenceNumber})` : '') },
-    { label: 'Company',                  value: job.company || 'Just Open Technologies Inc.' },
-    { label: 'Client',                   value: job.clientName || 'Not specified' },
-    { label: 'Project type',             value: job.projectType === 'renovation' ? 'Renovation' : 'New Construction' },
+  const rows = [
+    { label:'Weather at inspection',      value:fmtWeather(job.weather) },
+    { label:'Property occupied',          value:job.isOccupied ? 'Yes' : 'No' },
+    { label:'Property secured',           value:job.isSecure   ? 'Yes' : 'No' },
+    { label:'Building type',              value:fmtBuildingType(job.buildingType) },
+    { label:'Estimated age of building',  value:job.estimatedAge || 'Not recorded' },
+    { label:'Wall construction',          value:fmtConstruction(job.wallConstruction) },
+    { label:'Roof covering',              value:fmtRoof(job.roofCovering) },
+    { label:'Foundation type',            value:fmtFooting(job.footingType) },
+    { label:'Internal walls',             value:job.internalWalls || 'Not recorded' },
+    { label:'Windows',                    value:job.windows || 'Not recorded' },
+    { label:'Permit number',              value:job.permitNumber || 'Not recorded' },
+    { label:'Inspection purpose',         value:job.purposeNote || 'Building Inspection' },
+    { label:'Project type',               value:job.projectType === 'renovation' ? 'Renovation' : 'New Construction' },
+    { label:'Inspector',                  value:(job.inspectorName || '') + (job.licenceNumber ? ` (Lic. ${job.licenceNumber})` : '') },
+    { label:'Company',                    value:job.company || 'Just Open Technologies Inc.' },
+    { label:'Client',                     value:job.clientName || 'Not specified' },
+    { label:'Client email',               value:job.clientEmail || '' },
   ]
 
-  for (const row of siteRows) {
-    if (!row.value || row.value === 'unknown' || row.value === 'Unknown') continue
-    page.drawText(row.label + ': ', { x: ML, y, font: bold, size: 9, color: C.text })
-    const lw = bold.widthOfTextAtSize(row.label + ': ', 9)
-    page.drawText(row.value, { x: ML + lw, y, font: reg, size: 9, color: C.darkgrey })
-    y -= 14
+  for (const row of rows) {
+    if (!row.value || ['unknown','Unknown','Not recorded Not recorded'].includes(row.value)) continue
+    s = need(s, 16)
+    const lw = bold.widthOfTextAtSize(row.label + ':  ', 9)
+    const valMaxW = TW - lw
+    s.page.drawText(row.label + ':  ', { x:ML, y:s.y, font:bold, size:9, color:C.text })
+    if (reg.widthOfTextAtSize(row.value, 9) <= valMaxW) {
+      s.page.drawText(row.value, { x:ML+lw, y:s.y, font:reg, size:9, color:C.darkgrey })
+      s = { ...s, y: s.y - 14 }
+    } else {
+      s = { ...s, y: s.y - 12 }
+      s = drawWrappedText(s, row.value, ML+10, reg, 9, C.darkgrey, TW-10, 12)
+    }
   }
 
-  y -= 20
-  drawRect(page, ML, y, TW, 0.5, C.border)
-  y -= 16
-  page.drawText('END OF REPORT', { x: PW/2 - bold.widthOfTextAtSize('END OF REPORT', 11)/2, y, font: bold, size: 11, color: C.navy })
-
-  y -= 24
-  const disclaimer = 'This report was prepared using stAIrcode by Just Open Technologies Inc. It is a visual inspection only and does not replace a formal inspection by a licensed professional. The AI-assisted analysis is provided as a compliance aid. All recommendations should be reviewed by qualified tradespeople.'
-  drawWrapped(page, disclaimer, ML, y, reg, 8, C.midgrey, TW, 11)
-}
-
-// ── Drawing utilities ─────────────────────────────────────────────────────────
-function drawSectionHeader(page: PDFPage, title: string, color: RGB, y: number, fonts: Record<string, PDFFont>): number {
-  const { bold } = fonts
-  drawRect(page, ML - 5, y - 22, TW + 10, 26, color)
-  page.drawText(title, { x: ML, y: y - 16, font: bold, size: 12, color: C.white })
-  return y - 32
-}
-
-function drawSubHeader(page: PDFPage, title: string, color: RGB, y: number, fonts: Record<string, PDFFont>): number {
-  const { bold } = fonts
-  drawRect(page, ML - 5, y - 18, TW + 10, 22, rgb(color.red*0.85, color.green*0.85, color.blue*0.85))
-  page.drawText(title, { x: ML, y: y - 13, font: bold, size: 10, color: C.white })
-  return y - 26
-}
-
-function addContinuationPage(
-  pdfDoc: PDFDocument,
-  sectionTitle: string,
-  color: RGB,
-  fonts: Record<string, PDFFont>,
-  job: InspectionJob
-): number {
-  const page = pdfDoc.addPage([PW, PH])
-  let y = PH - MT
-  y = drawSectionHeader(page, sectionTitle, color, y, fonts)
-  y -= 8
-  page.drawText(`${job.address.street}, ${job.address.city}, ${job.address.province}`, { x: ML, y, font: fonts.reg, size: 9, color: C.midgrey })
-  page.drawText(formatDate(job.inspectionDate), { x: PW - MR - 100, y, font: fonts.reg, size: 9, color: C.midgrey })
-  y -= 20
-  return y
-}
-
-// ── Descriptions helpers ──────────────────────────────────────────────────────
-function buildDescriptions(job: InspectionJob, phase: InspectionPhase): Array<{ label: string; value: string }> {
-  const descs: Array<{ label: string; value: string }> = []
-  const id = phase.id
-
-  if (id === 'property_setup' || id === 'pre_construction') {
-    if (job.buildingType)     descs.push({ label: 'Building type',           value: formatBuildingType(job.buildingType) })
-    if (job.estimatedAge)     descs.push({ label: 'Estimated age',           value: job.estimatedAge })
-    if (job.wallConstruction) descs.push({ label: 'Wall construction',       value: formatConstruction(job.wallConstruction) })
-    if (job.roofCovering)     descs.push({ label: 'Roof covering',           value: formatRoofCovering(job.roofCovering) })
-    if (job.footingType)      descs.push({ label: 'Foundation / footings',   value: formatFootingType(job.footingType) })
-    if (job.permitNumber)     descs.push({ label: 'Building permit',         value: job.permitNumber })
-    if (job.drawingsData?.fields?.occupancyClass) descs.push({ label: 'Occupancy class', value: job.drawingsData.fields.occupancyClass })
-    if (job.drawingsData?.fields?.constructionType) descs.push({ label: 'Construction type', value: job.drawingsData.fields.constructionType })
-  }
-  if (id === 'excavation_footings') {
-    if (job.footingType) descs.push({ label: 'Footing type', value: formatFootingType(job.footingType) })
-  }
-  if (id === 'foundation') {
-    if (job.wallConstruction) descs.push({ label: 'Foundation wall type', value: formatConstruction(job.wallConstruction) })
-  }
-  if (id === 'framing_rough_in' || id === 'insulation' || id === 'occupancy_final') {
-    if (job.wallConstruction) descs.push({ label: 'Exterior wall construction', value: formatConstruction(job.wallConstruction) })
-    if (job.internalWalls)    descs.push({ label: 'Interior wall finishes',     value: job.internalWalls })
-    if (job.windows)          descs.push({ label: 'Windows',                    value: job.windows })
-    if (job.roofCovering)     descs.push({ label: 'Roof covering',              value: formatRoofCovering(job.roofCovering) })
-  }
-
-  // Add drawings data fields if available
-  if (job.drawingsData?.fields) {
-    const f = job.drawingsData.fields
-    if (f.lotCoverage)    descs.push({ label: 'Lot coverage',     value: f.lotCoverage })
-    if (f.frontSetback)   descs.push({ label: 'Front setback',    value: `${f.frontSetback}m` })
-    if (f.buildingHeight) descs.push({ label: 'Building height',  value: `${f.buildingHeight}m` })
-  }
-
-  return descs.filter(d => d.value && d.value !== 'unknown' && d.value !== 'Unknown')
-}
-
-// ── Formatting helpers ─────────────────────────────────────────────────────────
-function formatDate(dateStr: string): string {
-  if (!dateStr) return new Date().toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
-  try {
-    return new Date(dateStr).toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
-  } catch { return dateStr }
-}
-
-function formatBuildingType(t: string): string {
-  const map: Record<string, string> = {
-    single_storey_residential: 'Single Storey Detached Residential',
-    two_storey_residential: 'Two Storey Detached Residential',
-    semi_detached: 'Semi-Detached Residential',
-    townhouse: 'Townhouse',
-    multi_unit_residential: 'Multi-Unit Residential',
-    commercial: 'Commercial',
-    industrial: 'Industrial',
-    mixed_use: 'Mixed Use',
-  }
-  return map[t] ?? t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-}
-
-function formatConstruction(t: string): string {
-  const map: Record<string, string> = {
-    brick_veneer: 'Brick Veneer', double_brick: 'Double Brick', timber_frame: 'Wood Frame',
-    concrete_block: 'Concrete Block (CMU)', icf: 'ICF', steel_frame: 'Steel Frame',
-  }
-  return map[t] ?? t.replace(/_/g, ' ')
-}
-
-function formatRoofCovering(t: string): string {
-  const map: Record<string, string> = {
-    concrete_tiles: 'Concrete Tiles', clay_tiles: 'Clay Tiles', metal_deck: 'Metal Deck / Colorbond',
-    asphalt_shingles: 'Asphalt Shingles', flat_membrane: 'Flat / Membrane',
-  }
-  return map[t] ?? t.replace(/_/g, ' ')
-}
-
-function formatFootingType(t: string): string {
-  const map: Record<string, string> = {
-    concrete_slab: 'Concrete Footings & Slab', piers_stumps: 'Piers / Stumps', strip_footing: 'Strip Footing',
-  }
-  return map[t] ?? t.replace(/_/g, ' ')
-}
-
-function formatCondition(c: string): string {
-  const map: Record<string, string> = {
-    above_average: 'Above Average', good: 'Good', typical: 'Typical', fair: 'Fair',
-    average: 'Average', below_average: 'Below Average', poor: 'Poor', na: 'Not Applicable',
-  }
-  return map[c] ?? c
-}
-
-function formatWeather(w: string): string {
-  const map: Record<string, string> = {
-    fine: 'Fine', overcast: 'Overcast', light_rain: 'Light Rain', heavy_rain: 'Heavy Rain', windy: 'Windy',
-  }
-  return map[w] ?? w
+  s = need(s, 55)
+  s = { ...s, y: s.y - 20 }
+  s.page.drawRectangle({ x:ML, y:s.y, width:TW, height:0.6, color:C.border })
+  s = { ...s, y: s.y - 16 }
+  const endTxt = 'END OF REPORT'
+  const endW   = fonts.bold.widthOfTextAtSize(endTxt, 11)
+  s.page.drawText(endTxt, { x: PW/2 - endW/2, y: s.y, font: fonts.bold, size: 11, color: C.navy })
+  s = { ...s, y: s.y - 26 }
+  s = drawWrappedText(s,
+    'This report was prepared using stAIrcode by Just Open Technologies Inc. It is a visual inspection aid only and does not replace a formal inspection by a licensed professional. All findings should be verified by qualified tradespeople before action is taken.',
+    ML, reg, 7.5, C.midgrey, TW, 11)
 }

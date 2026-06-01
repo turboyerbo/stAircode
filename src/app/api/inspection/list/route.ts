@@ -34,8 +34,14 @@ export async function GET(req: NextRequest) {
     .order('updated_at', { ascending: false })
     .limit(50)
 
-  if (userId) query = query.eq('user_id', userId)
-  else if (email) query = query.or(`user_id.eq.${email},inspector_email.eq.${email}`)
+  if (userId && email && userId === email) {
+    // Same value — query user_id OR inspector_email
+    query = query.or(`user_id.eq.${email},inspector_email.eq.${email}`)
+  } else if (userId) {
+    query = query.or(`user_id.eq.${userId},inspector_email.eq.${userId}`)
+  } else if (email) {
+    query = query.or(`user_id.eq.${email},inspector_email.eq.${email}`)
+  }
 
   const { data, error } = await query
 
