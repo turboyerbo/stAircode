@@ -19,11 +19,12 @@ import PhaseCompleteSummary   from './PhaseCompleteSummary'
 import type { UserRole } from './AuthScreen'
 
 interface Props {
-  job:       InspectionJob
-  phaseId:   PhaseId
-  onUpdate:  (job: InspectionJob) => void
-  onBack:    () => void
-  userRole?: UserRole
+  job:        InspectionJob
+  phaseId:    PhaseId
+  onUpdate:   (job: InspectionJob) => void
+  onBack:     () => void
+  userRole?:  UserRole
+  userEmail?: string
 }
 
 // Modules that use the specialised DrawingsReviewModule instead of generic capture
@@ -94,7 +95,7 @@ function ModuleCard({ module, onClick }: { module: InspectionModule; onClick: ()
   )
 }
 
-export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, userRole = 'diy' }: Props) {
+export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, userRole = 'diy', userEmail = '' }: Props) {
   const [activeModule, setActiveModule] = useState<ModuleId | null>(null)
   const [editMode,     setEditMode]     = useState(false)  // force edit mode on complete phase
   const [saveStatus,  setSaveStatus]  = useState<'idle'|'saving'|'saved'|'error'>('idle')
@@ -174,7 +175,7 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, 
       const res = await fetch('/api/inspection/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job }),
+        body: JSON.stringify({ job, userId: userEmail || job.inspectorEmail || '' }),
       })
       const data = await res.json()
       setSaveStatus(data.ok ? 'saved' : 'error')

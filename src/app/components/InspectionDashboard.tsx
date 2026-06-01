@@ -384,6 +384,7 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
         job={job}
         phaseId={activePhase}
         userRole={userRole}
+        userEmail={userEmail}
         onUpdate={onUpdate}
         onBack={() => setActivePhase(null)}
       />

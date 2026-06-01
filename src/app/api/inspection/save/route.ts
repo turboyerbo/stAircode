@@ -75,9 +75,12 @@ export async function POST(req: NextRequest) {
 
   const activePhase = job.phases.find(p => p.status === 'in_progress')
 
+  const resolvedUserId = userId ?? job.userId ?? job.inspectorEmail ?? job.clientEmail ?? null
+
   const row = {
     id:               job.id,
-    user_id:          userId ?? job.userId ?? null,
+    user_id:          resolvedUserId,
+    inspector_email:  job.inspectorEmail ?? userId ?? null,   // always write for cross-device lookup
     client_name:      job.clientName,
     inspector_name:   job.inspectorName,
     address_street:   job.address.street,
