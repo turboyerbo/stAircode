@@ -522,14 +522,34 @@ export default function Home(){
     if (goto === 'projects') setGotoProjects(true)
     if (project) setGotoProjectId(project)
     setRedirectChecked(true)
-    if (!signin && !isPaymentReturn && !user) {
-      window.location.replace('/marketing')
+
+    // Check localStorage synchronously right here — React state (user) may not
+    // have hydrated yet from the separate useEffect, but localStorage is instant.
+    // Only redirect to marketing if there is genuinely no session anywhere.
+    if (!signin && !isPaymentReturn) {
+      let hasSession = false
+      try {
+        const stored = localStorage.getItem('sc_user')
+        if (stored) {
+          const u = JSON.parse(stored)
+          if (u?.email) hasSession = true
+        }
+      } catch {}
+      if (!hasSession) {
+        window.location.replace('/marketing')
+      }
     }
   }, []) // eslint-disable-line
 
-  // While checking (or while redirecting), render nothing to avoid flash
+  // While redirect check runs, render nothing to avoid flash
   if (!redirectChecked) return null
-  if (!user && !isSigninFlow) return null  // redirect in progress
+  // If no user in React state AND no user in localStorage, redirect is in progress
+  if (!user && !isSigninFlow) {
+    try {
+      const stored = localStorage.getItem('sc_user')
+      if (!stored || !JSON.parse(stored)?.email) return null
+    } catch { return null }
+  }
 
   // ── Payment success screen ────────────────────────────────────────────────
   if (typeof window !== 'undefined') {
@@ -654,9 +674,16 @@ function buildAccessibilityFields(m: AccessibilityMeasurements): AccessibilityFi
 function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void;initialScreen?:Screen;initialProjectId?:string|null}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>(() => {
-    // If user has inspection access and goto=projects was requested, start there
     if (initialScreen) return initialScreen
-    // If subscribed user, check localStorage for beta access and start at projects
+    // Check localStorage directly here (synchronous) — user prop may not be hydrated yet
+    try {
+      const hasBeta = localStorage.getItem('sc_beta_access') === '1'
+      const stored  = localStorage.getItem('sc_user')
+      const storedUser = stored ? JSON.parse(stored) : null
+      const mem = storedUser?.membership
+      if (hasBeta || mem === 'subscription' || mem === 'pro') return 'inspection_projects'
+    } catch {}
+    // Fall back to React prop
     if (user.membership === 'subscription' || user.membership === 'pro') {
       try { if (localStorage.getItem('sc_beta_access') === '1') return 'inspection_projects' } catch {}
     }

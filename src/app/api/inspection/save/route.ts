@@ -39,16 +39,17 @@ export async function POST(req: NextRequest) {
   const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
   const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!SUPA_URL || !SUPA_KEY) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 503 })
-  }
-
   let body: { job: InspectionJob; userId?: string }
   try {
     const text = await req.text()
     if (!text) return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
     body = JSON.parse(text)
   } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }) }
+
+  if (!SUPA_URL || !SUPA_KEY) {
+    console.warn('[inspection/save] Supabase not configured — job not persisted to database')
+    return NextResponse.json({ ok: true, id: body?.job?.id, local: true })
+  }
 
   const { job, userId } = body
   if (!job?.id) return NextResponse.json({ error: 'Missing job data' }, { status: 400 })

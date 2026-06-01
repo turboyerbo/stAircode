@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
   const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!SUPA_URL || !SUPA_KEY) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 503 })
+    console.warn('[inspection/list] Supabase not configured — returning empty list')
+    return NextResponse.json({ ok: true, jobs: [] })
   }
 
   const email  = req.nextUrl.searchParams.get('email')
