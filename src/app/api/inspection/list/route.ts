@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
   let query = sb
     .from('inspection_jobs')
-    .select('id, client_name, inspector_name, address_street, address_city, address_province, building_type, estimated_age, status, phase_progress, active_phase, permit_number, inspection_date, report_url, created_at, updated_at')
+    .select('id, client_name, inspector_name, address_street, address_city, address_province, building_type, estimated_age, status, phase_progress, active_phase, permit_number, inspection_date, report_url, created_at, updated_at, job_json->propertyThumbnail as property_thumbnail')
     .order('updated_at', { ascending: false })
     .limit(50)
 

@@ -57,12 +57,14 @@ export async function POST(req: NextRequest) {
   const sb = createClient(SUPA_URL, SUPA_KEY)
 
   // Strip base64 photos, phase PDFs, and drawing pages from job_json to keep the row small
+  // Keep propertyThumbnail — it's a small compressed image needed for the project list thumbnail
   const jobForStorage: InspectionJob = {
     ...job,
+    propertyThumbnail: job.propertyThumbnail, // keep this — it's the project list thumbnail
     drawingsData: job.drawingsData ? { ...job.drawingsData, pages: [] } : undefined,
     phases: job.phases.map(phase => ({
       ...phase,
-      reportPdfB64: undefined,  // stored in memory only, not in DB row
+      reportPdfB64: undefined,
       modules: phase.modules.map(mod => ({
         ...mod,
         photos: mod.photos.map((_, i) => `[photo-${i}]`),

@@ -1048,10 +1048,15 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
   const [camReady,   setCamReady]  = useState(false)
   const [camError,   setCamError]  = useState(false)
   const [camActive,  setCamActive] = useState(false)  // true = live camera mode
-  const [capturedB64, setCapturedB64] = useState<string | null>(module.photos[0] ?? null)
+  // Load first real photo for preview — filter out [photo-N] Supabase placeholders
+  const firstRealPhoto = module.photos?.find(p => p && !p.startsWith('[')) ?? null
+  const [capturedB64, setCapturedB64] = useState<string | null>(firstRealPhoto)
   const [aiFields,   setAiFields]  = useState<AIFields | null>(null)
   const [aiError,    setAiError]   = useState<string | null>(null)
-  const [photos,     setPhotos]    = useState<string[]>(module.photos ?? [])
+  // photos = just the primary captured/uploaded photo (one at a time)
+  // additionalPhotos = extra documentation photos
+  // handleSave merges them: [...photos, ...additionalPhotos] — no overlap
+  const [photos,     setPhotos]    = useState<string[]>(firstRealPhoto ? [firstRealPhoto] : [])
   const [additionalPhotos, setAdditionalPhotos] = useState<string[]>([])
 
   // Editable review fields
@@ -1127,8 +1132,9 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
       reader.onload = ev => {
         const result = ev.target?.result as string
         const b64 = result.includes(',') ? result.split(',')[1] : result
+        // Only add to additionalPhotos — handleSave merges [...photos, ...additionalPhotos]
+        // Adding to both would duplicate every additional photo
         setAdditionalPhotos(prev => [...prev, b64])
-        setPhotos(prev => [...prev, b64])
       }
       reader.readAsDataURL(file)
     })

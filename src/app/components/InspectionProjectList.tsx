@@ -38,7 +38,8 @@ type SummaryRow = {
   inspection_date: string
   updated_at:      string
   permit_number:   string | null
-  thumbnail?:      string   // base64 first property photo
+  thumbnail?:      string   // base64 first property photo (local)
+  property_thumbnail?: string  // from server job_json
 }
 
 function statusColor(s: string): string {
@@ -52,13 +53,21 @@ function statusLabel(s: string): string {
   return { active:'In Progress', complete:'Complete', on_hold:'On Hold', archived:'Archived' }[s] ?? s
 }
 
-// Extract the first property photo from a full InspectionJob
+// Extract the thumbnail for a job — uses propertyThumbnail field if available (survives Supabase save)
+// Falls back to scanning module photos for legacy jobs
 function getJobThumbnail(job: any): string | undefined {
+  // Use the dedicated thumbnail field first (set when property_details photo is captured)
+  if (job?.propertyThumbnail && !job.propertyThumbnail.startsWith('[')) {
+    return job.propertyThumbnail
+  }
+  // Fall back: scan module photos (only works for in-memory jobs, not loaded from Supabase)
   if (!job?.phases) return undefined
   for (const phase of job.phases) {
     for (const mod of phase.modules ?? []) {
-      const photo = mod.photos?.[0] || mod.findings?.[0]?.photos?.[0]
-      if (photo && typeof photo === 'string' && !photo.startsWith('[')) return photo
+      const photo = mod.photos?.find((p: string) => p && !p.startsWith('['))
+        || mod.findings?.find((f: any) => f.photos?.some((p: string) => p && !p.startsWith('[')))
+            ?.photos?.find((p: string) => p && !p.startsWith('['))
+      if (photo) return photo
     }
   }
   return undefined
@@ -111,9 +120,14 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
       if (data.ok) {
         const serverJobs = data.jobs ?? []
         // Merge: server rows take priority, then add any session-only jobs not yet synced
-        const serverIds = new Set(serverJobs.map((j: SummaryRow) => j.id))
+        // Map server property_thumbnail onto the thumbnail field
+        const serverJobsMapped = serverJobs.map((j: any) => ({
+          ...j,
+          thumbnail: j.property_thumbnail || j.thumbnail,
+        }))
+        const serverIds = new Set(serverJobsMapped.map((j: SummaryRow) => j.id))
         const localOnly = sessionJobs.filter(j => !serverIds.has(j.id))
-        setJobs([...serverJobs, ...localOnly])
+        setJobs([...serverJobsMapped, ...localOnly])
       }
     } catch {
       // Fall back to sessionStorage jobs already set above
@@ -136,8 +150,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
               inspection_date: j.inspectionDate,
               updated_at:      j.updatedAt ?? j.createdAt,
               permit_number:   j.permitNumber ?? null,
-              thumbnail:       getJobThumbnail(j),
-            })
+              thumbnail:       getJobThumbnail(j),            })
           } catch {}
         }
       }

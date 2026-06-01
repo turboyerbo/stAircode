@@ -149,10 +149,18 @@ export default function InspectionPhaseScreen({ job, phaseId, onUpdate, onBack, 
   const total   = phase.modules.length
 
   function handleModuleUpdate(updatedModule: InspectionModule, drawingsData?: InspectionJob['drawingsData']) {
+    // If this is the property_details module and has a photo, set it as the job thumbnail
+    // so it shows on the project list across devices (survives Supabase photo stripping)
+    const firstRealPhoto = updatedModule.photos?.find(p => p && !p.startsWith('['))
+    const thumbnailUpdate = (updatedModule.id === 'property_details' && firstRealPhoto)
+      ? { propertyThumbnail: firstRealPhoto }
+      : {}
+
     const newJob: InspectionJob = {
       ...job,
       updatedAt: new Date().toISOString(),
       ...(drawingsData ? { drawingsData } : {}),
+      ...thumbnailUpdate,
       phases: job.phases.map(p =>
         p.id !== phaseId ? p : {
           ...p,

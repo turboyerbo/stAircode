@@ -163,6 +163,7 @@ export interface InspectionJob {
   reportModuleId?: string
   ahjEmail?:       string    // Authority Having Jurisdiction email for permit submission
   inspectorEmail?: string    // inspector's own email
+  propertyThumbnail?: string // base64 JPEG thumbnail, survives save stripping for cross-device display
 
   // Server sync
   supabaseId?:     string    // row ID in inspection_jobs table
