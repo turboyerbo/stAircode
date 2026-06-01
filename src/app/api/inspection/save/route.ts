@@ -78,31 +78,44 @@ export async function POST(req: NextRequest) {
 
   const activePhase = job.phases.find(p => p.status === 'in_progress')
 
-  const resolvedUserId = userId ?? job.userId ?? job.inspectorEmail ?? job.clientEmail ?? null
+  // user_id is the primary lookup key — ALWAYS set it to the user's email
+  // This is the email they sign in with and what the list query searches for
+  const resolvedUserId = userId || job.userId || job.inspectorEmail || job.clientEmail || ''
+  
+  const now = new Date().toISOString()
 
-  const row = {
+  // First try upsert with inspector_email column (may not exist in older deployments)
+  const rowFull = {
     id:               job.id,
     user_id:          resolvedUserId,
-    inspector_email:  job.inspectorEmail ?? userId ?? null,   // always write for cross-device lookup
-    client_name:      job.clientName,
-    inspector_name:   job.inspectorName,
-    address_street:   job.address.street,
-    address_city:     job.address.city,
-    address_province: job.address.province,
-    address_country:  job.address.country,
-    building_type:    job.buildingType,
-    estimated_age:    job.estimatedAge,
-    status:           job.status,
+    inspector_email:  resolvedUserId,  // write same email to both columns for max findability
+    client_name:      job.clientName || '',
+    inspector_name:   job.inspectorName || '',
+    address_street:   job.address?.street || '',
+    address_city:     job.address?.city || '',
+    address_province: job.address?.province || '',
+    address_country:  job.address?.country || '',
+    building_type:    job.buildingType || '',
+    estimated_age:    job.estimatedAge || '',
+    status:           job.status || 'active',
     phase_progress:   getJobProgress(job),
     active_phase:     activePhase ? PHASE_META[activePhase.id].shortLabel : null,
     permit_number:    job.permitNumber ?? null,
-    inspection_date:  job.inspectionDate,
+    inspection_date:  job.inspectionDate || now.slice(0,10),
     report_url:       job.reportUrl ?? null,
     job_json:         jobForStorage,
-    updated_at:       new Date().toISOString(),
+    updated_at:       now,
   }
 
-  const { error } = await sb.from('inspection_jobs').upsert(row, { onConflict: 'id' })
+  let { error } = await sb.from('inspection_jobs').upsert(rowFull, { onConflict: 'id' })
+  
+  // If inspector_email column doesn't exist yet, retry without it
+  if (error && (error.message?.includes('inspector_email') || error.message?.includes('column'))) {
+    console.warn('[inspection/save] inspector_email column missing — retrying without it')
+    const { inspector_email: _ie, ...rowBasic } = rowFull
+    const retry = await sb.from('inspection_jobs').upsert(rowBasic, { onConflict: 'id' })
+    error = retry.error
+  }
 
   if (error) {
     console.error('[inspection/save] Supabase error:', error.message)

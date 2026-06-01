@@ -29,32 +29,46 @@ export async function GET(req: NextRequest) {
 
   const sb = createClient(SUPA_URL, SUPA_KEY)
 
-  let query = sb
+  const searchEmail = email || userId || ''
+  if (!searchEmail) {
+    return NextResponse.json({ error: 'Missing email' }, { status: 400 })
+  }
+
+  // Try with inspector_email column first; fall back to user_id only if column missing
+  let data: any[] | null = null
+  let error: any = null
+
+  const selectCols = 'id, client_name, inspector_name, address_street, address_city, address_province, building_type, estimated_age, status, phase_progress, active_phase, permit_number, inspection_date, report_url, created_at, updated_at, job_json'
+
+  const result1 = await sb
     .from('inspection_jobs')
-    .select('id, client_name, inspector_name, address_street, address_city, address_province, building_type, estimated_age, status, phase_progress, active_phase, permit_number, inspection_date, report_url, created_at, updated_at, job_json->propertyThumbnail as property_thumbnail')
+    .select(selectCols)
+    .or(`user_id.eq.${searchEmail},inspector_email.eq.${searchEmail}`)
     .order('updated_at', { ascending: false })
     .limit(50)
 
-  if (userId && email && userId === email) {
-    // Same value — query user_id OR inspector_email
-    query = query.or(`user_id.eq.${email},inspector_email.eq.${email}`)
-  } else if (userId) {
-    query = query.or(`user_id.eq.${userId},inspector_email.eq.${userId}`)
-  } else if (email) {
-    query = query.or(`user_id.eq.${email},inspector_email.eq.${email}`)
+  if (result1.error && result1.error.message?.includes('inspector_email')) {
+    // Column doesn't exist yet — query user_id only
+    console.warn('[inspection/list] inspector_email column missing — querying user_id only')
+    const result2 = await sb
+      .from('inspection_jobs')
+      .select(selectCols)
+      .eq('user_id', searchEmail)
+      .order('updated_at', { ascending: false })
+      .limit(50)
+    data  = result2.data
+    error = result2.error
+  } else {
+    data  = result1.data
+    error = result1.error
   }
 
-  const { data, error } = await query
+  // Extract propertyThumbnail from job_json for each row
+  const jobs = (data ?? []).map((row: any) => ({
+    ...row,
+    thumbnail: row.job_json?.propertyThumbnail || null,
+    job_json: undefined,  // don't send full job_json to client in list view
+  }))
 
-
-  if (error) {
-    if (error.message?.includes('does not exist') || error.message?.includes('schema cache') || (error as any).code === '42P01') {
-      console.warn('[inspection/list] inspection_jobs table not found. Run supabase-migration.sql.')
-      return NextResponse.json({ ok: true, jobs: [] })
-    }
-    console.error('[inspection/list] Supabase error:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json({ ok: true, jobs: data ?? [] })
+  return NextResponse.json({ ok: true, jobs })
 }
