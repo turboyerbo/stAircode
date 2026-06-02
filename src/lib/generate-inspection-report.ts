@@ -69,10 +69,10 @@ function newPage(state: PW_State): PW_State {
   page.drawText(state.sectionTitle.toUpperCase(), { x: ML, y: PH - MT - 16, font: state.fonts.bold, size: 11, color: C.white })
   // Address / date sub-line
   const addr = `${state.job.address.street}, ${state.job.address.city}, ${state.job.address.province}`
-  page.drawText(addr, { x: ML, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
+  page.drawText(sanitise(addr), { x: ML, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
   const dt = fmtDate(state.job.inspectionDate)
   const dtW = state.fonts.reg.widthOfTextAtSize(dt, 8.5)
-  page.drawText(dt, { x: PW - MR - dtW, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
+  page.drawText(sanitise(dt), { x: PW - MR - dtW, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
   return { ...state, page, y: PH - MT - 52 }
 }
 
@@ -100,13 +100,50 @@ function wrap(text: string, font: PDFFont, size: number, maxW: number): string[]
   return lines
 }
 
+/**
+ * sanitise — replace Unicode characters that WinAnsi (pdf-lib StandardFonts)
+ * cannot encode. AI-generated text frequently contains these.
+ * Must be called on ALL strings before passing to page.drawText().
+ */
+function sanitise(text: string): string {
+  if (!text) return ''
+  return text
+    // Math / comparison
+    .replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/±/g, '+/-')
+    .replace(/×/g, 'x').replace(/÷/g, '/').replace(/≠/g, '!=')
+    .replace(/∞/g, 'inf').replace(/√/g, 'sqrt').replace(/∑/g, 'sum')
+    .replace(/∆/g, 'delta').replace(/π/g, 'pi').replace(/°/g, ' deg')
+    // Arrows
+    .replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '^').replace(/↓/g, 'v')
+    .replace(/⇒/g, '=>').replace(/⇐/g, '<=').replace(/↔/g, '<->')
+    // Quotes / dashes
+    .replace(/[""]/g, '"').replace(/['']/g, "'")
+    .replace(/[–—]/g, '-').replace(/…/g, '...')
+    // Bullets / symbols
+    .replace(/•/g, '-').replace(/·/g, '.').replace(/◦/g, 'o')
+    .replace(/✓/g, 'OK').replace(/✗/g, 'X').replace(/✘/g, 'X')
+    .replace(/★/g, '*').replace(/☆/g, '*')
+    // Fractions
+    .replace(/½/g, '1/2').replace(/¼/g, '1/4').replace(/¾/g, '3/4')
+    .replace(/⅓/g, '1/3').replace(/⅔/g, '2/3')
+    // Units / super/subscript
+    .replace(/²/g, '2').replace(/³/g, '3').replace(/¹/g, '1')
+    .replace(/™/g, 'TM').replace(/®/g, 'R').replace(/©/g, 'C')
+    .replace(/£/g, 'GBP').replace(/€/g, 'EUR').replace(/¥/g, 'JPY')
+    // Remove any remaining non-ASCII characters that would crash WinAnsi
+    // eslint-disable-next-line no-control-regex
+    .replace(/[^\x00-\xFF]/g, '?')
+    // Clean up multiple spaces/newlines
+    .replace(/\s+/g, ' ').trim()
+}
+
 function drawWrappedText(s: PW_State, text: string, x: number, font: PDFFont, size: number, color: RGB, maxW: number, lineH: number): PW_State {
   if (!text) return s
-  const lines = wrap(text, font, size, maxW)
+  const lines = wrap(sanitise(text), font, size, maxW)
   let cur = s
   for (const line of lines) {
     cur = need(cur, lineH + 4)
-    cur.page.drawText(line, { x, y: cur.y, font, size, color })
+    cur.page.drawText(sanitise(line), { x, y: cur.y, font, size, color })
     cur = { ...cur, y: cur.y - lineH }
   }
   return cur
@@ -116,7 +153,7 @@ function subHeader(s: PW_State, title: string): PW_State {
   s = need(s, 30)
   const dim = rgb(s.sectionColor.red * 0.82, s.sectionColor.green * 0.82, s.sectionColor.blue * 0.82)
   s.page.drawRectangle({ x: ML - 5, y: s.y - 18, width: TW + 10, height: 22, color: dim })
-  s.page.drawText(title, { x: ML, y: s.y - 13, font: s.fonts.bold, size: 9.5, color: C.white })
+  s.page.drawText(sanitise(title), { x: ML, y: s.y - 13, font: s.fonts.bold, size: 9.5, color: C.white })
   return { ...s, y: s.y - 26 }
 }
 
@@ -434,8 +471,8 @@ async function buildCoverPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Re
   // Address
   const addr1 = job.address.street + (job.address.unit ? ` #${job.address.unit}` : '')
   const addr2 = `${job.address.city}, ${job.address.province}`
-  page.drawText(addr1, { x:ML, y:PH-290, font:bold, size:20, color:C.navy })
-  page.drawText(addr2, { x:ML, y:PH-316, font:bold, size:16, color:C.navy })
+  page.drawText(sanitise(addr1), { x:ML, y:PH-290, font:bold, size:20, color:C.navy })
+  page.drawText(sanitise(addr2), { x:ML, y:PH-316, font:bold, size:16, color:C.navy })
   page.drawRectangle({ x:ML, y:PH-330, width:TW, height:1, color:C.border })
 
   // Info grid
@@ -452,8 +489,8 @@ async function buildCoverPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Re
   let y = PH - 375
   for (const row of rows) {
     if (!row.value) continue
-    page.drawText(row.label, { x:ML, y, font:obl, size:8, color:C.orange })
-    page.drawText(row.value, { x:ML, y:y-14, font:bold, size:11, color:C.navy })
+    page.drawText(sanitise(row.label), { x:ML, y, font:obl, size:8, color:C.orange })
+    page.drawText(sanitise(row.value), { x:ML, y:y-14, font:bold, size:11, color:C.navy })
     y -= 40
   }
 
@@ -504,11 +541,11 @@ async function buildTOCPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Reco
     page.drawRectangle({ x:ML-5, y:y-rowH+4, width:6, height:rowH, color:sec.color })
 
     // Section number
-    page.drawText(num, { x:ML+8, y:y-14, font:bold, size:11, color:sec.color })
+    page.drawText(sanitise(num), { x:ML+8, y:y-14, font:bold, size:11, color:sec.color })
 
     // Title + subtitle
-    page.drawText(sec.title, { x:ML+28, y:y-8, font:bold, size:10, color:C.navy })
-    page.drawText(sec.subtitle, { x:ML+28, y:y-19, font:obl, size:8, color:C.text2 })
+    page.drawText(sanitise(sec.title), { x:ML+28, y:y-8, font:bold, size:10, color:C.navy })
+    page.drawText(sanitise(sec.subtitle), { x:ML+28, y:y-19, font:obl, size:8, color:C.text2 })
 
     // Dot leaders
     const titleW = bold.widthOfTextAtSize(sec.title, 10) + 30 + ML
@@ -553,7 +590,7 @@ async function buildSummaryPage(
   for (const [phase, pf] of Object.entries(byPhase)) {
     s = need(s, 50)
     s = { ...s, y: s.y - 6 }
-    s.page.drawText(phase, { x:ML, y:s.y, font:bold, size:12, color:C.navy })
+    s.page.drawText(sanitise(phase), { x:ML, y:s.y, font:bold, size:12, color:C.navy })
     s.page.drawRectangle({ x:ML, y:s.y-2, width:bold.widthOfTextAtSize(phase,12), height:0.5, color:C.navy })
     s = { ...s, y: s.y - 18 }
 
@@ -563,7 +600,7 @@ async function buildSummaryPage(
 
       // Dot + module name
       s.page.drawCircle({ x:ML+5, y:s.y-2, size:4.5, color:dot })
-      s.page.drawText(module, { x:ML+16, y:s.y, font:bold, size:10, color:C.navy })
+      s.page.drawText(sanitise(module), { x:ML+16, y:s.y, font:bold, size:10, color:C.navy })
       s.page.drawRectangle({ x:ML+16, y:s.y-1, width:bold.widthOfTextAtSize(module,10), height:0.5, color:C.navy })
       s = { ...s, y: s.y - 14 }
 
@@ -571,7 +608,7 @@ async function buildSummaryPage(
       s = need(s, 13)
       const cW = bold.widthOfTextAtSize('Condition:  ', 9)
       s.page.drawText('Condition:  ', { x:ML+16, y:s.y, font:bold, size:9, color:C.text })
-      s.page.drawText(fmtCond(finding.condition as string), { x:ML+16+cW, y:s.y, font:reg, size:9, color:condColor(finding.condition as string) })
+      s.page.drawText(sanitise(fmtCond(finding.condition as string)), { x:ML+16+cW, y:s.y, font:reg, size:9, color:condColor(finding.condition as string) })
       s = { ...s, y: s.y - 13 }
 
       // Observations (truncated — full in section)
@@ -596,7 +633,7 @@ async function buildSummaryPage(
                       : 'Monitor and repair'
         const tW = bold.widthOfTextAtSize('Task:  ', 9)
         s.page.drawText('Task:  ', { x:ML+16, y:s.y, font:bold, size:9, color:C.text })
-        s.page.drawText(taskStr, { x:ML+16+tW, y:s.y, font:reg, size:9, color:dot })
+        s.page.drawText(sanitise(taskStr), { x:ML+16+tW, y:s.y, font:reg, size:9, color:dot })
         s = { ...s, y: s.y - 14 }
       }
 
@@ -625,8 +662,8 @@ async function buildPhaseSection(
     for (const d of descs) {
       s = need(s, 14)
       const lw = bold.widthOfTextAtSize(d.label + ':  ', 9)
-      s.page.drawText(d.label + ':  ', { x:ML, y:s.y, font:bold, size:9, color:C.text })
-      s.page.drawText(d.value,          { x:ML+lw, y:s.y, font:reg, size:9, color:sectionColor })
+      s.page.drawText(sanitise(d.label + ':  '), { x:ML, y:s.y, font:bold, size:9, color:C.text })
+      s.page.drawText(sanitise(d.value),          { x:ML+lw, y:s.y, font:reg, size:9, color:sectionColor })
       s = { ...s, y: s.y - 13 }
     }
     s = { ...s, y: s.y - 8 }
@@ -649,7 +686,7 @@ async function buildPhaseSection(
 
         // Module heading (underlined bold)
         const modLabel = modMeta.label
-        s.page.drawText(modLabel, { x:ML, y:s.y, font:bold, size:10, color:C.navy })
+        s.page.drawText(sanitise(modLabel), { x:ML, y:s.y, font:bold, size:10, color:C.navy })
         s.page.drawRectangle({ x:ML, y:s.y-1, width:bold.widthOfTextAtSize(modLabel,10), height:0.6, color:C.navy })
         s = { ...s, y: s.y - 14 }
 
@@ -659,8 +696,8 @@ async function buildPhaseSection(
         s.page.drawCircle({ x:ML+5, y:s.y-2, size:4, color:dot })
         const condLabel = 'Condition:  '
         const cW = bold.widthOfTextAtSize(condLabel, 9)
-        s.page.drawText(condLabel, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
-        s.page.drawText(fmtCond(finding.condition as string), { x:ML+14+cW, y:s.y, font:reg, size:9, color:dot })
+        s.page.drawText(sanitise(condLabel), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+        s.page.drawText(sanitise(fmtCond(finding.condition as string)), { x:ML+14+cW, y:s.y, font:reg, size:9, color:dot })
         s = { ...s, y: s.y - 13 }
 
         // Observations
@@ -673,7 +710,7 @@ async function buildPhaseSection(
         if (finding.recommendation) {
           s = need(s, 14)
           const iL = 'Implication(s):  '
-          s.page.drawText(iL, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s.page.drawText(sanitise(iL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
           s = { ...s, y: s.y - 12 }
           s = drawWrappedText(s, finding.recommendation, ML+20, reg, 9, C.text, TW-20, 12.5)
         }
@@ -684,8 +721,8 @@ async function buildPhaseSection(
           s = need(s, 12)
           const crL = 'Code reference:  '
           const crW = bold.widthOfTextAtSize(crL, 9)
-          s.page.drawText(crL, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
-          s.page.drawText(cr,  { x:ML+14+crW, y:s.y, font:obl, size:9, color:C.blue })
+          s.page.drawText(sanitise(crL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s.page.drawText(sanitise(cr),  { x:ML+14+crW, y:s.y, font:obl, size:9, color:C.blue })
           s = { ...s, y: s.y - 12 }
         }
 
@@ -700,8 +737,8 @@ async function buildPhaseSection(
                         : 'Improve'
           const tL = 'Task:  '
           const tW = bold.widthOfTextAtSize(tL, 9)
-          s.page.drawText(tL, { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
-          s.page.drawText(taskStr, { x:ML+14+tW, y:s.y, font:bold, size:9, color:sevC })
+          s.page.drawText(sanitise(tL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s.page.drawText(sanitise(taskStr), { x:ML+14+tW, y:s.y, font:bold, size:9, color:sevC })
           s = { ...s, y: s.y - 14 }
         }
 
@@ -711,7 +748,7 @@ async function buildPhaseSection(
           s = need(s, 130)
           s = { ...s, y: s.y - 6 }
           const noteLabel = 'Reference diagram:'
-          s.page.drawText(noteLabel, { x:ML, y:s.y, font:bold, size:8, color:C.text2 })
+          s.page.drawText(sanitise(noteLabel), { x:ML, y:s.y, font:bold, size:8, color:C.text2 })
           s = { ...s, y: s.y - 8 }
           s = drawDiagram(s)
           s = { ...s, y: s.y - 8 }
@@ -754,7 +791,7 @@ async function buildPhaseSection(
       if (mod.notes && mod.findings.length === 0) {
         s = need(s, 40)
         const mL = modMeta.label
-        s.page.drawText(mL, { x:ML, y:s.y, font:bold, size:10, color:C.navy })
+        s.page.drawText(sanitise(mL), { x:ML, y:s.y, font:bold, size:10, color:C.navy })
         s.page.drawRectangle({ x:ML, y:s.y-1, width:bold.widthOfTextAtSize(mL,10), height:0.5, color:C.navy })
         s = { ...s, y: s.y - 14 }
         s = drawWrappedText(s, mod.notes, ML+14, reg, 9, C.text, TW-14, 12.5)
@@ -812,9 +849,9 @@ async function buildSiteInfoPage(pdfDoc: PDFDocument, job: InspectionJob, fonts:
     s = need(s, 16)
     const lw = bold.widthOfTextAtSize(row.label + ':  ', 9)
     const valMaxW = TW - lw
-    s.page.drawText(row.label + ':  ', { x:ML, y:s.y, font:bold, size:9, color:C.text })
+    s.page.drawText(sanitise(row.label + ':  '), { x:ML, y:s.y, font:bold, size:9, color:C.text })
     if (reg.widthOfTextAtSize(row.value, 9) <= valMaxW) {
-      s.page.drawText(row.value, { x:ML+lw, y:s.y, font:reg, size:9, color:C.darkgrey })
+      s.page.drawText(sanitise(row.value), { x:ML+lw, y:s.y, font:reg, size:9, color:C.darkgrey })
       s = { ...s, y: s.y - 14 }
     } else {
       s = { ...s, y: s.y - 12 }

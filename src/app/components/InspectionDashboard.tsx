@@ -37,19 +37,42 @@ function useAutoSave(job: InspectionJob, userEmail: string) {
       console.warn('[AutoSave] No userEmail — cannot save to Supabase')
       return
     }
+    // Strip all base64 photos before sending — they make the payload too large
+    // Photos are kept in localStorage/sessionStorage; we only need the job structure in Supabase
+    const slim = {
+      ...j,
+      propertyThumbnail: j.propertyThumbnail && j.propertyThumbnail.length < 20000
+        ? j.propertyThumbnail : undefined,
+      drawingsData: j.drawingsData ? { ...j.drawingsData, pages: [] } : undefined,
+      phases: j.phases.map(phase => ({
+        ...phase,
+        reportPdfB64: undefined,
+        modules: phase.modules.map(mod => ({
+          ...mod,
+          photos:   (mod.photos   || []).map((_: any, i: number) => `[photo-${i}]`),
+          findings: (mod.findings || []).map((f: any) => ({
+            ...f,
+            photos: (f.photos || []).map((_: any, i: number) => `[photo-${i}]`),
+          })),
+        })),
+      })),
+    }
     try {
       const res = await fetch('/api/inspection/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job: j, userId: userEmail }),
+        body: JSON.stringify({ job: slim, userId: userEmail }),
       })
+      if (!res.ok) {
+        const text = await res.text()
+        console.warn(`[AutoSave] HTTP ${res.status}: ${text.slice(0, 200)}`)
+        return
+      }
       const data = await res.json()
       if (data.cloud) {
         console.log(`[AutoSave] ✓ Saved to Supabase: ${j.id}`)
-      } else if (data.ok) {
-        console.warn(`[AutoSave] ⚠ Local only (Supabase not configured): ${j.id}`)
       } else {
-        console.error(`[AutoSave] ✗ Save failed: ${data.error || data.hint}`)
+        console.warn(`[AutoSave] ⚠ Not saved to cloud: ${data.error || 'unknown'}`)
       }
     } catch (e) {
       console.warn('[AutoSave] Network error:', e)
