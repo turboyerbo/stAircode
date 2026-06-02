@@ -3,18 +3,11 @@ import { useState, useEffect } from "react"
 
 const PHONE_SCREENS = [
   {
-    src:   '/screen_scan_action.jpg',
-    alt:   'Live AI stair measurement — 1127mm width detected in real time',
-    label: 'AI Measuring',
-    badge: 'LIVE SCAN',
-    badgeColor: '#27A96B',
-  },
-  {
     src:   '/screen_width.jpg',
-    alt:   'AI measuring stair width — 1127mm detected',
+    alt:   'AI measuring stair width — 1127mm detected in real time',
     label: 'Stair Width',
-    badge: 'CALIBRATED',
-    badgeColor: '#F29337',
+    badge: 'AI SCAN',
+    badgeColor: '#27A96B',
   },
   {
     src:   '/screen_tread.jpg',
@@ -25,10 +18,17 @@ const PHONE_SCREENS = [
   },
   {
     src:   '/screen_results.jpg',
-    alt:   '4 passed, 1 failed — guard height non-compliant',
+    alt:   '4 passed, 1 failed — guard height non-compliant at 1mm',
     label: 'Results',
     badge: 'INSTANT',
     badgeColor: '#E84545',
+  },
+  {
+    src:   '/screen_foundation.jpg',
+    alt:   'Foundation weeping tile analysis — filter fabric missing, action required',
+    label: 'AI Analysis',
+    badge: 'REPORT',
+    badgeColor: '#C4780A',
   },
   {
     src:   '/screen_review.jpg',
@@ -39,14 +39,14 @@ const PHONE_SCREENS = [
   },
   {
     src:   '/screen_dashboard.jpg',
-    alt:   'Generate Report dashboard — 4 phases, assemble final report',
+    alt:   'Generate Report dashboard — assemble and send final report',
     label: 'Generate Report',
     badge: 'PDF',
-    badgeColor: '#C4780A',
+    badgeColor: '#F29337',
   },
   {
     src:   '/screen_report.jpg',
-    alt:   'Professional 30-page PDF inspection report',
+    alt:   'Professional 30-page PDF building inspection report',
     label: 'PDF Report',
     badge: '30 PAGES',
     badgeColor: '#27A96B',
