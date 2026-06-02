@@ -25,9 +25,29 @@ export default function MarketingPage() {
   // Smart sign-in: if user already has a session + access, go straight to projects
   function handleSignIn(e?: React.MouseEvent) {
     e?.preventDefault()
+    // Returning member — check if already authenticated
     try {
       const stored = localStorage.getItem('sc_user')
-      const betaOk = localStorage.getItem('sc_beta_access') === '1'
+      if (stored) {
+        const u = JSON.parse(stored)
+        if (u?.email) {
+          // Already authenticated — go straight to projects
+          window.location.href = '/?signin=1&goto=projects'
+          return
+        }
+      }
+    } catch {}
+    // Not logged in — show the member login screen (not the new-user onboarding)
+    window.location.href = '/?member=1'
+  }
+
+  function handleGetReport(e?: React.MouseEvent) {
+    e?.preventDefault()
+    // New user wanting to subscribe or try the demo
+    // If already has access, go straight to projects
+    try {
+      const stored   = localStorage.getItem('sc_user')
+      const betaOk   = localStorage.getItem('sc_beta_access') === '1'
       if (stored) {
         const u = JSON.parse(stored)
         if (u?.email && (betaOk || u.membership === 'subscription' || u.membership === 'pro')) {
@@ -36,6 +56,9 @@ export default function MarketingPage() {
         }
       }
     } catch {}
+    // Scroll to pricing/signup section
+    const el = document.getElementById('pricing')
+    if (el) { el.scrollIntoView({ behavior: 'smooth' }); return }
     window.location.href = '/?signin=1'
   }
 
@@ -151,7 +174,7 @@ export default function MarketingPage() {
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
             <a onClick={handleSignIn} href="#" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
-            <a onClick={handleSignIn} href="#" className={styles.navCta}>Get a compliance report →</a>
+            <a onClick={handleGetReport} href="#" className={styles.navCta}>Get a compliance report →</a>
           </nav>
 
           {/* Hamburger */}
@@ -178,7 +201,7 @@ export default function MarketingPage() {
                 style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 500, color: 'rgba(255,255,255,0.85)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
               >{l.label}</a>
             ))}
-            <a onClick={handleSignIn} href="#" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>Get a compliance report →
+            <a onClick={handleGetReport} href="#" className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>Get a compliance report →
             </a>
           </div>
         )}
@@ -503,7 +526,7 @@ export default function MarketingPage() {
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.65, marginBottom: '2rem' }}>Scan for free in under 5 minutes. No app download. No tape measure.<br />
             Just your phone and the building element in question.
           </p>
-          <a onClick={handleSignIn} href="#" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
+          <a onClick={handleGetReport} href="#" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
           </a>
           <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>Compliance aid tool. Always confirm with a licensed inspector or authority having jurisdiction before renovation or occupancy decisions.
           </p>

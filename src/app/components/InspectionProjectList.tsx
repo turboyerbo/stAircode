@@ -94,24 +94,51 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
   const loadJobs = useCallback(async () => {
     setLoading(true); setError(null)
 
-    // Always load sessionStorage jobs first for instant display
+    // Load jobs from BOTH sessionStorage (current tab) and localStorage (persists across reloads)
     const sessionJobs: SummaryRow[] = []
-    try {
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i)
-        if (key?.startsWith('insp_')) {
-          const j = JSON.parse(sessionStorage.getItem(key) ?? '')
-          if (j?.id) sessionJobs.push({
-            id: j.id, client_name: j.clientName ?? '',
-            address_street: j.address?.street ?? '', address_city: j.address?.city ?? '',
-            address_province: j.address?.province ?? '', building_type: j.buildingType ?? '',
-            status: j.status ?? 'active', phase_progress: 0, active_phase: null,
-            inspection_date: j.inspectionDate ?? '', updated_at: j.updatedAt ?? j.createdAt ?? '',
-            permit_number: j.permitNumber ?? null,
+    const seenIds = new Set<string>()
+
+    const scanStorage = (storage: Storage) => {
+      try {
+        for (let i = 0; i < storage.length; i++) {
+          const key = storage.key(i)
+          if (!key?.startsWith('insp_')) continue
+          const j = JSON.parse(storage.getItem(key) ?? '')
+          if (!j?.id || seenIds.has(j.id)) continue
+          seenIds.add(j.id)
+          // Calculate real progress from phases (not hardcoded 0)
+          const applicablePhases = (j.phases ?? []).filter((p: any) =>
+            p.id !== 'property_setup' && p.status !== 'not_applicable'
+          )
+          const donePct = applicablePhases.length > 0
+            ? Math.round(applicablePhases.filter((p: any) =>
+                p.status === 'complete' || p.status === 'skipped'
+              ).length / applicablePhases.length * 100)
+            : 0
+          const activePhase = (j.phases ?? []).find((p: any) => p.status === 'in_progress')
+          sessionJobs.push({
+            id: j.id,
+            client_name:     j.clientName ?? '',
+            address_street:  j.address?.street ?? '',
+            address_city:    j.address?.city ?? '',
+            address_province: j.address?.province ?? '',
+            building_type:   j.buildingType ?? '',
+            status:          j.status ?? 'active',
+            phase_progress:  donePct,
+            active_phase:    activePhase?.id ?? null,
+            inspection_date: j.inspectionDate ?? '',
+            updated_at:      j.updatedAt ?? j.createdAt ?? '',
+            permit_number:   j.permitNumber ?? null,
+            thumbnail:       getJobThumbnail(j),
           })
         }
-      }
-    } catch {}
+      } catch {}
+    }
+
+    try { scanStorage(sessionStorage) } catch {}
+    try { scanStorage(localStorage) } catch {}
+    // Sort by updated_at desc
+    sessionJobs.sort((a, b) => (b.updated_at > a.updated_at ? 1 : -1))
     if (sessionJobs.length) setJobs(sessionJobs)
 
     try {

@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Logo, { BetaLogo } from './components/Logo'
+import MemberLoginScreen from './components/MemberLoginScreen'
 import AuthScreen,      { AppUser, UserRole } from './components/AuthScreen'
 import { initAnalytics, identifyUser, resetUser, Analytics } from '@/lib/analytics'
 import { getSupabase } from '@/lib/supabase-client'
@@ -500,6 +501,9 @@ export default function Home(){
     resetUser()
     setUser(null)
     try{localStorage.removeItem('sc_user')}catch{}
+    try{localStorage.removeItem('sc_beta_access')}catch{}
+    setIsSignoutFlow(true)   // show member login, not marketing or splash
+    setSplashDone(true)      // skip splash for returning users signing out
   }
   function handleUpdateUser(u:AppUser){setUser(u);try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}}
   // ── Marketing redirect ────────────────────────────────────────────────────
@@ -508,25 +512,27 @@ export default function Home(){
   const [redirectChecked, setRedirectChecked] = React.useState(false)
   const [isSigninFlow,    setIsSigninFlow]    = React.useState(false)
   // Store goto param for post-auth routing
-  const [gotoProjects, setGotoProjects] = React.useState(false)
-  const [gotoProjectId, setGotoProjectId] = React.useState<string|null>(null)
+  const [gotoProjects,   setGotoProjects]   = React.useState(false)
+  const [gotoProjectId,  setGotoProjectId]  = React.useState<string|null>(null)
+  const [isSignoutFlow,  setIsSignoutFlow]  = React.useState(false)  // after sign-out → member login
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const signin  = params.get('signin') === '1'
+    const member  = params.get('member') === '1'   // explicit member login (from "Sign In" button)
     const payment = params.get('payment')
     const goto    = params.get('goto')
     const project = params.get('project')
     const isPaymentReturn = payment === 'success' || payment === 'cancelled'
+
     setIsSigninFlow(signin || isPaymentReturn)
+    if (member) setIsSignoutFlow(true)  // treat ?member=1 same as post-signout flow
     if (goto === 'projects') setGotoProjects(true)
     if (project) setGotoProjectId(project)
     setRedirectChecked(true)
 
-    // Check localStorage synchronously right here — React state (user) may not
-    // have hydrated yet from the separate useEffect, but localStorage is instant.
-    // Only redirect to marketing if there is genuinely no session anywhere.
-    if (!signin && !isPaymentReturn) {
+    // Check localStorage synchronously — React state hasn't hydrated yet
+    if (!signin && !isPaymentReturn && !member) {
       let hasSession = false
       try {
         const stored = localStorage.getItem('sc_user')
@@ -543,8 +549,8 @@ export default function Home(){
 
   // While redirect check runs, render nothing to avoid flash
   if (!redirectChecked) return null
-  // If no user in React state AND no user in localStorage, redirect is in progress
-  if (!user && !isSigninFlow) {
+  // Allow through if: signin flow, member flow, signout flow, or has localStorage session
+  if (!user && !isSigninFlow && !isSignoutFlow) {
     try {
       const stored = localStorage.getItem('sc_user')
       if (!stored || !JSON.parse(stored)?.email) return null
@@ -564,6 +570,13 @@ export default function Home(){
   // Show splash on first visit (when coming from marketing via ?signin=1)
   if(!user && !splashDone) return (
     <SplashScreen onDone={() => setSplashDone(true)} />
+  )
+  // Sign-out path → Member login (no splash, no upsell)
+  if(!user && isSignoutFlow) return (
+    <MemberLoginScreen
+      onAuth={handleAuth}
+      onNotAMember={() => window.location.href = '/marketing'}
+    />
   )
   if(!user)return <AuthScreen onAuth={handleAuth}/>
   // Auto-assign default role if not set — role screen removed, user picks Individual/Professional instead
@@ -880,6 +893,8 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId}:{u
       const stubJob = createNewJob({ projectType: t, status: 'active' })
       setInspectionJob(stubJob)
       try { sessionStorage.setItem(`insp_${stubJob.id}`, JSON.stringify(stubJob)) } catch {}
+      try { localStorage.setItem(`insp_${stubJob.id}`, JSON.stringify(stubJob)) } catch {}
+      try { localStorage.setItem('sc_last_job_id', stubJob.id) } catch {}
       // Fire-and-forget save to Supabase
       fetch('/api/inspection/save', {
         method: 'POST',
@@ -941,7 +956,12 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId}:{u
       onBack={()=>setScreen('inspection_type')}
     />
   if(screen==='inspection_dashboard'&&inspectionJob)
-    return <InspectionDashboard job={inspectionJob} onUpdate={j=>{setInspectionJob(j);try{sessionStorage.setItem(`insp_${j.id}`,JSON.stringify(j))}catch{}}} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''} userRole={user.role}/>
+    return <InspectionDashboard job={inspectionJob} onUpdate={j=>{
+      setInspectionJob(j)
+      // Persist to BOTH sessionStorage (fast) AND localStorage (survives reload)
+      try { sessionStorage.setItem(`insp_${j.id}`, JSON.stringify(j)) } catch {}
+      try { localStorage.setItem(`insp_${j.id}`, JSON.stringify(j)) } catch {}
+    }} onBack={()=>setScreen('inspection_projects')} userEmail={user.email??''} userRole={user.role}/>
 
   // Accessibility module routing
   if(screen==='scan_ready' && activeModule==='accessibility')
