@@ -32,33 +32,26 @@ function buildSystemPrompt(job: InspectionJob): string {
     .flatMap(p => p.modules)
     .flatMap(m => m.findings)
     .filter(f => f.severity !== 'none')
-    .map(f => `${f.label}: ${f.condition} — ${f.notes}`)
-    .slice(0, 15)
+    .map(f => `${f.label}: ${f.condition} (${f.severity}) — ${(f.notes ?? '').slice(0, 120)}`)
+    .slice(0, 20)
     .join('\n')
 
-  return `You are an experienced building inspector assistant helping with an active inspection.
+  const activePhase = job.phases.find(p => p.status === 'in_progress')
 
-INSPECTION CONTEXT:
-Property: ${job.address.street}, ${job.address.city}, ${job.address.province}
-Building type: ${job.buildingType?.replace(/_/g,' ')}
-Estimated age: ${job.estimatedAge}
-Wall construction: ${job.wallConstruction?.replace(/_/g,' ')}
-Date: ${job.inspectionDate}
-
-PROGRESS:
+  return `Property: ${job.address.street}, ${job.address.city}, ${job.address.province}
+Building type: ${job.buildingType?.replace(/_/g,' ') || 'Residential'}
+Project type: ${job.projectType === 'renovation' ? 'Renovation' : 'New Construction'}
+Estimated age: ${job.estimatedAge || 'Not recorded'}
+Wall construction: ${job.wallConstruction?.replace(/_/g,' ') || 'Not recorded'}
+Foundation: ${job.footingType?.replace(/_/g,' ') || 'Not recorded'}
+Inspector: ${job.inspectorName || 'Not recorded'}
+Currently working on: ${activePhase ? activePhase.id.replace(/_/g,' ') : 'Not in a phase'}
 Completed phases: ${completedPhases || 'None yet'}
 
-KEY FINDINGS SO FAR:
+Significant findings recorded so far:
 ${findings || 'No defects recorded yet'}
 
-Your role:
-- Help the inspector interpret defects and rate their severity
-- Reference Canadian building codes (OBC 2024, NBC) and relevant standards
-- Suggest what else to look for given the findings so far
-- Recommend when to escalate to specialists (structural engineer, electrician, plumber, etc.)
-- Keep answers concise and practical — the inspector is in the field
-
-Always be direct. Cite code sections when relevant. Do not repeat back the whole question.`
+The inspector may ask about anything visible on-site, defect interpretation, code compliance, remediation steps, or when to call a specialist.`
 }
 
 export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
@@ -88,24 +81,30 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
     setLoading(true)
 
     try {
-      const history = newMessages.slice(-10).map(m => ({
-        role: m.role as 'user' | 'assistant',
+      const history = newMessages.slice(-12).map(m => ({
+        role:    m.role as 'user' | 'assistant',
         content: m.content,
       }))
 
-      const res = await fetch('/api/vision', {
-        method: 'POST',
+      const res = await fetch('/api/inspection/chat', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: history,
+          messages:     history,
           systemPrompt: buildSystemPrompt(job),
-          textOnly: true,
         }),
       })
 
-      if (!res.ok) throw new Error('API error')
-      const data = await res.json()
-      const reply = data.text ?? 'Could not get a response. Please try again.'
+      let reply: string
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        reply = data.error
+          ? `Error: ${data.error}`
+          : `Server error (${res.status}). Please try again.`
+      } else {
+        const data = await res.json()
+        reply = data.text ?? 'No response received. Please try again.'
+      }
 
       const assistantMsg: ChatMessage = {
         id:        `msg-${Date.now()}-a`,
@@ -121,10 +120,10 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
       onUpdate(updatedJob)
       try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(updatedJob)) } catch {}
 
-    } catch {
+    } catch (err: any) {
       const errMsg: ChatMessage = {
-        id: `msg-err-${Date.now()}`, role:'assistant',
-        content: 'Connection error. Please check your network and try again.',
+        id: `msg-err-${Date.now()}`, role: 'assistant',
+        content: `Network error: ${err?.message ?? 'Could not reach the server. Check your connection and try again.'}`,
         timestamp: new Date().toISOString(),
       }
       setMessages(prev => [...prev, errMsg])
@@ -151,7 +150,7 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:'0.85rem', fontWeight:600, color:'#fff' }}>AI Inspection Assistant</div>
-            <div style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.45)' }}>Ask about defects, codes, or recommendations</div>
+            <div style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.45)' }}>OBC 2024 · Residential construction · Defect analysis</div>
           </div>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', fontSize:'1.2rem', cursor:'pointer', lineHeight:1 }}>×</button>
         </div>
@@ -159,19 +158,25 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
         {/* Messages */}
         <div style={{ flex:1, overflowY:'auto', padding:'0.85rem 1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
           {messages.length === 0 && (
-            <div style={{ textAlign:'center', padding:'2rem 1rem' }}>
-              <div style={{ fontSize:'0.82rem', color:'#9DB4C5', lineHeight:1.7 }}>
-                Ask about defect severity, code requirements, when to escalate, or what to look for next.
+            <div style={{ padding:'1rem 0.5rem' }}>
+              <div style={{ fontSize:'0.8rem', color:'#9DB4C5', lineHeight:1.7, textAlign:'center', marginBottom:'1rem' }}>
+                Ask about defect severity, code requirements, remediation steps, or when to call a specialist.
               </div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', justifyContent:'center', marginTop:'0.85rem' }}>
+              <div style={{ fontSize:'0.68rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.5rem', letterSpacing:'0.04em', textTransform:'uppercase' as const }}>Common questions</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.35rem' }}>
                 {[
-                  'What does horizontal cracking indicate?',
-                  'When should I flag foundation issues?',
-                  'Is this roof condition major or minor?',
-                  'What code applies to stair handrails?',
-                ].map(q => (
+                  { q: 'What does horizontal cracking in a foundation wall indicate?', cat: 'Structural' },
+                  { q: 'Minimum footing depth in Ontario and why?', cat: 'OBC Code' },
+                  { q: 'Is missing filter fabric on weeping tile a major defect?', cat: 'Drainage' },
+                  { q: 'What fire blocking is required at floor lines?', cat: 'Fire Safety' },
+                  { q: 'When is a structural engineer required vs my recommendation?', cat: 'Escalation' },
+                  { q: 'What are the Tarion warranty implications for this finding?', cat: 'Tarion' },
+                  { q: 'What R-value is required for exterior walls in Ontario?', cat: 'Insulation' },
+                  { q: 'Signs of improper vapour barrier installation to look for?', cat: 'Building Science' },
+                ].map(({ q, cat }) => (
                   <button key={q} onClick={() => { setInput(q); inputRef.current?.focus() }}
-                    style={{ padding:'0.35rem 0.75rem', background:'rgba(65,124,164,0.08)', border:`1px solid rgba(65,124,164,0.2)`, borderRadius:20, fontSize:'0.7rem', color:BLUE, cursor:'pointer', fontFamily:'inherit' }}>
+                    style={{ padding:'0.55rem 0.8rem', background:'#F4F7FB', border:`1px solid rgba(65,124,164,0.18)`, borderRadius:10, fontSize:'0.75rem', color:'#0D1E2E', cursor:'pointer', fontFamily:'inherit', textAlign:'left' as const, display:'flex', alignItems:'flex-start', gap:'0.5rem', lineHeight:1.4 }}>
+                    <span style={{ fontSize:'0.58rem', fontWeight:700, color:'#fff', background:BLUE, padding:'0.1rem 0.45rem', borderRadius:4, flexShrink:0, marginTop:1, letterSpacing:'0.04em' }}>{cat}</span>
                     {q}
                   </button>
                 ))}
@@ -218,7 +223,7 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            placeholder="Ask about defects, codes, or recommendations…"
+            placeholder="Ask about defects, codes, remediation, or Tarion warranty…"
             rows={1}
             style={{ flex:1, padding:'0.6rem 0.85rem', background:'#F4F7FB', border:`1px solid ${BORDER}`, borderRadius:20, fontSize:'0.82rem', outline:'none', resize:'none', fontFamily:'inherit', lineHeight:1.5, maxHeight:100, overflowY:'auto' }}
           />
