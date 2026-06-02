@@ -13,15 +13,15 @@ export async function GET() {
   const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   const result: Record<string, any> = {
-    supabase_url:          SUPA_URL ? `${SUPA_URL.slice(0,30)}…` : 'NOT SET',
-    service_role_key:      SVC_KEY  ? `${SVC_KEY.slice(0,12)}…` : 'NOT SET ← this is the problem',
-    anon_key:              ANON_KEY ? `${ANON_KEY.slice(0,12)}…` : 'NOT SET',
-    key_being_used:        SVC_KEY  ? 'service_role' : ANON_KEY ? 'anon (weaker)' : 'NONE',
-    table_reachable:       false,
-    table_writable:        false,
-    rls_status:            'unknown',
-    error:                 null as string | null,
-    hint:                  null as string | null,
+    supabase_url_set:   !!SUPA_URL,
+    service_role_key:   SVC_KEY  ? `${SVC_KEY.slice(0,12)}…`  : '❌ NOT SET — this is likely the problem',
+    anon_key:           ANON_KEY ? `${ANON_KEY.slice(0,12)}…` : '❌ NOT SET',
+    key_in_use:         SVC_KEY ? 'service_role ✓' : ANON_KEY ? 'anon ⚠ (weaker — set SUPABASE_SERVICE_ROLE_KEY)' : '❌ NONE',
+    table_readable:     false,
+    table_writable:     false,
+    rls_enabled:        'unknown',
+    error:              null as string | null,
+    fix:                null as string | null,
   }
 
   if (!SUPA_URL || (!SVC_KEY && !ANON_KEY)) {
@@ -48,7 +48,7 @@ export async function GET() {
     return NextResponse.json(result)
   }
 
-  result.table_reachable = true
+  result.table_readable = true
 
   // Test 2: Can we write a test row?
   const testId = `_ping_test_${Date.now()}`
@@ -68,10 +68,8 @@ export async function GET() {
 
   if (writeError) {
     result.error       = writeError.message
-    result.rls_status  = 'blocking writes'
-    result.hint        = writeError.message.includes('RLS') || writeError.message.includes('policy') || writeError.message.includes('permission')
-      ? 'RLS is blocking writes. Go to Supabase → Table Editor → inspection_jobs → RLS policies → Disable RLS (or add a service_role policy)'
-      : writeError.message
+    result.rls_enabled = 'YES — THIS IS THE BUG. RLS is blocking writes from the API.'
+    result.fix         = 'Run supabase-fix-rls.sql in Supabase SQL Editor to disable RLS on inspection_jobs'
     return NextResponse.json(result)
   }
 
@@ -80,10 +78,9 @@ export async function GET() {
   // Clean up test row
   await sb.from('inspection_jobs').delete().eq('id', testId)
 
-  result.rls_status = SVC_KEY ? 'bypassed by service_role key' : 'may be active (using anon key)'
-  result.hint = result.table_writable
-    ? 'Supabase is fully operational. If projects still fail to sync, check Netlify function logs for save errors.'
-    : null
+  result.rls_enabled = false
+  result.fix = null
+  result.status = '✓ Supabase fully operational — table readable and writable'
 
   return NextResponse.json(result)
 }

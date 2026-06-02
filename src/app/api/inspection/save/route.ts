@@ -33,111 +33,130 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
 import type { InspectionJob }        from '@/lib/inspection-types'
-import { getJobProgress, getJobSummary, PHASE_META } from '@/lib/inspection-types'
+import { getJobProgress, PHASE_META } from '@/lib/inspection-types'
+
+// Max size for propertyThumbnail stored in the row (~15KB base64)
+const THUMBNAIL_MAX_B64_LEN = 20000
 
 export async function POST(req: NextRequest) {
-  const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const SUPA_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const SUPA_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY    // must be service role, not anon
+  const ANON_KEY  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const FINAL_KEY = SUPA_KEY || ANON_KEY                      // prefer service role
 
   let body: { job: InspectionJob; userId?: string }
   try {
     const text = await req.text()
-    if (!text) return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
+    if (!text) return NextResponse.json({ error: 'Empty body' }, { status: 400 })
     body = JSON.parse(text)
-  } catch { return NextResponse.json({ error: 'Invalid request body' }, { status: 400 }) }
+  } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  if (!SUPA_URL || !SUPA_KEY) {
-    console.warn('[inspection/save] Supabase not configured — job not persisted to database')
-    return NextResponse.json({ ok: true, id: body?.job?.id, local: true })
+  if (!SUPA_URL || !FINAL_KEY) {
+    console.warn('[save] Supabase env vars not set — writing to local only')
+    return NextResponse.json({ ok: true, id: body?.job?.id, cloud: false, local: true })
   }
 
   const { job, userId } = body
-  if (!job?.id) return NextResponse.json({ error: 'Missing job data' }, { status: 400 })
+  if (!job?.id) return NextResponse.json({ error: 'Missing job.id' }, { status: 400 })
 
-  const sb = createClient(SUPA_URL, SUPA_KEY)
+  const resolvedUserId = (userId || job.userId || job.inspectorEmail || job.clientEmail || '').trim()
+  if (!resolvedUserId) {
+    console.error('[save] No userId — cannot save')
+    return NextResponse.json({ ok: false, cloud: false, error: 'No user identity' }, { status: 400 })
+  }
 
-  // Strip base64 photos, phase PDFs, and drawing pages from job_json to keep the row small
-  // Keep propertyThumbnail — it's a small compressed image needed for the project list thumbnail
-  const jobForStorage: InspectionJob = {
+  // Create client with service role key — bypass RLS
+  // NOTE: RLS must also be DISABLED on the table (run supabase-fix-rls.sql)
+  const sb = createClient(SUPA_URL, FINAL_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      headers: {
+        // Explicitly identify as service role so Supabase bypasses RLS checks
+        'apikey':        FINAL_KEY,
+        'Authorization': `Bearer ${FINAL_KEY}`,
+      },
+    },
+  })
+
+  // Strip photos from job_json — keep only small thumbnail
+  const thumbnail = job.propertyThumbnail && job.propertyThumbnail.length <= THUMBNAIL_MAX_B64_LEN
+    ? job.propertyThumbnail
+    : undefined
+
+  const jobForStorage = {
     ...job,
-    propertyThumbnail: job.propertyThumbnail, // keep this — it's the project list thumbnail
+    propertyThumbnail: thumbnail,
     drawingsData: job.drawingsData ? { ...job.drawingsData, pages: [] } : undefined,
     phases: job.phases.map(phase => ({
       ...phase,
       reportPdfB64: undefined,
       modules: phase.modules.map(mod => ({
         ...mod,
-        photos: mod.photos.map((_, i) => `[photo-${i}]`),
-        findings: mod.findings.map(f => ({
+        photos:   (mod.photos   || []).map((_: any, i: number) => `[photo-${i}]`),
+        findings: (mod.findings || []).map((f: any) => ({
           ...f,
-          photos: f.photos.map((_, i) => `[photo-${i}]`),
+          photos: (f.photos || []).map((_: any, i: number) => `[photo-${i}]`),
         })),
       })),
     })),
   }
 
-  const activePhase = job.phases.find(p => p.status === 'in_progress')
-  const resolvedUserId = (userId || job.userId || job.inspectorEmail || job.clientEmail || '').trim()
+  const activePhase = (job.phases || []).find((p: any) => p.status === 'in_progress')
   const now = new Date().toISOString()
 
-  if (!resolvedUserId) {
-    console.error('[inspection/save] resolvedUserId is empty — job will not be findable')
-    return NextResponse.json({ ok: false, error: 'No user identity provided' }, { status: 400 })
-  }
-
-  console.log(`[inspection/save] Writing job ${job.id} for user ${resolvedUserId}`)
-
-  // Minimal core row — always works even if extra columns are missing
-  const rowCore: Record<string, unknown> = {
+  const row: Record<string, unknown> = {
     id:               job.id,
     user_id:          resolvedUserId,
-    client_name:      job.clientName || '',
-    inspector_name:   job.inspectorName || '',
-    address_street:   job.address?.street || '',
-    address_city:     job.address?.city || '',
-    address_province: job.address?.province || '',
-    address_country:  job.address?.country || 'Canada',
-    building_type:    job.buildingType || '',
-    estimated_age:    job.estimatedAge || '',
-    status:           job.status || 'active',
-    phase_progress:   getJobProgress(job),
+    inspector_email:  resolvedUserId,
+    client_name:      (job.clientName   || '').slice(0, 255),
+    inspector_name:   (job.inspectorName || '').slice(0, 255),
+    address_street:   (job.address?.street   || '').slice(0, 255),
+    address_city:     (job.address?.city     || '').slice(0, 255),
+    address_province: (job.address?.province || '').slice(0, 255),
+    address_country:  (job.address?.country  || 'Canada').slice(0, 100),
+    building_type:    (job.buildingType  || '').slice(0, 100),
+    estimated_age:    (job.estimatedAge  || '').slice(0, 100),
+    status:           (job.status        || 'active').slice(0, 50),
+    phase_progress:   Math.round(getJobProgress(job)),
     active_phase:     activePhase ? (PHASE_META[activePhase.id]?.shortLabel ?? null) : null,
     permit_number:    job.permitNumber ?? null,
-    inspection_date:  job.inspectionDate || now.slice(0,10),
+    inspection_date:  (job.inspectionDate || now.slice(0,10)).slice(0,20),
     report_url:       job.reportUrl ?? null,
     job_json:         jobForStorage,
     updated_at:       now,
   }
 
-  // Try with inspector_email column; fall back to core row if column missing
-  let { error } = await sb
-    .from('inspection_jobs')
-    .upsert({ ...rowCore, inspector_email: resolvedUserId }, { onConflict: 'id' })
+  console.log(`[save] Upserting ${job.id} for user ${resolvedUserId} (key: ${SUPA_KEY ? 'service_role' : 'anon'})`)
 
-  if (error?.message?.includes('inspector_email')) {
-    console.warn('[inspection/save] inspector_email missing, retrying core row')
-    ;({ error } = await sb.from('inspection_jobs').upsert(rowCore, { onConflict: 'id' }))
+  // First attempt: with inspector_email
+  let { error } = await sb.from('inspection_jobs').upsert(row, { onConflict: 'id' })
+
+  // If inspector_email column missing, retry without it
+  if (error && (error.message.includes('inspector_email') || error.message.includes('column'))) {
+    console.warn('[save] inspector_email column missing, retrying without')
+    const { inspector_email: _drop, ...rowWithout } = row as any
+    ;({ error } = await sb.from('inspection_jobs').upsert(rowWithout, { onConflict: 'id' }))
   }
 
   if (error) {
-    const msg = error.message ?? 'Unknown Supabase error'
-    console.error('[inspection/save] Supabase error:', msg, '| code:', (error as any).code)
-    // Return the real error to the client so it can show a warning
-    return NextResponse.json({
-      ok:      false,
-      id:      job.id,
-      cloud:   false,
-      error:   msg,
-      hint:    (error as any).code === '42P01'
-               ? 'Run supabase-migration.sql to create the inspection_jobs table'
-               : msg.includes('RLS') || msg.includes('policy')
-               ? 'Row Level Security is blocking writes — disable RLS on inspection_jobs or add a policy'
-               : msg.includes('permission') || msg.includes('denied')
-               ? 'Permission denied — check SUPABASE_SERVICE_ROLE_KEY is set in Netlify env vars'
-               : 'Check Supabase dashboard for errors',
-    })
+    const code = (error as any).code ?? ''
+    const msg  = error.message ?? 'Unknown error'
+    console.error(`[save] FAILED: ${msg} (code: ${code})`)
+
+    let hint = 'Check Supabase dashboard for errors'
+    if (code === '42P01' || msg.includes('does not exist')) {
+      hint = 'Run supabase-fix-rls.sql in Supabase SQL Editor'
+    } else if (msg.includes('RLS') || msg.includes('policy') || msg.includes('permission') || msg.includes('denied')) {
+      hint = 'RLS is blocking writes. Run supabase-fix-rls.sql immediately.'
+    } else if (msg.includes('JWT') || msg.includes('auth')) {
+      hint = 'Auth error. Ensure SUPABASE_SERVICE_ROLE_KEY is set in Netlify env vars (not the anon key).'
+    } else if (msg.includes('too large') || msg.includes('payload')) {
+      hint = 'Row too large. The job_json may contain base64 images that were not stripped.'
+    }
+
+    return NextResponse.json({ ok: false, cloud: false, id: job.id, error: msg, hint })
   }
 
-  console.log(`[inspection/save] ✓ Saved to Supabase: ${job.id} for ${resolvedUserId}`)
-  return NextResponse.json({ ok: true, id: job.id, cloud: true })
+  console.log(`[save] ✓ Saved ${job.id} to Supabase`)
+  return NextResponse.json({ ok: true, cloud: true, id: job.id })
 }
