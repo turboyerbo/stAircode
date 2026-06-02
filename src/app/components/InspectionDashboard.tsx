@@ -28,25 +28,47 @@ interface Props {
 }
 
 // Auto-save debounce: save to Supabase 3s after last update
+// Also exposes forceSave for immediate writes (e.g. phase complete, exit)
 function useAutoSave(job: InspectionJob, userEmail: string) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const save = useCallback(async (j: InspectionJob) => {
+
+  const doSave = useCallback(async (j: InspectionJob) => {
+    if (!userEmail) return
     try {
-      await fetch('/api/inspection/save', {
+      const res = await fetch('/api/inspection/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job: j, userId: userEmail }),
       })
+      const data = await res.json()
+      if (!data.ok) console.warn('[AutoSave] Save returned not-ok:', data)
     } catch (e) {
-      console.warn('[InspectionDashboard] Auto-save failed:', e)
+      console.warn('[AutoSave] Failed:', e)
     }
   }, [userEmail])
 
+  // Debounced auto-save on any job change
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => save(job), 3000)
+    timerRef.current = setTimeout(() => doSave(job), 3000)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [job, save])
+  }, [job, doSave])
+
+  // Immediate save when a phase becomes complete
+  const prevPhasesRef = useRef(job.phases)
+  useEffect(() => {
+    const prev = prevPhasesRef.current
+    const justCompleted = job.phases.some((p, i) =>
+      p.status === 'complete' && prev[i]?.status !== 'complete'
+    )
+    if (justCompleted) {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      doSave(job)
+    }
+    prevPhasesRef.current = job.phases
+  }, [job.phases, doSave])
+
+  return doSave
 }
 
 const NAVY   = '#0A1C2E'
@@ -397,7 +419,17 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
       {/* ── Header ── */}
       <div style={{ background:NAVY, paddingTop:'max(env(safe-area-inset-top,0px),1rem)', paddingBottom:'1.25rem', paddingLeft:'1.25rem', paddingRight:'1.25rem' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
-          <button onClick={onBack} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>← Exit</button>
+          <button onClick={async () => {
+            // Force-save to Supabase before navigating away
+            try {
+              await fetch('/api/inspection/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job, userId: userEmail }),
+              })
+            } catch {}
+            onBack()
+          }} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>← Exit</button>
           <div style={{ flex:1, display:'flex', justifyContent:'center' }}><NavLogo height={22} /></div>
           <div style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.35)' }}>{job.inspectionDate}</div>
         </div>

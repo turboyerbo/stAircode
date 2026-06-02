@@ -26,8 +26,9 @@ export async function GET(req: NextRequest) {
     .eq('id', id)
     .single()
 
-  if (error || !data) {
-    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+  if (error || !data?.job_json) {
+    console.warn(`[inspection/load] Job ${id} not found in Supabase. Error: ${error?.message ?? 'no data'}`)
+    return NextResponse.json({ error: 'Job not found', id }, { status: 404 })
   }
 
   return NextResponse.json({ ok: true, job: data.job_json, updatedAt: data.updated_at })

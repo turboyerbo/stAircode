@@ -77,29 +77,31 @@ export async function POST(req: NextRequest) {
   }
 
   const activePhase = job.phases.find(p => p.status === 'in_progress')
-
-  // user_id is the primary lookup key — ALWAYS set it to the user's email
-  // This is the email they sign in with and what the list query searches for
-  const resolvedUserId = userId || job.userId || job.inspectorEmail || job.clientEmail || ''
-  
+  const resolvedUserId = (userId || job.userId || job.inspectorEmail || job.clientEmail || '').trim()
   const now = new Date().toISOString()
 
-  // First try upsert with inspector_email column (may not exist in older deployments)
-  const rowFull = {
+  if (!resolvedUserId) {
+    console.error('[inspection/save] resolvedUserId is empty — job will not be findable')
+    return NextResponse.json({ ok: false, error: 'No user identity provided' }, { status: 400 })
+  }
+
+  console.log(`[inspection/save] Writing job ${job.id} for user ${resolvedUserId}`)
+
+  // Minimal core row — always works even if extra columns are missing
+  const rowCore: Record<string, unknown> = {
     id:               job.id,
     user_id:          resolvedUserId,
-    inspector_email:  resolvedUserId,  // write same email to both columns for max findability
     client_name:      job.clientName || '',
     inspector_name:   job.inspectorName || '',
     address_street:   job.address?.street || '',
     address_city:     job.address?.city || '',
     address_province: job.address?.province || '',
-    address_country:  job.address?.country || '',
+    address_country:  job.address?.country || 'Canada',
     building_type:    job.buildingType || '',
     estimated_age:    job.estimatedAge || '',
     status:           job.status || 'active',
     phase_progress:   getJobProgress(job),
-    active_phase:     activePhase ? PHASE_META[activePhase.id].shortLabel : null,
+    active_phase:     activePhase ? (PHASE_META[activePhase.id]?.shortLabel ?? null) : null,
     permit_number:    job.permitNumber ?? null,
     inspection_date:  job.inspectionDate || now.slice(0,10),
     report_url:       job.reportUrl ?? null,
@@ -107,14 +109,14 @@ export async function POST(req: NextRequest) {
     updated_at:       now,
   }
 
-  let { error } = await sb.from('inspection_jobs').upsert(rowFull, { onConflict: 'id' })
-  
-  // If inspector_email column doesn't exist yet, retry without it
-  if (error && (error.message?.includes('inspector_email') || error.message?.includes('column'))) {
-    console.warn('[inspection/save] inspector_email column missing — retrying without it')
-    const { inspector_email: _ie, ...rowBasic } = rowFull
-    const retry = await sb.from('inspection_jobs').upsert(rowBasic, { onConflict: 'id' })
-    error = retry.error
+  // Try with inspector_email column; fall back to core row if column missing
+  let { error } = await sb
+    .from('inspection_jobs')
+    .upsert({ ...rowCore, inspector_email: resolvedUserId }, { onConflict: 'id' })
+
+  if (error?.message?.includes('inspector_email')) {
+    console.warn('[inspection/save] inspector_email missing, retrying core row')
+    ;({ error } = await sb.from('inspection_jobs').upsert(rowCore, { onConflict: 'id' }))
   }
 
   if (error) {

@@ -190,18 +190,50 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
 
   async function handleResume(id: string) {
     setResuming(id)
+
+    // 1. Check localStorage first (instant, works offline)
     try {
-      // Try server first
+      const raw = localStorage.getItem(`insp_${id}`)
+      if (raw) {
+        const job = JSON.parse(raw)
+        if (job?.id) {
+          // Push to server in background so it's available on other devices
+          fetch('/api/inspection/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job, userId: userEmail }),
+          }).catch(() => {})
+          onResumeJob(job)
+          return
+        }
+      }
+    } catch {}
+
+    // 2. Check sessionStorage
+    try {
+      const raw = sessionStorage.getItem(`insp_${id}`)
+      if (raw) {
+        const job = JSON.parse(raw)
+        if (job?.id) {
+          fetch('/api/inspection/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job, userId: userEmail }),
+          }).catch(() => {})
+          onResumeJob(job)
+          return
+        }
+      }
+    } catch {}
+
+    // 3. Try server (cross-device)
+    try {
       const res  = await fetch(`/api/inspection/load?id=${id}`)
       const data = await res.json()
       if (data.ok && data.job) { onResumeJob(data.job); return }
     } catch {}
-    // Fall back to sessionStorage
-    try {
-      const raw = sessionStorage.getItem(`insp_${id}`)
-      if (raw) { onResumeJob(JSON.parse(raw)); return }
-    } catch {}
-    setError('Could not load project. Please try again.')
+
+    setError('Could not load project. It may not have synced yet — try the Save button on your other device first.')
     setResuming(null)
   }
 
