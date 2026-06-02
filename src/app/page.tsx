@@ -452,14 +452,16 @@ export default function Home(){
       })
     }
   },[])
-  function handleAuth(u:AppUser){
+  function handleAuth(u:AppUser, fromMemberLogin = false){
     setUser(u)
     try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}
     identifyUser(u.email, { provider: u.provider, membership: u.membership })
     Analytics.userSignedIn(u.provider === 'otp' ? 'otp' : u.provider)
-    // If user has beta/subscription access, route straight to projects
     const hasBeta = (()=>{ try{ return localStorage.getItem('sc_beta_access')==='1'}catch{return false}})()
-    if (hasBeta || u.membership === 'subscription' || u.membership === 'pro') {
+    const hasAccess = hasBeta || u.membership === 'subscription' || u.membership === 'pro'
+    // Member login (returning user, sign-out flow) → always go to projects
+    // New user sign-up without access → go to home (demo + subscribe CTA)
+    if (fromMemberLogin || isSignoutFlow || hasAccess) {
       setGotoProjects(true)
     }
   }
@@ -574,7 +576,7 @@ export default function Home(){
   // Sign-out path → Member login (no splash, no upsell)
   if(!user && isSignoutFlow) return (
     <MemberLoginScreen
-      onAuth={handleAuth}
+      onAuth={(u) => handleAuth(u, true)}
       onNotAMember={() => window.location.href = '/marketing'}
     />
   )
@@ -590,7 +592,7 @@ export default function Home(){
     try{localStorage.setItem(legalKey,'1')}catch{}
     setLegalAgreed(true)
   }}/>
-  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined} initialProjectId={gotoProjectId}/>
+  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined} initialProjectId={gotoProjectId} navigateToProjects={gotoProjects}/>
 }
 
 // ── Legal Disclaimer Screen ───────────────────────────────────────────────────
@@ -684,7 +686,7 @@ function buildAccessibilityFields(m: AccessibilityMeasurements): AccessibilityFi
 }
 
 // ── App Shell ─────────────────────────────────────────────────────────────────
-function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void;initialScreen?:Screen;initialProjectId?:string|null}){
+function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,navigateToProjects}:{user:AppUser;onLogout:()=>void;onUpdateUser:(u:AppUser)=>void;initialScreen?:Screen;initialProjectId?:string|null;navigateToProjects?:boolean}){
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>(() => {
     if (initialScreen) return initialScreen
@@ -702,6 +704,12 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId}:{u
     }
     return 'home'
   })
+
+  // Navigate to projects when parent signals it (e.g. after sign-in from MemberLoginScreen)
+  React.useEffect(() => {
+    if (navigateToProjects) setScreen('inspection_projects')
+  }, [navigateToProjects])
+
   const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
 
   // Auto-load specific project if opened via magic link (?project=JOB_ID)
