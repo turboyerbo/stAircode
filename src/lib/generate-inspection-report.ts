@@ -17,6 +17,7 @@
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB } from 'pdf-lib'
 import type { InspectionJob, InspectionPhase, InspectionModule, ModuleFinding } from './inspection-types'
 import { PHASE_META, MODULE_META } from './inspection-types'
+import { getModuleStandard } from './inspection-standards'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
@@ -382,6 +383,21 @@ function buildDescriptions(job: InspectionJob, phase: InspectionPhase): Array<{l
     if (job.internalWalls)    d.push({ label:'Interior finishes', value:job.internalWalls })
     if (job.windows)          d.push({ label:'Windows',           value:job.windows })
   }
+  // Add standard descriptions for modules that have them, if not already captured
+  if (d.length === 0) {
+    for (const mod of phase.modules) {
+      const std = getModuleStandard(mod.id)
+      if (std?.descriptions) {
+        for (const desc of std.descriptions) {
+          const parts = desc.split(':')
+          if (parts.length >= 2) {
+            d.push({ label: parts[0].trim(), value: parts.slice(1).join(':').trim() })
+          }
+        }
+        break // Only use the first module's standards descriptions
+      }
+    }
+  }
   return d.filter(r => r.value && r.value !== 'unknown')
 }
 
@@ -670,7 +686,9 @@ async function buildPhaseSection(
   }
 
   // ── Observations & Recommendations ──────────────────────────────────────────
-  const completedMods = phase.modules.filter(m => m.status === 'complete' && (m.findings.length > 0 || m.notes))
+  // Include completed modules (have findings/notes) AND pending modules (show standards/checklist as placeholder)
+  const completedMods  = phase.modules.filter(m => m.status === 'complete' && (m.findings.length > 0 || m.notes))
+  const standardsMods  = phase.modules.filter(m => (m.status === 'pending' || m.status === 'in_progress') && getModuleStandard(m.id))
   if (completedMods.length > 0) {
     s = subHeader(s, 'Observations & Recommendations')
     s = { ...s, y: s.y - 8 }
@@ -797,6 +815,73 @@ async function buildPhaseSection(
         s = drawWrappedText(s, mod.notes, ML+14, reg, 9, C.text, TW-14, 12.5)
         s = hRule(s, 0)
       }
+    }
+  }
+
+  // ── Standards reference for pending/not-yet-inspected modules ───────────────
+  if (standardsMods.length > 0) {
+    s = need(s, 40)
+    s = subHeader(s, 'Inspection Standards & Requirements')
+    s = { ...s, y: s.y - 8 }
+
+    for (const mod of standardsMods) {
+      const modMeta = MODULE_META[mod.id]
+      const std     = getModuleStandard(mod.id)
+      if (!modMeta || !std) continue
+
+      s = need(s, 50)
+
+      // Module name
+      const modLabel = sanitise(modMeta.label)
+      s.page.drawText(modLabel, { x: ML, y: s.y, font: s.fonts.bold, size: 10, color: C.navy })
+      s.page.drawRectangle({ x: ML, y: s.y - 1, width: s.fonts.bold.widthOfTextAtSize(modLabel, 10), height: 0.5, color: C.navy })
+      s = { ...s, y: s.y - 14 }
+
+      // Status pill
+      s = need(s, 12)
+      s.page.drawText('Status: Not yet inspected', { x: ML + 14, y: s.y, font: s.fonts.obl, size: 8, color: C.midgrey })
+      s = { ...s, y: s.y - 12 }
+
+      // Standard description
+      if (std.standard) {
+        s = need(s, 14)
+        s.page.drawText('Standard:  ', { x: ML + 14, y: s.y, font: s.fonts.bold, size: 8.5, color: C.text })
+        s = { ...s, y: s.y - 11 }
+        s = drawWrappedText(s, sanitise(std.standard), ML + 14, s.fonts.reg, 8.5, C.text, TW - 14, 11.5)
+      }
+
+      // Checklist items
+      if (std.checkItems && std.checkItems.length > 0) {
+        s = need(s, 14)
+        s.page.drawText('Inspection checklist:', { x: ML + 14, y: s.y, font: s.fonts.bold, size: 8.5, color: C.text })
+        s = { ...s, y: s.y - 12 }
+        for (const item of std.checkItems) {
+          s = need(s, 11)
+          s.page.drawCircle({ x: ML + 18, y: s.y - 1.5, size: 2, color: C.blue })
+          s = drawWrappedText(s, sanitise(item), ML + 24, s.fonts.reg, 8, C.text2, TW - 24, 11)
+        }
+      }
+
+      // Code reference
+      if (std.codeRef) {
+        s = need(s, 11)
+        const cr = 'Code reference:  '
+        s.page.drawText(cr, { x: ML + 14, y: s.y, font: s.fonts.bold, size: 8, color: C.text })
+        s.page.drawText(sanitise(std.codeRef), { x: ML + 14 + s.fonts.bold.widthOfTextAtSize(cr, 8), y: s.y, font: s.fonts.obl, size: 8, color: C.blue })
+        s = { ...s, y: s.y - 11 }
+      }
+
+      // Limitations
+      if (std.limitations) {
+        s = need(s, 11)
+        s.page.drawText('Limitations:  ', { x: ML + 14, y: s.y, font: s.fonts.bold, size: 8, color: C.text })
+        s = { ...s, y: s.y - 10 }
+        s = drawWrappedText(s, sanitise(std.limitations), ML + 14, s.fonts.obl, 8, C.midgrey, TW - 14, 11)
+      }
+
+      s = need(s, 10)
+      s.page.drawRectangle({ x: ML, y: s.y + 2, width: TW, height: 0.3, color: C.lightgrey })
+      s = { ...s, y: s.y - 10 }
     }
   }
 
