@@ -120,16 +120,24 @@ export async function POST(req: NextRequest) {
   }
 
   if (error) {
-    console.error('[inspection/save] Supabase error:', error.message)
-    // Table may not exist yet — return success anyway so the job stays in sessionStorage.
-    // Run supabase-migration.sql in Supabase SQL Editor to create the table.
-    if (error.message?.includes('does not exist') || error.message?.includes('schema cache') || error.code === '42P01') {
-      console.warn('[inspection/save] inspection_jobs table not found. Run supabase-migration.sql to create it.')
-      return NextResponse.json({ ok: true, id: job.id, warning: 'Table not yet created — job stored locally only' })
-    }
-    return NextResponse.json({ ok: true, id: job.id, warning: error.message })
+    const msg = error.message ?? 'Unknown Supabase error'
+    console.error('[inspection/save] Supabase error:', msg, '| code:', (error as any).code)
+    // Return the real error to the client so it can show a warning
+    return NextResponse.json({
+      ok:      false,
+      id:      job.id,
+      cloud:   false,
+      error:   msg,
+      hint:    (error as any).code === '42P01'
+               ? 'Run supabase-migration.sql to create the inspection_jobs table'
+               : msg.includes('RLS') || msg.includes('policy')
+               ? 'Row Level Security is blocking writes — disable RLS on inspection_jobs or add a policy'
+               : msg.includes('permission') || msg.includes('denied')
+               ? 'Permission denied — check SUPABASE_SERVICE_ROLE_KEY is set in Netlify env vars'
+               : 'Check Supabase dashboard for errors',
+    })
   }
 
-  console.log(`[inspection/save] Saved job ${job.id} (${getJobSummary(job)})`)
-  return NextResponse.json({ ok: true, id: job.id })
+  console.log(`[inspection/save] ✓ Saved to Supabase: ${job.id} for ${resolvedUserId}`)
+  return NextResponse.json({ ok: true, id: job.id, cloud: true })
 }

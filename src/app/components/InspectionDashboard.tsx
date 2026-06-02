@@ -33,7 +33,10 @@ function useAutoSave(job: InspectionJob, userEmail: string) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const doSave = useCallback(async (j: InspectionJob) => {
-    if (!userEmail) return
+    if (!userEmail) {
+      console.warn('[AutoSave] No userEmail — cannot save to Supabase')
+      return
+    }
     try {
       const res = await fetch('/api/inspection/save', {
         method: 'POST',
@@ -41,9 +44,15 @@ function useAutoSave(job: InspectionJob, userEmail: string) {
         body: JSON.stringify({ job: j, userId: userEmail }),
       })
       const data = await res.json()
-      if (!data.ok) console.warn('[AutoSave] Save returned not-ok:', data)
+      if (data.cloud) {
+        console.log(`[AutoSave] ✓ Saved to Supabase: ${j.id}`)
+      } else if (data.ok) {
+        console.warn(`[AutoSave] ⚠ Local only (Supabase not configured): ${j.id}`)
+      } else {
+        console.error(`[AutoSave] ✗ Save failed: ${data.error || data.hint}`)
+      }
     } catch (e) {
-      console.warn('[AutoSave] Failed:', e)
+      console.warn('[AutoSave] Network error:', e)
     }
   }, [userEmail])
 
@@ -307,7 +316,8 @@ function PhaseCard({
 export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, userRole = 'diy' }: Props) {
   useAutoSave(job, userEmail)
   const [activePhase,  setActivePhase]  = useState<PhaseId | null>(null)
-  const [saveStatus,   setSaveStatus]   = useState<'idle'|'saving'|'saved'|'error'>('idle')
+  const [saveStatus,   setSaveStatus]   = useState<'idle'|'saving'|'saved_cloud'|'saved_local'|'error'>('idle')
+  const [saveError,    setSaveError]    = useState<string>('')
   const [showReport,   setShowReport]    = useState(false)
   const [reportStatus, setReportStatus] = useState<'idle'|'generating'|'done'|'error'>('idle')
   const [reportB64,    setReportB64]    = useState<string|null>(null)
@@ -336,7 +346,7 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
 
   // ── Explicit save ────────────────────────────────────────────────────────
   async function handleManualSave() {
-    setSaveStatus('saving')
+    setSaveStatus('saving'); setSaveError('')
     try {
       const res = await fetch('/api/inspection/save', {
         method: 'POST',
@@ -344,11 +354,21 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
         body: JSON.stringify({ job, userId: userEmail }),
       })
       const data = await res.json()
-      setSaveStatus(data.ok ? 'saved' : 'error')
-      setTimeout(() => setSaveStatus('idle'), 2500)
-    } catch {
+      if (data.cloud) {
+        setSaveStatus('saved_cloud')
+      } else if (data.ok) {
+        // ok but no cloud flag — local only (Supabase not configured)
+        setSaveStatus('saved_local')
+        setSaveError('Saved locally only — Supabase not configured')
+      } else {
+        setSaveStatus('error')
+        setSaveError(data.error || data.hint || 'Save to cloud failed')
+      }
+      setTimeout(() => setSaveStatus('idle'), 4000)
+    } catch (e: any) {
       setSaveStatus('error')
-      setTimeout(() => setSaveStatus('idle'), 2500)
+      setSaveError(e?.message || 'Network error')
+      setTimeout(() => setSaveStatus('idle'), 4000)
     }
   }
 
@@ -516,19 +536,55 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
       {/* ── Save button ── */}
       <button
         onClick={handleManualSave}
-        style={{ position:'fixed', bottom:'max(env(safe-area-inset-bottom,0px),1.25rem)', left:'1.25rem', height:44, paddingLeft:'1rem', paddingRight:'1rem', borderRadius:22, background: saveStatus==='saved'?GREEN:saveStatus==='error'?'#E84545':saveStatus==='saving'?'rgba(65,124,164,0.8)':BLUE, border:'none', boxShadow:'0 2px 10px rgba(65,124,164,0.35)', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', zIndex:40, transition:'all 0.2s' }}>
-        {saveStatus === 'saving' ? (
-          <div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/>
-        ) : saveStatus === 'saved' ? (
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5 6.5-7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        ) : (
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9V11.5a0.5 0.5 0 000.5 0.5h9a0.5 0.5 0 000.5-0.5V9M7 2v7M4.5 5l2.5-3 2.5 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        style={{
+          position:'fixed', bottom:'max(env(safe-area-inset-bottom,0px),1.25rem)', left:'1.25rem',
+          minHeight:44, paddingLeft:'1rem', paddingRight:'1rem', paddingTop:'0.45rem', paddingBottom:'0.45rem',
+          borderRadius:22,
+          background: saveStatus==='saved_cloud'?GREEN
+                    : saveStatus==='saved_local'?'#C4780A'
+                    : saveStatus==='error'?'#E84545'
+                    : saveStatus==='saving'?'rgba(65,124,164,0.8)'
+                    : BLUE,
+          border:'none', boxShadow:'0 2px 10px rgba(65,124,164,0.35)', cursor:'pointer',
+          display:'flex', flexDirection:'column', alignItems:'center', gap:'0.15rem', zIndex:40, transition:'all 0.2s'
+        }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+          {saveStatus === 'saving' ? (
+            <div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/>
+          ) : saveStatus === 'saved_cloud' ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 7l3.5 3.5 6.5-7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : saveStatus === 'saved_local' ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 2v7M4 6l3 3 3-3M2 12h10" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : saveStatus === 'error' ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" stroke="#fff" strokeWidth="1.3"/>
+              <path d="M7 4v4M7 9.5v.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 9V11.5a0.5 0.5 0 000.5 0.5h9a0.5 0.5 0 000.5-0.5V9M7 2v7M4.5 5l2.5-3 2.5 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+          <span style={{ fontSize:'0.75rem', fontWeight:700, color:'#fff', whiteSpace:'nowrap' as const }}>
+            {saveStatus==='saving'?'Saving…'
+            :saveStatus==='saved_cloud'?'Saved to cloud ✓'
+            :saveStatus==='saved_local'?'Local only ⚠'
+            :saveStatus==='error'?'Save failed ✗'
+            :'Save'}
+          </span>
+        </div>
+        {(saveStatus === 'saved_local' || saveStatus === 'error') && saveError && (
+          <div style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.9)', maxWidth:160, textAlign:'center' as const, lineHeight:1.3 }}>
+            {saveError.length > 60 ? saveError.slice(0,57)+'…' : saveError}
+          </div>
         )}
-        <span style={{ fontSize:'0.75rem', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>
-          {saveStatus==='saving'?'Saving…':saveStatus==='saved'?'Saved':saveStatus==='error'?'Error':'Save'}
-        </span>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </button>
+
 
       {/* ── AI Chat button ── */}
       <button
