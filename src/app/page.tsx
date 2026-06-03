@@ -27,6 +27,7 @@ import InspectionDashboard                  from './components/InspectionDashboa
 import InspectionProjectList                from './components/InspectionProjectList'
 import ProjectTypeScreen                    from './components/ProjectTypeScreen'
 import InspectionPaywall                    from './components/InspectionPaywall'
+import TrialExpiredScreen                   from './components/TrialExpiredScreen'
 import type { ProjectType }                 from '@/lib/inspection-types'
 import type { InspectionJob }               from '@/lib/inspection-types'
 
@@ -355,6 +356,31 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
 
 // ── Root ──────────────────────────────────────────────────────────────────────
+
+// ── Trial access helper ────────────────────────────────────────────────────
+// Returns true if the user has active trial OR paid subscription.
+// A trial is active if sc_beta_access='1' AND sc_trial_end is in the future
+// (or sc_trial_end was never set, for legacy users).
+function checkTrialAccess(): boolean {
+  try {
+    const hasBeta = localStorage.getItem('sc_beta_access') === '1'
+    if (!hasBeta) return false
+    const trialEnd = localStorage.getItem('sc_trial_end')
+    if (!trialEnd) return true  // Legacy users without expiry date — grant access
+    return new Date() < new Date(trialEnd)
+  } catch { return false }
+}
+
+function getTrialDaysLeft(): number {
+  try {
+    const trialEnd = localStorage.getItem('sc_trial_end')
+    if (!trialEnd) return 30
+    const ms = new Date(trialEnd).getTime() - Date.now()
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
+  } catch { return 0 }
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
   // Splash screen — shows the AR image on first load, fades into auth
@@ -457,7 +483,7 @@ export default function Home(){
     try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}
     identifyUser(u.email, { provider: u.provider, membership: u.membership })
     Analytics.userSignedIn(u.provider === 'otp' ? 'otp' : u.provider)
-    const hasBeta = (()=>{ try{ return localStorage.getItem('sc_beta_access')==='1'}catch{return false}})()
+    const hasBeta   = checkTrialAccess()
     const hasAccess = hasBeta || u.membership === 'subscription' || u.membership === 'pro'
     // Member login (returning user, sign-out flow) → always go to projects
     // New user sign-up without access → go to home (demo + subscribe CTA)
@@ -592,6 +618,23 @@ export default function Home(){
     try{localStorage.setItem(legalKey,'1')}catch{}
     setLegalAgreed(true)
   }}/>
+  // ── Trial expiry check — show expired screen if trial has run out ──────────
+  if (user) {
+    const trialBeta = (()=>{ try { return localStorage.getItem('sc_beta_access') === '1' } catch { return false }})()
+    const paid      = user.membership === 'subscription' || user.membership === 'pro'
+    if (trialBeta && !paid) {
+      // User has trial access (no paid sub) — check if it has expired
+      const trialExpired = !checkTrialAccess()
+      if (trialExpired) {
+        return <TrialExpiredScreen
+          userEmail={user.email}
+          onSubscribe={() => {/* Stripe opens in TrialExpiredScreen */}}
+          onSignOut={handleLogout}
+        />
+      }
+    }
+  }
+
   return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined} initialProjectId={gotoProjectId} navigateToProjects={gotoProjects}/>
 }
 
@@ -692,7 +735,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
     if (initialScreen) return initialScreen
     // Check localStorage directly here (synchronous) — user prop may not be hydrated yet
     try {
-      const hasBeta = localStorage.getItem('sc_beta_access') === '1'
+      const hasBeta = checkTrialAccess()
       const stored  = localStorage.getItem('sc_user')
       const storedUser = stored ? JSON.parse(stored) : null
       const mem = storedUser?.membership
@@ -700,7 +743,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
     } catch {}
     // Fall back to React prop
     if (user.membership === 'subscription' || user.membership === 'pro') {
-      try { if (localStorage.getItem('sc_beta_access') === '1') return 'inspection_projects' } catch {}
+      try { if (checkTrialAccess()) return 'inspection_projects' } catch {}
     }
     return 'home'
   })
@@ -864,8 +907,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   function hasInspectionAccess(): boolean {
     if (user.membership === 'pro' || user.membership === 'subscription') return true
     // Check all storage locations — betacode67 grants full session access
-    try { if (localStorage.getItem('sc_beta_access') === '1') return true } catch {}
-    try { if (sessionStorage.getItem('sc_beta_access') === '1') return true } catch {}
+    try { if (checkTrialAccess()) return true } catch {}
     // Also check stored user object for membership
     try {
       const stored = localStorage.getItem('sc_user')
@@ -1055,8 +1097,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
           const hasAccess = isPro
             || user.membership === 'subscription'
             || user.membership === 'pro'
-            || (()=>{ try{ return localStorage.getItem('sc_beta_access')==='1' }catch{ return false }})()
-            || (()=>{ try{ return sessionStorage.getItem('sc_beta_access')==='1' }catch{ return false }})()
+            || checkTrialAccess()
 
           return (
             <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>

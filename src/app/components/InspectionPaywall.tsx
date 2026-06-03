@@ -27,23 +27,36 @@ const GREEN  = '#27A96B'
 const RED    = '#E84545'
 const BORDER = 'rgba(44,90,122,0.14)'
 
-const BETA_CODE = 'betacode67'
-
 export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props) {
-  const [betaCode,    setBetaCode]    = useState('')
-  const [betaError,   setBetaError]   = useState<string | null>(null)
-  const [loading,     setLoading]     = useState(false)
+  const [accessCode,    setAccessCode]    = useState('')
+  const [codeError,     setCodeError]     = useState<string | null>(null)
+  const [loading,       setLoading]       = useState(false)
   const [stripeLoading, setStripeLoading] = useState(false)
 
-  async function handleBetaSubmit() {
-    if (!betaCode.trim()) return
-    setLoading(true); setBetaError(null)
-    if (betaCode.trim().toLowerCase() === BETA_CODE) {
-      try { localStorage.setItem('sc_beta_access', '1') } catch {}
-      try { sessionStorage.setItem('sc_beta_access', '1') } catch {}
-      setTimeout(() => onAccess(), 300)
-    } else {
-      setBetaError('Invalid code. Please try again.')
+  async function handleCodeSubmit() {
+    if (!accessCode.trim()) return
+    setLoading(true); setCodeError(null)
+    try {
+      const res  = await fetch('/api/discount/verify', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ code: accessCode.trim(), email: userEmail }),
+      })
+      const data = await res.json()
+      if (data.valid) {
+        const trialEnd = data.trialEnd ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        try {
+          localStorage.setItem('sc_trial_end',    trialEnd)
+          localStorage.setItem('sc_beta_access',  '1')
+          sessionStorage.setItem('sc_beta_access','1')
+        } catch {}
+        setTimeout(() => onAccess(), 300)
+      } else {
+        setCodeError(data.error ?? 'That code is not valid. Please try again.')
+        setLoading(false)
+      }
+    } catch {
+      setCodeError('Connection error. Please check your network and try again.')
       setLoading(false)
     }
   }
@@ -60,11 +73,11 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
       if (data.url) {
         window.location.href = data.url
       } else {
-        setBetaError('Could not start checkout. Please try again.')
+        setCodeError('Could not start checkout. Please try again.')
         setStripeLoading(false)
       }
     } catch {
-      setBetaError('Connection error. Please try again.')
+      setCodeError('Connection error. Please try again.')
       setStripeLoading(false)
     }
   }
@@ -154,22 +167,22 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
               id="beta-code"
               name="beta-code"
               type="text"
-              value={betaCode}
-              onChange={e => { setBetaCode(e.target.value); setBetaError(null) }}
-              onKeyDown={e => { if (e.key === 'Enter') handleBetaSubmit() }}
+              value={accessCode}
+              onChange={e => { setAccessCode(e.target.value); setCodeError(null) }}
+              onKeyDown={e => { if (e.key === 'Enter') handleCodeSubmit() }}
               placeholder="Enter code"
-              style={{ flex:1, padding:'0.75rem 0.9rem', background:'#fff', border:`1.5px solid ${betaError ? RED : betaCode ? BLUE : BORDER}`, borderRadius:10, fontSize:'0.9rem', color:'#0D1E2E', outline:'none', fontFamily:'inherit', transition:'border-color 0.12s' }}
+              style={{ flex:1, padding:'0.75rem 0.9rem', background:'#fff', border:`1.5px solid ${codeError ? RED : accessCode ? BLUE : BORDER}`, borderRadius:10, fontSize:'0.9rem', color:'#0D1E2E', outline:'none', fontFamily:'inherit', transition:'border-color 0.12s' }}
             />
             <button
-              onClick={handleBetaSubmit}
-              disabled={loading || !betaCode.trim()}
-              style={{ padding:'0.75rem 1.1rem', background: betaCode.trim() ? NAVY : 'rgba(44,90,122,0.1)', border:'none', borderRadius:10, color: betaCode.trim() ? '#fff' : '#9DB4C5', fontWeight:700, fontSize:'0.88rem', cursor: betaCode.trim() ? 'pointer':'not-allowed', transition:'all 0.15s', whiteSpace:'nowrap' as const }}>
+              onClick={handleCodeSubmit}
+              disabled={loading || !accessCode.trim()}
+              style={{ padding:'0.75rem 1.1rem', background: accessCode.trim() ? NAVY : 'rgba(44,90,122,0.1)', border:'none', borderRadius:10, color: accessCode.trim() ? '#fff' : '#9DB4C5', fontWeight:700, fontSize:'0.88rem', cursor: accessCode.trim() ? 'pointer':'not-allowed', transition:'all 0.15s', whiteSpace:'nowrap' as const }}>
               {loading ? '…' : 'Apply'}
             </button>
           </div>
-          {betaError && (
+          {codeError && (
             <div style={{ fontSize:'0.72rem', color:RED, marginTop:'0.4rem', padding:'0.35rem 0.65rem', background:'rgba(232,69,69,0.06)', borderRadius:6, border:'1px solid rgba(232,69,69,0.2)' }}>
-              {betaError}
+              {codeError}
             </div>
           )}
         </div>

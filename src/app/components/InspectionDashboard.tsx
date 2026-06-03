@@ -459,6 +459,25 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   return (
     <div style={{ minHeight:'100dvh', background:BG, fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color:'#0D1E2E' }}>
 
+      {/* ── Trial days remaining banner ── */}
+      {(()=>{
+        try {
+          const paid = userEmail ? (()=>{ try { const u = JSON.parse(localStorage.getItem('sc_user') ?? '{}'); return u.membership === 'subscription' || u.membership === 'pro' } catch { return false }})() : false
+          if (paid) return null
+          const hasTrial = localStorage.getItem('sc_beta_access') === '1'
+          if (!hasTrial) return null
+          const trialEnd = localStorage.getItem('sc_trial_end')
+          if (!trialEnd) return null
+          const daysLeft = Math.max(0, Math.ceil((new Date(trialEnd).getTime() - Date.now()) / (1000*60*60*24)))
+          if (daysLeft > 7) return null // Only show when close to expiry
+          return (
+            <div style={{ background: daysLeft <= 3 ? '#E84545' : '#C4780A', color: '#fff', fontSize: '0.72rem', fontWeight: 600, textAlign: 'center', padding: '0.4rem 1rem', letterSpacing: '0.02em' }}>
+              {daysLeft === 0 ? 'Your free trial has expired — subscribe to continue' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in your free trial`}
+            </div>
+          )
+        } catch { return null }
+      })()}
+
       {/* ── Header ── */}
       <div style={{ background:NAVY, paddingTop:'max(env(safe-area-inset-top,0px),1rem)', paddingBottom:'1.25rem', paddingLeft:'1.25rem', paddingRight:'1.25rem' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>

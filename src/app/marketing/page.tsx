@@ -76,14 +76,20 @@ export default function MarketingPage() {
     if (!betaCode.trim()) return
     setBetaChecking(true); setBetaError(null)
     try {
+      // Get current user email from localStorage for trial record
+      let userEmail = ''
+      try { const u = JSON.parse(localStorage.getItem('sc_user') ?? '{}'); userEmail = u.email ?? '' } catch {}
+
       const res  = await fetch('/api/discount/verify', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: betaCode.trim() }),
+        body: JSON.stringify({ code: betaCode.trim(), email: userEmail }),
       })
       const data = await res.json()
       if (data.valid) {
-        // Redirect to app with beta unlock token
-        window.location.href = `/?signin=1&beta=1&token=${encodeURIComponent(data.unlockToken ?? 'beta-unlock')}`
+        // Store trial expiry date before redirecting
+        const trialEnd = data.trialEnd ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        try { localStorage.setItem('sc_trial_end', trialEnd) } catch {}
+        window.location.href = `/?signin=1&beta=1&token=${encodeURIComponent(data.unlockToken ?? 'trial-unlock')}`
       } else {
         setBetaError(data.error ?? 'Invalid code. Please try again.')
       }
