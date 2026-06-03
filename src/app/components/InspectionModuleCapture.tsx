@@ -1019,9 +1019,16 @@ export default function InspectionModuleCapture({ job, phase, module, onSave, on
         <div style={{ padding:'1.25rem' }}>
           <div style={{ background:'#fff', border:`1.5px solid rgba(65,124,164,0.3)`, borderRadius:12, padding:'1.25rem', display:'flex', flexDirection:'column', gap:'0.85rem' }}>
             <p style={{ fontSize:'0.82rem', color:'#5E7D9B', margin:0, lineHeight:1.65 }}>{meta.description}</p>
-            <a href={urls[module.id] ?? '/'} style={{ display:'block', padding:'0.9rem', background:`linear-gradient(135deg,${BLUE},#2C5A7A)`, borderRadius:10, color:'#fff', fontWeight:700, fontSize:'0.875rem', textDecoration:'none', textAlign:'center' as const }}>
+            <button
+              onClick={() => {
+                // Navigate to the standalone scan using signin=1 to preserve auth context
+                // and goto=projects so the user returns to their projects after
+                const moduleParam = module.id === 'accessibility' ? 'accessibility' : 'foundation'
+                window.location.href = `/?signin=1&module=${moduleParam}`
+              }}
+              style={{ display:'block', width:'100%', padding:'0.9rem', background:`linear-gradient(135deg,${BLUE},#2C5A7A)`, borderRadius:10, color:'#fff', fontWeight:700, fontSize:'0.875rem', border:'none', cursor:'pointer', textAlign:'center' as const }}>
               Launch AI Scan →
-            </a>
+            </button>
             <div style={{ display:'flex', gap:'0.5rem' }}>
               <button onClick={() => builtInSave('skipped')} style={{ flex:1, padding:'0.65rem', background:'rgba(44,90,122,0.07)', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.78rem', fontWeight:600, color:'#5E7D9B', cursor:'pointer' }}>Skip</button>
               <button onClick={() => builtInSave('complete')} style={{ flex:2, padding:'0.65rem', background:GREEN, border:'none', borderRadius:8, fontSize:'0.78rem', fontWeight:700, color:'#fff', cursor:'pointer' }}>Mark Complete</button>

@@ -499,12 +499,19 @@ export default function Home(){
     const payment = params.get('payment')
     const product = params.get('product')
     const betaParam = params.get('beta')
+    const scanModule = params.get('module')  // 'accessibility' | 'foundation'
 
     // beta=1 in URL means user came through beta access flow — grant immediately
     if(betaParam === '1'){
       try{localStorage.setItem('sc_beta_access','1')}catch{}
       try{sessionStorage.setItem('sc_beta_access','1')}catch{}
-      // Clean the token from the URL
+      window.history.replaceState({}, '', '/?signin=1')
+    }
+
+    // ?module= launches a specific AI scan after auth — set module and go to scan_ready
+    if(scanModule === 'accessibility' || scanModule === 'foundation'){
+      // Store in localStorage so the app reads it after auth completes
+      try { localStorage.setItem('sc_launch_module', scanModule) } catch {}
       window.history.replaceState({}, '', '/?signin=1')
     }
 
@@ -551,9 +558,11 @@ export default function Home(){
     const payment = params.get('payment')
     const goto    = params.get('goto')
     const project = params.get('project')
+    const scanParam = params.get('module')         // e.g. ?module=accessibility or ?module=foundation
     const isPaymentReturn = payment === 'success' || payment === 'cancelled'
 
-    setIsSigninFlow(signin || isPaymentReturn)
+    // ?module= always implies signin flow — prevents redirect to marketing
+    setIsSigninFlow(signin || isPaymentReturn || !!scanParam)
     if (member) setIsSignoutFlow(true)  // treat ?member=1 same as post-signout flow
     if (goto === 'projects') setGotoProjects(true)
     if (project) setGotoProjectId(project)
@@ -774,6 +783,18 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   }, [initialProjectId]) // eslint-disable-line
   const [projectType,setProjectType]=useState<ProjectType>('new_construction')
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
+
+  // Launch specific scan if coming from /?module=accessibility or /?module=foundation
+  React.useEffect(() => {
+    try {
+      const pending = localStorage.getItem('sc_launch_module')
+      if (pending === 'accessibility' || pending === 'foundation') {
+        localStorage.removeItem('sc_launch_module')
+        setActiveModule(pending as 'accessibility'|'foundation')
+        setScreen('scan_ready')
+      }
+    } catch {}
+  }, []) // eslint-disable-line
   const [foundationMeasurements, setFoundationMeasurements] = useState<FoundationMeasurements|null>(null)
   const [accessibilityMeasurements, setAccessibilityMeasurements] = useState<AccessibilityMeasurements|null>(null)
   const [loc,setLoc]=useState<Loc|null>(null)
@@ -1072,7 +1093,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
   const atLimit    = !isPro && scansUsed != null && scansUsed >= FREE_LIMIT
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column'}}>{/* Hero */}
-      <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.8rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.5rem',borderBottom:`1px solid ${C.border}`}}><div style={{display:'flex',justifyContent:'center'}}><BetaLogo size="md" onDark /></div>
+      <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.8rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.5rem',borderBottom:`1px solid ${C.border}`}}><div style={{display:'flex',justifyContent:'center'}}><Logo size="md" onDark /></div>
         <h1 style={{fontSize:'1.5rem',fontWeight:700,lineHeight:1.2,textAlign:'center',margin:0,color:'#fff'}}>Building Compliance Scanner</h1>
         <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.55)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
       </div>
