@@ -866,7 +866,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
             </div>
             <div style={{ marginLeft: 'auto', textAlign:'right' }}><div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', fontWeight: 400 }}>$38.99</div>
               <div style={{ fontSize: '0.92rem', fontWeight: 700, color: GOLD }}>Included with subscription</div>
-              <div style={{ fontSize: '0.6rem', color: profile.pass, letterSpacing:'0.04em', fontWeight: 700 }}>BETA</div>
+              <div style={{ fontSize: '0.6rem', color: profile.pass, letterSpacing:'0.04em', fontWeight: 700 }}>stAIrcode</div>
             </div>
           </div>
           <div style={{ fontSize: '0.8rem', color: profile.text, lineHeight: 1.7, marginBottom: '0.75rem' }}>Includes full stair description, detailed code analysis, occupancy classification, applicable bylaw notes, and a pre-inspection summary suitable for a building official.
@@ -1023,7 +1023,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     {/* Price row */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}><span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
                       <span style={{ fontSize: '1.35rem', fontWeight: 700, color: GOLD }}>Included with subscription</span>
-                      <span style={{ fontSize: '0.58rem', background: 'rgba(242,147,55,0.2)', color: GOLD, border: '1px solid rgba(242,147,55,0.4)', borderRadius: 6, padding: '0.15rem 0.5rem', fontWeight: 700, letterSpacing: '0.06em' }}>BETA</span>
+                      <span style={{ fontSize: '0.58rem', background: 'rgba(242,147,55,0.2)', color: GOLD, border: '1px solid rgba(242,147,55,0.4)', borderRadius: 6, padding: '0.15rem 0.5rem', fontWeight: 700, letterSpacing: '0.06em' }}>stAIrcode</span>
                     </div>
 
                     {/* Primary CTA */}

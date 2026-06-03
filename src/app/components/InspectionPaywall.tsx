@@ -4,8 +4,8 @@
  *
  * Shown when a user without a subscription taps "Full Building Inspection".
  * Two paths to access:
- *   1. Subscribe — $38.99/month via Stripe Checkout
- *   2. Beta code — enter betacode67 for free access during beta
+ *   1. Start Free Trial — No Card Required via Stripe Checkout
+ *   2. Access code — enter betacode67 for free access during beta
  *
  * On success: calls onAccess() and the inspection flow continues.
  * On back:    calls onBack() and returns to the home screen.
@@ -88,7 +88,7 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
         </div>
 
         <div style={{ fontSize:'0.62rem', fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:'0.09em', textTransform:'uppercase', marginBottom:'0.4rem' }}>Full Inspection Platform</div>
-        <h1 style={{ fontSize:'1.35rem', fontWeight:700, color:'#fff', margin:'0 0 0.35rem', lineHeight:1.2 }}>Subscribe for full access</h1>
+        <h1 style={{ fontSize:'1.35rem', fontWeight:700, color:'#fff', margin:'0 0 0.35rem', lineHeight:1.2 }}>Start your 30-day free trial</h1>
         <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.5)', margin:0, lineHeight:1.65 }}>
           6-phase guided inspection, AI vision analysis, photo documentation, and a 30-page compliance report.
         </p>
@@ -142,11 +142,11 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
         {/* Divider */}
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
           <div style={{ flex:1, height:1, background:BORDER }}/>
-          <span style={{ fontSize:'0.72rem', color:'#9DB4C5', flexShrink:0 }}>or enter a beta access code</span>
+          <span style={{ fontSize:'0.72rem', color:'#9DB4C5', flexShrink:0 }}>or use an access code</span>
           <div style={{ flex:1, height:1, background:BORDER }}/>
         </div>
 
-        {/* Beta code */}
+        {/* Access code */}
         <div>
           <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.4rem' }}>Beta access code</div>
           <div style={{ display:'flex', gap:'0.5rem' }}>

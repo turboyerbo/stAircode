@@ -1074,7 +1074,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                   <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance Demo</div>
                   <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail — free</div>
                 </div>
-                <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Beta</span>
+                <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Free</span>
               </button>
 
               {/* Full Building Inspection */}
@@ -1097,7 +1097,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                       {hasAccess ? 'My Inspections' : 'Full Building Inspection'}
                     </div>
                     <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>
-                      {hasAccess ? '6 OBC phases · AI guidance · 30-page PDF' : 'Subscribe for access · $38.99/month'}
+                      {hasAccess ? '6 OBC phases · AI guidance · 30-page PDF' : '30-day free trial · then $38.99/month'}
                     </div>
                   </div>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>

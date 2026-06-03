@@ -240,7 +240,7 @@ export function BetaLogo({
             lineHeight:    1,
           }}
         >
-          BETA
+          stAIrcode
         </span>
       </div>
       {displaySlogan && <Slogan logoHeight={h} onDark={onDark} />}

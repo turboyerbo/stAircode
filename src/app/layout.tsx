@@ -6,10 +6,10 @@ import './globals.css'
 // ── PWA + SEO Metadata ─────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'stAIrcode — Stair Compliance',
-  description: 'Check your staircase against local building codes. Camera-based measurements, auto-detected jurisdiction (OBC, NBC, QBC, BCBC, IBC and more).',
+  title: 'stAIrcode — AI Building Inspection Reports | OBC 2024',
+  description: 'AI-guided OBC 2024 compliance reports for residential inspectors. Generated in the field, not at the desk. New construction & pre-purchase inspections.',
   applicationName: 'stAIrcode',
-  keywords: ['stair compliance', 'building code', 'OBC', 'staircase inspection', 'riser height', 'tread depth'],
+  keywords: ['building inspection', 'OBC 2024', 'residential inspection', 'new construction inspection', 'pre-purchase inspection', 'stair compliance', 'AI inspection', 'Ontario building code', 'compliance report'],
   authors: [{ name: 'Just Open Technologies Inc.' }],
   creator: 'Just Open Technologies Inc.',
   publisher: 'Just Open Technologies Inc.',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://staircode.app'),
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'stAIrcode — Stair Compliance',
+    title: 'stAIrcode — AI Building Inspection Reports | OBC 2024',
     description: 'Measure and check your staircase against local building codes using your phone camera.',
     url: 'https://staircode.app',
     siteName: 'stAIrcode',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'stAIrcode — Stair Compliance',
+    title: 'stAIrcode — AI Building Inspection Reports | OBC 2024',
     description: 'AR stair measurements checked against OBC, NBC, IRC, IBC and more.',
     images: ['/screenshots/feature-graphic.png'],
   },

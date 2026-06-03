@@ -227,16 +227,16 @@ export default function MarketingPage() {
           HERO
       ══════════════════════════════════════════════ */}
       <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#FFFFFF', borderBottom: '1px solid #E5EBF2' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>{/* ── Left: headline + CTAs ── */}
-          <div style={{ flex: '1 1 320px' }}><div style={{ display: 'inline-block', background: '#F29337', color: '#fff', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.25rem' }}>Assisted Building Compliance Reports for Residential Building Inspections</div>
-            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.25rem', color: '#0A1C2E' }}>The AI-guided building compliance platform.
+          <div style={{ flex: '1 1 320px' }}><div style={{ display: 'inline-block', background: '#F29337', color: '#fff', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.25rem' }}>OBC 2024 · New Construction · Pre-Purchase · Residential</div>
+            <h1 style={{ fontSize: 'clamp(1.9rem, 5vw, 3.1rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.25rem', color: '#0A1C2E' }}>AI-guided OBC 2024 compliance reports for residential inspectors — generated in the field, not at the desk.
             </h1>
-            <p style={{ fontSize: '1rem', lineHeight: 1.75, color: '#3A5A78', maxWidth: 520, marginBottom: '2rem' }}>AI vision. Live code analysis. Photo records. Phased guided inspections. One comprehensive building compliance report — from any phone.
+            <p style={{ fontSize: '1rem', lineHeight: 1.75, color: '#3A5A78', maxWidth: 520, marginBottom: '2rem' }}>Stop wrestling with scheduling apps that bury the features that matter. stAIrcode measures, analyzes, and assembles a professional PDF report on the spot &mdash; while you are still on site.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
               <a onClick={handleTryDemo} href="#" className={styles.navCta} style={{ fontSize: '0.95rem', padding: '12px 24px' }}>Try Free Demo — Stair Scan →</a>
-              <button onClick={() => setShowSubscribeModal(true)} style={{ fontSize: '0.95rem', padding: '12px 24px', background: '#0A1C2E', color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(10,28,46,0.18)' }}>Full Inspection — Subscribe</button>
+              <button onClick={() => setShowSubscribeModal(true)} style={{ fontSize: '0.95rem', padding: '12px 24px', background: '#0A1C2E', color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(10,28,46,0.18)' }}>Start 30-Day Free Trial →</button>
             </div>
-            <p style={{ fontSize: '0.72rem', color: '#9DB4C5', marginTop: '0.85rem', lineHeight: 1.5 }}>Stair scan is free · Full inspection requires monthly subscription · Beta code available</p>
+            <p style={{ fontSize: '0.72rem', color: '#9DB4C5', marginTop: '0.85rem', lineHeight: 1.5 }}>Stair scan is always free · Full inspection: 30-day free trial, then $38.99/month · No credit card required to start</p>
           </div>
 
           {/* ── Right: animated phone mockup ── */}
@@ -424,6 +424,66 @@ export default function MarketingPage() {
       
 
       {/* ══════════════════════════════════════════════
+          COMPETITOR COMPARISON
+      ══════════════════════════════════════════════ */}
+      <section style={{ background: '#0A1C2E', padding: '5rem 1.25rem' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.75rem', textAlign: 'center' }}>Why stAIrcode</div>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, color: '#fff', textAlign: 'center', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '1rem', maxWidth: 700, marginLeft: 'auto', marginRight: 'auto' }}>
+            Other companies built scheduling apps.<br/>We built a measurement engine.
+          </h2>
+          <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center', maxWidth: 600, margin: '0 auto 3.5rem', lineHeight: 1.7 }}>
+            Competitors charge you hundreds per month for confusing dashboards overloaded with features that have nothing to do with what happens on-site. Their large development teams are burning investor capital to rebuild what a clipboard already does — just digitally.
+          </p>
+
+          {/* Comparison table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '0.88rem' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.04em', textTransform: 'uppercase', width: '40%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Feature</th>
+                  <th style={{ textAlign: 'center', padding: '0.75rem 1rem', color: '#F29337', fontWeight: 800, fontSize: '0.85rem', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(242,147,55,0.08)', borderRadius: '8px 8px 0 0' }}>stAIrcode</th>
+                  <th style={{ textAlign: 'center', padding: '0.75rem 1rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600, fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Other Platforms</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['AI measures dimensions from your phone camera',                   true,  false],
+                  ['Live OBC 2024 compliance check — on the spot',                    true,  false],
+                  ['Generates a professional PDF report in the field',                true,  false],
+                  ['6-phase OBC hold-point inspection workflow',                      true,  false],
+                  ['Works without LTE — offline capable',                             true,  '~'],
+                  ['Scheduling, crew management, project portfolio tools',             '—',   true],
+                  ['Requires hours of onboarding and training',                        false, true],
+                  ['Price per month',                                                  '$38.99', '$150–300+'],
+                ].map(([feat, us, them], i) => {
+                  const bg = i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'
+                  const renderCell = (val: any, isUs: boolean) => {
+                    if (val === true)  return <span style={{ color: '#27A96B', fontWeight: 700, fontSize: '1.1rem' }}>✓</span>
+                    if (val === false) return <span style={{ color: '#E84545', fontSize: '1rem' }}>✗</span>
+                    if (val === '~')   return <span style={{ color: '#C4780A' }}>~</span>
+                    if (val === '—')   return <span style={{ color: 'rgba(255,255,255,0.25)' }}>—</span>
+                    return <span style={{ color: isUs ? '#F29337' : 'rgba(255,255,255,0.4)', fontWeight: isUs ? 800 : 400 }}>{val}</span>
+                  }
+                  return (
+                    <tr key={String(feat)} style={{ background: bg }}>
+                      <td style={{ padding: '0.85rem 1rem', color: 'rgba(255,255,255,0.75)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{feat}</td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(242,147,55,0.06)' }}>{renderCell(us, true)}</td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{renderCell(them, false)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '1.5rem' }}>
+            Other platforms have teams of 50+ developers and venture capital backing &mdash; and still cannot measure a stair riser with a phone camera. We can.
+          </p>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
           PRICING
       ══════════════════════════════════════════════ */}
       <section id="pricing" style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}>
@@ -462,14 +522,18 @@ export default function MarketingPage() {
 
             {/* ── Full Inspection — Monthly ── */}
             <div style={{ background: '#0A1C2E', border: '2px solid #F29337', borderRadius: 16, padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, right: 0, background: '#F29337', color: '#fff', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em', padding: '0.3rem 0.8rem', borderRadius: '0 14px 0 8px' }}>BETA</div>
+              <div style={{ position: 'absolute', top: 0, right: 0, background: '#F29337', color: '#fff', fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em', padding: '0.3rem 0.8rem', borderRadius: '0 14px 0 8px' }}>MOST POPULAR</div>
               <div>
                 <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Residential Inspection</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>$38.99</div>
-                  <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)' }}>/month</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#27A96B', background: 'rgba(39,169,107,0.15)', padding: '0.2rem 0.6rem', borderRadius: 4, marginBottom: '0.4rem', display: 'inline-block' }}>1 MONTH FREE</div>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.25rem' }}>Beta access · Cancel anytime</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', lineHeight: 1 }}>$38.99</div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>Free</div>
+                  <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)' }}>for 30 days</div>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.25rem' }}>Then $38.99/month · Cancel anytime</div>
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                 {[
@@ -491,9 +555,9 @@ export default function MarketingPage() {
               </ul>
               <button onClick={() => setShowSubscribeModal(true)}
                 style={{ display: 'block', width: '100%', padding: '0.95rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 10, fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer', marginTop: 'auto', boxShadow: '0 4px 20px rgba(242,147,55,0.45)' }}>
-                Subscribe — $38.99/month →
+                Start 30-Day Free Trial →
               </button>
-              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>Have a beta code? Enter it on the next screen.</div>
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>No credit card required. After your trial, $38.99/month.</div>
             </div>
 
           </div>
@@ -849,10 +913,10 @@ export default function MarketingPage() {
 
           {/* Modal header */}
           <div style={{ background: '#0A1C2E', padding: '1.5rem', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: '#F29337', color: '#fff', fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.1em', padding: '0.2rem 0.6rem', borderRadius: 4 }}>BETA</div>
+            
             <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.4rem' }}>Full Residential Inspection</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Subscribe for full access</div>
-            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>9-phase guided inspection · AI vision · 30-page PDF report</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Start your 30-day free trial</div>
+            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>Full access · No credit card required · Cancel anytime</div>
           </div>
 
           {/* Modal body */}
@@ -860,8 +924,13 @@ export default function MarketingPage() {
 
             {/* Price */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-              <div style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#0A1C2E', lineHeight: 1 }}>$38.99</div>
-              <div style={{ fontSize: '0.9rem', color: '#5E7D9B' }}>/ month · Cancel anytime</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.75rem', borderRadius: 20, border: '1px solid rgba(39,169,107,0.3)' }}>FREE for 30 days</div>
+                  <div style={{ fontSize: '0.8rem', color: '#5E7D9B', textDecoration: 'line-through' }}>$38.99/mo</div>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#5E7D9B', marginTop: '0.25rem' }}>After your trial, plans start at $38.99/month. No credit card required to start.</div>
+              </div>
             </div>
 
             {/* Stripe CTA */}
@@ -874,22 +943,22 @@ export default function MarketingPage() {
                 } catch { alert('Could not start checkout. Please try again.') }
               }}
               style={{ display: 'block', width: '100%', textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 12, fontWeight: 800, fontSize: '1rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>
-              Subscribe — $38.99/month →
+              Start Free Trial — No Card Required →
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{ flex: 1, height: 1, background: '#E5EBF2' }} />
-              <span style={{ fontSize: '0.72rem', color: '#9DB4C5' }}>or enter a beta code</span>
+              <span style={{ fontSize: '0.72rem', color: '#9DB4C5' }}>or use an access code</span>
               <div style={{ flex: 1, height: 1, background: '#E5EBF2' }} />
             </div>
 
             {/* Beta code */}
             <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#5E7D9B', marginBottom: '0.4rem' }}>Beta access code</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#5E7D9B', marginBottom: '0.4rem' }}>Early access code</div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <input
                   type="text"
-                  placeholder="Enter beta code"
+                  placeholder="Enter access code"
                   value={betaCode}
                   onChange={e => { setBetaCode(e.target.value); setBetaError(null) }}
                   onKeyDown={e => { if (e.key === 'Enter') handleBetaCode() }}

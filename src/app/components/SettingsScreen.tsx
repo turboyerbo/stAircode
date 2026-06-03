@@ -184,7 +184,7 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
       )}
 
       {/* ── BETA FEEDBACK ── */}
-      <SectionHeader label="Beta Testing" />
+      <SectionHeader label="Feedback" />
       <div style={{ margin: '0 1rem 1rem' }}><div style={{ background: BG2, border: `1px solid ${T.border}`, borderRadius: 16, padding: '1rem' }}><div style={{ fontSize: '0.78rem', color: T.text2, lineHeight: 1.6, marginBottom: '0.85rem' }}>You&apos;re using an early build of Staircode. Your feedback directly shapes what gets built next.
           </div>
           <FeedbackButton source="settings" />

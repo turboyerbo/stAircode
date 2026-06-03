@@ -250,7 +250,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
       <div style={{ background: NAVY, padding: 'max(env(safe-area-inset-top,0px),1.5rem) 1.25rem 0', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: `repeating-linear-gradient(45deg,${BLUE},${BLUE} 10px,${NAVY} 10px,${NAVY} 20px)` }} />
         <div style={{ paddingTop: '0.75rem', paddingBottom: '1.25rem' }}>
-          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>STAIRCODE · BETA · FOUNDATION INSPECTION REPORT</div>
+          <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>STAIRCODE · FOUNDATION INSPECTION REPORT</div>
           <div style={{ fontSize: 'clamp(1.5rem,5vw,2rem)', fontWeight: 700, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '0.5rem' }}>Foundation<br />Inspection Report</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.55)', marginBottom: '1rem' }}>
             <span>{codeLabel}</span><span>·</span><span>{location || 'Location not set'}</span><span>·</span><span>{today}</span>
@@ -325,7 +325,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', textDecoration: 'line-through' }}>$38.99</span>
               <span style={{ fontSize: '1.4rem', fontWeight: 700, color: GOLD }}>Included with subscription</span>
-              <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>BETA</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>stAIrcode</span>
             </div>
             <button
               onClick={() => setSheet('paywall')}
@@ -451,7 +451,7 @@ export default function FoundationReportScreen({ measurements: m, fields, codeLa
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem' }}>
               <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through' }}>$38.99</span>
               <span style={{ fontSize: '1.5rem', fontWeight: 700, color: GOLD }}>Included with subscription</span>
-              <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>BETA</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(242,147,55,0.2)', color: GOLD, padding: '0.15rem 0.5rem', borderRadius: 4, border: '1px solid rgba(242,147,55,0.3)' }}>stAIrcode</span>
             </div>
 
             {/* Email input */}
