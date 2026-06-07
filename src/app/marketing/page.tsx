@@ -232,10 +232,10 @@ export default function MarketingPage() {
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#27A96B', display: 'inline-block' }} />
               OBC · NBC · IBC · BCBC — Jurisdiction detected automatically
             </div>
-            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Mobile computer vision and augmented reality for stair compliance — measured, analyzed, and reported on site.
+            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Mobile computer vision and augmented reality for residential building compliance — measured, analyzed, and reported on site.
             </h1>
             <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
-              stAIrcode layers AI vision with your smartphone camera to capture stair geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Compliance in minutes, not weeks.
+              stAIrcode layers AI vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Compliance in minutes, not weeks.
             </p>
             <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
