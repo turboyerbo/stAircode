@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const maxDuration = 30
 
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL         = 'claude-sonnet-4-6'
+const MODEL         = 'claude-sonnet-4-5'
 
 // Core knowledge system prompt — combined with per-job context from client
 const CORE_SYSTEM = `You are an expert AI inspection assistant for Canadian residential construction.

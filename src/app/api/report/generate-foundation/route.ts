@@ -33,7 +33,7 @@ import { canGenerateReport } from '@/lib/subscription'
 export const maxDuration = 60
 
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL         = 'claude-sonnet-4-6'
+const MODEL         = 'claude-sonnet-4-5'
 const APP_URL       = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
 
 // ── AI prompt for foundation narrative ────────────────────────────────────────

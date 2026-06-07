@@ -83,7 +83,14 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ job: stripJobForTransport(job, phaseId), phaseId }),
       })
-      const data = await res.json()
+      const rawPhaseText = await res.text()
+      let data: any = {}
+      try { data = JSON.parse(rawPhaseText) } catch {
+        throw new Error(
+          res.status === 504 ? 'Phase generation timed out — check your connection and try again.' :
+          `Server error (${res.status}) — ${rawPhaseText.slice(0, 120)}`
+        )
+      }
       if (!res.ok || !data.ok) throw new Error(data.error ?? 'Generation failed')
 
       // Store base64 section on the phase
@@ -146,7 +153,15 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
           },
         }),
       })
-      const data = await res.json()
+      const rawText = await res.text()
+      let data: any = {}
+      try { data = JSON.parse(rawText) } catch {
+        throw new Error(
+          res.status === 504 ? 'Report assembly timed out — try generating each phase section first, then assemble.' :
+          res.status === 413 ? 'Payload too large — reduce photos per phase and try again.' :
+          `Server error (${res.status}) — ${rawText.slice(0, 120)}`
+        )
+      }
       if (!res.ok || !data.ok) throw new Error(data.error ?? 'Assembly failed')
       setFinalPdfB64(data.pdfB64)
       setEmailsSent(data.emailsSent ?? [])

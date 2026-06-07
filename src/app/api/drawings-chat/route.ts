@@ -34,7 +34,7 @@ import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 export const maxDuration = 60
 
 const API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL   = 'claude-sonnet-4-6'
+const MODEL   = 'claude-sonnet-4-5'
 
 // System prompt for the drawings analysis assistant
 function buildSystemPrompt(jobContext?: { address?: string; buildingType?: string; province?: string }) {

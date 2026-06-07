@@ -3,7 +3,7 @@
  *
  * POST /api/vision
  * Accepts a base64 JPEG frame + text prompt.
- * Calls Claude Sonnet 4.6 (claude-sonnet-4-6) vision API and returns AI measurement text.
+ * Calls Claude Sonnet 4.6 (claude-sonnet-4-5) vision API and returns AI measurement text.
  * Used as fallback when WebXR is unavailable.
  *
  * Body: { imageB64: string, prompt: string }
@@ -17,7 +17,7 @@ import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 export const maxDuration = 30
 
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const MODEL         = 'claude-sonnet-4-6'
+const MODEL         = 'claude-sonnet-4-5'
 
 export async function POST(req: NextRequest) {
   // ── Rate limiting ──────────────────────────────────────────────────────────
