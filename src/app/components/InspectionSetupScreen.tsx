@@ -133,6 +133,9 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
   const [company,       setCompany]       = useState('')
   const [loading,       setLoading]       = useState(false)
 
+  // Screening mode
+  const [isPrescreen, setIsPrescreen] = useState(true) // default to pre-screening
+
   // ── On mount: geo-locate ────────────────────────────────────────────────────
   useEffect(() => {
     setGeoLoading(true)
@@ -246,17 +249,19 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
     }
     const job = createNewJob({
       projectType,
-      // Preserve the stub job ID created at ProjectTypeScreen so Supabase row is updated not duplicated
       ...(existingJobId ? { id: existingJobId } : {}),
-      clientName: clientName.trim(), clientEmail: clientEmail.trim() || undefined,
-      clientPhone: clientPhone.trim() || undefined,
-      inspectorName: inspectorName.trim(), licenceNumber: licenceNumber.trim() || undefined,
-      company: company.trim() || undefined,
+      clientName:    clientName.trim() || (isPrescreen ? 'Homeowner' : ''),
+      clientEmail:   clientEmail.trim() || undefined,
+      clientPhone:   clientPhone.trim() || undefined,
+      inspectorName: isPrescreen ? 'Pre-Screening' : inspectorName.trim(),
+      licenceNumber: isPrescreen ? undefined : licenceNumber.trim() || undefined,
+      company:       isPrescreen ? undefined : company.trim() || undefined,
       address, buildingType,
-      estimatedAge: estimatedAge.trim(),
-      roofCovering: roofCovering as any, footingType: footingType as any,
+      estimatedAge:  estimatedAge.trim(),
+      roofCovering:  roofCovering as any, footingType: footingType as any,
       wallConstruction: wallConstruction as any, internalWalls, windows,
-      isOccupied: occupied, isSecure: secure, weather, purposeNote,
+      isOccupied: occupied, isSecure: secure, weather,
+      purposeNote: isPrescreen ? 'Pre-screening — homeowner self-assessment' : purposeNote,
       inspectionDate: inspDate,
     })
     try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
@@ -266,7 +271,8 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
 
   const canStep1 = street.trim().length > 0 && city.trim().length > 0
   const canStep2 = buildingType && estimatedAge.trim().length > 0
-  const canStep3 = clientName.trim().length > 0 && inspectorName.trim().length > 0
+  // Pre-screening: just needs an optional name; Professional: needs inspector name
+  const canStep3 = isPrescreen ? true : inspectorName.trim().length > 0
 
   // ── AI scan overlay ─────────────────────────────────────────────────────────
   if (showAIScan) {
@@ -529,35 +535,110 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
         {step === 3 && (
           <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
             <div>
-              <h2 style={{ fontSize:'1.2rem', fontWeight:700, margin:'0 0 0.2rem', color:NAVY }}>Parties</h2>
-              <p style={{ fontSize:'0.78rem', color:'#5E7D9B', margin:0, lineHeight:1.6 }}>Who commissioned the inspection and who is conducting it.</p>
+              <h2 style={{ fontSize:'1.2rem', fontWeight:700, margin:'0 0 0.2rem', color:NAVY }}>Who is this for?</h2>
+              <p style={{ fontSize:'0.78rem', color:'#5E7D9B', margin:0, lineHeight:1.6 }}>Choose how you&apos;ll use this inspection.</p>
             </div>
 
-            <SectionHeading>Commissioned By</SectionHeading>
-            <Field label="Client Name" required>
-              <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} id="client-name" name="client-name" autoComplete="name" placeholder="Jane Smith" style={inputStyle()}/>
-            </Field>
+            {/* Mode toggle */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              <Field label="Email">
-                <input id="client-email" name="client-email" autoComplete="email" type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="jane@email.com" style={inputStyle()}/>
-              </Field>
-              <Field label="Phone">
-                <input id="client-phone" name="client-phone" autoComplete="tel" type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(416) 555-0100" style={inputStyle()}/>
-              </Field>
+              <button
+                onClick={() => setIsPrescreen(true)}
+                style={{ padding:'0.9rem 0.75rem', borderRadius:10, border:`2px solid ${isPrescreen ? GREEN : BORDER}`, background: isPrescreen ? 'rgba(39,169,107,0.06)' : WHITE, cursor:'pointer', textAlign:'left' as const, transition:'all 0.12s' }}>
+                <div style={{ fontSize:'0.78rem', fontWeight:700, color: isPrescreen ? GREEN : NAVY, marginBottom:'0.2rem' }}>Pre-Screening</div>
+                <div style={{ fontSize:'0.65rem', color:'#5E7D9B', lineHeight:1.5 }}>Homeowner self-assessment. No licence required.</div>
+              </button>
+              <button
+                onClick={() => setIsPrescreen(false)}
+                style={{ padding:'0.9rem 0.75rem', borderRadius:10, border:`2px solid ${!isPrescreen ? BLUE : BORDER}`, background: !isPrescreen ? 'rgba(65,124,164,0.06)' : WHITE, cursor:'pointer', textAlign:'left' as const, transition:'all 0.12s' }}>
+                <div style={{ fontSize:'0.78rem', fontWeight:700, color: !isPrescreen ? BLUE : NAVY, marginBottom:'0.2rem' }}>Professional</div>
+                <div style={{ fontSize:'0.65rem', color:'#5E7D9B', lineHeight:1.5 }}>Licensed inspector or architect generating a formal report.</div>
+              </button>
             </div>
 
-            <SectionHeading>Inspector</SectionHeading>
-            <Field label="Inspector Name" required>
-              <input type="text" value={inspectorName} onChange={e => setInspectorName(e.target.value)} id="inspector-name" name="inspector-name" placeholder="Jordan Yerbury" style={inputStyle()}/>
-            </Field>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              <Field label="Licence / Certificate No.">
-                <input type="text" value={licenceNumber} onChange={e => setLicenceNumber(e.target.value)} id="licence" name="licence" placeholder="OAA-123456" style={inputStyle()}/>
-              </Field>
-              <Field label="Company">
-                <input type="text" value={company} onChange={e => setCompany(e.target.value)} id="company" name="company" autoComplete="organization" placeholder="Just Open Technologies" style={inputStyle()}/>
-              </Field>
-            </div>
+            {/* Pre-screening path */}
+            {isPrescreen && (
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+
+                {/* Info banner */}
+                <div style={{ background:'rgba(39,169,107,0.06)', border:'1px solid rgba(39,169,107,0.25)', borderRadius:10, padding:'0.85rem 1rem', display:'flex', gap:'0.65rem', alignItems:'flex-start' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0, marginTop:1 }}>
+                    <circle cx="8" cy="8" r="7" stroke={GREEN} strokeWidth="1.4"/>
+                    <path d="M4.5 8l2.5 2.5 4.5-5" stroke={GREEN} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div style={{ fontSize:'0.75rem', color:'#1A7A50', lineHeight:1.6 }}>
+                    <strong>Pre-screening mode:</strong> Walk through each inspection module using your phone camera. You&apos;ll get a preliminary assessment you can share with a professional. No licence number needed.
+                  </div>
+                </div>
+
+                <Field label="Your Name (optional)">
+                  <input type="text" value={clientName} onChange={e => setClientName(e.target.value)}
+                    id="client-name" name="client-name" autoComplete="name"
+                    placeholder="e.g. Alex Smith" style={inputStyle()}/>
+                </Field>
+
+                <Field label="Your Email (optional — for report delivery)">
+                  <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)}
+                    id="client-email" name="client-email" autoComplete="email"
+                    placeholder="you@email.com" style={inputStyle()}/>
+                </Field>
+
+                {/* Find a Professional */}
+                <div style={{ background:'rgba(65,124,164,0.05)', border:`1px solid rgba(65,124,164,0.2)`, borderRadius:10, padding:'0.9rem 1rem' }}>
+                  <div style={{ fontSize:'0.72rem', fontWeight:700, color:BLUE, marginBottom:'0.4rem', letterSpacing:'0.02em' }}>Need a licensed inspector?</div>
+                  <p style={{ fontSize:'0.72rem', color:'#3A5A78', lineHeight:1.65, margin:'0 0 0.65rem' }}>
+                    Your pre-screening results can be shared directly with a certified building inspector or architect for a formal assessment.
+                  </p>
+                  <a
+                    href={`https://www.google.com/search?q=certified+building+inspector+near+${encodeURIComponent(`${city || 'me'}, ${province}`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', padding:'0.55rem 1rem', background:WHITE, border:`1.5px solid rgba(65,124,164,0.35)`, borderRadius:8, textDecoration:'none', color:BLUE, fontSize:'0.75rem', fontWeight:700 }}>
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                      <circle cx="7" cy="7" r="5.5" stroke={BLUE} strokeWidth="1.5"/>
+                      <path d="M11 11l3 3" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    Find a Professional Near Me →
+                  </a>
+                </div>
+
+                <div style={{ fontSize:'0.65rem', color:'#9DB4C5', lineHeight:1.6, textAlign:'center' as const }}>
+                  Pre-screening results are informational only and do not replace a formal inspection by a licensed professional.
+                </div>
+              </div>
+            )}
+
+            {/* Professional path */}
+            {!isPrescreen && (
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+                <SectionHeading>Commissioned By</SectionHeading>
+                <Field label="Client Name" required>
+                  <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} id="client-name" name="client-name" autoComplete="name" placeholder="Jane Smith" style={inputStyle()}/>
+                </Field>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                  <Field label="Email">
+                    <input id="client-email" name="client-email" autoComplete="email" type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="jane@email.com" style={inputStyle()}/>
+                  </Field>
+                  <Field label="Phone">
+                    <input id="client-phone" name="client-phone" autoComplete="tel" type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="(416) 555-0100" style={inputStyle()}/>
+                  </Field>
+                </div>
+
+                <SectionHeading>Inspector</SectionHeading>
+                <Field label="Inspector Name" required>
+                  <input type="text" value={inspectorName} onChange={e => setInspectorName(e.target.value)} id="inspector-name" name="inspector-name" placeholder="Jordan Yerbury" style={inputStyle()}/>
+                </Field>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                  <Field label="Licence / Certificate No.">
+                    <input type="text" value={licenceNumber} onChange={e => setLicenceNumber(e.target.value)} id="licence" name="licence" placeholder="OAA-123456" style={inputStyle()}/>
+                  </Field>
+                  <Field label="Company">
+                    <input type="text" value={company} onChange={e => setCompany(e.target.value)} id="company" name="company" autoComplete="organization" placeholder="Just Open Technologies" style={inputStyle()}/>
+                  </Field>
+                </div>
+                <Field label="Inspection Purpose">
+                  <input type="text" value={purposeNote} onChange={e => setPurposeNote(e.target.value)} id="purpose" name="purpose" placeholder="Pre-purchase building inspection" style={inputStyle()}/>
+                </Field>
+              </div>
+            )}
 
             {/* Summary card */}
             <div style={{ background:'rgba(65,124,164,0.06)', border:`1px solid rgba(65,124,164,0.2)`, borderRadius:10, padding:'0.9rem 1rem' }}>
@@ -568,6 +649,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
                 {buildingType.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())}
                 {estimatedAge && ` · ${estimatedAge}`}
                 {aiScanResult && <span style={{ color:GREEN }}> · AI scanned</span>}
+                {' · '}<span style={{ color: isPrescreen ? GREEN : BLUE }}>{isPrescreen ? 'Pre-Screening' : 'Professional'}</span>
               </div>
             </div>
           </div>
@@ -589,8 +671,8 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
             </button>
           ) : (
             <button onClick={handleSubmit} disabled={!canStep3 || loading}
-              style={{ flex:2, padding:'0.9rem', background:canStep3?`linear-gradient(135deg,${ORANGE},#C4721E)`:'rgba(242,147,55,0.15)', border:'none', borderRadius:10, fontSize:'0.875rem', fontWeight:700, cursor:canStep3?'pointer':'not-allowed', color:canStep3?'#fff':'rgba(242,147,55,0.5)', transition:'all 0.15s' }}>
-              {loading ? 'Starting…' : 'Start Inspection →'}
+              style={{ flex:2, padding:'0.9rem', background:canStep3?`linear-gradient(135deg,${isPrescreen?GREEN:ORANGE},${isPrescreen?'#1A7A50':'#C4721E'})`:'rgba(242,147,55,0.15)', border:'none', borderRadius:10, fontSize:'0.875rem', fontWeight:700, cursor:canStep3?'pointer':'not-allowed', color:canStep3?'#fff':'rgba(242,147,55,0.5)', transition:'all 0.15s' }}>
+              {loading ? 'Starting…' : isPrescreen ? 'Start Pre-Screening →' : 'Start Inspection →'}
             </button>
           )}
         </div>

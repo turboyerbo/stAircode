@@ -772,8 +772,9 @@ async function buildPhaseSection(
           s = { ...s, y: s.y - 8 }
         }
 
-        // Photos (up to 2 side by side)
-        const photos = [...(finding.photos||[]),...(mod.photos||[])].filter(Boolean).slice(0,4)
+        // Photos — use finding-level photos if present, otherwise fall back to module-level
+        // Never merge both: findings already reference the same photos as module.photos
+        const photos = (finding.photos?.length ? finding.photos : mod.photos ?? []).filter(Boolean).slice(0, 4)
         if (photos.length > 0) {
           const iW = Math.min(200, (TW - 10) / Math.min(photos.length, 2))
           const iH = 150
@@ -783,7 +784,9 @@ async function buildPhaseSection(
           for (let pi = 0; pi < photos.length; pi++) {
             try {
               const bytes = Buffer.from(photos[pi], 'base64')
-              const img   = photos[pi].startsWith('/9j/') ? await pdfDoc.embedJpg(bytes) : await pdfDoc.embedPng(bytes)
+              // Detect image type from magic bytes: PNG starts with 0x89 0x50, JPEG with 0xFF 0xD8
+              const isPng = bytes[0] === 0x89 && bytes[1] === 0x50
+              const img   = isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes)
               const scale = Math.min(iW / img.width, iH / img.height)
               const w2 = img.width * scale, h2 = img.height * scale
 

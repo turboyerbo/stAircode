@@ -1,4 +1,15 @@
 'use client'
+
+// Detect image mime type from base64 string
+function imgSrc(b64: string) {
+  const head = b64.slice(0, 8)
+  const mime = head.startsWith('iVBOR') ? 'image/png'
+             : head.startsWith('/9j/')  ? 'image/jpeg'
+             : head.startsWith('R0lGO') ? 'image/gif'
+             : 'image/jpeg'
+  return `data:${mime};base64,${b64}`
+}
+
 /**
  * InspectionModuleCapture.tsx  v2
  *
@@ -1240,7 +1251,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
                 {!camReady && (
                   <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.6)' }}>
                     <div style={{ width:28, height:28, borderRadius:'50%', border:`3px solid rgba(255,255,255,0.2)`, borderTopColor:'#fff', animation:'spin 0.8s linear infinite' }}/>
-                    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                    <style>{`@keyframes spin{to{transform:rotate(360deg)}>`}</style>
                   </div>
                 )}
                 {/* Capture button */}
@@ -1270,7 +1281,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
               <div>
                 <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.4rem' }}>Current photo</div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`data:image/jpeg;base64,${capturedB64}`} alt="captured" style={{ width:'100%', borderRadius:10, objectFit:'cover', maxHeight:260, display:'block', border:`1px solid ${BORDER}` }}/>
+                <img src={imgSrc(capturedB64)} alt="captured" style={{ width:'100%', borderRadius:10, objectFit:'cover', maxHeight:260, display:'block', border:`1px solid ${BORDER}` }}/>
               </div>
             )}
 
@@ -1321,14 +1332,14 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem', padding:'2rem 0' }}>
             {capturedB64 && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`data:image/jpeg;base64,${capturedB64}`} alt="" style={{ width:'100%', borderRadius:12, opacity:0.55, filter:'blur(1px)', maxHeight:220, objectFit:'cover', display:'block' }}/>
+              <img src={imgSrc(capturedB64)} alt="" style={{ width:'100%', borderRadius:12, opacity:0.55, filter:'blur(1px)', maxHeight:220, objectFit:'cover', display:'block' }}/>
             )}
             <div style={{ width:40, height:40, borderRadius:'50%', border:`3px solid rgba(65,124,164,0.15)`, borderTopColor:BLUE, animation:'spin 0.8s linear infinite' }}/>
             <div style={{ textAlign:'center' }}>
               <div style={{ fontSize:'0.9rem', fontWeight:600, color:'#0D1E2E', marginBottom:'0.2rem' }}>Analysing for compliance…</div>
               <div style={{ fontSize:'0.72rem', color:'#5E7D9B' }}>Checking against {meta?.codeRef ?? 'building code'}</div>
             </div>
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}>`}</style>
           </div>
         )}
 
@@ -1340,7 +1351,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
             {capturedB64 && (
               <div style={{ position:'relative' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`data:image/jpeg;base64,${capturedB64}`} alt="" style={{ width:'100%', borderRadius:10, objectFit:'cover', maxHeight:200, display:'block', border:`1px solid ${BORDER}` }}/>
+                <img src={imgSrc(capturedB64)} alt="" style={{ width:'100%', borderRadius:10, objectFit:'cover', maxHeight:200, display:'block', border:`1px solid ${BORDER}` }}/>
                 <button onClick={() => { setCapturedB64(null); setPhotos([]); setAiFields(null); setAiError(null); setStage('capture') }}
                   style={{ position:'absolute', top:'0.5rem', right:'0.5rem', padding:'0.3rem 0.65rem', background:'rgba(10,28,46,0.75)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:7, color:'#fff', fontSize:'0.68rem', fontWeight:600, cursor:'pointer' }}>
                   ↺ Retake
@@ -1431,7 +1442,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
                 {additionalPhotos.map((p, i) => (
                   <div key={i} style={{ position:'relative', width:72, height:72, borderRadius:7, overflow:'hidden', border:`1px solid ${BORDER}` }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`data:image/jpeg;base64,${p}`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                    <img src={imgSrc(p)} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                     <button onClick={() => setAdditionalPhotos(prev => prev.filter((_,j) => j !== i))}
                       style={{ position:'absolute', top:1, right:1, width:16, height:16, borderRadius:'50%', background:'rgba(0,0,0,0.65)', border:'none', color:'#fff', fontSize:'0.6rem', cursor:'pointer' }}>×</button>
                   </div>

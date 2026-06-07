@@ -992,9 +992,8 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
       userEmail={user.email??''}
       onBack={()=>setScreen('home')}
       onStartNew={()=>{
-        // Skip paywall if user already has access
-        if(hasInspectionAccess()) setScreen('inspection_type')
-        else setScreen('inspection_paywall')
+        // Always allow new projects — pre-screening doesn't require membership
+        setScreen('inspection_type')
       }}
       onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
     />
@@ -1092,18 +1091,27 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
   const scansLeft  = isPro ? Infinity : Math.max(0, FREE_LIMIT - (scansUsed ?? 0))
   const atLimit    = !isPro && scansUsed != null && scansUsed >= FREE_LIMIT
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column'}}>{/* Hero */}
-      <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.8rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.5rem',borderBottom:`1px solid ${C.border}`}}><div style={{display:'flex',justifyContent:'center'}}><Logo size="md" onDark /></div>
-        <h1 style={{fontSize:'1.5rem',fontWeight:700,lineHeight:1.2,textAlign:'center',margin:0,color:'#fff'}}>Building Compliance Scanner</h1>
-        <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.55)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
+    <div style={{flex:1,display:'flex',flexDirection:'column'}}>
+
+      {/* ── Hero ── */}
+      <div style={{background:'linear-gradient(160deg,#0D2B45 0%,#0A1F33 55%,#0D2B45 100%)',padding:'max(env(safe-area-inset-top,0px),1.8rem) 1.4rem 1.5rem',display:'flex',flexDirection:'column',alignItems:'center',gap:'0.4rem',borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:'flex',justifyContent:'center'}}><Logo size="md" onDark /></div>
+        <h1 style={{fontSize:'1.35rem',fontWeight:700,lineHeight:1.2,textAlign:'center',margin:'0.25rem 0 0',color:'#fff'}}>Building Compliance Scanner</h1>
+        <p style={{fontSize:'0.72rem',color:'rgba(255,255,255,0.45)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
       </div>
 
-      <div style={{flex:1,padding:'1.25rem',display:'flex',flexDirection:'column',gap:'0.8rem',background:'#EBF3FA'}}>{/* Location card */}
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'0.9rem 1rem',display:'flex',flexDirection:'column',gap:'0.45rem'}}><div style={{display:'flex',alignItems:'center',gap:'0.6rem'}}><div style={{width:8,height:8,borderRadius:'50%',background:locLoading?'#F29337':confirmed?C.pass:'rgba(167,177,194,0.4)',boxShadow:locLoading?'0 0 0 3px rgba(242,147,55,0.2)':confirmed?'0 0 0 3px rgba(74,144,226,0.2)':'none'}}/>
+      <div style={{flex:1,padding:'1.25rem',display:'flex',flexDirection:'column',gap:'0.75rem',background:'#EBF3FA'}}>
+
+        {/* ── Location card ── */}
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'0.9rem 1rem',display:'flex',flexDirection:'column',gap:'0.45rem'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'0.6rem'}}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:locLoading?'#F29337':confirmed?C.pass:'rgba(167,177,194,0.4)',boxShadow:locLoading?'0 0 0 3px rgba(242,147,55,0.2)':confirmed?'0 0 0 3px rgba(74,144,226,0.2)':'none'}}/>
             <span style={{fontSize:'0.8rem',color:'#0A1C2E',fontWeight:600}}>{locLoading?'Detecting location…':locStr}</span>
           </div>
           {!locLoading&&code&&(
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>{code.code==='OBC' && <>Building Codes: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
+                {code.code==='OBC' && <>Building Codes: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
                 {code.code==='NBC' && <>Building Codes: <a href="https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>NBC 2020</a></>}
                 {code.code==='IBC' && <>Building Codes: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
                 {code.code!=='OBC'&&code.code!=='NBC'&&code.code!=='IBC' && <span>{code.ref}</span>}
@@ -1113,124 +1121,112 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
           )}
         </div>
 
-        {/* ── MODULE SELECTOR ── */}
+        {/* ── Primary action buttons ── */}
         {(() => {
-          const hasAccess = isPro
-            || user.membership === 'subscription'
-            || user.membership === 'pro'
-            || checkTrialAccess()
-
+          const hasAccess = isPro || user.membership === 'subscription' || user.membership === 'pro' || checkTrialAccess()
           return (
-            <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-              {/* Stair Compliance Demo — always visible for all users */}
-              <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.15rem',letterSpacing:'0.02em'}}>Free demo</div>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.65rem'}}>
+
+              {/* Demo */}
               <button
                 onClick={()=>{ if(!atLimit) onStartScan('stair') }}
-                style={{width:'100%',padding:'0.85rem 1rem',background:activeModule==='stair'?'#F0FBF6':'#FFFFFF',border:`1.5px solid ${activeModule==='stair'?'#27A96B':'rgba(44,90,122,0.15)'}`,borderRadius:10,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',transition:'all 0.12s'}}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{flexShrink:0,opacity:activeModule==='stair'?1:0.5}}>
-                  <rect x="1" y="12" width="5" height="7" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-                  <rect x="6" y="7" width="5" height="12" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-                  <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-                </svg>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:'0.875rem',fontWeight:600,color:'#0D1E2E',lineHeight:1.3}}>Stair Compliance Demo</div>
-                  <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.1rem'}}>Rise, run, headroom, width, nosing, handrail — free</div>
+                style={{width:'100%',padding:'1.1rem 1.25rem',background:'#fff',border:'1.5px solid rgba(39,169,107,0.35)',borderRadius:13,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 10px rgba(39,169,107,0.08)',transition:'all 0.12s'}}>
+                <div style={{width:42,height:42,borderRadius:10,background:'rgba(39,169,107,0.1)',border:'1px solid rgba(39,169,107,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                    <rect x="1" y="12" width="5" height="7" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+                    <rect x="6" y="7" width="5" height="12" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+                    <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
+                  </svg>
                 </div>
-                <span style={{fontSize:'0.62rem',fontWeight:600,color:'#27A96B',padding:'0.2rem 0.5rem',borderRadius:4,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0}}>Free</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:'1rem',fontWeight:700,color:'#0D1E2E',lineHeight:1.25}}>Demo</div>
+                  <div style={{fontSize:'0.72rem',color:'#5E7D9B',marginTop:'0.15rem'}}>Stair scan — rise, run, headroom, nosing, handrail</div>
+                </div>
+                <span style={{fontSize:'0.62rem',fontWeight:700,color:'#27A96B',padding:'0.2rem 0.55rem',borderRadius:5,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0,background:'rgba(39,169,107,0.06)'}}>Free</span>
               </button>
 
-              {/* Full Building Inspection */}
-              <div style={{borderTop:'1px solid rgba(44,90,122,0.12)',paddingTop:'0.75rem',marginTop:'0.1rem'}}>
-                <div style={{fontSize:'0.68rem',fontWeight:600,color:'#5E7D9B',marginBottom:'0.45rem',letterSpacing:'0.02em'}}>
-                  {hasAccess ? 'Full building inspection' : 'Full building inspection — 6 OBC phases'}
-                </div>
-                <button onClick={()=>onStartInspection()}
-                  style={{width:'100%',padding:'0.95rem 1rem',background:'linear-gradient(135deg,rgba(65,124,164,0.08),rgba(65,124,164,0.04))',border:'1.5px solid rgba(65,124,164,0.35)',borderRadius:11,display:'flex',alignItems:'center',gap:'0.75rem',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 8px rgba(65,124,164,0.1)'}}>
-                  <div style={{width:38,height:38,borderRadius:9,background:'rgba(65,124,164,0.12)',border:'1px solid rgba(65,124,164,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <rect x="2" y="2" width="16" height="16" rx="2" stroke="#417CA4" strokeWidth="1.5"/>
-                      <line x1="2" y1="7" x2="18" y2="7" stroke="#417CA4" strokeWidth="1.2"/>
-                      <line x1="6" y1="11" x2="14" y2="11" stroke="#417CA4" strokeWidth="1.2"/>
-                      <line x1="6" y1="14" x2="10" y2="14" stroke="#417CA4" strokeWidth="1.2"/>
-                    </svg>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:'0.9rem',fontWeight:700,color:'#0A1C2E',lineHeight:1.2}}>
-                      {hasAccess ? 'My Inspections' : 'Full Building Inspection'}
-                    </div>
-                    <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.15rem'}}>
-                      {hasAccess ? '6 OBC phases · AI guidance · 30-page PDF' : '30-day free trial · then $38.99/month'}
-                    </div>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
-                    <path d="M6 3l5 5-5 5" stroke="#417CA4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              {/* My Inspections / Full Inspection */}
+              <button onClick={()=>onStartInspection()}
+                style={{width:'100%',padding:'1.1rem 1.25rem',background:`linear-gradient(135deg,#0A1C2E,#1A3A58)`,border:'none',borderRadius:13,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 4px 18px rgba(10,28,46,0.25)'}}>
+                <div style={{width:42,height:42,borderRadius:10,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                    <rect x="2" y="2" width="16" height="16" rx="2" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5"/>
+                    <line x1="2" y1="7" x2="18" y2="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
+                    <line x1="6" y1="11" x2="14" y2="11" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
+                    <line x1="6" y1="14" x2="10" y2="14" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
                   </svg>
-                </button>
-              </div>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:'1rem',fontWeight:700,color:'#fff',lineHeight:1.25}}>
+                    {hasAccess ? 'My Inspections' : 'Full Building Inspection'}
+                  </div>
+                  <div style={{fontSize:'0.72rem',color:'rgba(255,255,255,0.5)',marginTop:'0.15rem'}}>
+                    {hasAccess ? '6 OBC phases · AI guidance · PDF report' : 'Members only · Request access'}
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
+                  <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
             </div>
           )
         })()}
 
         {/* Limit warning */}
         {atLimit && (
-          <div style={{background:'rgba(232,69,69,0.08)',border:'1.5px solid rgba(232,69,69,0.3)',borderRadius:12,padding:'0.75rem 1rem',display:'flex',gap:'0.65rem',alignItems:'flex-start'}}><div>
+          <div style={{background:'rgba(232,69,69,0.08)',border:'1.5px solid rgba(232,69,69,0.3)',borderRadius:12,padding:'0.75rem 1rem',display:'flex',gap:'0.65rem',alignItems:'flex-start'}}>
+            <div>
               <div style={{fontSize:'0.82rem',fontWeight:800,color:'#E84545',marginBottom:'0.2rem'}}>Free scans used up</div>
-              <div style={{fontSize:'0.68rem',color:'#2C4A6E',lineHeight:1.55}}>You&apos;ve used all 3 free scans. Upgrade to Pro for unlimited inspections, or complete one more scan to generate a report first.
-              </div>
+              <div style={{fontSize:'0.68rem',color:'#2C4A6E',lineHeight:1.55}}>You&apos;ve used all 3 free scans. Contact us to request full member access.</div>
             </div>
           </div>
         )}
 
-        <div style={{flex:1}}/>
-
-        <p style={{textAlign:'center',fontSize:'0.6rem',color:'#2C5A7A',lineHeight:1.5,margin:0}}>Compliance aid only · Not a substitute for professional inspection
-        </p>
-
-        {/* Social + store buttons — official logos */}
-        <div style={{display:'flex',flexDirection:'column',gap:'0.55rem',marginTop:'0.9rem',width:'100%',maxWidth:340,alignSelf:'center'}}>{/* Row 1: Instagram + Facebook */}
-          <div style={{display:'flex',gap:'0.5rem'}}><a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
-              style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.45rem',padding:'0.55rem 0.75rem',background:'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)',border:'none',borderRadius:12,textDecoration:'none',color:'#fff',fontSize:'0.72rem',fontWeight:700}}><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-              Instagram
-            </a>
-            <a href="https://www.facebook.com/people/Staircode/61589350702805/" target="_blank" rel="noopener noreferrer"
-              style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.45rem',padding:'0.55rem 0.75rem',background:'#1877F2',border:'none',borderRadius:12,textDecoration:'none',color:'#fff',fontSize:'0.72rem',fontWeight:700}}><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              Facebook
-            </a>
-          </div>
-
-          {/* Row 2: Google Play */}
-          <a href="https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
-            style={{display:'flex',alignItems:'center',gap:'0.65rem',padding:'0.6rem 1rem',background:'#000',border:'1px solid rgba(255,255,255,0.12)',borderRadius:12,textDecoration:'none'}}><svg width="22" height="24" viewBox="0 0 22 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M1.5 0.8L12.7 12L1.5 23.2V0.8Z" fill="#4285F4"/>
-              <path d="M16.5 8L2.5 0L12.7 12L16.5 8Z" fill="#34A853"/>
-              <path d="M16.5 16L12.7 12L2.5 24L16.5 16Z" fill="#FBBC04"/>
-              <path d="M21.5 12C21.5 11.1 21.1 10.3 20.4 9.8L16.5 8L12.7 12L16.5 16L20.4 14.2C21.1 13.7 21.5 12.9 21.5 12Z" fill="#EA4335"/>
-            </svg>
-            <div>
-              <div style={{fontSize:'0.5rem',color:'rgba(255,255,255,0.6)',letterSpacing:'0.05em',lineHeight:1}}>GET IT ON</div>
-              <div style={{fontSize:'0.88rem',fontWeight:700,color:'#fff',lineHeight:1.3,letterSpacing:'-0.01em'}}>Google Play</div>
-            </div>
-          </a>
-
-          {/* Row 3: App Store */}
-          <a href="https://apps.apple.com/app/staircode/id6744870260" target="_blank" rel="noopener noreferrer"
-            style={{display:'flex',alignItems:'center',gap:'0.65rem',padding:'0.6rem 1rem',background:'#000',border:'1px solid rgba(255,255,255,0.12)',borderRadius:12,textDecoration:'none'}}><svg width="20" height="24" viewBox="0 0 20 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16.93 12.62c-.02-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.9-3.54-1.93-1.51-.15-2.96.89-3.73.89-.78 0-1.97-.87-3.24-.85C6.79 7.07 5.2 8 4.35 9.43 2.59 12.33 3.89 16.63 5.59 19c.85 1.17 1.85 2.48 3.16 2.43 1.27-.05 1.75-.82 3.28-.82s1.97.82 3.3.79c1.36-.02 2.22-1.19 3.05-2.37.97-1.36 1.36-2.69 1.38-2.76-.03-.01-2.64-1.01-2.67-4.02l.04.37zM14.51 4.91c.7-.86 1.17-2.05 1.04-3.25-1.01.04-2.23.67-2.95 1.52-.65.74-1.22 1.94-1.07 3.08 1.13.09 2.28-.58 2.98-1.35z"/>
-            </svg>
-            <div>
-              <div style={{fontSize:'0.5rem',color:'rgba(255,255,255,0.6)',letterSpacing:'0.05em',lineHeight:1}}>DOWNLOAD ON THE</div>
-              <div style={{fontSize:'0.88rem',fontWeight:700,color:'#fff',lineHeight:1.3,letterSpacing:'-0.01em'}}>App Store</div>
-            </div>
-          </a>
-
-          {/* About link */}
+        {/* About + Sign out */}
+        <div style={{display:'flex',gap:'0.5rem',marginTop:'0.25rem'}}>
           <a href="/marketing"
-            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'0.4rem',padding:'0.45rem 0.9rem',background:'rgba(65,124,164,0.08)',border:'1px solid rgba(65,124,164,0.2)',borderRadius:20,textDecoration:'none',color:'#2C5A7A',fontSize:'0.65rem',fontWeight:600,alignSelf:'center'}}>About stAIrcode
+            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'0.7rem',background:'rgba(65,124,164,0.07)',border:'1px solid rgba(65,124,164,0.18)',borderRadius:11,textDecoration:'none',color:'#2C5A7A',fontSize:'0.78rem',fontWeight:600}}>
+            About
+          </a>
+          <button onClick={onLogout}
+            style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'0.7rem',background:'rgba(65,124,164,0.07)',border:'1px solid rgba(65,124,164,0.18)',borderRadius:11,color:'#2C5A7A',fontSize:'0.78rem',fontWeight:600,cursor:'pointer'}}>
+            Sign Out
+          </button>
+        </div>
+
+        <p style={{textAlign:'center',fontSize:'0.58rem',color:'#9DB4C5',lineHeight:1.5,margin:'0.25rem 0 0'}}>Compliance aid only · Not a substitute for professional inspection</p>
+
+        {/* ── Small social + store links ── */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'0.65rem',marginTop:'0.5rem',flexWrap:'wrap' as const}}>
+          <a href="https://www.instagram.com/staircode/" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'0.3rem',padding:'0.3rem 0.6rem',background:'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)',borderRadius:8,textDecoration:'none',color:'#fff',fontSize:'0.6rem',fontWeight:600}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            Instagram
+          </a>
+          <a href="https://www.facebook.com/people/Staircode/61589350702805/" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'0.3rem',padding:'0.3rem 0.6rem',background:'#1877F2',borderRadius:8,textDecoration:'none',color:'#fff',fontSize:'0.6rem',fontWeight:600}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Facebook
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=app.staircode.android&pcampaignid=web_share" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'0.3rem',padding:'0.3rem 0.6rem',background:'#000',border:'1px solid rgba(255,255,255,0.12)',borderRadius:8,textDecoration:'none',color:'#fff',fontSize:'0.6rem',fontWeight:600}}>
+            <svg width="12" height="12" viewBox="0 0 20 22" fill="none"><path d="M0.5 1.33L11.14 11L0.5 20.67V1.33Z" fill="#4285F4"/><path d="M14.5 7.5L2.5 0.5L11.14 11L14.5 7.5Z" fill="#34A853"/><path d="M14.5 14.5L11.14 11L2.5 21.5L14.5 14.5Z" fill="#FBBC04"/><path d="M19.5 11C19.5 10.17 19.07 9.43 18.41 9L14.5 7.5L11.14 11L14.5 14.5L18.41 13C19.07 12.57 19.5 11.83 19.5 11Z" fill="#EA4335"/></svg>
+            Google Play
+          </a>
+          <a href="https://apps.apple.com/app/staircode/id6744870260" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'0.3rem',padding:'0.3rem 0.6rem',background:'#000',border:'1px solid rgba(255,255,255,0.12)',borderRadius:8,textDecoration:'none',color:'#fff',fontSize:'0.6rem',fontWeight:600}}>
+            <svg width="11" height="13" viewBox="0 0 18 22" fill="white"><path d="M14.93 11.62c-.02-2.45 2-3.63 2.09-3.69-1.14-1.67-2.91-1.9-3.54-1.93-1.51-.15-2.96.89-3.73.89-.78 0-1.97-.87-3.24-.85C4.79 6.07 3.2 7 2.35 8.43.59 11.33 1.89 15.63 3.59 18c.85 1.17 1.85 2.48 3.16 2.43 1.27-.05 1.75-.82 3.28-.82s1.97.82 3.3.79c1.36-.02 2.22-1.19 3.05-2.37.97-1.36 1.36-2.69 1.38-2.76-.03-.01-2.64-1.01-2.67-4.02l.04.37zM12.51 3.91c.7-.86 1.17-2.05 1.04-3.25-1.01.04-2.23.67-2.95 1.52-.65.74-1.22 1.94-1.07 3.08 1.13.09 2.28-.58 2.98-1.35z"/></svg>
+            App Store
           </a>
         </div>
 
-        <button onClick={onLogout} style={{display:'block',margin:'0.6rem auto 0',background:'rgba(65,124,164,0.10)',border:'1px solid rgba(65,124,164,0.25)',color:'#2C5A7A',fontSize:'0.65rem',cursor:'pointer',letterSpacing:'0.08em',padding:'0.3rem 1rem',borderRadius:20,fontWeight:600}}>↩ Sign out
-        </button>
+        {/* Return to marketing page — subtle */}
+        <a href="/marketing"
+          style={{display:'block',textAlign:'center',fontSize:'0.58rem',color:'rgba(44,90,122,0.4)',textDecoration:'none',marginTop:'0.35rem',letterSpacing:'0.03em'}}>
+          ← staircode.app
+        </a>
+
       </div>
     </div>
   )
