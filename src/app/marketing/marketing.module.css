@@ -13,6 +13,27 @@
 }
 .navLink:hover { color: #F29337; }
 
+/* ── Nav Sign In button ──────────────────────────────────────────────────── */
+.navSignIn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  padding: 7px 18px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 7px;
+  letter-spacing: -0.01em;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.navSignIn:hover {
+  border-color: rgba(255, 255, 255, 0.65);
+  color: #fff;
+}
+
+
 .navCta {
   display: inline-flex;
   align-items: center;

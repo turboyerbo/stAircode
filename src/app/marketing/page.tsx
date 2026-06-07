@@ -140,7 +140,6 @@ export default function MarketingPage() {
     { label: 'How It Works', href: '#how-it-works' },
     { label: 'Sample Report', href: '/sample-report' },
     { label: 'Research',     href: '/research' },
-    { label: 'Pricing',      href: '#pricing' },
     { label: 'About',        href: '/about' },
   ]
 
@@ -188,8 +187,7 @@ export default function MarketingPage() {
           <nav className={styles.desktopNav} style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>{navLinks.slice(0, 5).map(l => (
               <a key={l.label} href={l.href} className={styles.navLink}>{l.label}</a>
             ))}
-            <a onClick={handleSignIn} href="#" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.8)', textDecoration: 'none' }}>Sign In</a>
-            <a onClick={handleGetReport} href="#" className={styles.navCta}>Get a compliance report →</a>
+            <a onClick={handleSignIn} href="#" className={styles.navSignIn}>Sign In</a>
           </nav>
 
           {/* Hamburger */}
@@ -218,12 +216,8 @@ export default function MarketingPage() {
               >{l.label}</a>
             ))}
             <a onClick={(e) => { setMenuOpen(false); handleSignIn(e) }} href="#"
-              style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 600, color: '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              Sign In
-            </a>
-            <a onClick={(e) => { setMenuOpen(false); handleGetReport(e) }} href="#"
-              className={styles.navCta} style={{ marginTop: '1rem', justifyContent: 'center' }}>
-              Get a compliance report →
+              style={{ padding: '0.75rem 0', fontSize: '1rem', fontWeight: 700, color: '#fff', textDecoration: 'none', letterSpacing: '-0.01em' }}>
+              Sign In →
             </a>
           </div>
         )}
@@ -233,16 +227,21 @@ export default function MarketingPage() {
           HERO
       ══════════════════════════════════════════════ */}
       <section style={{ paddingTop: 'calc(64px + 4rem)', paddingBottom: '4.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', background: '#FFFFFF', borderBottom: '1px solid #E5EBF2' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'center' }}>{/* ── Left: headline + CTAs ── */}
-          <div style={{ flex: '1 1 320px' }}><div style={{ display: 'inline-block', background: '#F29337', color: '#fff', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.25rem' }}>OBC 2024 · New Construction · Pre-Purchase · Residential</div>
-            <h1 style={{ fontSize: 'clamp(1.9rem, 5vw, 3.1rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 680, marginBottom: '1.25rem', color: '#0A1C2E' }}>AI-guided OBC 2024 compliance reports for residential inspectors — generated in the field, not at the desk.
-            </h1>
-            <p style={{ fontSize: '1rem', lineHeight: 1.75, color: '#3A5A78', maxWidth: 520, marginBottom: '2rem' }}>Stop wrestling with scheduling apps that bury the features that matter. stAIrcode measures, analyzes, and assembles a professional PDF report on the spot &mdash; while you are still on site.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-              <a onClick={handleTryDemo} href="#" className={styles.navCta} style={{ fontSize: '0.95rem', padding: '12px 24px' }}>Try Free Demo — Stair Scan →</a>
-              <button onClick={() => setShowSubscribeModal(true)} style={{ fontSize: '0.95rem', padding: '12px 24px', background: '#0A1C2E', color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 8px rgba(10,28,46,0.18)' }}>Start 30-Day Free Trial →</button>
+          <div style={{ flex: '1 1 320px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(10,28,46,0.06)', color: '#3A5A78', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.5rem', border: '1px solid rgba(44,90,122,0.15)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#27A96B', display: 'inline-block' }} />
+              OBC · NBC · IBC · BCBC — Jurisdiction detected automatically
             </div>
-            <p style={{ fontSize: '0.72rem', color: '#9DB4C5', marginTop: '0.85rem', lineHeight: 1.5 }}>Stair scan is always free · Full inspection: 30-day free trial, then $38.99/month · No credit card required to start</p>
+            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Mobile computer vision and augmented reality for stair compliance — measured, analyzed, and reported on site.
+            </h1>
+            <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
+              stAIrcode layers AI vision with your smartphone camera to capture stair geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Compliance in minutes, not weeks.
+            </p>
+            <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = '#0A1C2E' }}>
+              Member Sign In →
+            </a>
           </div>
 
           {/* ── Right: animated phone mockup ── */}
@@ -255,8 +254,14 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           AS SEEN IN / TRUST BAR
       ══════════════════════════════════════════════ */}
-      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid #E2EAF0', padding: '1.1rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}><span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0D1E2E' }}>AI-powered building code compliance — jurisdiction detected automatically, report generated in minutes
-          </span>
+      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid #E2EAF0', padding: '1rem 1.25rem', background: '#F7FAFC' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+          {['Computer Vision Measurement', 'Augmented Reality Guidance', 'Location-Specific Code Analysis', 'Field-Generated PDF Reports', 'Direct Email Delivery'].map(label => (
+            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 600, color: '#5E7D9B', whiteSpace: 'nowrap' }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#27A96B', flexShrink: 0, display: 'inline-block' }} />
+              {label}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -521,8 +526,8 @@ export default function MarketingPage() {
                   </li>
                 ))}
               </ul>
-              <a onClick={handleTryDemo} href="#" style={{ display: 'block', textAlign: 'center', padding: '0.85rem', background: '#0A1C2E', color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none', marginTop: 'auto' }}>
-                Try Stair Demo Free →
+              <a onClick={handleSignIn} href="#" style={{ display: 'block', textAlign: 'center', padding: '0.85rem', background: 'transparent', color: '#0A1C2E', borderRadius: 10, fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none', marginTop: 'auto', border: '1.5px solid #0A1C2E' }}>
+                Sign In to Access →
               </a>
             </div>
 
@@ -559,11 +564,11 @@ export default function MarketingPage() {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => setShowSubscribeModal(true)}
-                style={{ display: 'block', width: '100%', padding: '0.95rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 10, fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer', marginTop: 'auto', boxShadow: '0 4px 20px rgba(242,147,55,0.45)' }}>
-                Start 30-Day Free Trial →
-              </button>
-              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>No credit card required. After your trial, $38.99/month.</div>
+              <a onClick={handleSignIn} href="#"
+                style={{ display: 'block', width: '100%', padding: '0.95rem', background: 'transparent', color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: '0.95rem', border: '1.5px solid rgba(255,255,255,0.35)', cursor: 'pointer', marginTop: 'auto', textAlign: 'center', textDecoration: 'none', letterSpacing: '-0.01em' }}>
+                Sign In to Your Account →
+              </a>
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>Members only. Contact us to request access.</div>
             </div>
 
           </div>
@@ -607,14 +612,23 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           FINAL CTA
       ══════════════════════════════════════════════ */}
-      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}><div style={{ maxWidth: 640, margin: '0 auto' }}><h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem' }}>Ready to run a compliance scan?
+      <section id="about" className={styles.darkSection} style={{ padding: '5rem 1.25rem', textAlign: 'center' }}>
+        <div style={{ maxWidth: 580, margin: '0 auto' }}>
+          <div style={{ display: 'inline-block', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '1.5rem' }}>Members Only</div>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#fff', marginBottom: '1rem', lineHeight: 1.15 }}>
+            Professional compliance tools for people who work in the field.
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.65, marginBottom: '2rem' }}>Scan for free in under 5 minutes. No app download. No tape measure.<br />
-            Just your phone and the building element in question.
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: '2.25rem' }}>
+            stAIrcode is purpose-built for building inspectors, architects, and code consultants. If you have access, sign in to your account.
           </p>
-          <a onClick={handleGetReport} href="#" className={styles.navCta} style={{ fontSize: '1rem', padding: '14px 32px' }}>Get a compliance report →
+          <a onClick={handleSignIn} href="#"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#fff', textDecoration: 'none', padding: '12px 28px', border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: 8, letterSpacing: '-0.01em', transition: 'border-color 0.15s, background 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.7)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.3)' }}>
+            Sign In to Your Account →
           </a>
-          <p style={{ marginTop: '1rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)' }}>Compliance aid tool. Always confirm with a licensed inspector or authority having jurisdiction before renovation or occupancy decisions.
+          <p style={{ marginTop: '2rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)' }}>
+            Compliance aid tool. Always confirm findings with a licensed inspector or the authority having jurisdiction.
           </p>
         </div>
       </section>
