@@ -232,10 +232,10 @@ export default function MarketingPage() {
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#27A96B', display: 'inline-block' }} />
               OBC · NBC · IBC · BCBC — Jurisdiction detected automatically
             </div>
-            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Mobile computer vision and augmented reality for residential building compliance — measured, analyzed, and reported on site.
+            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Building Code Compliance for Homes. Measured, analyzed, and reported on site.
             </h1>
             <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
-              stAIrcode layers AI vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Compliance in minutes, not weeks.
+              stAIrcode layers AI-vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Check for possible code issues in minutes, not weeks.
             </p>
             <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
@@ -379,31 +379,52 @@ export default function MarketingPage() {
       {/* ══════════════════════════════════════════════
           HOW IT WORKS
       ══════════════════════════════════════════════ */}
-      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>How It Works</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '3rem' }}>Three steps to a compliance report</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', alignItems: 'flex-start' }}>{/* Steps */}
-            <div style={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>{[
-                { n: '1', title: 'Complete a scan with any smartphone', body: 'Create a free account and select the compliance module you need. AI-Vision guides you step by step — no technical knowledge or specialized equipment required.' },
-                { n: '2', title: 'Get instant pass/fail results', body: 'Follow the guided on-screen prompts. stAIrcode walks you through each measurement automatically and checks every dimension against your local building code in real time.' },
-                { n: '3', title: 'Download a professional compliance report', body: 'For a detailed assessment, include a reference object for scale — no measuring tape required. Your PDF report includes measurement photos, code citations, and a full pass/fail analysis ready to share with your client, architect, or contractor.' },
-              ].map(s => (
-                <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}><div className={styles.stepNum}>{s.n}</div>
-                  <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0D1E2E' }}>{s.title}</h3>
-                    <p style={{ fontSize: '0.88rem', color: '#5E7D9B', lineHeight: 1.65 }}>{s.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* How it works image */}
-            <div style={{ flex: '0 1 340px' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/hero_app_scan.jpg"
-                alt="stAIrcode app scanning stairs — live measurement in progress"
-                style={{ width: '100%', borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 32px rgba(44,74,110,0.18)', border: '1px solid rgba(44,90,122,0.15)' }}
-              />
-            </div>
+      <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+
+          {/* Image first */}
+          <div style={{ marginBottom: '3rem' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero_app_scan.jpg"
+              alt="stAIrcode app scanning building — live building code compliance measurement in progress"
+              style={{ width: '100%', borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 32px rgba(44,74,110,0.18)', border: '1px solid rgba(44,90,122,0.15)', display: 'block' }}
+            />
           </div>
+
+          {/* Heading below image */}
+          <div className={styles.sectionLabel}>How It Works</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Three steps to Building Code Compliance</h2>
+
+          {/* Steps stacked */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {[
+              {
+                n: '1',
+                title: 'AI-Vision guides you step by step',
+                body: 'Open the app and select the compliance module. AI-Vision uses your smartphone camera to guide each measurement — no tape measure, no technical knowledge, no specialized equipment required.',
+              },
+              {
+                n: '2',
+                title: 'Every dimension checked against your local building code in real time',
+                body: 'stAIrcode automatically extracts measurements and cross-references each one against your location-specific building code — delivering instant pass/fail feedback on site.',
+              },
+              {
+                n: '3',
+                title: 'Instant PDF report — photos, code citations, and full pass/fail analysis',
+                body: 'Your report includes measurement photos, code citations, and a complete pass/fail analysis ready to share with your client, architect, or contractor.',
+              },
+            ].map(s => (
+              <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
+                <div className={styles.stepNum}>{s.n}</div>
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0D1E2E' }}>{s.title}</h3>
+                  <p style={{ fontSize: '0.88rem', color: '#5E7D9B', lineHeight: 1.65, margin: 0 }}>{s.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       </section>
 

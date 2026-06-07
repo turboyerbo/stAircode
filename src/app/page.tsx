@@ -406,16 +406,33 @@ export default function Home(){
   useEffect(()=>{
     // Init PostHog analytics
     initAnalytics()
-    // 1. Restore from localStorage (instant — no flash)
-    try{const s=localStorage.getItem('sc_user');if(s)setUser(JSON.parse(s))}catch{}
-    // 2. Check live Supabase session (handles OAuth redirect return + token refresh)
+
+    // ── Session restoration ──────────────────────────────────────────────────
+    // Rule: a live Supabase session is required to be authenticated.
+    // localStorage is used only to cache profile data (name, membership tier)
+    // within a valid session — never as a standalone auth bypass.
+    //
+    // Sessions expire after SESSION_TTL_MS regardless of Supabase token validity,
+    // requiring the user to sign in again.
+    const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+    function isSessionExpired(): boolean {
+      try {
+        const stored = localStorage.getItem('sc_user')
+        if (!stored) return true
+        const u = JSON.parse(stored)
+        if (!u?.signedInAt) return true // no timestamp = old session, treat as expired
+        return Date.now() - u.signedInAt > SESSION_TTL_MS
+      } catch { return true }
+    }
+
     const sb = getSupabase()
     if (sb) {
+      // Always check live session — localStorage only used for profile cache
       sb.auth.getSession().then(({ data }) => {
-        if (data.session?.user) {
+        if (data.session?.user && !isSessionExpired()) {
           const su = data.session.user
           const email = su.email ?? su.phone ?? ''
-          // Preserve existing membership from localStorage — don't reset to 'free'
           let membership: AppUser['membership'] = 'free'
           try {
             const stored = localStorage.getItem('sc_user')
@@ -432,16 +449,31 @@ export default function Home(){
             provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'],
             membership,
             units: 'mm',
+            signedInAt: (() => {
+              try { return JSON.parse(localStorage.getItem('sc_user') ?? '{}')?.signedInAt ?? Date.now() } catch { return Date.now() }
+            })(),
           }
           setUser(u)
           try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
           maybeSendWelcome(u.email, u.name)
+        } else {
+          // No valid session or session expired — clear any stale cache and require sign-in
+          try { localStorage.removeItem('sc_user') } catch {}
+          setUser(null)
         }
-      }).catch(() => {})
-      // Listen for auth state changes (OAuth callback, sign-out)
+      }).catch(() => {
+        // Network error checking session — allow cached session as fallback ONLY if fresh
+        if (!isSessionExpired()) {
+          try {
+            const s = localStorage.getItem('sc_user')
+            if (s) { const u = JSON.parse(s); if (u?.email) setUser(u) }
+          } catch {}
+        }
+      })
+
+      // Listen for auth state changes (OAuth callback, sign-out, token refresh)
       sb.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
-          // Only clear on explicit sign-out — NOT on token refresh or magic link processing
           setUser(null)
           try { localStorage.removeItem('sc_user') } catch {}
           try { localStorage.removeItem('sc_beta_access') } catch {}
@@ -449,7 +481,6 @@ export default function Home(){
           const su = session.user
           const email = su.email ?? su.phone ?? ''
           const name  = su.user_metadata?.full_name ?? email.split('@')[0] ?? 'User'
-          // Preserve existing membership — don't reset to 'free' on re-auth
           let membership: AppUser['membership'] = 'free'
           try {
             const stored = localStorage.getItem('sc_user')
@@ -458,35 +489,40 @@ export default function Home(){
               if (prev?.membership && prev.membership !== 'free') membership = prev.membership
             }
           } catch {}
-          const u: AppUser = { email, name, provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'], membership, units: 'mm' }
+          const u: AppUser = {
+            email, name,
+            provider: (su.app_metadata?.provider ?? 'otp') as AppUser['provider'],
+            membership, units: 'mm',
+            signedInAt: Date.now(), // stamp the time of this sign-in
+          }
           setUser(u)
           try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
           maybeSendWelcome(email, name)
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // Silent token refresh — preserve user, just update localStorage timestamp
+          // Silent token refresh — update timestamp to extend session TTL
           try {
             const stored = localStorage.getItem('sc_user')
-            if (!stored) {
-              const su = session.user
-              const email = su.email ?? su.phone ?? ''
-              const u: AppUser = { email, name: su.user_metadata?.full_name ?? email.split('@')[0] ?? 'User', provider: 'otp', membership: 'free', units: 'mm' }
-              setUser(u)
+            if (stored) {
+              const u = JSON.parse(stored)
+              u.signedInAt = Date.now()
               localStorage.setItem('sc_user', JSON.stringify(u))
             }
           } catch {}
         }
       })
+    } else {
+      // No Supabase (dev/demo env) — allow localStorage cache as before
+      try { const s=localStorage.getItem('sc_user'); if(s) setUser(JSON.parse(s)) } catch {}
     }
   },[])
   function handleAuth(u:AppUser, fromMemberLogin = false){
-    setUser(u)
-    try{localStorage.setItem('sc_user',JSON.stringify(u))}catch{}
-    identifyUser(u.email, { provider: u.provider, membership: u.membership })
-    Analytics.userSignedIn(u.provider === 'otp' ? 'otp' : u.provider)
+    const authedUser = { ...u, signedInAt: Date.now() }
+    setUser(authedUser)
+    try{localStorage.setItem('sc_user',JSON.stringify(authedUser))}catch{}
+    identifyUser(authedUser.email, { provider: authedUser.provider, membership: authedUser.membership })
+    Analytics.userSignedIn(authedUser.provider === 'otp' ? 'otp' : authedUser.provider)
     const hasBeta   = checkTrialAccess()
-    const hasAccess = hasBeta || u.membership === 'subscription' || u.membership === 'pro'
-    // Member login (returning user, sign-out flow) → always go to projects
-    // New user sign-up without access → go to home (demo + subscribe CTA)
+    const hasAccess = hasBeta || authedUser.membership === 'subscription' || authedUser.membership === 'pro'
     if (fromMemberLogin || isSignoutFlow || hasAccess) {
       setGotoProjects(true)
     }

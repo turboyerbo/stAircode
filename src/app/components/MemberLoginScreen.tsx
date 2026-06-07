@@ -65,6 +65,7 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
       membership,
       units:      'mm',
       role:       'diy' as UserRole,
+      signedInAt: Date.now(),
     }
   }
 

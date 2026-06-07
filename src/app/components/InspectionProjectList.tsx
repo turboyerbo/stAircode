@@ -76,7 +76,7 @@ function getJobThumbnail(job: any): string | undefined {
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const days = Math.floor(diff / 86400000)
-  if (days === 0) return 'Today'
+  if (days <= 0) return 'Today'
   if (days === 1) return 'Yesterday'
   if (days < 7)  return `${days} days ago`
   if (days < 31) return `${Math.floor(days/7)} weeks ago`
@@ -94,6 +94,15 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
   const loadJobs = useCallback(async () => {
     setLoading(true); setError(null)
 
+    // Collect tombstones — any id in insp_deleted_* should never be shown
+    const deletedIds = new Set<string>()
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('insp_deleted_')) deletedIds.add(key.replace('insp_deleted_', ''))
+      }
+    } catch {}
+
     // Load jobs from BOTH sessionStorage (current tab) and localStorage (persists across reloads)
     const sessionJobs: SummaryRow[] = []
     const seenIds = new Set<string>()
@@ -103,8 +112,9 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
         for (let i = 0; i < storage.length; i++) {
           const key = storage.key(i)
           if (!key?.startsWith('insp_')) continue
+          if (key.startsWith('insp_deleted_')) continue
           const j = JSON.parse(storage.getItem(key) ?? '')
-          if (!j?.id || seenIds.has(j.id)) continue
+          if (!j?.id || seenIds.has(j.id) || deletedIds.has(j.id)) continue
           seenIds.add(j.id)
           // Calculate real progress from phases (not hardcoded 0)
           const applicablePhases = (j.phases ?? []).filter((p: any) =>
@@ -145,7 +155,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
       const res  = await fetch(`/api/inspection/list?email=${encodeURIComponent(userEmail)}&userId=${encodeURIComponent(userEmail)}`)
       const data = await res.json()
       if (data.ok) {
-        const serverJobs = data.jobs ?? []
+        const serverJobs = (data.jobs ?? []).filter((j: any) => !deletedIds.has(j.id))
         // Merge: server rows take priority, then add any session-only jobs not yet synced
         // Map server property_thumbnail onto the thumbnail field
         const serverJobsMapped = serverJobs.map((j: any) => ({
@@ -153,7 +163,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
           thumbnail: j.property_thumbnail || j.thumbnail,
         }))
         const serverIds = new Set(serverJobsMapped.map((j: SummaryRow) => j.id))
-        const localOnly = sessionJobs.filter(j => !serverIds.has(j.id))
+        const localOnly = sessionJobs.filter(j => !serverIds.has(j.id) && !deletedIds.has(j.id))
         setJobs([...serverJobsMapped, ...localOnly])
       }
     } catch {
@@ -161,10 +171,10 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
       const localJobs: SummaryRow[] = []
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i)
-        if (key?.startsWith('insp_')) {
+        if (key?.startsWith('insp_') && !key.startsWith('insp_deleted_')) {
           try {
             const j = JSON.parse(sessionStorage.getItem(key) ?? '')
-            if (j?.id) localJobs.push({
+            if (j?.id && !deletedIds.has(j.id)) localJobs.push({
               id:              j.id,
               client_name:     j.clientName,
               address_street:  j.address.street,
@@ -239,9 +249,25 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
 
   async function handleDelete(id: string) {
     setDeleting(id); setConfirmDel(null)
-    try { await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' }) } catch {}
+
+    // 1. Remove from both storage caches immediately (optimistic)
     try { sessionStorage.removeItem(`insp_${id}`) } catch {}
+    try { localStorage.removeItem(`insp_${id}`) } catch {}
+    // Write a tombstone so loadJobs never re-adds this id from stale local data
+    try { localStorage.setItem(`insp_deleted_${id}`, '1') } catch {}
+
+    // 2. Remove from UI immediately so navigation away doesn't re-show it
     setJobs(prev => prev.filter(j => j.id !== id))
+
+    // 3. Delete from server — retry once on failure
+    try {
+      const res = await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Server delete failed')
+    } catch {
+      // Retry once
+      try { await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' }) } catch {}
+    }
+
     setDeleting(null)
   }
 

@@ -28,6 +28,7 @@ export interface AppUser {
   membership: 'free' | 'pro' | 'enterprise' | 'subscription'
   units:      'mm' | 'ft'
   role?:      UserRole
+  signedInAt?: number  // unix ms — used for session TTL enforcement
 }
 interface Props { onAuth: (user: AppUser) => void }
 type Screen = 'entry' | 'otp'
@@ -176,6 +177,7 @@ export default function AuthScreen({ onAuth }: Props) {
         provider: 'otp',
         membership: 'free',
         units: 'mm',
+        signedInAt: Date.now(),
       }
       save(u)
       identifyUser(u.email, { membership: 'free', method: 'otp' })
