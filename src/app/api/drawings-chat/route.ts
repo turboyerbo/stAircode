@@ -39,9 +39,14 @@ const MODEL   = 'claude-sonnet-4-5'
 // System prompt for the drawings analysis assistant
 function buildSystemPrompt(jobContext?: { address?: string; buildingType?: string; province?: string }) {
   const location = jobContext?.address ?? 'Not specified'
-  const code     = jobContext?.province === 'Ontario' ? 'Ontario Building Code 2024'
-                 : jobContext?.province ? `${jobContext.province} Building Code`
-                 : 'applicable building code'
+  const prov = (jobContext?.province ?? '').toLowerCase()
+  const code =
+    prov.includes('ontario') || prov === 'on' ? 'Ontario Building Code 2024' :
+    prov.includes('quebec') || prov.includes('québec') || prov === 'qc' ? 'Code de construction du Québec (CCQ 2015 / RBQ)' :
+    prov.includes('british columbia') || prov === 'bc' ? 'BC Building Code 2024' :
+    prov.includes('alberta') || prov === 'ab' ? 'Alberta Building Code 2019' :
+    jobContext?.province ? `${jobContext.province} Building Code (NBC 2020 base)` :
+    'applicable building code'
 
   return `You are an expert building inspector and code compliance consultant specialising in residential construction documentation. You are analysing approved architectural drawings for a building inspection.
 

@@ -10,6 +10,7 @@ import Image from 'next/image'
 import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
 import PhoneMockup from "./PhoneMockup"
+import LocationDemo from "./LocationDemo"
 
 
 export default function MarketingPage() {
@@ -382,17 +383,10 @@ export default function MarketingPage() {
       <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-          {/* Image first */}
-          <div style={{ marginBottom: '3rem' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero_app_scan.jpg"
-              alt="stAIrcode app scanning building — live building code compliance measurement in progress"
-              style={{ width: '100%', borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 32px rgba(44,74,110,0.18)', border: '1px solid rgba(44,90,122,0.15)', display: 'block' }}
-            />
-          </div>
+          {/* Animated phone demo — location → codes → start scan */}
+          <LocationDemo />
 
-          {/* Heading below image */}
+          {/* Heading below phone */}
           <div className={styles.sectionLabel}>How It Works</div>
           <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Three steps to Building Code Compliance</h2>
 

@@ -70,7 +70,15 @@ interface AIFields {
 function getModulePrompt(moduleId: ModuleId, job: InspectionJob): string {
   const addr     = `${job.address.street}, ${job.address.city}, ${job.address.province}`
   const province = job.address.province
-  const code     = province === 'Ontario' ? 'OBC 2024' : `${province} Building Code`
+  const code = (() => {
+    const p = province?.toLowerCase() ?? ''
+    const c = (job?.address?.city ?? '').toLowerCase()
+    if(p.includes('ontario')||p==='on'||['toronto','ottawa','hamilton','mississauga','brampton'].some(x=>c.includes(x))) return 'OBC 2024'
+    if(p.includes('quebec')||p.includes('québec')||p==='qc'||c.includes('montreal')||c.includes('montréal')) return 'CCQ / RBQ'
+    if(p.includes('british columbia')||p==='bc'||c.includes('vancouver')) return 'BCBC 2024'
+    if(p.includes('alberta')||p==='ab') return 'ABC 2019'
+    return 'NBC 2020'
+  })()
   const age      = job.estimatedAge || 'unknown age'
 
   const base = `You are an expert building inspector conducting a site inspection in ${addr}. Building is ${age}. Applicable code: ${code}.
@@ -1150,13 +1158,62 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
       reader.onload = ev => {
         const result = ev.target?.result as string
         const b64 = result.includes(',') ? result.split(',')[1] : result
-        // Only add to additionalPhotos — handleSave merges [...photos, ...additionalPhotos]
-        // Adding to both would duplicate every additional photo
         setAdditionalPhotos(prev => [...prev, b64])
+        // Run supplemental AI on each additional photo — APPENDS to existing findings
+        runSupplementalAI(b64)
       }
       reader.readAsDataURL(file)
     })
   }
+
+  // ── Supplemental AI — adds detail to existing analysis without overwriting ──
+  const runSupplementalAI = useCallback(async (b64: string) => {
+    // Compose a follow-up prompt that includes existing context
+    const existingObs = findNote
+    const existingRec = recommend
+    const supplementPrompt = `You are reviewing an additional photograph of the same building element (module: ${module.id}).
+
+${existingObs ? `EXISTING OBSERVATIONS ALREADY RECORDED:\n${existingObs}\n` : ''}
+${existingRec ? `EXISTING RECOMMENDATION:\n${existingRec}\n` : ''}
+
+Analyse this ADDITIONAL photo and return ONLY a JSON object with these fields:
+- "additionalObservations": string — new details visible in THIS photo that ADD to the existing notes. Do NOT repeat what is already recorded. Focus on new angles, additional defects, or confirmation of existing findings.
+- "updatedRecommendation": string or null — only if this photo reveals something that changes or strengthens the recommendation. null if the existing recommendation still stands.
+- "severity": "none"|"minor"|"major"|"critical" — your assessment based on all evidence now seen.
+
+Return ONLY valid JSON.`
+
+    try {
+      const res = await fetch('/api/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageB64: b64, prompt: supplementPrompt }),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      const raw  = (data.text ?? '').replace(/```json|```/g, '').trim()
+      const m    = raw.match(/\{[\s\S]*\}/)
+      if (!m) return
+      const parsed = JSON.parse(m[0])
+
+      // APPEND — never overwrite existing text
+      if (parsed.additionalObservations?.trim()) {
+        setFindNote(prev => prev
+          ? `${prev}\n\n[Additional photo] ${parsed.additionalObservations.trim()}`
+          : parsed.additionalObservations.trim()
+        )
+      }
+      if (parsed.updatedRecommendation?.trim()) {
+        setRecommend(prev => prev
+          ? `${prev}\n\n[Updated] ${parsed.updatedRecommendation.trim()}`
+          : parsed.updatedRecommendation.trim()
+        )
+      }
+      if (parsed.severity) setSeverity(parsed.severity as DefectSeverity)
+    } catch {
+      // Supplemental AI failure is silent — primary analysis is preserved
+    }
+  }, [module.id, findNote, recommend]) // eslint-disable-line
 
   // ── AI analysis ────────────────────────────────────────────────────────────
   const runAI = useCallback(async (b64: string) => {
@@ -1188,6 +1245,10 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
 
   // ── Save ────────────────────────────────────────────────────────────────────
   function handleSave(status: 'complete'|'skipped'|'in_progress' = 'complete') {
+    // finding.photos = primary captured photo only (used by report generator for the finding)
+    // module.photos  = ALL photos (primary + additional) for the overall module gallery
+    // The report generator uses finding.photos first, falls back to module.photos —
+    // NEVER merge both or images double up in the PDF
     const finding: ModuleFinding = {
       id:             `find-${Date.now()}`,
       label:          meta?.label ?? module.id,
@@ -1195,13 +1256,13 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
       severity,
       notes:          findNote,
       recommendation: recommend || undefined,
-      photos:         [...photos, ...additionalPhotos],
+      photos:         photos.slice(0, 1), // primary photo only on the finding
       codeRef:        aiFields?.codeRef,
     }
     const updated: InspectionModule = {
       ...module,
       status,
-      photos:     [...photos, ...additionalPhotos],
+      photos:     [...photos, ...additionalPhotos], // all photos on the module
       notes,
       findings:   condition || findNote ? [finding] : [],
       aiSummary:  aiFields ? JSON.stringify(aiFields.measurements ?? {}) : undefined,
@@ -1348,16 +1409,31 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
           <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
 
             {/* Photo thumbnail + retake */}
-            {capturedB64 && (
-              <div style={{ position:'relative' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imgSrc(capturedB64)} alt="" style={{ width:'100%', borderRadius:10, objectFit:'cover', maxHeight:200, display:'block', border:`1px solid ${BORDER}` }}/>
-                <button onClick={() => { setCapturedB64(null); setPhotos([]); setAiFields(null); setAiError(null); setStage('capture') }}
-                  style={{ position:'absolute', top:'0.5rem', right:'0.5rem', padding:'0.3rem 0.65rem', background:'rgba(10,28,46,0.75)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:7, color:'#fff', fontSize:'0.68rem', fontWeight:600, cursor:'pointer' }}>
-                  ↺ Retake
-                </button>
-              </div>
-            )}
+            {capturedB64 && (() => {
+              const isPlaceholder = capturedB64.startsWith('[') || capturedB64.length < 50
+              return (
+                <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:`1px solid ${BORDER}`, background:'#EBF3FA' }}>
+                  {isPlaceholder ? (
+                    <div style={{ width:'100%', height:140, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
+                      <svg width="28" height="28" viewBox="0 0 20 20" fill="none">
+                        <rect x="1" y="3" width="18" height="14" rx="2" stroke={BLUE} strokeWidth="1.3" strokeOpacity="0.35"/>
+                        <circle cx="6.5" cy="7.5" r="1.5" fill={BLUE} fillOpacity="0.35"/>
+                        <path d="M1 13l4-4 3 3 3-3 4 4" stroke={BLUE} strokeWidth="1.3" strokeOpacity="0.35" strokeLinejoin="round"/>
+                      </svg>
+                      <span style={{ fontSize:'0.65rem', color:'#9DB4C5' }}>Photo saved to server</span>
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={imgSrc(capturedB64)} alt="" style={{ width:'100%', borderRadius:10, objectFit:'cover', maxHeight:200, display:'block' }}
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }}/>
+                  )}
+                  <button onClick={() => { setCapturedB64(null); setPhotos([]); setAiFields(null); setAiError(null); setStage('capture') }}
+                    style={{ position:'absolute', top:'0.5rem', right:'0.5rem', padding:'0.3rem 0.65rem', background:'rgba(10,28,46,0.75)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:7, color:'#fff', fontSize:'0.68rem', fontWeight:600, cursor:'pointer' }}>
+                    ↺ Retake
+                  </button>
+                </div>
+              )
+            })()}
 
             {/* AI result banner */}
             {aiFields && !aiError && (
@@ -1437,16 +1513,35 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
 
             {/* Additional photos */}
             <div>
-              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.35rem' }}>Additional photos</div>
+              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.35rem' }}>
+                Additional photos
+                <span style={{ fontWeight:400, marginLeft:'0.4rem', color:'#9DB4C5' }}>— each photo adds detail to the analysis</span>
+              </div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem', alignItems:'flex-start' }}>
-                {additionalPhotos.map((p, i) => (
-                  <div key={i} style={{ position:'relative', width:72, height:72, borderRadius:7, overflow:'hidden', border:`1px solid ${BORDER}` }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imgSrc(p)} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                    <button onClick={() => setAdditionalPhotos(prev => prev.filter((_,j) => j !== i))}
-                      style={{ position:'absolute', top:1, right:1, width:16, height:16, borderRadius:'50%', background:'rgba(0,0,0,0.65)', border:'none', color:'#fff', fontSize:'0.6rem', cursor:'pointer' }}>×</button>
-                  </div>
-                ))}
+                {additionalPhotos.map((p, i) => {
+                  const isPlaceholder = !p || p.startsWith('[') || p.length < 50
+                  return (
+                    <div key={i} style={{ position:'relative', width:72, height:72, borderRadius:7, overflow:'hidden', border:`1px solid ${BORDER}`, background:'#EBF3FA' }}>
+                      {isPlaceholder ? (
+                        // Supabase placeholder — show neutral tile
+                        <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3 }}>
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <rect x="1" y="3" width="18" height="14" rx="2" stroke={BLUE} strokeWidth="1.3" strokeOpacity="0.4"/>
+                            <circle cx="6.5" cy="7.5" r="1.5" fill={BLUE} fillOpacity="0.4"/>
+                            <path d="M1 13l4-4 3 3 3-3 4 4" stroke={BLUE} strokeWidth="1.3" strokeOpacity="0.4" strokeLinejoin="round"/>
+                          </svg>
+                          <span style={{ fontSize:'0.5rem', color:BLUE, opacity:0.5 }}>Photo {i+1}</span>
+                        </div>
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={imgSrc(p)} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }}/>
+                      )}
+                      <button onClick={() => setAdditionalPhotos(prev => prev.filter((_,j) => j !== i))}
+                        style={{ position:'absolute', top:1, right:1, width:16, height:16, borderRadius:'50%', background:'rgba(0,0,0,0.65)', border:'none', color:'#fff', fontSize:'0.6rem', cursor:'pointer', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+                    </div>
+                  )
+                })}
                 <button onClick={() => { const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true; inp.onchange=(e)=>handleAdditionalPhotos(e as any); inp.click() }}
                   style={{ width:72, height:72, borderRadius:7, background:'#fff', border:`1.5px dashed rgba(65,124,164,0.3)`, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.2rem' }}>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke={BLUE} strokeWidth="1.3"/><line x1="9" y1="5.5" x2="9" y2="12.5" stroke={BLUE} strokeWidth="1.3" strokeLinecap="round"/><line x1="5.5" y1="9" x2="12.5" y2="9" stroke={BLUE} strokeWidth="1.3" strokeLinecap="round"/></svg>

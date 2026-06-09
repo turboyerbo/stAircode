@@ -70,27 +70,85 @@ const IBC:Code={ code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International 
 
 function isOntario(l:Loc){
   const p=l.province.toLowerCase(),c=l.city.toLowerCase()
-  return p.includes('ontario')||['toronto','ottawa','hamilton','london','brampton','mississauga','markham','vaughan','kitchener','windsor','kingston'].some(x=>c.includes(x))
+  return p.includes('ontario')||p==='on'||['toronto','ottawa','hamilton','london','brampton','mississauga','markham','vaughan','kitchener','windsor','kingston'].some(x=>c.includes(x))
+}
+
+function isQuebec(l:Loc){
+  const p=l.province.toLowerCase(),c=l.city.toLowerCase()
+  return p.includes('quebec')||p.includes('québec')||p==='qc'||
+    ['montreal','montréal','québec city','laval','longueuil','gatineau','sherbrooke','saguenay','lévis','terrebonne','saint-jean'].some(x=>c.includes(x))
+}
+
+function isBC(l:Loc){
+  const p=l.province.toLowerCase(),c=l.city.toLowerCase()
+  return p.includes('british columbia')||p.includes('b.c.')||p==='bc'||
+    ['vancouver','victoria','surrey','burnaby','richmond','abbotsford','kelowna','coquitlam'].some(x=>c.includes(x))
+}
+
+function isAlberta(l:Loc){
+  const p=l.province.toLowerCase(),c=l.city.toLowerCase()
+  return p.includes('alberta')||p==='ab'||['calgary','edmonton','red deer','lethbridge','st. albert'].some(x=>c.includes(x))
 }
 
 function detectCode(l:Loc):Code{
   const cc  = l.countryCode.toUpperCase()
-  const prov = l.province.toLowerCase()
   const city = l.city.toLowerCase()
 
   // ── Canada ────────────────────────────────────────────────────────────────
-  if(isOntario(l))
-    return{code:'OBC',label:'OBC 2024',ref:'s.9.8.4',reason:'Ontario Building Code',
-      links:[{label:'OBC',url:'https://www.ontario.ca/laws/statute/92b23'},{label:'Toronto Bylaw',url:'https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/'},{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}],
-      limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+  if(cc==='CA'||['ontario','on','quebec','québec','qc','british columbia','bc','alberta','ab',
+    'nova scotia','ns','new brunswick','nb','manitoba','mb','saskatchewan','sk',
+    'newfoundland','nl','pei','prince edward','yukon','yk','northwest','nt','nunavut','nu']
+    .some(p=>l.province.toLowerCase().includes(p))||isOntario(l)||isQuebec(l)||isBC(l)){
 
-  if(cc==='CA'){
-    if(prov.includes('quebec')||city.includes('montreal')||city.includes('québec'))
-      return{code:'QBC',label:'QBC 2020',ref:'Art.3.4.6',reason:'Quebec Building Code',
-        limits:{riserMin:125,riserMax:200,runMin:230,widthMin:900,headMin:1950,guardMin:900}}
-    if(prov.includes('british columbia')||prov.includes('b.c.')||city.includes('vancouver'))
+    if(isOntario(l)){
+      const isToronto = city.includes('toronto')
+      return{code:'OBC',label:'OBC 2024',ref:'s.9.8.4',reason:'Ontario Building Code',
+        links:[
+          {label:'OBC 2024',url:'https://www.ontario.ca/laws/statute/92b23'},
+          ...(isToronto?[{label:'Toronto Bylaw',url:'https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/'},{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}]:[{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}]),
+        ],
+        limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+    }
+
+    if(isQuebec(l)){
+      const isMontreal = city.includes('montreal')||city.includes('montréal')
+      const isQCCity   = city.includes('québec')||city.includes('quebec city')
+      const isLaval    = city.includes('laval')
+      const isGatineau = city.includes('gatineau')
+      return{code:'QBC',label:'CCQ 2015 (Québec)',ref:'Art.3.4.6 / RBQ',reason:'Code de construction du Québec',
+        links:[
+          {label:'CCQ / RBQ',url:'https://www.rbq.gouv.qc.ca/acces-aux-lois-et-reglements/code-de-construction.html'},
+          {label:'NBC Base',url:'https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html'},
+          ...(isMontreal?[{label:'Règl. Montréal 01-283',url:'https://reglements.ville.montreal.qc.ca/CommonPDF/Procs/E0101/2003/01-283.pdf'}]:[]),
+          ...(isQCCity?[{label:'Règl. Ville de Québec',url:'https://www.ville.quebec.qc.ca/citoyens/propriete/reglementation.aspx'}]:[]),
+          ...(isLaval?[{label:'Règl. Laval',url:'https://www.laval.ca/Pages/Fr/Citoyens/reglementation-urbanisme.aspx'}]:[]),
+          ...(isGatineau?[{label:'Règl. Gatineau',url:'https://gatineau.ca/reglements'}]:[]),
+        ],
+        limits:{riserMin:125,riserMax:200,runMin:230,nosingMin:15,nosingMax:50,widthMin:900,headMin:1950,guardMin:900}}
+    }
+
+    if(isBC(l)){
+      const isVancouver = city.includes('vancouver')
       return{code:'BCBC',label:'BCBC 2024',ref:'9.8.4',reason:'BC Building Code',
+        links:[
+          {label:'BCBC 2024',url:'https://www.bccodes.ca/building-code.html'},
+          ...(isVancouver?[{label:'Vancouver Building Bylaw',url:'https://bylaws.vancouver.ca/2016c/vb2014.pdf'}]:[]),
+        ],
+        limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+    }
+
+    if(isAlberta(l)){
+      const isCalgary  = city.includes('calgary')
+      const isEdmonton = city.includes('edmonton')
+      return{code:'NBC',label:'ABC 2019 (Alberta)',ref:'9.8.4',reason:'Alberta Building Code',
+        links:[
+          {label:'ABC 2019',url:'https://www.alberta.ca/alberta-building-code.aspx'},
+          ...(isCalgary?[{label:'Calgary Bylaw',url:'https://www.calgary.ca/pda/pd/land-use-planning-and-policy/land-use-bylaw-1p2007.html'}]:[]),
+          ...(isEdmonton?[{label:'Edmonton Zoning Bylaw',url:'https://webdocs.edmonton.ca/InfraPlan/zoningbylaw/ZoningBylaw.htm'}]:[]),
+        ],
         limits:{riserMin:125,riserMax:200,runMin:235,widthMin:860,headMin:1950,guardMin:900}}
+    }
+
     // All other Canadian provinces — NBC
     return{code:'NBC',label:'NBC 2020',ref:'9.8.4',reason:'National Building Code of Canada',
       links:[{label:'NBC 2020',url:'https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html'}],
@@ -99,7 +157,6 @@ function detectCode(l:Loc):Code{
 
   // ── United States ────────────────────────────────────────────────────────
   if(cc==='US'){
-    // NY, CA, TX, FL + most states use IBC for commercial, IRC for residential
     return{code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',
       links:[{label:'IBC 2021',url:'https://codes.iccsafe.org/content/IBC2021'}],
       limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
@@ -1146,12 +1203,19 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
           </div>
           {!locLoading&&code&&(
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
-                {code.code==='OBC' && <>Building Codes: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
-                {code.code==='NBC' && <>Building Codes: <a href="https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>NBC 2020</a></>}
-                {code.code==='IBC' && <>Building Codes: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
-                {code.code!=='OBC'&&code.code!=='NBC'&&code.code!=='IBC' && <span>{code.ref}</span>}
-              </span>
+              {code.links?.length ? (
+                <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
+                  Building Codes:{' '}
+                  {code.links.map((l, i) => (
+                    <span key={l.label}>
+                      {i > 0 && ' · '}
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>{l.label}</a>
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>{code.reason} · {code.ref}</span>
+              )}
               <span style={{fontSize:'0.65rem',fontWeight:600,letterSpacing:'0.08em',color:confirmed?'#0D7A5F':'#2C5A7A',background:confirmed?'#E6F5F1':'#EBF2FF',padding:'0.22rem 0.65rem',borderRadius:8,border:`1px solid ${confirmed?'rgba(13,122,95,0.3)':'rgba(44,90,122,0.25)'}`}}>{code.label}</span>
             </div>
           )}

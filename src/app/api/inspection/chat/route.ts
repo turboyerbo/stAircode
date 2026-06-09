@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const maxDuration = 30
 
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
+
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
 const MODEL         = 'claude-sonnet-4-5'
 
@@ -70,6 +72,10 @@ TARION WARRANTY PERIODS (Ontario new homes):
 Keep answers under 300 words unless a complex topic requires more. Use numbered steps for remediation sequences. Do not hedge excessively — give a clear recommendation with the caveat that site conditions may vary.`
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req)
+  const rl = rateLimit(ip)
+  if (!rl.allowed) return NextResponse.json({ ok: false, error: rl.reason }, { status: 429 })
+
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return NextResponse.json({ ok: false, error: 'ANTHROPIC_API_KEY not configured in Netlify environment variables' }, { status: 500 })

@@ -29,12 +29,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { collatePhasePdfs }           from '@/lib/generate-inspection-report'
 import type { InspectionJob }         from '@/lib/inspection-types'
 import { createClient }               from '@supabase/supabase-js'
+import { rateLimit, getClientIp }     from '@/lib/rate-limit'
 
 export const maxDuration = 60
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app'
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req)
+  const rl = rateLimit(ip)
+  if (!rl.allowed) return NextResponse.json({ error: rl.reason }, { status: 429 })
+
   let body: {
     job:         InspectionJob
     phasePdfs?:  Record<string, string>

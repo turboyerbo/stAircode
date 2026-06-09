@@ -12,10 +12,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generatePhaseSection }      from '@/lib/generate-inspection-report'
 import type { InspectionJob }        from '@/lib/inspection-types'
+import { rateLimit, getClientIp }    from '@/lib/rate-limit'
+import { isValidJobId }              from '@/lib/api-auth'
 
 export const maxDuration = 30
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req)
+  const rl = rateLimit(ip)
+  if (!rl.allowed) return NextResponse.json({ error: rl.reason }, { status: 429 })
+
   let body: { job: InspectionJob; phaseId: string }
   try {
     const text = await req.text()
@@ -29,6 +35,9 @@ export async function POST(req: NextRequest) {
   const { job, phaseId } = body
   if (!job?.id || !phaseId) {
     return NextResponse.json({ error: 'Missing job or phaseId' }, { status: 400 })
+  }
+  if (!isValidJobId(job.id)) {
+    return NextResponse.json({ error: 'Invalid job id' }, { status: 400 })
   }
 
   try {
