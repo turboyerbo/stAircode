@@ -236,9 +236,9 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
       }
     } catch {}
 
-    // 3. Try server (cross-device)
+    // 3. Try server (cross-device) — include email for ownership check
     try {
-      const res  = await fetch(`/api/inspection/load?id=${id}`)
+      const res  = await fetch(`/api/inspection/load?id=${encodeURIComponent(id)}&email=${encodeURIComponent(userEmail)}`)
       const data = await res.json()
       if (data.ok && data.job) { onResumeJob(data.job); return }
     } catch {}
@@ -261,11 +261,11 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
 
     // 3. Delete from server — retry once on failure
     try {
-      const res = await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/inspection/delete?id=${encodeURIComponent(id)}&email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Server delete failed')
     } catch {
       // Retry once
-      try { await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' }) } catch {}
+      try { await fetch(`/api/inspection/delete?id=${encodeURIComponent(id)}&email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' }) } catch {}
     }
 
     setDeleting(null)

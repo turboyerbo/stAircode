@@ -93,7 +93,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com chrome-extension:",
-              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://fonts.googleapis.com https://fonts.gstatic.com chrome-extension:",
+              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://ingesteer.services-prod.nsvcs.net https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://fonts.googleapis.com https://fonts.gstatic.com chrome-extension:",
               "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
