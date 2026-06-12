@@ -414,29 +414,67 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
-// ── Trial access helper ────────────────────────────────────────────────────
-// Returns true if the user has active trial OR paid subscription.
-// A trial is active if sc_beta_access='1' AND sc_trial_end is in the future
-// (or sc_trial_end was never set, for legacy users).
+// ── Trial access system ────────────────────────────────────────────────────
+// Source of truth is Supabase (via /api/trial/start and /api/trial/status).
+// localStorage is a cache — always overwritten by server response.
+// This means the trial cannot be reset by clearing localStorage.
+const TRIAL_DAYS = 7
+
+function getTrialStart(): Date | null {
+  try {
+    const s = localStorage.getItem('sc_trial_start')
+    if (!s) return null
+    return new Date(s)
+  } catch { return null }
+}
+
+/** Call on every sign-in. Hits the server to start or confirm the trial. */
+async function ensureTrialStarted(email: string): Promise<void> {
+  try {
+    const res  = await fetch('/api/trial/start', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email }),
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    if (data.ok) {
+      // Sync authoritative server values to localStorage cache
+      localStorage.setItem('sc_trial_start', data.trialStart)
+      localStorage.setItem('sc_trial_end',   data.trialEnd)
+      localStorage.setItem('sc_trial_email', email)
+    }
+  } catch {
+    // Network error — fall back to existing localStorage cache
+    // Only set if no trial recorded yet (first sign-in on this device)
+    if (!localStorage.getItem('sc_trial_start')) {
+      const now = new Date().toISOString()
+      const end = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
+      localStorage.setItem('sc_trial_start', now)
+      localStorage.setItem('sc_trial_end',   end)
+      localStorage.setItem('sc_trial_email', email)
+    }
+  }
+}
+
+/** Check localStorage cache. Refreshed from server on every sign-in. */
 function checkTrialAccess(): boolean {
   try {
-    const hasBeta = localStorage.getItem('sc_beta_access') === '1'
-    if (!hasBeta) return false
-    const trialEnd = localStorage.getItem('sc_trial_end')
-    if (!trialEnd) return true  // Legacy users without expiry date — grant access
-    return new Date() < new Date(trialEnd)
+    const start = getTrialStart()
+    if (!start) return false
+    const ms = Date.now() - start.getTime()
+    return ms < TRIAL_DAYS * 24 * 60 * 60 * 1000
   } catch { return false }
 }
 
 function getTrialDaysLeft(): number {
   try {
-    const trialEnd = localStorage.getItem('sc_trial_end')
-    if (!trialEnd) return 30
-    const ms = new Date(trialEnd).getTime() - Date.now()
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
+    const end = localStorage.getItem('sc_trial_end')
+    if (!end) return TRIAL_DAYS
+    const ms = new Date(end).getTime() - Date.now()
+    return Math.max(0, Math.ceil(ms / 86400000))
   } catch { return 0 }
 }
-// ────────────────────────────────────────────────────────────────────────────
 
 export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
@@ -512,6 +550,8 @@ export default function Home(){
           }
           setUser(u)
           try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
+          // Refresh trial status from server — overwrites any stale localStorage cache
+          ensureTrialStarted(email)
           maybeSendWelcome(u.email, u.name)
         } else {
           // No valid session or session expired — clear any stale cache and require sign-in
@@ -576,13 +616,11 @@ export default function Home(){
     const authedUser = { ...u, signedInAt: Date.now() }
     setUser(authedUser)
     try{localStorage.setItem('sc_user',JSON.stringify(authedUser))}catch{}
+    // Auto-start 7-day trial on first sign-in (idempotent — only sets once)
+    ensureTrialStarted(authedUser.email)
     identifyUser(authedUser.email, { provider: authedUser.provider, membership: authedUser.membership })
     Analytics.userSignedIn(authedUser.provider === 'otp' ? 'otp' : authedUser.provider)
-    const hasBeta   = checkTrialAccess()
-    const hasAccess = hasBeta || authedUser.membership === 'subscription' || authedUser.membership === 'pro'
-    if (fromMemberLogin || isSignoutFlow || hasAccess) {
-      setGotoProjects(true)
-    }
+    setGotoProjects(true)
   }
 
   // Handle Stripe payment return (?payment=success&product=report|pro|subscription)
@@ -720,17 +758,16 @@ export default function Home(){
     try{localStorage.setItem(legalKey,'1')}catch{}
     setLegalAgreed(true)
   }}/>
-  // ── Trial expiry check — show expired screen if trial has run out ──────────
+  // ── Trial expiry check ─────────────────────────────────────────────────────
   if (user) {
-    const trialBeta = (()=>{ try { return localStorage.getItem('sc_beta_access') === '1' } catch { return false }})()
-    const paid      = user.membership === 'subscription' || user.membership === 'pro'
-    if (trialBeta && !paid) {
-      // User has trial access (no paid sub) — check if it has expired
-      const trialExpired = !checkTrialAccess()
-      if (trialExpired) {
+    const paid = user.membership === 'subscription' || user.membership === 'pro'
+    if (!paid) {
+      const trialActive = checkTrialAccess()
+      const trialStarted = !!getTrialStart()
+      if (trialStarted && !trialActive) {
         return <TrialExpiredScreen
           userEmail={user.email}
-          onSubscribe={() => {/* Stripe opens in TrialExpiredScreen */}}
+          onSubscribe={() => {}}
           onSignOut={handleLogout}
         />
       }
@@ -1191,6 +1228,21 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         <div style={{display:'flex',justifyContent:'center'}}><Logo size="md" onDark /></div>
         <h1 style={{fontSize:'1.35rem',fontWeight:700,lineHeight:1.2,textAlign:'center',margin:'0.25rem 0 0',color:'#fff'}}>Building Compliance Scanner</h1>
         <p style={{fontSize:'0.72rem',color:'rgba(255,255,255,0.45)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
+        {(() => {
+          const paid = user.membership === 'subscription' || user.membership === 'pro'
+          if (paid) return null
+          const daysLeft = getTrialDaysLeft()
+          if (daysLeft <= 0) return null
+          const urgent = daysLeft <= 2
+          return (
+            <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', background: urgent ? 'rgba(242,147,55,0.15)' : 'rgba(39,169,107,0.15)', border: `1px solid ${urgent ? 'rgba(242,147,55,0.35)' : 'rgba(39,169,107,0.3)'}`, borderRadius:20, padding:'0.2rem 0.75rem', marginTop:'0.25rem' }}>
+              <div style={{ width:6, height:6, borderRadius:'50%', background: urgent ? '#F29337' : '#27A96B' }}/>
+              <span style={{ fontSize:'0.6rem', fontWeight:700, color: urgent ? '#F29337' : '#27A96B', letterSpacing:'0.04em' }}>
+                {daysLeft === 1 ? 'TRIAL ENDS TODAY' : `${daysLeft} DAYS LEFT IN FREE TRIAL`}
+              </span>
+            </div>
+          )
+        })()}
       </div>
 
       <div style={{flex:1,padding:'1.25rem',display:'flex',flexDirection:'column',gap:'0.75rem',background:'#EBF3FA'}}>

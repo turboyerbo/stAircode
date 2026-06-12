@@ -321,13 +321,15 @@ export default function AuthScreen({ onAuth }: Props) {
       <div style={{ width: '100%', maxWidth: 380, height: 5, borderRadius: '2px 2px 0 0', background: 'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)' }} />
 
       {/* Header */}
-      <div style={{ textAlign: 'center', margin: '1.6rem 0 1.2rem' }}><div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#F29337', color: '#fff', fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.04em', padding: '0.2rem 0.65rem', borderRadius: 20, marginBottom: '0.6rem' }}>BETA</div>
+      <div style={{ textAlign: 'center', margin: '1.6rem 0 1.2rem' }}>
         <div style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>st<span style={{ color: C.orange }}>AI</span>rcode
         </div>
-        <div style={{ fontSize: '0.8rem', color: 'rgba(28,64,88,0.5)', marginTop: '0.35rem' }}>
-          {(()=>{ try{ return localStorage.getItem('sc_beta_access')==='1' || JSON.parse(localStorage.getItem('sc_user')||'{}')?.membership === 'subscription' }catch{return false}})()
-            ? 'Welcome back — signing you in'
-            : 'Sign in to access your inspections'}
+        <div style={{ fontSize: '0.8rem', color: 'rgba(28,64,88,0.6)', marginTop: '0.35rem', lineHeight: 1.5 }}>
+          Sign in to start your free 7-day trial
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.5rem', background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.25)', borderRadius: 20, padding: '0.2rem 0.75rem' }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#27A96B' }}/>
+          <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#27A96B', letterSpacing: '0.04em' }}>7 DAYS FREE · NO CREDIT CARD REQUIRED</span>
         </div>
       </div>
 

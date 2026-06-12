@@ -295,6 +295,236 @@ export const INSPECTION_STANDARDS: Partial<Record<string, ModuleStandard>> = {
     checkItems:    ['Waterproofing extends to 1,800 mm height in shower/tub', 'No missing or cracked grout', 'Silicone caulk at all internal corners', 'Floor slopes to drain (no ponding)', 'Exhaust fan ducted to exterior', 'No evidence of water staining behind fixtures', 'Toilet anchored and sealed at base'],
     codeRef:       'OBC 2024 9.29.6; 9.32.3',
   },
+
+  // ── Roofing ───────────────────────────────────────────────────────────────
+
+  roof_covering: {
+    descriptions:  ['Inspection from ground with binoculars or camera zoom — roof not walked unless safe and accessible'],
+    standard:      'Asphalt shingles: no curling, cracking, blistering, missing pieces, bare granule areas, or exposed mat. End of service life is typically 20–25 years. Metal: no rust, fastener failure, or panel separation. Tile/slate: no cracked or slipped pieces.',
+    implications:  'Deteriorated roof covering is the primary cause of water entry and interior damage. End-of-life shingles require replacement — not repair.',
+    limitations:   'Inspection limited to visible surfaces from ground level. Underside of roof sheathing not inspected. Evidence of prior leakage may be concealed by interior finishes. Leakage can develop at any time depending on rain intensity and wind direction.',
+    checkItems:    ['No missing, curling, or cracked shingles', 'No bare granule areas or exposed mat', 'Appropriate for age — no end-of-life signs', 'No moss or lichen buildup', 'Photograph overall roof surface and any defective areas'],
+    codeRef:       'OBC 2024 9.27',
+  },
+
+  roof_flat: {
+    descriptions:  ['Modified bitumen, TPO, EPDM, or built-up membrane'],
+    standard:      'Flat roof membrane should be free of blistering, splitting, standing water, exposed base sheet, or deteriorated lap seams. Drains clear. Parapet caps sealed.',
+    implications:  'Flat roof membrane failure leads to water ponding and direct structural infiltration.',
+    limitations:   'Membrane inspection limited by deck furniture or cover. Subsurface moisture cannot be assessed without infrared or core sampling.',
+    checkItems:    ['No visible blistering or splits', 'Lap seams intact', 'Drains clear and functional', 'Parapet cap and flashing sealed', 'Photograph visible membrane and any defects'],
+    codeRef:       'OBC 2024 9.26',
+  },
+
+  roof_flashings: {
+    descriptions:  ['Chimney, plumbing stack, skylight, valley, eave, and step flashings'],
+    standard:      'All flashings must be continuous, firmly secured, and sealed at all joints. Step and counter flashings at chimneys must be properly interwoven or overlapping. No open joints, voids, or caulk-only repairs where proper flashing is required.',
+    implications:  'Flashing failure is the most common source of roof leaks — particularly at chimneys, skylights, and valleys.',
+    limitations:   'Flashings inspected from ground level or accessible vantage point. Concealed portions under shingles not visible.',
+    checkItems:    ['Chimney flashing sealed with no separation', 'Plumbing stack collar intact', 'Skylight flashing continuous', 'Valley flashing not exposed or cracked', 'Photograph each flashing location'],
+    codeRef:       'OBC 2024 9.27.3',
+  },
+
+  chimneys: {
+    descriptions:  ['Brick, concrete block, or prefab metal chimney'],
+    standard:      'Chimney must be in good structural condition — no spalling brick, mortar loss, efflorescence, or leaning. Chimney cap in place. Flashing continuous at roof junction. Disused chimneys should be capped.',
+    implications:  'Spalling brick and mortar loss allow water entry which accelerates freeze-thaw deterioration and can lead to partial collapse.',
+    limitations:   'Inspection from ground level with binoculars or camera zoom. Interior flue liner not visible without WETT inspection or camera scope.',
+    checkItems:    ['No spalling or cracked brick', 'Mortar joints intact — no open joints', 'Chimney cap present and intact', 'Flashing sealed at roof line', 'Note: active (venting) or disused', 'Photograph each chimney from ground'],
+    codeRef:       'OBC 2024 9.27.4',
+  },
+
+  attic_access: {
+    descriptions:  ['Access hatch, pull-down stair, or no access'],
+    standard:      'Attic access hatch must be insulated and weatherstripped. Attic ventilation must balance intake (soffit) and exhaust (ridge/gable). Insulation must not block soffit vents. No evidence of moisture, mould, or pests.',
+    implications:  'Inadequate attic ventilation causes moisture accumulation, ice dams, premature shingle failure, and mould.',
+    limitations:   'Insulation/ventilation type and levels in concealed areas not inspected. Insulation and vapour barriers not disturbed. No destructive tests performed. Access may not be possible in all buildings.',
+    checkItems:    ['Access hatch location noted', 'Hatch insulated and sealed', 'Visible insulation coverage uniform', 'No moisture staining on sheathing', 'Soffit vents not blocked by insulation', 'No evidence of pest activity', 'Photograph accessible attic areas'],
+    codeRef:       'OBC 2024 9.19.1',
+  },
+
+  // ── Electrical ────────────────────────────────────────────────────────────
+
+  electrical_service_entrance: {
+    descriptions:  ['Overhead or underground service entry'],
+    standard:      'Service conductors must be copper or rated aluminium. Overhead clearances must meet ESA requirements. Meter socket in good condition. Service voltage 120/240V single phase for residential.',
+    implications:  'Deteriorated service entrance conductors or inadequate clearances create fire and electrocution risk.',
+    limitations:   'Internal wiring of meter base and service conductors not accessible. ESA inspection required for any changes.',
+    checkItems:    ['Conductor material identified (copper/aluminium)', 'Overhead/underground entry noted', 'No visible weatherhead damage', 'Meter socket undamaged', 'Photograph meter and service entry point'],
+    codeRef:       'OBC 2024 Part 8; ESA Bulletin',
+  },
+
+  electrical_panel: {
+    descriptions:  ['Breaker panel — photograph data plate and interior'],
+    standard:      'Panel must be accessible, properly labelled, have adequate capacity for the dwelling, and show no signs of overheating, corrosion, or improper workmanship. Double-tapped breakers (two wires on one breaker) are acceptable only on breakers specifically rated for it. No Federal Pacific, Zinsco, or recalled equipment. PHOTOGRAPH: (1) the panel data plate showing brand, rating, and serial number; (2) the interior showing all breakers and wiring.',
+    implications:  'Inadequate panel capacity, double-tapped breakers, or recalled equipment are fire hazards.',
+    limitations:   'Concealed wiring behind panel not inspected. Full load testing not performed.',
+    checkItems:    ['Panel rating (100A/200A) identified', 'Room for expansion present', 'No double-tapped breakers (except rated types)', 'Breakers properly labelled', 'No evidence of overheating or corrosion', 'No recalled panel brands', 'PHOTOGRAPH data plate clearly', 'PHOTOGRAPH interior showing all breakers'],
+    codeRef:       'OBC 2024 Part 8',
+  },
+
+  electrical_branch_wiring: {
+    descriptions:  ['Copper NMD-90, aluminium, or knob-and-tube'],
+    standard:      'Copper wiring preferred. Aluminium branch wiring (post-1965) requires co/alr rated devices. Knob-and-tube wiring (pre-1950) requires evaluation by licensed electrician. All wiring must be grounded.',
+    implications:  'Aluminium branch wiring is a fire risk if connected to standard copper-only devices. Ungrounded circuits limit appliance safety.',
+    limitations:   'Most wiring is concealed. A representative sampling of visible wiring inspected.',
+    checkItems:    ['Conductor material identified', 'Aluminium branch wiring noted and flagged', 'Grounding confirmed at representative outlets', 'No knob-and-tube in active use', 'Photograph any visible wiring anomalies'],
+    codeRef:       'OBC 2024 Part 8',
+  },
+
+  electrical_gfci_afci: {
+    descriptions:  ['GFCI protection in wet areas; AFCI on bedroom circuits (newer construction)'],
+    standard:      'GFCI protection required within 1.5 m of any sink (kitchen, bathroom, laundry), on exterior outlets, garage, and unfinished basement. AFCI required on bedroom circuits per OBC 2024. Test each GFCI using test button.',
+    implications:  'Missing GFCI protection in wet areas is a leading cause of electrocution. Missing AFCI increases arc-fault fire risk.',
+    limitations:   'Only accessible and visible outlets tested. AFCI testing requires breaker access.',
+    checkItems:    ['Kitchen GFCI present and tested', 'All bathroom outlets GFCI protected', 'Exterior outlets GFCI protected', 'Garage GFCI present', 'Note any areas lacking required protection', 'Photograph GFCI test results'],
+    codeRef:       'OBC 2024 9.10.5',
+  },
+
+  // ── Plumbing ─────────────────────────────────────────────────────────────
+
+  plumbing_water_main: {
+    descriptions:  ['Copper, galvanised, or lead water main — photograph shutoff valve'],
+    standard:      'Main water shutoff valve must be present, accessible, and operable. Valve handle must be intact. Lead water mains require immediate replacement. Galvanised piping > 40 years old should be evaluated.',
+    implications:  'Missing or inoperable shutoff valve prevents emergency water isolation. Lead piping is a health hazard.',
+    limitations:   'Portion of water main below grade not visible.',
+    checkItems:    ['Shutoff valve present and accessible', 'Handle intact and operable', 'Pipe material identified', 'No evidence of active leaks', 'PHOTOGRAPH the shutoff valve and pipe', 'Note if handle is missing'],
+    codeRef:       'OBC 2024 Part 7',
+  },
+
+  plumbing_distribution: {
+    descriptions:  ['Copper, CPVC, PEX distribution piping'],
+    standard:      'Supply piping must be free of active leaks, corrosion, and improper repairs. Water flow and pressure must be adequate with multiple fixtures operating simultaneously (typically ≥ 275 kPa at tap).',
+    implications:  'Poor water pressure indicates piping restrictions, failing PRV, or inadequate service size.',
+    limitations:   'Concealed piping not inspected.',
+    checkItems:    ['Pipe material identified', 'No active leaks', 'Adequate flow with multiple fixtures running', 'No evidence of prior emergency repairs', 'Photograph any visible piping anomalies'],
+    codeRef:       'OBC 2024 Part 7',
+  },
+
+  plumbing_dwv: {
+    descriptions:  ['ABS, PVC, or cast iron drain, waste, vent piping'],
+    standard:      'DWV piping must drain completely with no blockages, slow drainage, or gurgling (indicating venting issues). No active leaks. All fixtures must drain without backing up.',
+    implications:  'Gurgling at fixtures indicates inadequate venting. Slow drainage suggests partial blockage or root intrusion in underground piping.',
+    limitations:   'Underground and concealed DWV piping not visible. Testing performed by filling fixtures and observing drainage.',
+    checkItems:    ['Drainage tested — fill sinks/tubs and flush toilets', 'No slow drainage or gurgling', 'No active leaks at visible joints', 'Floor drain functional', 'Pipe material identified', 'Photograph any visible DWV anomalies'],
+    codeRef:       'OBC 2024 Part 7',
+  },
+
+  plumbing_fixtures: {
+    descriptions:  ['All sinks, toilets, tubs, showers — test and photograph'],
+    standard:      'All fixtures must be securely mounted, free of active leaks, and drain fully. Shower walls must be stable under moderate hand pressure. Toilets must be anchored at base.',
+    implications:  'Loose shower walls indicate failed waterproofing substrate. Rocking toilets indicate failed wax ring seal.',
+    limitations:   'Concealed supply and drain connections not inspected.',
+    checkItems:    ['Sinks and tubs filled and drained — no defects', 'Shower walls stable under pressure', 'Toilets anchored and not rocking', 'No active supply or drain leaks', 'Photograph any defects'],
+    codeRef:       'OBC 2024 Part 7',
+  },
+
+  // ── Hot Water ─────────────────────────────────────────────────────────────
+
+  hot_water_system: {
+    descriptions:  ['Tank or tankless — photograph data plate'],
+    standard:      'Storage tank water heaters have a typical service life of 10–12 years. TPR (temperature/pressure relief) valve must be present and piped to within 150 mm of floor or to drain. Flue must be secure and intact. Gas shutoff valve accessible. PHOTOGRAPH the data plate showing brand, model, serial number, BTU input, capacity, and manufacture year.',
+    implications:  'Aged water heaters are prone to sudden failure and flooding. Missing or improperly piped TPR valve is a safety hazard.',
+    limitations:   'Internal tank condition not inspectable without draining.',
+    checkItems:    ['Age determined from serial/data plate', 'TPR valve present and properly piped', 'No evidence of active leaks or rust staining', 'Gas shutoff valve accessible', 'Flue pipe secured and in good condition', 'PHOTOGRAPH the data plate (model, serial, BTU, year)'],
+    codeRef:       'OBC 2024 7.6.4',
+  },
+
+  // ── HVAC ──────────────────────────────────────────────────────────────────
+
+  hvac_furnace: {
+    descriptions:  ['Gas, oil, or electric forced air — photograph data plate'],
+    standard:      'Furnace must operate using normal controls. Heat exchanger integrity critical — cracked exchanger allows CO to enter living space (safety hazard). High-efficiency (90%+) furnaces vent via PVC to exterior. Standard efficiency units use B-vent or Gas 636 pipe. Typical service life 20–25 years. PHOTOGRAPH the data plate on the furnace cabinet showing brand, model, serial, BTU input/output, and year.',
+    implications:  'Aged furnaces approaching end of service life. Cracked heat exchangers are a life-safety hazard — CO poisoning risk.',
+    limitations:   'Heat exchanger integrity cannot be fully confirmed without combustion analysis. Internal components inspected only where accessible with user-removable panels.',
+    checkItems:    ['Operates with normal controls', 'Age determined from data plate', 'No error codes or unusual sounds', 'No evidence of water leakage inside cabinet (from AC condensate)', 'Filter condition checked', 'PHOTOGRAPH the data plate (model, serial, BTU, year)', 'PHOTOGRAPH interior showing any anomalies'],
+    codeRef:       'OBC 2024 Part 6',
+  },
+
+  hvac_ac: {
+    descriptions:  ['Central AC condenser unit — photograph data plate on exterior unit'],
+    standard:      'Air conditioning system must operate using normal controls. Refrigerant type (R-22 phased out; R-410A current standard). Condenser fins clean and undamaged. No evidence of refrigerant leak (oily residue at fittings). Typical service life 15 years. PHOTOGRAPH the data plate on the condenser unit showing brand, model, serial, refrigerant type, and year.',
+    implications:  'R-22 refrigerant (pre-2010 systems) is no longer produced — recharge expensive or impossible. Refrigerant leak inside furnace cabinet damages heat exchanger and controls.',
+    limitations:   'AC not tested below 18°C ambient — can damage compressor. Refrigerant charge and system pressures not tested.',
+    checkItems:    ['Operates with normal controls (test if >18°C)', 'Age and refrigerant type from data plate', 'No evidence of refrigerant leak inside furnace', 'Condenser fins clean and undamaged', 'PHOTOGRAPH the data plate (model, serial, refrigerant, year)'],
+    codeRef:       'OBC 2024 Part 6',
+  },
+
+  hvac_venting_combustion: {
+    descriptions:  ['Gas 636, B-vent, stainless liner, or PVC exhaust'],
+    standard:      'All combustion appliance flue pipes must be properly sized, secured, continuous, and terminating at the correct exterior location. High-efficiency appliances vent via PVC — no single-wall metal pipe acceptable. Combustion air supply required for atmospherically-vented appliances.',
+    implications:  'Failed or improperly installed flue pipe allows combustion gases including CO to enter the living space.',
+    limitations:   'Portions of flue within wall cavities or chases not inspected.',
+    checkItems:    ['Flue pipe material identified', 'Pipe secured and in good condition', 'No gaps or open joints', 'Exterior termination clear and unobstructed', 'Combustion air supply present', 'Photograph flue connection and termination'],
+    codeRef:       'OBC 2024 6.8',
+  },
+
+  // ── Fireplace ─────────────────────────────────────────────────────────────
+
+  fireplace_wett: {
+    descriptions:  ['Wood-burning, gas, or decorative fireplace'],
+    standard:      'Firebox and damper must be in serviceable condition. Hearth extension must be non-combustible. WETT (Wood Energy Technology Transfer) inspection by a qualified WETT inspector is recommended before use of any wood-burning appliance. Gas fireplace pilot and ignition tested using normal controls.',
+    implications:  'Defective firebox or flue can allow fire to spread to structure or combustion gases to enter living space.',
+    limitations:   'Flue interior not visible without WETT inspection or camera scope. Smoke testing or full WETT inspection is outside the scope of this report.',
+    checkItems:    ['Firebox visible condition noted', 'Damper present and operable', 'Hearth extension non-combustible', 'Gas fireplace ignition tested (if applicable)', 'WETT inspection recommended before use', 'Note chimney: active, disused, or unknown', 'Photograph firebox and hearth'],
+    codeRef:       'OBC 2024 9.10.7',
+  },
+
+  // ── Appliances ────────────────────────────────────────────────────────────
+
+  appliances_kitchen: {
+    descriptions:  ['Refrigerator, range/oven, dishwasher, range hood — photograph each data plate'],
+    standard:      'All appliances tested using normal operating controls. Basic functionality verified — full test of all modes not within scope. PHOTOGRAPH THE DATA PLATE (brand, model, serial number) on each appliance as a permanent record.',
+    implications:  'Non-functional appliances represent deficiencies for pre-sale or pre-purchase inspections.',
+    limitations:   'All functions of each appliance not tested. Concealed connections not inspected.',
+    checkItems:    ['Refrigerator: functional', 'Range/cooktop: all burners tested', 'Oven: heating element functional', 'Dishwasher: cycle initiated and functional', 'Range hood: fan and light functional', 'PHOTOGRAPH data plate on each appliance'],
+    codeRef:       '',
+  },
+
+  appliances_laundry: {
+    descriptions:  ['Washer and dryer — photograph each data plate'],
+    standard:      'Washer and dryer tested using normal operating controls. Dryer must vent to exterior — not to attic or crawlspace. Gas dryer requires proper venting and accessible gas shutoff. PHOTOGRAPH THE DATA PLATE on each unit.',
+    implications:  'Dryer venting to interior space causes moisture problems and is a fire hazard (lint accumulation).',
+    limitations:   'Full wash/dry cycles not completed during inspection.',
+    checkItems:    ['Washer: cycle initiated and functional', 'Dryer: heat confirmed on start', 'Dryer vent ducted to exterior', 'No evidence of past leaks from washer', 'PHOTOGRAPH data plate on each unit'],
+    codeRef:       '',
+  },
+
+  eaves_fascia_soffit: {
+    descriptions:  ['Aluminum, wood, or vinyl eaves and soffit — inspect from ground'],
+    standard:      'Fascia and soffit must be secure, continuous, and free of rot, pest damage, and paint failure. Soffit vents must be clear and unobstructed. Aluminum eave troughs properly graded to downspouts.',
+    implications:  'Deteriorated soffit allows pest entry and moisture infiltration into roof structure.',
+    limitations:   'Inspected from ground level.',
+    checkItems:    ['No sagging or detached sections', 'No rot in wood components', 'Soffit vents clear', 'Eave troughs properly graded', 'Photograph any defects'],
+    codeRef:       'OBC 2024 9.27',
+  },
+
+  porches_decks: {
+    descriptions:  ['Wood or composite — structural condition and finish'],
+    standard:      'Porch and deck structure must be sound — no rot, deterioration, or inadequate connections. Guard height and baluster spacing must comply. Surface sealed to reduce moisture absorption.',
+    implications:  'Deteriorated porch structure may not support design loads. Unprotected wood accelerates decay.',
+    limitations:   'Limited access to underside of porch — structural elements may not be fully visible.',
+    checkItems:    ['No visible rot or structural deterioration', 'Guardrails present and at required height', 'Baluster spacing ≤ 100 mm', 'Surface condition — paint/sealant intact', 'Photograph any areas of concern'],
+    codeRef:       'OBC 2024 9.8.7',
+  },
+
+  floors_final: {
+    descriptions:  ['Floor covering condition and trip hazards'],
+    standard:      'Floor surfaces must be level, secure, and free of significant wear, damage, or trip hazards. Transitions between floor types must be secured.',
+    implications:  'Damaged or unsecured floor coverings are a trip hazard and may indicate subfloor moisture issues below.',
+    limitations:   'Carpets, rugs, and floor coverings concealing subfloor not removed.',
+    checkItems:    ['No significant wear or damage', 'No loose tiles or lifted flooring', 'Transitions secured', 'No evidence of subfloor moisture', 'Photograph any defects'],
+    codeRef:       '',
+  },
+
+  skylights: {
+    descriptions:  ['Fixed or operable skylights — check for interior moisture'],
+    standard:      'No visible moisture staining, condensation, or water damage at skylight frame interior. Flashing continuous at roof penetration. Glazing intact.',
+    implications:  'Skylight leaks may be intermittent and difficult to detect — related to rain intensity and direction.',
+    limitations:   'Flashing inspected from ground or accessible roof area. Water testing not performed.',
+    checkItems:    ['No moisture at interior frame', 'No water staining on surrounding ceiling or walls', 'Glazing intact — no cracks', 'Photograph interior of each skylight'],
+    codeRef:       '',
+  },
 }
 
 /**
