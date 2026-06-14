@@ -545,7 +545,10 @@ export default function Home(){
     // ?module= launches a specific AI scan after auth — set module and go to scan_ready
     if(scanModule === 'accessibility' || scanModule === 'foundation'){
       // Store in localStorage so the app reads it after auth completes
-      try { localStorage.setItem('sc_launch_module', scanModule) } catch {}
+      try {
+        localStorage.setItem('sc_launch_module', scanModule)
+        localStorage.setItem('sc_launch_module_ts', String(Date.now()))
+      } catch {}
       window.history.replaceState({}, '', '/?signin=1')
     }
 
@@ -819,11 +822,21 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
 
   // Launch specific scan if coming from /?module=accessibility or /?module=foundation
+  // Guard: only fire if the key was set within the last 60 seconds (prevents stale triggers)
   React.useEffect(() => {
     try {
       const pending = localStorage.getItem('sc_launch_module')
+      const setAt   = parseInt(localStorage.getItem('sc_launch_module_ts') ?? '0', 10)
+      const age     = Date.now() - setAt
+      // Clear any stale key regardless
+      if (age > 60000 || !pending) {
+        localStorage.removeItem('sc_launch_module')
+        localStorage.removeItem('sc_launch_module_ts')
+        return
+      }
       if (pending === 'accessibility' || pending === 'foundation') {
         localStorage.removeItem('sc_launch_module')
+        localStorage.removeItem('sc_launch_module_ts')
         setActiveModule(pending as 'accessibility'|'foundation')
         setScreen('scan_ready')
       }
@@ -1164,33 +1177,14 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
           let isFirstLogin = false
           try { isFirstLogin = localStorage.getItem('sc_first_login_done') !== '1' } catch {}
 
+          // scansUsed is null while loading — never fire scan until we know the count
+          const scanReady = scansUsed !== null || isPro
+
           return (
             <div style={{display:'flex',flexDirection:'column',gap:'0.75rem',alignItems:'center'}}>
 
-              {/* Demo — compact centred card */}
-              <div style={{width:'100%',maxWidth:320}}>
-                <button
-                  onClick={()=>{ if(!atLimit) onStartScan('stair') }}
-                  style={{width:'100%',padding:'1.25rem 1rem',background:'#fff',border:'1.5px solid rgba(39,169,107,0.4)',borderRadius:16,display:'flex',flexDirection:'column',alignItems:'center',gap:'0.6rem',cursor:'pointer',boxShadow:'0 3px 14px rgba(39,169,107,0.12)',transition:'transform 0.1s, box-shadow 0.1s'}}
-                  onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.transform='translateY(-1px)';(e.currentTarget as HTMLButtonElement).style.boxShadow='0 6px 20px rgba(39,169,107,0.2)'}}
-                  onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.transform='none';(e.currentTarget as HTMLButtonElement).style.boxShadow='0 3px 14px rgba(39,169,107,0.12)'}}>
-                  <div style={{width:52,height:52,borderRadius:14,background:'rgba(39,169,107,0.1)',border:'1.5px solid rgba(39,169,107,0.25)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <svg width="26" height="26" viewBox="0 0 20 20" fill="none">
-                      <rect x="1" y="12" width="5" height="7" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-                      <rect x="6" y="7" width="5" height="12" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-                      <rect x="11" y="1" width="8" height="18" rx="0.5" stroke="#27A96B" strokeWidth="1.5"/>
-                    </svg>
-                  </div>
-                  <div style={{textAlign:'center'}}>
-                    <div style={{fontSize:'1.05rem',fontWeight:700,color:'#0D1E2E',lineHeight:1.2}}>Try the Demo</div>
-                    <div style={{fontSize:'0.7rem',color:'#5E7D9B',marginTop:'0.2rem',lineHeight:1.5}}>Stair compliance scan — rise, run,{'\n'}headroom, nosing, handrail</div>
-                  </div>
-                  <span style={{fontSize:'0.65rem',fontWeight:700,color:'#27A96B',padding:'0.22rem 0.7rem',borderRadius:6,border:'1px solid rgba(39,169,107,0.35)',background:'rgba(39,169,107,0.07)'}}>Free — no account needed</span>
-                </button>
-              </div>
-
-              {/* My Projects (always after first login) OR Full Building Inspection (first-timers without access) */}
-              {hasAccess ? (
+              {/* My Projects — shown to users with any access */}
+              {hasAccess && (
                 <button onClick={()=>{
                   try{localStorage.setItem('sc_first_login_done','1')}catch{}
                   onStartInspection()
@@ -1212,7 +1206,10 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                     <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-              ) : isFirstLogin ? (
+              )}
+
+              {/* Full Building Analysis — for first-timers without access */}
+              {!hasAccess && isFirstLogin && (
                 <button onClick={()=>{
                   try{localStorage.setItem('sc_first_login_done','1')}catch{}
                   onStartInspection()
@@ -1232,7 +1229,43 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                     <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-              ) : null}
+              )}
+
+              {/* Demo — only shown to users WITHOUT active access, as a secondary option.
+                  Hidden entirely for trial/subscription users — they have My Projects above.
+                  Guard: only fires when scansUsed has loaded (not null) to prevent accidental launch. */}
+              {!hasAccess && (
+                <div style={{width:'100%',maxWidth:320}}>
+                  <button
+                    onClick={()=>{
+                      // Hard guard: must know scan count before allowing
+                      if (!scanReady) return
+                      if (atLimit) return
+                      onStartScan('stair')
+                    }}
+                    disabled={!scanReady || atLimit}
+                    style={{width:'100%',padding:'0.9rem 1rem',background: atLimit ? 'rgba(147,180,197,0.1)' : '#fff',border:`1.5px solid ${atLimit ? 'rgba(147,180,197,0.25)' : 'rgba(39,169,107,0.4)'}`,borderRadius:14,display:'flex',alignItems:'center',gap:'0.75rem',cursor: !scanReady || atLimit ? 'not-allowed':'pointer',opacity: !scanReady ? 0.6 : 1,transition:'all 0.1s'}}>
+                    <div style={{width:40,height:40,borderRadius:10,background: atLimit ? 'rgba(147,180,197,0.1)' : 'rgba(39,169,107,0.1)',border:`1px solid ${atLimit ? 'rgba(147,180,197,0.2)' : 'rgba(39,169,107,0.25)'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                        <rect x="1" y="12" width="5" height="7" rx="0.5" stroke={atLimit ? '#9DB4C5' : '#27A96B'} strokeWidth="1.5"/>
+                        <rect x="6" y="7" width="5" height="12" rx="0.5" stroke={atLimit ? '#9DB4C5' : '#27A96B'} strokeWidth="1.5"/>
+                        <rect x="11" y="1" width="8" height="18" rx="0.5" stroke={atLimit ? '#9DB4C5' : '#27A96B'} strokeWidth="1.5"/>
+                      </svg>
+                    </div>
+                    <div style={{flex:1,textAlign:'left' as const}}>
+                      <div style={{fontSize:'0.9rem',fontWeight:700,color: atLimit ? '#9DB4C5' : '#0D1E2E',lineHeight:1.2}}>
+                        {atLimit ? 'Demo scans used up' : 'Try Stair Demo'}
+                      </div>
+                      <div style={{fontSize:'0.68rem',color:'#5E7D9B',marginTop:'0.15rem'}}>
+                        {atLimit ? 'Sign up for full access' : 'Free stair compliance scan — no account needed'}
+                      </div>
+                    </div>
+                    {!atLimit && (
+                      <span style={{fontSize:'0.6rem',fontWeight:700,color:'#27A96B',padding:'0.18rem 0.55rem',borderRadius:5,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0,background:'rgba(39,169,107,0.07)'}}>Free</span>
+                    )}
+                  </button>
+                </div>
+              )}
 
             </div>
           )
