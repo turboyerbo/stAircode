@@ -11,11 +11,20 @@ import { useState, useEffect, useCallback } from 'react'
 import type { InspectionJob }               from '@/lib/inspection-types'
 import { NavLogo }                          from './Logo'
 
+interface Loc { city: string; province: string; country: string; countryCode: string }
+interface Code { code: string; label: string; ref: string }
+
 interface Props {
   userEmail:    string
   onStartNew:   () => void
   onResumeJob:  (job: InspectionJob) => void
   onBack:       () => void
+  loc?:         Loc | null
+  locLoading?:  boolean
+  code?:        Code | null
+  onGoSettings?:() => void
+  onGoHelp?:    () => void
+  onGoDemo?:    () => void
 }
 
 const NAVY   = '#0A1C2E'
@@ -83,7 +92,7 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days/30)} months ago`
 }
 
-export default function InspectionProjectList({ userEmail, onStartNew, onResumeJob, onBack }: Props) {
+export default function InspectionProjectList({ userEmail, onStartNew, onResumeJob, onBack, loc, locLoading, code, onGoSettings, onGoHelp, onGoDemo }: Props) {
   const [jobs,       setJobs]       = useState<SummaryRow[]>([])
   const [loading,    setLoading]    = useState(true)
   const [resuming,   setResuming]   = useState<string | null>(null)
@@ -417,6 +426,73 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
             ))}
           </div>
         )}
+
+        {/* ── Geo location card ── */}
+        {(loc || locLoading) && (
+          <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: locLoading ? ORANGE : loc ? GREEN : 'rgba(147,180,197,0.4)', flexShrink: 0 }}/>
+              <span style={{ fontSize: '0.8rem', color: '#0A1C2E', fontWeight: 600 }}>
+                {locLoading ? 'Detecting location…' : loc ? `${loc.city}, ${loc.province}` : 'Location unavailable'}
+              </span>
+            </div>
+            {!locLoading && code && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.68rem', color: '#5E7D9B' }}>Active building code</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: BLUE, background: 'rgba(65,124,164,0.08)', padding: '0.2rem 0.6rem', borderRadius: 6, border: `1px solid rgba(65,124,164,0.2)` }}>{code.label}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Quick access ── */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+          {onGoHelp && (
+            <button onClick={onGoHelp}
+              style={{ flex: 1, padding: '0.7rem', background: 'rgba(65,124,164,0.07)', border: `1px solid rgba(65,124,164,0.18)`, borderRadius: 10, color: '#2C5A7A', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#2C5A7A" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#2C5A7A" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#2C5A7A" strokeWidth="1.8"/><circle cx="17.5" cy="17.5" r="3" stroke="#2C5A7A" strokeWidth="1.8"/></svg>
+              AR / AI
+            </button>
+          )}
+          <a href="/marketing"
+            style={{ flex: 1, padding: '0.7rem', background: 'rgba(65,124,164,0.07)', border: `1px solid rgba(65,124,164,0.18)`, borderRadius: 10, color: '#2C5A7A', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', textDecoration: 'none' }}>
+            About
+          </a>
+          {onGoSettings && (
+            <button onClick={onGoSettings}
+              style={{ flex: 1, padding: '0.7rem', background: 'rgba(65,124,164,0.07)', border: `1px solid rgba(65,124,164,0.18)`, borderRadius: 10, color: '#2C5A7A', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#2C5A7A" strokeWidth="1.8"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#2C5A7A" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              Settings
+            </button>
+          )}
+        </div>
+
+        {/* ── Try the Demo ── */}
+        {onGoDemo && (
+          <button onClick={onGoDemo}
+            style={{ width: '100%', marginTop: '0.5rem', padding: '0.65rem', background: 'none', border: `1px solid rgba(39,169,107,0.3)`, borderRadius: 10, color: GREEN, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Try Stair Compliance Demo →
+          </button>
+        )}
+
+        {/* ── Social links ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.55rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
+          {[
+            { href: 'https://www.instagram.com/staircode/', label: 'Instagram', bg: 'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)' },
+            { href: 'https://www.facebook.com/people/Staircode/61589350702805/', label: 'Facebook', bg: '#1877F2' },
+            { href: 'https://play.google.com/store/apps/details?id=app.staircode.android', label: 'Google Play', bg: '#000' },
+            { href: 'https://apps.apple.com/app/staircode/id6744870260', label: 'App Store', bg: '#000' },
+          ].map(s => (
+            <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer"
+              style={{ padding: '0.3rem 0.65rem', background: s.bg, borderRadius: 7, textDecoration: 'none', color: '#fff', fontSize: '0.62rem', fontWeight: 600 }}>
+              {s.label}
+            </a>
+          ))}
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: '0.58rem', color: '#9DB4C5', lineHeight: 1.5, margin: '0.5rem 0 0' }}>
+          Compliance aid only · Not a substitute for professional inspection
+        </p>
       </div>
     </div>
   )

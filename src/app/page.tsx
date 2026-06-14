@@ -519,11 +519,9 @@ export default function Home(){
     try{localStorage.setItem('sc_user',JSON.stringify(authedUser))}catch{}
     identifyUser(authedUser.email, { provider: authedUser.provider, membership: authedUser.membership })
     Analytics.userSignedIn(authedUser.provider === 'otp' ? 'otp' : authedUser.provider)
-    const hasBeta   = checkTrialAccess()
-    const hasAccess = hasBeta || authedUser.membership === 'subscription' || authedUser.membership === 'pro'
-    if (fromMemberLogin || isSignoutFlow || hasAccess) {
-      setGotoProjects(true)
-    }
+    // Every sign-in lands on My Projects — no conditions.
+    // The demo screen is never the landing page for an authenticated user.
+    setGotoProjects(true)
   }
 
   // Handle Stripe payment return (?payment=success&product=report|pro|subscription)
@@ -779,19 +777,9 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>(() => {
     if (initialScreen) return initialScreen
-    // Check localStorage directly here (synchronous) — user prop may not be hydrated yet
-    try {
-      const hasBeta = checkTrialAccess()
-      const stored  = localStorage.getItem('sc_user')
-      const storedUser = stored ? JSON.parse(stored) : null
-      const mem = storedUser?.membership
-      if (hasBeta || mem === 'subscription' || mem === 'pro') return 'inspection_projects'
-    } catch {}
-    // Fall back to React prop
-    if (user.membership === 'subscription' || user.membership === 'pro') {
-      try { if (checkTrialAccess()) return 'inspection_projects' } catch {}
-    }
-    return 'home'
+    // Every authenticated user who reaches AppShell goes straight to My Projects.
+    // The demo 'home' screen is only reachable by explicit user action, never as a landing.
+    return 'inspection_projects'
   })
 
   // Navigate to projects when parent signals it (e.g. after sign-in from MemberLoginScreen)
@@ -1044,6 +1032,12 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
         setScreen('inspection_type')
       }}
       onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
+      loc={loc}
+      locLoading={locLoading}
+      code={code}
+      onGoSettings={()=>{setTab('settings');setScreen('home')}}
+      onGoHelp={()=>{setTab('help');setScreen('home')}}
+      onGoDemo={()=>{setActiveModule('stair');Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:'stair'});setScreen('scan_ready')}}
     />
   if(screen==='inspection_setup')
     return <InspectionSetupScreen
@@ -1098,18 +1092,18 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
     const fFields = checkFoundation(foundationMeasurements, activeCode2.label)
     return <FoundationReportScreen measurements={foundationMeasurements} fields={fFields} codeLabel={activeCode2.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  onRetake={()=>{setFoundationMeasurements(null);setScreen('scan_ready')}} onStartOver={()=>{setFoundationMeasurements(null);setActiveModule('stair');setScreen('home')}}/>
   }
-  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('home')}/>
+  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='scan_review')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('report')} startAtReview={true}/>
   // Use IBC as fallback if code not yet detected (location loading)
   const activeCode = code ?? {code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
-  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
+  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={()=>{setMeasurements(null);setScreen('inspection_projects')}}/>
 
   return(
     <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>{ if(hasInspectionAccess()) setScreen('inspection_projects'); else setScreen('inspection_paywall') }} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
       </div>
-      <BottomNav active={tab} onChange={t=>{setTab(t);if(t!=='home')setScreen('home');if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
+      <BottomNav active={tab} onChange={t=>{setTab(t);if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
       <CodeHelper />
     </div>
   )
