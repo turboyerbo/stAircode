@@ -229,13 +229,10 @@ export type ModuleId =
   | 'window_door_rough_openings'
   // Occupancy / Final
   | 'interior_finishes' | 'ceilings' | 'internal_walls'
-  | 'floors_final'
   | 'stairs'               // general visual
   | 'stair_compliance'     // AI built-in scan
   | 'guardrails_handrails'
   | 'exterior_walls' | 'exterior_cracks'
-  | 'eaves_fascia_soffit'
-  | 'porches_decks'
   | 'windows_final' | 'doors_final'
   | 'wet_areas_kitchen' | 'wet_areas_bathrooms' | 'wet_areas_laundry'
   | 'accessibility'        // AI built-in scan
@@ -244,39 +241,8 @@ export type ModuleId =
   | 'garage_final'
   | 'decks_balconies'
   | 'site_grading' | 'site_drainage' | 'driveway_paths'
-  // Roofing (full system)
-  | 'roof_covering'
-  | 'roof_flat'
-  | 'roof_flashings'
-  | 'roof_drainage'
-  | 'chimneys'
-  | 'skylights'
-  | 'attic_access'
-  // Electrical (full system)
-  | 'electrical_service_entrance'
-  | 'electrical_panel'        // label photo required
-  | 'electrical_branch_wiring'
-  | 'electrical_gfci_afci'
-  | 'electrical_smoke_co'
-  // Plumbing (full system)
-  | 'plumbing_water_main'
-  | 'plumbing_distribution'
-  | 'plumbing_dwv'            // drain waste vent
-  | 'plumbing_fixtures'
-  | 'hot_water_system'        // label photo required
-  // HVAC (full system)
-  | 'hvac_furnace'            // label photo required
-  | 'hvac_ac'                 // label photo required
-  | 'hvac_venting_combustion'
-  | 'hvac_thermostat'
-  // Fireplace
-  | 'fireplace_wett'
-  // Appliances
-  | 'appliances_kitchen'      // label photos required
-  | 'appliances_laundry'      // label photos required
-  // Legacy / general
   | 'services_electrical' | 'services_plumbing' | 'services_gas'
-  | 'hvac_final'
+  | 'hot_water_system' | 'hvac_final'
   | 'swimming_pool'
 
 export type ModuleStatus = 'pending' | 'in_progress' | 'complete' | 'skipped' | 'na'
@@ -394,39 +360,18 @@ export const PHASE_META: Record<PhaseId, {
     holdPoint:   true,
     icon:        'final',
     modules:     [
-      // Exterior envelope
-      'exterior_walls', 'exterior_cracks', 'eaves_fascia_soffit', 'porches_decks',
+      'interior_finishes', 'ceilings', 'internal_walls',
+      'stairs', 'stair_compliance',
+      'guardrails_handrails',
+      'exterior_walls', 'exterior_cracks',
       'windows_final', 'doors_final',
-      // Roofing system
-      'roof_covering', 'roof_flat', 'roof_flashings', 'roof_drainage', 'chimneys', 'skylights',
-      // Attic
-      'attic_access',
-      // Structure
-      'structural_framing', 'floor_systems',
-      // Interior
-      'interior_finishes', 'ceilings', 'internal_walls', 'floors_final',
-      'stairs', 'stair_compliance', 'guardrails_handrails',
-      // Wet areas
       'wet_areas_kitchen', 'wet_areas_bathrooms', 'wet_areas_laundry',
-      // Electrical system
-      'electrical_service_entrance', 'electrical_panel',
-      'electrical_branch_wiring', 'electrical_gfci_afci', 'electrical_smoke_co',
-      // Plumbing system
-      'plumbing_water_main', 'plumbing_distribution', 'plumbing_dwv', 'plumbing_fixtures',
-      // Hot water
-      'hot_water_system',
-      // HVAC system
-      'hvac_thermostat', 'hvac_furnace', 'hvac_ac', 'hvac_venting_combustion',
-      // Fireplace
-      'fireplace_wett',
-      // Appliances
-      'appliances_kitchen', 'appliances_laundry',
-      // Safety
-      'smoke_co_detectors', 'egress_windows', 'accessibility',
-      // Site
+      'accessibility',
+      'smoke_co_detectors', 'egress_windows',
+      'garage_final', 'decks_balconies',
       'site_grading', 'site_drainage', 'driveway_paths',
-      // Optional
-      'garage_final', 'decks_balconies', 'swimming_pool',
+      'services_electrical', 'services_plumbing', 'services_gas',
+      'hot_water_system', 'hvac_final',
     ],
     reportSection: 'Phase 6 — Occupancy & Final Inspection',
     obcRef:      'OBC Act s.10 — Occupancy Permit; OBC 9.9 — Stairs; 9.8 — Guards',
@@ -492,55 +437,12 @@ export const MODULE_META: Partial<Record<ModuleId, {
   site_grading:              { label: 'Site Grading',             description: 'Drainage slope away from foundation', required: true, isBuiltIn: false, codeRef: 'OBC 9.12' },
   site_drainage:             { label: 'Surface Drainage',         description: 'Ponding, run-off, storm outlets', required: false, isBuiltIn: false },
   driveway_paths:            { label: 'Driveway & Paths',         description: 'Surface, condition, trip hazards', required: false, isBuiltIn: false },
-  // Legacy entries kept for backward compat with old job data
-  services_electrical:       { label: 'Electrical (Final)',       description: 'Panel, fixtures, outlets, safety switches', required: false, isBuiltIn: false },
-  services_plumbing:         { label: 'Plumbing (Final)',         description: 'All fixtures, water pressure, waste', required: false, isBuiltIn: false },
+  services_electrical:       { label: 'Electrical (Final)',       description: 'Panel, fixtures, outlets, safety switches', required: true, isBuiltIn: false },
+  services_plumbing:         { label: 'Plumbing (Final)',         description: 'All fixtures, water pressure, waste', required: true, isBuiltIn: false },
   services_gas:              { label: 'Gas (Final)',              description: 'Appliances connected, licensed', required: false, isBuiltIn: false },
+  hot_water_system:          { label: 'Hot Water System',         description: 'Type, pressure relief, flue', required: true, isBuiltIn: false },
   hvac_final:                { label: 'HVAC (Final)',             description: 'Equipment operation, fresh air, filters', required: false, isBuiltIn: false },
   swimming_pool:             { label: 'Swimming Pool',            description: 'Pool fencing compliance — specialist referral', required: false, isBuiltIn: false },
-
-  // ── Exterior ──────────────────────────────────────────────────────────────
-  floors_final:              { label: 'Floors',                   description: 'Floor covering condition, wear, trip hazards', required: false, isBuiltIn: false },
-  eaves_fascia_soffit:       { label: 'Eaves, Fascia & Soffit',   description: 'Material, paint, rot, condition. Inspect from ground.', required: false, isBuiltIn: false, codeRef: 'OBC 9.27' },
-  porches_decks:             { label: 'Porches & Decks',          description: 'Wood condition, structural elements, rot, sealing. Note limited underside access.', required: false, isBuiltIn: false },
-
-  // ── Roofing System ────────────────────────────────────────────────────────
-  roof_covering:             { label: 'Roof Covering (Sloped)',   description: 'Shingle/tile condition, curling, missing pieces, service life. Inspect with binoculars or camera zoom from ground.', required: true, isBuiltIn: false, codeRef: 'OBC 9.27' },
-  roof_flat:                 { label: 'Flat Roof / Membrane',     description: 'Modified bitumen, TPO or built-up condition. Visible portion. Note any deck cover obstructions.', required: false, isBuiltIn: false, codeRef: 'OBC 9.26' },
-  roof_flashings:            { label: 'Roof Flashings',           description: 'Chimney, plumbing stack, skylight, valley flashings. Check for separation, caulking failure.', required: true, isBuiltIn: false, codeRef: 'OBC 9.27.3' },
-  roof_drainage:             { label: 'Roof Drainage',            description: 'Eaves troughs, downspouts, above/below ground drainage. Condition and clearance.', required: false, isBuiltIn: false },
-  chimneys:                  { label: 'Chimney(s)',               description: 'Inspect from ground — brick spalling, mortar loss, cap, flashing. Photo each chimney. Note whether active or disused.', required: false, isBuiltIn: false },
-  skylights:                 { label: 'Skylight(s)',              description: 'Interior moisture, frame condition, flashing. Note any condensation or staining.', required: false, isBuiltIn: false },
-  attic_access:              { label: 'Attic',                    description: 'Access hatch location, insulation type and depth (if visible), ventilation, evidence of moisture or pest. Note if no access.', required: false, isBuiltIn: false, codeRef: 'OBC 9.19' },
-
-  // ── Electrical System ─────────────────────────────────────────────────────
-  electrical_service_entrance: { label: 'Service Entrance',      description: 'Overhead or underground feed, conductor material (copper/aluminium), service voltage. Photo the meter and entry point.', required: true, isBuiltIn: false, codeRef: 'OBC Part 8' },
-  electrical_panel:            { label: 'Distribution Panel',    description: 'Panel location, breaker type, rated amperage, room for expansion, double-tapped breakers, labelling. PHOTOGRAPH THE DATA PLATE and interior panel clearly — same as Pillar to Post standard.', required: true, isBuiltIn: false, codeRef: 'OBC Part 8' },
-  electrical_branch_wiring:    { label: 'Branch Circuit Wiring', description: 'Conductor material (copper/aluminium), NMD type, grounding. Note any aluminium branch circuits — requires further evaluation.', required: true, isBuiltIn: false, codeRef: 'OBC Part 8' },
-  electrical_gfci_afci:        { label: 'GFCI & AFCI Devices',   description: 'GFCI tested in wet areas (kitchen, bathrooms, exterior). AFCI where required. Note missing protection.', required: true, isBuiltIn: false, codeRef: 'OBC 9.10.5' },
-  electrical_smoke_co:         { label: 'Smoke & CO Alarms',     description: 'Alarm present on all levels and in each unit. Test button. Note missing locations. CO alarms required within 5m of each sleeping area (Ontario Fire Code).', required: true, isBuiltIn: false, codeRef: 'OFC s.2.13 / OBC 9.10.19' },
-
-  // ── Plumbing System ───────────────────────────────────────────────────────
-  plumbing_water_main:         { label: 'Water Main & Shutoff',  description: 'Material (copper/lead/galvanised), meter location, main shutoff valve presence and operability. PHOTOGRAPH the shutoff valve. Note if handle is missing.', required: true, isBuiltIn: false, codeRef: 'OBC Part 7' },
-  plumbing_distribution:       { label: 'Distribution Piping',   description: 'Supply pipe material, water pressure/flow with multiple fixtures running simultaneously. Note any evidence of prior repairs.', required: true, isBuiltIn: false, codeRef: 'OBC Part 7' },
-  plumbing_dwv:                { label: 'Drain, Waste & Vent',   description: 'Visible DWV piping material (ABS/cast iron), drainage test — fill sinks/tubs, flush toilets. Note slow drainage or gurgling.', required: true, isBuiltIn: false, codeRef: 'OBC Part 7' },
-  plumbing_fixtures:           { label: 'Fixtures & Faucets',    description: 'Sinks, toilets, tubs, showers — fill and drain each. Shower wall stability test. Floor drain function.', required: true, isBuiltIn: false },
-
-  // ── Hot Water System ──────────────────────────────────────────────────────
-  hot_water_system:            { label: 'Water Heater',          description: 'Type (tank/tankless), fuel, capacity, year of manufacture. PHOTOGRAPH THE DATA PLATE (model, serial, BTU, year). Check venting, TPR valve, gas shutoff. Note age — typical service life 10–12 years.', required: true, isBuiltIn: false, codeRef: 'OBC 7.6.4' },
-
-  // ── HVAC System ───────────────────────────────────────────────────────────
-  hvac_thermostat:             { label: 'Thermostat',            description: 'Location, type, test heating/cooling cycle using normal operating controls.', required: false, isBuiltIn: false },
-  hvac_furnace:                { label: 'Furnace',               description: 'Fuel type, efficiency rating, year. PHOTOGRAPH THE DATA PLATE (model, serial, BTU input/output). Test using normal operating controls. Note any error codes, leaks, or unusual sounds. Check filter condition.', required: true, isBuiltIn: false, codeRef: 'OBC Part 6' },
-  hvac_ac:                     { label: 'Air Conditioning',      description: 'System type, refrigerant type, year. PHOTOGRAPH THE DATA PLATE on the exterior condenser unit. Test operation. Note age — typical service life 15 years. Check for evidence of refrigerant leakage inside furnace cabinet.', required: false, isBuiltIn: false },
-  hvac_venting_combustion:     { label: 'Combustion & Venting',  description: 'Flue pipe material (Gas 636, B-vent, SS liner), condition, securing, exterior termination. Power-vented or natural-draft. Combustion air supply.', required: true, isBuiltIn: false, codeRef: 'OBC 6.8' },
-
-  // ── Fireplace ─────────────────────────────────────────────────────────────
-  fireplace_wett:              { label: 'Fireplace / WETT',      description: 'Type (wood/gas/electric), visible condition of firebox, damper, hearth extension. Recommend WETT inspection by qualified inspector before use. Note if chimney is active or disused.', required: false, isBuiltIn: false },
-
-  // ── Appliances ────────────────────────────────────────────────────────────
-  appliances_kitchen:          { label: 'Kitchen Appliances',    description: 'Refrigerator, range/oven, dishwasher, range hood — test each using normal operating controls. PHOTOGRAPH THE DATA PLATE (brand, model, serial) on each appliance. Note non-functional items.', required: false, isBuiltIn: false },
-  appliances_laundry:          { label: 'Laundry Appliances',    description: 'Washer and dryer — test basic cycle. PHOTOGRAPH THE DATA PLATE on each. Note dryer venting (should exhaust to exterior). Note any staining or evidence of past leaks.', required: false, isBuiltIn: false },
 }
 
 // ─── Factory helpers ──────────────────────────────────────────────────────────

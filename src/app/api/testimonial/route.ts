@@ -145,7 +145,8 @@ export async function POST(req: NextRequest) {
       // Don't block the unlock if email fails
     }
   } else {
-    console.log('[testimonial] No RESEND_API_KEY — testimonial received but not emailed')
+    console.log('[testimonial] No RESEND_API_KEY — testimonial logged to console:')
+    console.log({ name, title, business, email, comment, location, codeLabel })
   }
 
   // Issue a simple unlock token — client passes this back to /api/report/generate

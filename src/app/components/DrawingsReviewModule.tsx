@@ -127,6 +127,8 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
   const [pages,      setPages]      = useState<string[]>(job.drawingsData?.pages ?? [])
   const [fileNames,  setFileNames]  = useState<string[]>(job.drawingsData?.fileNames ?? [])
   const [uploading,  setUploading]  = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)  // 0-100
+  const [uploadStage,    setUploadStage]    = useState('')  // human-readable stage label
   const [uploadErr,  setUploadErr]  = useState<string|null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const dropRef   = useRef<HTMLDivElement>(null)
@@ -179,10 +181,15 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
     }
 
     setUploading(true)
+    setUploadProgress(5)
+    setUploadStage('Reading file…')
     const newPages: string[] = []
     const newNames: string[] = []
 
-    for (const file of arr) {
+    for (let i = 0; i < arr.length; i++) {
+      const file = arr[i]
+      setUploadStage(`Reading ${file.name}…`)
+      setUploadProgress(10 + Math.round((i / arr.length) * 40))
       try {
         const filePagesB64 = await fileToBase64Pages(file)
         newPages.push(...filePagesB64)
@@ -192,7 +199,12 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
       }
     }
 
+    setUploadProgress(55)
+    setUploadStage('Preparing for AI analysis…')
+
     setUploading(false)
+    setUploadProgress(0)
+    setUploadStage('')
     if (!newPages.length) return
 
     const allPages = [...pages, ...newPages]
@@ -220,6 +232,7 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
   async function runExtraction(pagesToUse = pages, namesToUse = fileNames) {
     if (!pagesToUse.length) return
     setExtracting(true); setExtractErr(null)
+    setUploadProgress(60); setUploadStage('Sending to AI…')
     try {
       const res  = await fetch('/api/drawings-chat', {
         method: 'POST',
@@ -234,12 +247,26 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
           },
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Extraction failed')
+      setUploadProgress(85); setUploadStage('AI reading drawings…')
+
+      // Safe JSON parse — handle empty or truncated responses gracefully
+      let data: any = {}
+      try {
+        const rawText = await res.text()
+        if (rawText && rawText.trim()) {
+          data = JSON.parse(rawText)
+        }
+      } catch {
+        throw new Error('The drawing analysis timed out or the file was too large. Try a smaller PDF (under 5MB) or upload individual pages as images.')
+      }
+
+      if (!res.ok) throw new Error(data.error ?? `Server error ${res.status} — try again or upload a smaller file.`)
 
       if (data.fields) {
         setF(data.fields)
         setExtractDone(true)
+        setUploadProgress(100); setUploadStage('Done!')
+        setTimeout(() => { setUploadProgress(0); setUploadStage('') }, 1200)
 
         // Auto-send welcome message to chat
         const welcome = data.fields.summary
@@ -250,7 +277,8 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
         setTab('fields')
       }
     } catch (err: any) {
-      setExtractErr(err.message ?? 'Could not analyse drawings')
+      setExtractErr(err.message ?? 'Could not analyse drawings — check your connection and try again.')
+      setUploadProgress(0); setUploadStage('')
     }
     setExtracting(false)
   }
@@ -418,13 +446,22 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
                 transition: 'all 0.15s',
               }}>
               {uploading || extracting ? (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.75rem' }}>
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.75rem', padding:'0.5rem 0' }}>
                   <div style={{ width:32, height:32, borderRadius:'50%', border:`3px solid rgba(65,124,164,0.2)`, borderTopColor:BLUE, animation:'spin 0.8s linear infinite' }}/>
                   <div style={{ fontSize:'0.85rem', color:BLUE, fontWeight:600 }}>
-                    {uploading ? 'Reading files…' : 'AI analysing drawings…'}
+                    {uploadStage || (uploading ? 'Reading file…' : 'AI analysing drawings…')}
                   </div>
-                  <div style={{ fontSize:'0.72rem', color:'#5E7D9B' }}>
-                    {extracting ? 'Extracting permit data, setbacks, and compliance information' : ''}
+                  {/* Progress bar */}
+                  {uploadProgress > 0 && (
+                    <div style={{ width:'80%', maxWidth:240 }}>
+                      <div style={{ height:5, background:'rgba(65,124,164,0.12)', borderRadius:10, overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${uploadProgress}%`, background:`linear-gradient(90deg,${BLUE},#2C7AAF)`, borderRadius:10, transition:'width 0.4s ease' }}/>
+                      </div>
+                      <div style={{ fontSize:'0.62rem', color:'#9DB4C5', textAlign:'center', marginTop:'0.3rem' }}>{uploadProgress}%</div>
+                    </div>
+                  )}
+                  <div style={{ fontSize:'0.72rem', color:'#5E7D9B', textAlign:'center' as const, lineHeight:1.5 }}>
+                    {extracting ? 'Extracting permit data, setbacks, and compliance information…' : 'Large files may take a moment — please keep this screen open'}
                   </div>
                   <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
                 </div>
@@ -455,8 +492,15 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
 
             {/* Errors */}
             {(uploadErr || extractErr) && (
-              <div style={{ background:'rgba(232,69,69,0.07)', border:'1px solid rgba(232,69,69,0.25)', borderRadius:9, padding:'0.75rem 1rem', fontSize:'0.78rem', color:RED, lineHeight:1.55 }}>
-                {uploadErr || extractErr}
+              <div style={{ background:'rgba(232,69,69,0.07)', border:'1px solid rgba(232,69,69,0.25)', borderRadius:9, padding:'0.75rem 1rem', fontSize:'0.78rem', color:RED, lineHeight:1.55, display:'flex', gap:'0.65rem', alignItems:'flex-start' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0, marginTop:1 }}>
+                  <circle cx="8" cy="8" r="7" stroke={RED} strokeWidth="1.3"/>
+                  <line x1="8" y1="4.5" x2="8" y2="9" stroke={RED} strokeWidth="1.5" strokeLinecap="round"/>
+                  <circle cx="8" cy="11.5" r="0.8" fill={RED}/>
+                </svg>
+                <div style={{ flex:1 }}>{uploadErr || extractErr}</div>
+                <button onClick={() => { setUploadErr(null); setExtractErr(null) }}
+                  style={{ background:'none', border:'none', color:RED, cursor:'pointer', fontSize:'1rem', lineHeight:1, flexShrink:0, padding:0, opacity:0.7 }}>×</button>
               </div>
             )}
 

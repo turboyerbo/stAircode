@@ -39,14 +39,9 @@ const MODEL   = 'claude-sonnet-4-5'
 // System prompt for the drawings analysis assistant
 function buildSystemPrompt(jobContext?: { address?: string; buildingType?: string; province?: string }) {
   const location = jobContext?.address ?? 'Not specified'
-  const prov = (jobContext?.province ?? '').toLowerCase()
-  const code =
-    prov.includes('ontario') || prov === 'on' ? 'Ontario Building Code 2024' :
-    prov.includes('quebec') || prov.includes('québec') || prov === 'qc' ? 'Code de construction du Québec (CCQ 2015 / RBQ)' :
-    prov.includes('british columbia') || prov === 'bc' ? 'BC Building Code 2024' :
-    prov.includes('alberta') || prov === 'ab' ? 'Alberta Building Code 2019' :
-    jobContext?.province ? `${jobContext.province} Building Code (NBC 2020 base)` :
-    'applicable building code'
+  const code     = jobContext?.province === 'Ontario' ? 'Ontario Building Code 2024'
+                 : jobContext?.province ? `${jobContext.province} Building Code`
+                 : 'applicable building code'
 
   return `You are an expert building inspector and code compliance consultant specialising in residential construction documentation. You are analysing approved architectural drawings for a building inspection.
 
@@ -113,8 +108,17 @@ export async function POST(req: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'API key not configured' }, { status: 503 })
 
   let body: any
-  try { body = await req.json() }
-  catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
+  try {
+    // Use text() first so we can give a better error on empty/truncated bodies
+    const rawText = await req.text()
+    if (!rawText || rawText.trim().length === 0) {
+      return NextResponse.json({ error: 'Empty request body — the file may be too large. Please try a smaller PDF or split into separate pages.' }, { status: 400 })
+    }
+    body = JSON.parse(rawText)
+  } catch (parseErr) {
+    console.error('[drawings-chat] JSON parse error:', parseErr)
+    return NextResponse.json({ error: 'Could not read request — the file may exceed the upload limit. Try a PDF under 10 MB or upload one page at a time.' }, { status: 400 })
+  }
 
   const { mode = 'extract', pages = [], messages = [], userMessage = '', jobContext } = body
 

@@ -17,6 +17,7 @@ import { NavLogo } from './Logo'
 interface Props {
   onAccess:  () => void   // called when access is granted
   onBack:    () => void
+  onSignIn:  () => void   // navigate to member login
   userEmail: string
 }
 
@@ -27,8 +28,9 @@ const GREEN  = '#27A96B'
 const RED    = '#E84545'
 const BORDER = 'rgba(44,90,122,0.14)'
 
-export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props) {
-  const [accessCode,    setAccessCode]    = useState('')
+export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmail }: Props) {
+  const savedCode = (() => { try { return localStorage.getItem('sc_saved_promo') ?? '' } catch { return '' } })()
+  const [accessCode,    setAccessCode]    = useState(savedCode)
   const [codeError,     setCodeError]     = useState<string | null>(null)
   const [loading,       setLoading]       = useState(false)
   const [stripeLoading, setStripeLoading] = useState(false)
@@ -49,6 +51,7 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
           localStorage.setItem('sc_trial_end',    trialEnd)
           localStorage.setItem('sc_beta_access',  '1')
           sessionStorage.setItem('sc_beta_access','1')
+          localStorage.removeItem('sc_saved_promo')
         } catch {}
         setTimeout(() => onAccess(), 300)
       } else {
@@ -168,7 +171,7 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
               name="beta-code"
               type="text"
               value={accessCode}
-              onChange={e => { setAccessCode(e.target.value); setCodeError(null) }}
+              onChange={e => { setAccessCode(e.target.value); setCodeError(null); try { if (e.target.value) localStorage.setItem('sc_saved_promo', e.target.value); else localStorage.removeItem('sc_saved_promo') } catch {} }}
               onKeyDown={e => { if (e.key === 'Enter') handleCodeSubmit() }}
               placeholder="Enter code"
               style={{ flex:1, padding:'0.75rem 0.9rem', background:'#fff', border:`1.5px solid ${codeError ? RED : accessCode ? BLUE : BORDER}`, borderRadius:10, fontSize:'0.9rem', color:'#0D1E2E', outline:'none', fontFamily:'inherit', transition:'border-color 0.12s' }}
@@ -186,6 +189,13 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
             </div>
           )}
         </div>
+
+        {/* Already a member */}
+        <button
+          onClick={onSignIn}
+          style={{ width:'100%', padding:'0.85rem', background:'none', border:'1.5px solid rgba(44,90,122,0.22)', borderRadius:12, color:BLUE, fontSize:'0.85rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s', fontFamily:'inherit' }}>
+          Already a Member? Sign in
+        </button>
 
         {/* Free demo note */}
         <div style={{ background:'rgba(65,124,164,0.06)', border:`1px solid rgba(65,124,164,0.2)`, borderRadius:10, padding:'0.8rem 1rem' }}>

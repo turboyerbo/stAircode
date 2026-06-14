@@ -98,6 +98,9 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
   const [country,     setCountry]     = useState('Canada')
   const [lat,         setLat]         = useState<number|null>(null)
   const [lon,         setLon]         = useState<number|null>(null)
+  const [userLat,     setUserLat]     = useState<number|null>(null)  // device GPS
+  const [userLon,     setUserLon]     = useState<number|null>(null)
+  const [offSiteDismissed, setOffSiteDismissed] = useState(false)
   const [inspDate,    setInspDate]    = useState(new Date().toISOString().slice(0,10))
   const [weather,     setWeather]     = useState<WeatherCondition>('fine')
   const [occupied,    setOccupied]    = useState(false)
@@ -146,6 +149,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
       navigator.geolocation.getCurrentPosition(
         async pos => {
           const { latitude, longitude } = pos.coords
+          setUserLat(latitude); setUserLon(longitude)
           setLat(latitude); setLon(longitude)
           try {
             const res  = await fetch(`/api/geo?lat=${latitude}&lon=${longitude}`)
@@ -270,7 +274,7 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
   }
 
   const canStep1 = street.trim().length > 0 && city.trim().length > 0
-  const canStep2 = buildingType && estimatedAge.trim().length > 0
+  const canStep2 = true  // Step 2 is skippable — AI scan or skip both advance
   // Pre-screening: just needs an optional name; Professional: needs inspector name
   const canStep3 = isPrescreen ? true : inspectorName.trim().length > 0
 
@@ -293,12 +297,12 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.85rem' }}>
           <button onClick={onBack} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>← Back</button>
           <div style={{ flex:1, display:'flex', justifyContent:'center' }}><NavLogo height={22} /></div>
-          <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.35)' }}>New Inspection</div>
+          <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.35)' }}>New Project</div>
         </div>
 
         {/* Step indicator */}
         <div style={{ display:'flex', gap:'0.4rem', paddingBottom:'1rem' }}>
-          {[{n:1,label:'Location'},{n:2,label:'Property'},{n:3,label:'Parties'}].map(s => (
+          {[{n:1,label:'Address'},{n:2,label:'Building'},{n:3,label:'About You'}].map(s => (
             <div key={s.n} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem', cursor: s.n < step ? 'pointer' : 'default' }}
               onClick={() => { if (s.n < step) setStep(s.n as 1|2|3) }}>
               <div style={{ width:28, height:28, borderRadius:'50%', background:step===s.n?ORANGE:step>s.n?BLUE:'rgba(255,255,255,0.12)', border:`2px solid ${step===s.n?ORANGE:step>s.n?BLUE:'rgba(255,255,255,0.2)'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.72rem', fontWeight:700, color:step>=s.n?'#fff':'rgba(255,255,255,0.4)', transition:'all 0.2s' }}>
@@ -325,14 +329,43 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
             {geoLoading && (
               <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.72rem', color:BLUE }}>
                 <div style={{ width:10, height:10, borderRadius:'50%', border:`2px solid ${BLUE}`, borderTopColor:'transparent', animation:'spin 0.7s linear infinite' }}/>
-                Locating…
+                Finding your location…
                 <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
               </div>
             )}
             {!geoLoading && geoStatus && (
               <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.72rem', color:GREEN }}>
                 <div style={{ width:7, height:7, borderRadius:'50%', background:GREEN }}/>
-                Located: {geoStatus}
+                Your location: {geoStatus}
+              </div>
+            )}
+
+            {/* Mini map — shows property pin when address has lat/lon */}
+            {lat && lon && (
+              <div style={{ borderRadius:12, overflow:'hidden', border:`1px solid ${BORDER}`, boxShadow:'0 2px 10px rgba(44,74,110,0.1)', height:160, position:'relative' }}>
+                <iframe
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.006}%2C${lat-0.004}%2C${lon+0.006}%2C${lat+0.004}&layer=mapnik&marker=${lat}%2C${lon}`}
+                  style={{ width:'100%', height:'160px', border:'none', display:'block' }}
+                  loading="lazy"
+                  title="Property location map"
+                />
+                <div style={{ position:'absolute', bottom:8, left:8, background:'rgba(10,28,46,0.82)', borderRadius:6, padding:'0.22rem 0.6rem', fontSize:'0.62rem', color:'rgba(255,255,255,0.9)', fontWeight:600, backdropFilter:'blur(4px)', pointerEvents:'none' }}>
+                  📍 {city || 'Property location'}{province ? `, ${province}` : ''}
+                </div>
+              </div>
+            )}
+
+            {/* Off-site alert — when property province differs from user GPS province */}
+            {!offSiteDismissed && lat && userLat && street.trim().length > 3 && province && city && geoStatus && !geoStatus.toLowerCase().includes(city.toLowerCase()) && (
+              <div style={{ background:'rgba(242,147,55,0.08)', border:'1.5px solid rgba(242,147,55,0.4)', borderRadius:12, padding:'0.9rem 1rem', display:'flex', gap:'0.75rem', alignItems:'flex-start' }}>
+                <span style={{ fontSize:'1.2rem', lineHeight:1, flexShrink:0 }}>📍</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'0.8rem', fontWeight:700, color:'#C4720E', marginBottom:'0.2rem' }}>Looks like you&apos;re not at the site</div>
+                  <div style={{ fontSize:'0.72rem', color:'#7A4F1A', lineHeight:1.6 }}>
+                    Your device is in <strong>{geoStatus}</strong>, but the property you&apos;re adding is in <strong>{city}, {province}</strong>. No problem — you can add a project for any location!
+                  </div>
+                </div>
+                <button onClick={() => setOffSiteDismissed(true)} style={{ background:'none', border:'none', color:'rgba(196,114,30,0.6)', fontSize:'1.1rem', cursor:'pointer', lineHeight:1, flexShrink:0, padding:0 }}>×</button>
               </div>
             )}
 
@@ -416,118 +449,69 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
           </div>
         )}
 
-        {/* ═══ STEP 2: Property ═══ */}
+        {/* ═══ STEP 2: Building — single action, AI does the rest ═══ */}
         {step === 2 && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
             <div>
-              <h2 style={{ fontSize:'1.2rem', fontWeight:700, margin:'0 0 0.2rem', color:NAVY }}>Building Details</h2>
-              <p style={{ fontSize:'0.78rem', color:'#5E7D9B', margin:0, lineHeight:1.6 }}>Photograph the building and AI will fill in the details automatically.</p>
+              <h2 style={{ fontSize:'1.2rem', fontWeight:700, margin:'0 0 0.2rem', color:NAVY }}>Tell us about the building</h2>
+              <p style={{ fontSize:'0.78rem', color:'#5E7D9B', margin:0, lineHeight:1.6 }}>
+                Snap a photo and AI will identify the building type, age, and construction materials automatically. Or skip — you can add details anytime.
+              </p>
             </div>
 
-            {/* AI Scan CTA */}
-            <div style={{ background:aiScanResult ? 'rgba(39,169,107,0.06)' : 'rgba(65,124,164,0.06)', border:`1.5px solid ${aiScanResult ? 'rgba(39,169,107,0.35)' : 'rgba(65,124,164,0.3)'}`, borderRadius:12, padding:'1rem', display:'flex', alignItems:'center', gap:'0.85rem' }}>
-              <div style={{ width:42, height:42, borderRadius:10, background:aiScanResult?'rgba(39,169,107,0.1)':'rgba(65,124,164,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <rect x="1" y="5" width="20" height="14" rx="2" stroke={aiScanResult?GREEN:BLUE} strokeWidth="1.5"/>
-                  <circle cx="11" cy="12" r="4" stroke={aiScanResult?GREEN:BLUE} strokeWidth="1.5"/>
-                  <path d="M7 5V3h8v2" stroke={aiScanResult?GREEN:BLUE} strokeWidth="1.5" strokeLinecap="round"/>
+            {/* AI scan result success */}
+            {aiScanResult && (
+              <div style={{ background:'rgba(39,169,107,0.07)', border:'1.5px solid rgba(39,169,107,0.35)', borderRadius:12, padding:'0.9rem 1rem', display:'flex', gap:'0.75rem', alignItems:'flex-start' }}>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink:0, marginTop:1 }}>
+                  <circle cx="9" cy="9" r="8" stroke={GREEN} strokeWidth="1.4"/>
+                  <path d="M5 9l3 3 5-5" stroke={GREEN} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
-              <div style={{ flex:1 }}>
-                {aiScanResult ? (
-                  <>
-                    <div style={{ fontSize:'0.82rem', fontWeight:700, color:GREEN, marginBottom:'0.1rem' }}>
-                      AI scan complete — {Math.round((aiScanResult.confidence)*100)}% confidence
-                    </div>
-                    <div style={{ fontSize:'0.68rem', color:'#5E7D9B' }}>Fields pre-filled below. Review and adjust as needed.</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize:'0.82rem', fontWeight:700, color:'#0D1E2E', marginBottom:'0.1rem' }}>AI Site Scan</div>
-                    <div style={{ fontSize:'0.68rem', color:'#5E7D9B' }}>Photograph the building — AI fills in all construction details</div>
-                  </>
-                )}
-              </div>
-              <button onClick={() => setShowAIScan(true)}
-                style={{ padding:'0.55rem 0.9rem', background:aiScanResult?`rgba(39,169,107,0.12)`:`rgba(65,124,164,0.12)`, border:`1px solid ${aiScanResult?'rgba(39,169,107,0.35)':'rgba(65,124,164,0.35)'}`, borderRadius:8, fontSize:'0.75rem', fontWeight:700, color:aiScanResult?GREEN:BLUE, cursor:'pointer', whiteSpace:'nowrap' as const }}>
-                {aiScanResult ? 'Rescan' : 'Scan →'}
-              </button>
-            </div>
-
-            {/* Confidence badge */}
-            {aiConfidence != null && (
-              <div style={{ fontSize:'0.68rem', color:'#5E7D9B', background:'rgba(39,169,107,0.05)', border:'1px solid rgba(39,169,107,0.15)', borderRadius:7, padding:'0.4rem 0.75rem' }}>
-                AI pre-filled all fields below (confidence: {Math.round(aiConfidence*100)}%). Edit any field that needs correction.
+                <div>
+                  <div style={{ fontSize:'0.82rem', fontWeight:700, color:'#1A7A50', marginBottom:'0.15rem' }}>AI scan complete — {Math.round((aiScanResult.confidence)*100)}% confidence</div>
+                  <div style={{ fontSize:'0.7rem', color:'#5E7D9B', lineHeight:1.5 }}>
+                    {buildingType.replace(/_/g,' ').replace(/w/g, c => c.toUpperCase())}
+                    {estimatedAge ? ` · ${estimatedAge}` : ''}
+                    {wallConstruction !== 'unknown' ? ` · ${wallConstruction.replace(/_/g,' ')}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => setShowAIScan(true)} style={{ marginLeft:'auto', padding:'0.3rem 0.65rem', background:'none', border:`1px solid rgba(39,169,107,0.4)`, borderRadius:7, fontSize:'0.68rem', fontWeight:700, color:GREEN, cursor:'pointer', flexShrink:0 }}>Rescan</button>
               </div>
             )}
 
-            <Field label="Building Type" required>
-              <select value={buildingType} onChange={e => setBuildingType(e.target.value as BuildingType)} style={selectStyle()}>
-                <option value="single_storey_residential">Single Storey Residential</option>
-                <option value="two_storey_residential">Two Storey Residential</option>
-                <option value="semi_detached">Semi-Detached</option>
-                <option value="townhouse">Townhouse</option>
-                <option value="multi_unit_residential">Multi-Unit Residential</option>
-                <option value="commercial">Commercial</option>
-                <option value="industrial">Industrial</option>
-                <option value="mixed_use">Mixed Use</option>
-                <option value="other">Other</option>
-              </select>
-            </Field>
+            {/* Single main CTA card */}
+            {!aiScanResult && (
+              <button
+                onClick={() => setShowAIScan(true)}
+                style={{ width:'100%', padding:'1.5rem 1rem', background:'#fff', border:`1.5px solid ${BLUE}`, borderRadius:16, display:'flex', flexDirection:'column', alignItems:'center', gap:'0.75rem', cursor:'pointer', boxShadow:'0 4px 18px rgba(65,124,164,0.15)', transition:'transform 0.1s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.transform='translateY(-1px)'}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.transform='none'}>
+                <div style={{ width:56, height:56, borderRadius:14, background:'rgba(65,124,164,0.1)', border:`1.5px solid rgba(65,124,164,0.25)`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="6" width="20" height="15" rx="2" stroke={BLUE} strokeWidth="1.5"/>
+                    <circle cx="12" cy="13" r="4" stroke={BLUE} strokeWidth="1.5"/>
+                    <path d="M8 6V4h8v2" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M18 10h1.5" stroke={ORANGE} strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:'1rem', fontWeight:700, color:NAVY, marginBottom:'0.2rem' }}>AI Site Scan</div>
+                  <div style={{ fontSize:'0.75rem', color:'#5E7D9B', lineHeight:1.5 }}>Take or upload a photo — AI identifies building type, age, materials, and construction details</div>
+                </div>
+                <div style={{ fontSize:'0.72rem', color:BLUE, fontWeight:600, padding:'0.3rem 0.9rem', background:'rgba(65,124,164,0.08)', borderRadius:7, border:`1px solid rgba(65,124,164,0.2)` }}>
+                  Tap to scan or upload a photo →
+                </div>
+              </button>
+            )}
 
-            <Field label="Estimated Building Age" required>
-              <input type="text" value={estimatedAge} onChange={e => setEstimatedAge(e.target.value)} id="estimated-age" name="estimated-age" placeholder="e.g. Approx. 1970s–1980s" style={inputStyle()}/>
-            </Field>
-
-            <SectionHeading>Construction Materials</SectionHeading>
-
-            <Field label="External Wall Construction">
-              <select value={wallConstruction} onChange={e => setWallConstruction(e.target.value)} style={selectStyle()}>
-                <option value="unknown">Unknown / Not yet inspected</option>
-                <option value="brick_veneer">Brick Veneer</option>
-                <option value="double_brick">Double Brick</option>
-                <option value="timber_frame">Timber Frame / Wood Frame</option>
-                <option value="concrete_block">Concrete Block (CMU)</option>
-                <option value="icf">ICF (Insulated Concrete Form)</option>
-                <option value="steel_frame">Steel Frame</option>
-                <option value="other">Other</option>
-              </select>
-            </Field>
-
-            <Field label="Roof Covering">
-              <select value={roofCovering} onChange={e => setRoofCovering(e.target.value)} style={selectStyle()}>
-                <option value="unknown">Unknown / Not yet inspected</option>
-                <option value="concrete_tiles">Concrete Tiles</option>
-                <option value="clay_tiles">Clay Tiles</option>
-                <option value="metal_deck">Metal Deck / Colorbond / Standing Seam</option>
-                <option value="asphalt_shingles">Asphalt Shingles</option>
-                <option value="flat_membrane">Flat / Membrane</option>
-                <option value="fibreglass">Fibreglass</option>
-                <option value="other">Other</option>
-              </select>
-            </Field>
-
-            <Field label="Footings & Foundation">
-              <select value={footingType} onChange={e => setFootingType(e.target.value)} style={selectStyle()}>
-                <option value="unknown">Unknown</option>
-                <option value="concrete_slab">Concrete Footings & Slab</option>
-                <option value="piers_stumps">Piers / Stumps</option>
-                <option value="strip_footing">Strip Footing</option>
-              </select>
-            </Field>
-
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              <Field label="Internal Walls">
-                <input type="text" value={internalWalls} onChange={e => setInternalWalls(e.target.value)} id="internal-walls" name="internal-walls" placeholder="Plasterboard" style={inputStyle()}/>
-              </Field>
-              <Field label="Windows">
-                <input type="text" value={windows} onChange={e => setWindows(e.target.value)} id="windows" name="windows" placeholder="Aluminium double-hung" style={inputStyle()}/>
-              </Field>
+            {/* Skip option */}
+            <div style={{ textAlign:'center' }}>
+              <button
+                onClick={() => { setEstimatedAge('Unknown'); setStep(3) }}
+                style={{ background:'none', border:'none', color:'#9DB4C5', fontSize:'0.75rem', cursor:'pointer', padding:'0.4rem 0.75rem', textDecoration:'underline', textDecorationColor:'rgba(147,180,197,0.4)', fontFamily:'inherit' }}>
+                Skip — I&apos;ll fill in details later
+              </button>
+              <div style={{ fontSize:'0.62rem', color:'rgba(147,180,197,0.7)', marginTop:'0.2rem' }}>Building details can be added or updated any time inside the project</div>
             </div>
-
-            <Field label="Inspection Purpose">
-              <input type="text" value={purposeNote} onChange={e => setPurposeNote(e.target.value)} id="purpose" name="purpose" placeholder="Pre-purchase building inspection" style={inputStyle()}/>
-            </Field>
           </div>
         )}
 

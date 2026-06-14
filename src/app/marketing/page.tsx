@@ -10,7 +10,7 @@ import Image from 'next/image'
 import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
 import PhoneMockup from "./PhoneMockup"
-import LocationDemo from "./LocationDemo"
+import CodeHelper from '@/app/components/CodeHelper'
 
 
 export default function MarketingPage() {
@@ -151,7 +151,7 @@ export default function MarketingPage() {
     },
     {
       q: 'Which building codes does stAIrcode check against?',
-      a: 'stAIrcode automatically detects your location and applies the appropriate code: OBC 2024 (Ontario), NBC 2020 (other Canadian provinces), QBC 2020 (Quebec), BCBC 2024 (BC), IBC 2021 (United States), and others. The code used is shown on every report.',
+      a: 'stAIrcode automatically detects your location and loads the applicable code. In BC, this means BCBC 2024 — including Energy Step Code tiers (RS-1 through RS-4), mandatory radon gas rough-in piping, solar-ready water heater rough-in, and zoning-specific requirements updated in the 2024 cycle. For Ontario: OBC 2024. For Quebec: QBC 2020. For other Canadian provinces: NBC 2020. For US jurisdictions: IBC 2021. The code version and jurisdiction are displayed on every report.',
     },
     {
       q: 'How accurate are the measurements?',
@@ -257,7 +257,7 @@ export default function MarketingPage() {
       ══════════════════════════════════════════════ */}
       <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid #E2EAF0', padding: '1rem 1.25rem', background: '#F7FAFC' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-          {['Computer Vision Measurement', 'Augmented Reality Guidance', 'Location-Specific Code Analysis', 'Field-Generated PDF Reports', 'Direct Email Delivery'].map(label => (
+          {['OBC 2024 · BCBC 2024 · QBC 2020 · IBC 2021', 'BC Energy Step Codes RS-1 to RS-4', 'Radon & Solar Rough-in (BC 2024)', 'Field-Generated PDF Reports', 'Direct Email Delivery'].map(label => (
             <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 600, color: '#5E7D9B', whiteSpace: 'nowrap' }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#27A96B', flexShrink: 0, display: 'inline-block' }} />
               {label}
@@ -383,30 +383,40 @@ export default function MarketingPage() {
       <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-          {/* Animated phone demo — location → codes → start scan */}
-          <LocationDemo />
+          {/* Image first */}
+          <div style={{ marginBottom: '3rem' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero_app_scan.jpg"
+              alt="stAIrcode app scanning building — live building code compliance measurement in progress"
+              style={{ width: '100%', borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 32px rgba(44,74,110,0.18)', border: '1px solid rgba(44,90,122,0.15)', display: 'block' }}
+            />
+          </div>
 
-          {/* Heading below phone */}
-          <div className={styles.sectionLabel}>How It Works</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Three steps to Building Code Compliance</h2>
+          {/* Heading below image */}
+          <div className={styles.sectionLabel}>Why It Matters</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>The requirements that get missed aren&apos;t the obvious ones</h2>
+          <p style={{ fontSize: '0.95rem', color: '#5E7D9B', lineHeight: 1.75, marginBottom: '2.5rem', maxWidth: 680 }}>
+            Modern building codes — especially in BC, Ontario, and Quebec — have grown significantly more complex. Energy step codes, mandatory rough-ins, radon mitigation, and zoning-specific requirements change frequently and vary by jurisdiction. stAIrcode is built to surface exactly those details while you&apos;re still on site.
+          </p>
 
           {/* Steps stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {[
               {
                 n: '1',
-                title: 'AI-Vision guides you step by step',
-                body: 'Open the app and select the compliance module. AI-Vision uses your smartphone camera to guide each measurement — no tape measure, no technical knowledge, no specialized equipment required.',
+                title: 'Jurisdiction-specific code requirements, loaded automatically',
+                body: 'stAIrcode detects your location and loads the applicable code — BCBC 2024 for BC (including Energy Step Code tiers RS-1 through RS-4), OBC 2024 for Ontario, QBC 2020 for Quebec, and IBC 2021 for US jurisdictions. BC\'s 2024 updates — mandatory radon gas rough-in, solar-ready water heater piping, and energy performance tier requirements — are built in.',
               },
               {
                 n: '2',
-                title: 'Every dimension checked against your local building code in real time',
-                body: 'stAIrcode automatically extracts measurements and cross-references each one against your location-specific building code — delivering instant pass/fail feedback on site.',
+                title: 'AI catches what\'s easy to overlook under time pressure on site',
+                body: 'Inspecting a building while managing trades, schedules, and documentation is where code requirements get missed — not from lack of knowledge but from the volume of detail. stAIrcode\'s AI vision reads your photos, extracts measurements, and cross-references them against every applicable clause in your jurisdiction\'s code, flagging non-compliance with the specific section cited.',
               },
               {
                 n: '3',
-                title: 'Instant PDF report — photos, code citations, and full pass/fail analysis',
-                body: 'Your report includes measurement photos, code citations, and a complete pass/fail analysis ready to share with your client, architect, or contractor.',
+                title: 'A cited report you can hand to a client, contractor, or authority',
+                body: 'Your report documents each finding with measurement photos, the applicable code section, and a clear pass/fail result. It\'s structured for use in permit submissions, contractor briefings, or pre-sale disclosure — ready to email directly from the field.',
               },
             ].map(s => (
               <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
@@ -1015,6 +1025,7 @@ export default function MarketingPage() {
         </div>
       </>
     )}
+    <CodeHelper />
     </>
   )
 }

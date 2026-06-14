@@ -2,7 +2,7 @@
 /**
  * InspectionProjectList.tsx
  *
- * Project management screen — "My Inspections".
+ * Project management screen — "My Projects".
  * Shows all saved InspectionJobs from Supabase.
  * Entry point for the full building inspection workflow.
  */
@@ -236,9 +236,9 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
       }
     } catch {}
 
-    // 3. Try server (cross-device) — include email for ownership check
+    // 3. Try server (cross-device)
     try {
-      const res  = await fetch(`/api/inspection/load?id=${encodeURIComponent(id)}&email=${encodeURIComponent(userEmail)}`)
+      const res  = await fetch(`/api/inspection/load?id=${id}`)
       const data = await res.json()
       if (data.ok && data.job) { onResumeJob(data.job); return }
     } catch {}
@@ -261,11 +261,11 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
 
     // 3. Delete from server — retry once on failure
     try {
-      const res = await fetch(`/api/inspection/delete?id=${encodeURIComponent(id)}&email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' })
+      const res = await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Server delete failed')
     } catch {
       // Retry once
-      try { await fetch(`/api/inspection/delete?id=${encodeURIComponent(id)}&email=${encodeURIComponent(userEmail)}`, { method: 'DELETE' }) } catch {}
+      try { await fetch(`/api/inspection/delete?id=${id}`, { method: 'DELETE' }) } catch {}
     }
 
     setDeleting(null)
@@ -281,7 +281,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}><NavLogo height={22} /></div>
           <div style={{ width: 40 }} />
         </div>
-        <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.2 }}>My Inspections</h1>
+        <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.2 }}>My Projects</h1>
         <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', margin: '0.25rem 0 0' }}>Projects are saved to the server and available across sessions</p>
       </div>
 
@@ -296,7 +296,7 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
             <line x1="9" y1="5" x2="9" y2="13" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
             <line x1="5" y1="9" x2="13" y2="9" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-          Start New Inspection
+          Start New Project
         </button>
 
         {/* Error */}
@@ -322,8 +322,8 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
                 <line x1="7" y1="12" x2="13" y2="12" stroke={BLUE} strokeWidth="1.2"/>
               </svg>
             </div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0D1E2E', marginBottom: '0.35rem' }}>No inspections yet</div>
-            <div style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.6 }}>Start a new inspection above. Projects are saved automatically and can be resumed across sessions.</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0D1E2E', marginBottom: '0.35rem' }}>No projects yet</div>
+            <div style={{ fontSize: '0.78rem', color: '#5E7D9B', lineHeight: 1.6 }}>Start a new project above. Projects are saved automatically and can be resumed across sessions.</div>
           </div>
         )}
 
