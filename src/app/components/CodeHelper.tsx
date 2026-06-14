@@ -83,6 +83,26 @@ export default function CodeHelper() {
     return () => clearTimeout(t2)
   }, [])
 
+  // Listen for external open requests (e.g. from DrawingsReviewModule on upload issues)
+  useEffect(() => {
+    function handleExternalOpen(e: Event) {
+      const detail = (e as CustomEvent).detail
+      if (detail?.message) {
+        const injected: Message = {
+          id:      `ext-${Date.now()}`,
+          role:    'assistant',
+          content: detail.message,
+        }
+        setMessages(prev => [...prev, injected])
+      }
+      setDismissed(false)
+      setOpen(true)
+      setBadge(false)
+    }
+    window.addEventListener('sc:helper:open', handleExternalOpen)
+    return () => window.removeEventListener('sc:helper:open', handleExternalOpen)
+  }, [])
+
   // Show badge when closed and a new message arrives
   useEffect(() => {
     if (!open && messages.length > 1) setBadge(true)

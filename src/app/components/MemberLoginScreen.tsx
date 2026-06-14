@@ -29,19 +29,21 @@ const BG     = '#F0F4F8'
 const BORDER = 'rgba(44,90,122,0.15)'
 
 type AuthTab   = 'password' | 'magic'
-type FlowStep  = 'entry' | 'otp' | 'forgot' | 'forgot_sent' | 'set_password'
+type FlowStep  = 'entry' | 'otp' | 'forgot' | 'forgot_sent' | 'signup' | 'signup_confirm'
 
 export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
-  const [tab,      setTab]      = useState<AuthTab>('password')
-  const [step,     setStep]     = useState<FlowStep>('entry')
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [newPwd,   setNewPwd]   = useState('')
-  const [showPwd,  setShowPwd]  = useState(false)
-  const [digits,   setDigits]   = useState(['','','','','',''])
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
-  const [info,     setInfo]     = useState('')
+  const [tab,         setTab]         = useState<AuthTab>('password')
+  const [step,        setStep]        = useState<FlowStep>('entry')
+  const [email,       setEmail]       = useState('')
+  const [password,    setPassword]    = useState('')
+  const [confirmPwd,  setConfirmPwd]  = useState('')
+  const [newPwd,      setNewPwd]      = useState('')
+  const [showPwd,     setShowPwd]     = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [digits,      setDigits]      = useState(['','','','','',''])
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
+  const [info,        setInfo]        = useState('')
   const digitRefs = useRef<(HTMLInputElement | null)[]>([])
   const emailRef  = useRef<HTMLInputElement>(null)
   const pwdRef    = useRef<HTMLInputElement>(null)
@@ -121,6 +123,59 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
     if (data.user) saveAndAuth(data.user)
   }
 
+  // ── Sign Up (new account with email + password) ─────────────────────────────
+  async function handleSignUp() {
+    if (!email.trim())    { setError('Enter your email address'); return }
+    if (!password)        { setError('Choose a password'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (password !== confirmPwd) { setError("Passwords don't match — please check and try again"); return }
+    setError(''); setLoading(true)
+    const sb = getSupabase()
+    if (!sb) { setError('Auth not configured'); setLoading(false); return }
+    const { data, error: err } = await sb.auth.signUp({
+      email:    email.trim().toLowerCase(),
+      password,
+      options:  { emailRedirectTo: `${window.location.origin}/?signin=1&goto=projects` },
+    })
+    if (err) { setError(err.message); setLoading(false); return }
+
+    const userEmail = email.trim().toLowerCase()
+
+    // Grant 7-day free trial immediately on signup
+    let trialEnd: string | null = null
+    let daysLeft = 7
+    let limitedTrial = false
+    try {
+      const grantRes = await fetch('/api/trial/grant', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: userEmail }),
+      })
+      const grantData = await grantRes.json()
+      if (grantData.ok) {
+        trialEnd    = grantData.trialEnd
+        daysLeft    = grantData.daysLeft ?? 7
+        limitedTrial = !!grantData.limited
+        // Store trial access in localStorage for local check
+        try {
+          localStorage.setItem('sc_beta_access', '1')
+          if (trialEnd) localStorage.setItem('sc_trial_end', trialEnd)
+          sessionStorage.setItem('sc_beta_access', '1')
+        } catch {}
+      }
+    } catch { /* trial grant failed — still proceed with signup */ }
+
+    setLoading(false)
+
+    if (data.user && data.session) {
+      // Signed in immediately (email confirm OFF in Supabase)
+      saveAndAuth(data.user)
+    } else {
+      // Email confirmation required — show confirm screen
+      setStep('signup_confirm')
+    }
+  }
+
   // ── Forgot password ─────────────────────────────────────────────────────────
   async function handleForgotPassword() {
     if (!email.trim()) { setError('Enter your email address first'); return }
@@ -190,7 +245,7 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
 
   function switchTab(t: AuthTab) {
     setTab(t); setStep('entry'); setError(''); setInfo('')
-    setDigits(['','','','','','']); setPassword('')
+    setDigits(['','','','','','']); setPassword(''); setConfirmPwd('')
   }
 
   // ── Shared input style ──────────────────────────────────────────────────────
@@ -238,6 +293,22 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
                 Check <strong style={{ color:NAVY }}>{email}</strong> for a password reset link
               </div>
             </>
+          ) : step === 'signup' ? (
+            <>
+              <div style={{ fontSize:'1.05rem', fontWeight:700, color:NAVY, marginTop:'0.35rem' }}>Create your account</div>
+              <div style={{ fontSize:'0.78rem', color:'#5E7D9B', marginTop:'0.2rem' }}>Set up your email and password to get started</div>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginTop:'0.5rem', background:'rgba(39,169,107,0.1)', border:'1px solid rgba(39,169,107,0.3)', borderRadius:20, padding:'0.25rem 0.75rem' }}>
+                <span style={{ fontSize:'0.75rem' }}>🎁</span>
+                <span style={{ fontSize:'0.72rem', fontWeight:700, color:'#1A7A50' }}>Includes 7-day free trial — no credit card required</span>
+              </div>
+            </>
+          ) : step === 'signup_confirm' ? (
+            <>
+              <div style={{ fontSize:'1.05rem', fontWeight:700, color:NAVY, marginTop:'0.35rem' }}>Check your email</div>
+              <div style={{ fontSize:'0.78rem', color:'#5E7D9B', marginTop:'0.2rem' }}>
+                We sent a confirmation link to <strong style={{ color:NAVY }}>{email}</strong>
+              </div>
+            </>
           ) : (
             <>
               <div style={{ fontSize:'1.05rem', fontWeight:700, color:NAVY, marginTop:'0.35rem' }}>Welcome back</div>
@@ -258,8 +329,87 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
           </div>
         )}
 
-        {/* ── Forgot password sent ── */}
-        {step === 'forgot_sent' ? (
+        {/* ── Email confirmed / signup confirmation ── */}
+        {step === 'signup_confirm' ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+            <div style={{ background:'rgba(39,169,107,0.07)', border:`1px solid rgba(39,169,107,0.25)`, borderRadius:12, padding:'1rem', textAlign:'center' }}>
+              <div style={{ fontSize:'1.5rem', marginBottom:'0.4rem' }}>📬</div>
+              <div style={{ fontSize:'0.82rem', color:'#1A7A50', lineHeight:1.65 }}>
+                A confirmation link has been sent to <strong>{email}</strong>. Click the link in your email to activate your account, then come back here to sign in.
+              </div>
+            </div>
+            <button onClick={() => { setStep('entry'); setError(''); setConfirmPwd(''); setPassword('') }}
+              style={{ width:'100%', padding:'0.85rem', background:'none', border:`1.5px solid ${BORDER}`, borderRadius:12, color:NAVY, fontWeight:600, fontSize:'0.88rem', cursor:'pointer', fontFamily:'inherit' }}>
+              ← Back to sign in
+            </button>
+          </div>
+
+        ) : step === 'signup' ? (
+          /* ── Sign Up form ── */
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
+
+            {/* Email */}
+            <div>
+              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.3rem' }}>Email address</div>
+              <input type="email" value={email}
+                onChange={e => { setEmail(e.target.value); setError('') }}
+                placeholder="your@email.com" autoComplete="email"
+                style={inp(!!email)}/>
+            </div>
+
+            {/* Password */}
+            <div>
+              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.3rem' }}>
+                Password <span style={{ fontWeight:400, color:'#9DB4C5' }}>(min. 8 characters)</span>
+              </div>
+              <div style={{ position:'relative' }}>
+                <input
+                  type={showPwd ? 'text' : 'password'} value={password}
+                  onChange={e => { setPassword(e.target.value); setError('') }}
+                  placeholder="Choose a password" autoComplete="new-password"
+                  style={{ ...inp(!!password), paddingRight:'2.75rem' }}/>
+                <button type="button" onClick={() => setShowPwd(s => !s)}
+                  style={{ position:'absolute', right:'0.8rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#9DB4C5', fontSize:'0.8rem', padding:0, lineHeight:1 }}>
+                  {showPwd ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm password */}
+            <div>
+              <div style={{ fontSize:'0.72rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.3rem' }}>Confirm password</div>
+              <div style={{ position:'relative' }}>
+                <input
+                  type={showConfirm ? 'text' : 'password'} value={confirmPwd}
+                  onChange={e => { setConfirmPwd(e.target.value); setError('') }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSignUp() }}
+                  placeholder="Repeat your password" autoComplete="new-password"
+                  style={{ ...inp(!!confirmPwd), paddingRight:'2.75rem',
+                    borderColor: confirmPwd && password && confirmPwd !== password ? '#E84545'
+                               : confirmPwd && password && confirmPwd === password ? '#27A96B'
+                               : undefined }}/>
+                <button type="button" onClick={() => setShowConfirm(s => !s)}
+                  style={{ position:'absolute', right:'0.8rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#9DB4C5', fontSize:'0.8rem', padding:0, lineHeight:1 }}>
+                  {showConfirm ? '🙈' : '👁'}
+                </button>
+              </div>
+              {confirmPwd && password && confirmPwd === password && (
+                <div style={{ fontSize:'0.68rem', color:'#27A96B', marginTop:'0.25rem' }}>✓ Passwords match</div>
+              )}
+            </div>
+
+            <button onClick={handleSignUp} disabled={loading || !email.trim() || !password || !confirmPwd}
+              style={{ width:'100%', padding:'0.9rem', background: loading || !email.trim() || !password || !confirmPwd ? 'rgba(242,147,55,0.3)' : `linear-gradient(135deg,${ORANGE},#C4721E)`, border:'none', borderRadius:12, color:'#fff', fontWeight:700, fontSize:'0.92rem', cursor: loading || !email.trim() || !password || !confirmPwd ? 'default':'pointer', boxShadow:'0 3px 12px rgba(242,147,55,0.3)', transition:'all 0.15s' }}>
+              {loading ? 'Creating account…' : 'Create Account →'}
+            </button>
+
+            <button onClick={() => { setStep('entry'); setError(''); setConfirmPwd(''); setPassword('') }}
+              style={{ background:'none', border:'none', color:'#9DB4C5', fontSize:'0.78rem', cursor:'pointer', fontFamily:'inherit', textAlign:'center' as const }}>
+              ← Already have an account? Sign in
+            </button>
+          </div>
+
+        ) : step === 'forgot_sent' ? (
           <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
             <div style={{ background:'rgba(39,169,107,0.07)', border:`1px solid rgba(39,169,107,0.25)`, borderRadius:12, padding:'1rem', textAlign:'center' }}>
               <div style={{ fontSize:'1.5rem', marginBottom:'0.4rem' }}>📬</div>
@@ -378,13 +528,13 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
           </>
         )}
 
-        {/* Not a member */}
-        {step !== 'forgot_sent' && step !== 'otp' && (
+        {/* Not a member / Sign up */}
+        {step !== 'forgot_sent' && step !== 'otp' && step !== 'signup' && step !== 'signup_confirm' && (
           <div style={{ textAlign:'center', paddingTop:'0.5rem', borderTop:`1px solid ${BORDER}` }}>
             <span style={{ fontSize:'0.75rem', color:'#9DB4C5' }}>Don&apos;t have an account?{' '}</span>
-            <button onClick={() => onNotAMember ? onNotAMember() : window.location.href = '/marketing'}
+            <button onClick={() => { setStep('signup'); setError(''); setPassword(''); setConfirmPwd('') }}
               style={{ background:'none', border:'none', color:ORANGE, fontWeight:700, fontSize:'0.75rem', cursor:'pointer', fontFamily:'inherit', padding:0 }}>
-              View pricing →
+              Sign Up →
             </button>
           </div>
         )}

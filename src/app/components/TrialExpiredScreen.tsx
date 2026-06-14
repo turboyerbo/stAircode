@@ -59,7 +59,7 @@ export default function TrialExpiredScreen({ onSubscribe, onSignOut, userEmail }
 
       {/* Headline */}
       <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-        Your 30-day free trial has ended
+        Your 7-day free trial has ended
       </div>
       <h1 style={{ fontSize: 'clamp(1.6rem, 5vw, 2.2rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '1rem', maxWidth: 400 }}>
         Continue with stAIrcode

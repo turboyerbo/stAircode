@@ -375,7 +375,7 @@ function checkTrialAccess(): boolean {
 function getTrialDaysLeft(): number {
   try {
     const trialEnd = localStorage.getItem('sc_trial_end')
-    if (!trialEnd) return 30
+    if (!trialEnd) return 7
     const ms = new Date(trialEnd).getTime() - Date.now()
     return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
   } catch { return 0 }
