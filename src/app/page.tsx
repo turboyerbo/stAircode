@@ -11,6 +11,8 @@ import { initAnalytics, identifyUser, resetUser, Analytics } from '@/lib/analyti
 import { getSupabase } from '@/lib/supabase-client'
 import HelpScreen                            from './components/HelpScreen'
 import SettingsScreen                        from './components/SettingsScreen'
+import WelcomeModal                          from './components/WelcomeModal'
+import GlobalCodeAssistant                   from './components/GlobalCodeAssistant'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ReportScreen                          from './components/ReportScreen'
 import PaymentSuccessScreen                  from './components/PaymentSuccessScreen'
@@ -30,7 +32,6 @@ import InspectionPaywall                    from './components/InspectionPaywall
 import TrialExpiredScreen                   from './components/TrialExpiredScreen'
 import type { ProjectType }                 from '@/lib/inspection-types'
 import type { InspectionJob }               from '@/lib/inspection-types'
-import CodeHelper                           from './components/CodeHelper'
 
 const C = {
   dark:'#EEF3F9', card:'#FFFFFF', blue:'#007FFF', orange:'#FF7F00',
@@ -71,27 +72,85 @@ const IBC:Code={ code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International 
 
 function isOntario(l:Loc){
   const p=l.province.toLowerCase(),c=l.city.toLowerCase()
-  return p.includes('ontario')||['toronto','ottawa','hamilton','london','brampton','mississauga','markham','vaughan','kitchener','windsor','kingston'].some(x=>c.includes(x))
+  return p.includes('ontario')||p==='on'||['toronto','ottawa','hamilton','london','brampton','mississauga','markham','vaughan','kitchener','windsor','kingston'].some(x=>c.includes(x))
+}
+
+function isQuebec(l:Loc){
+  const p=l.province.toLowerCase(),c=l.city.toLowerCase()
+  return p.includes('quebec')||p.includes('québec')||p==='qc'||
+    ['montreal','montréal','québec city','laval','longueuil','gatineau','sherbrooke','saguenay','lévis','terrebonne','saint-jean'].some(x=>c.includes(x))
+}
+
+function isBC(l:Loc){
+  const p=l.province.toLowerCase(),c=l.city.toLowerCase()
+  return p.includes('british columbia')||p.includes('b.c.')||p==='bc'||
+    ['vancouver','victoria','surrey','burnaby','richmond','abbotsford','kelowna','coquitlam'].some(x=>c.includes(x))
+}
+
+function isAlberta(l:Loc){
+  const p=l.province.toLowerCase(),c=l.city.toLowerCase()
+  return p.includes('alberta')||p==='ab'||['calgary','edmonton','red deer','lethbridge','st. albert'].some(x=>c.includes(x))
 }
 
 function detectCode(l:Loc):Code{
   const cc  = l.countryCode.toUpperCase()
-  const prov = l.province.toLowerCase()
   const city = l.city.toLowerCase()
 
   // ── Canada ────────────────────────────────────────────────────────────────
-  if(isOntario(l))
-    return{code:'OBC',label:'OBC 2024',ref:'s.9.8.4',reason:'Ontario Building Code',
-      links:[{label:'OBC',url:'https://www.ontario.ca/laws/statute/92b23'},{label:'Toronto Bylaw',url:'https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/'},{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}],
-      limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+  if(cc==='CA'||['ontario','on','quebec','québec','qc','british columbia','bc','alberta','ab',
+    'nova scotia','ns','new brunswick','nb','manitoba','mb','saskatchewan','sk',
+    'newfoundland','nl','pei','prince edward','yukon','yk','northwest','nt','nunavut','nu']
+    .some(p=>l.province.toLowerCase().includes(p))||isOntario(l)||isQuebec(l)||isBC(l)){
 
-  if(cc==='CA'){
-    if(prov.includes('quebec')||city.includes('montreal')||city.includes('québec'))
-      return{code:'QBC',label:'QBC 2020',ref:'Art.3.4.6',reason:'Quebec Building Code',
-        limits:{riserMin:125,riserMax:200,runMin:230,widthMin:900,headMin:1950,guardMin:900}}
-    if(prov.includes('british columbia')||prov.includes('b.c.')||city.includes('vancouver'))
+    if(isOntario(l)){
+      const isToronto = city.includes('toronto')
+      return{code:'OBC',label:'OBC 2024',ref:'s.9.8.4',reason:'Ontario Building Code',
+        links:[
+          {label:'OBC 2024',url:'https://www.ontario.ca/laws/statute/92b23'},
+          ...(isToronto?[{label:'Toronto Bylaw',url:'https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/'},{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}]:[{label:'AODA',url:'https://www.ontario.ca/laws/statute/05a11'}]),
+        ],
+        limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+    }
+
+    if(isQuebec(l)){
+      const isMontreal = city.includes('montreal')||city.includes('montréal')
+      const isQCCity   = city.includes('québec')||city.includes('quebec city')
+      const isLaval    = city.includes('laval')
+      const isGatineau = city.includes('gatineau')
+      return{code:'QBC',label:'CCQ 2015 (Québec)',ref:'Art.3.4.6 / RBQ',reason:'Code de construction du Québec',
+        links:[
+          {label:'CCQ / RBQ',url:'https://www.rbq.gouv.qc.ca/acces-aux-lois-et-reglements/code-de-construction.html'},
+          {label:'NBC Base',url:'https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html'},
+          ...(isMontreal?[{label:'Règl. Montréal 01-283',url:'https://reglements.ville.montreal.qc.ca/CommonPDF/Procs/E0101/2003/01-283.pdf'}]:[]),
+          ...(isQCCity?[{label:'Règl. Ville de Québec',url:'https://www.ville.quebec.qc.ca/citoyens/propriete/reglementation.aspx'}]:[]),
+          ...(isLaval?[{label:'Règl. Laval',url:'https://www.laval.ca/Pages/Fr/Citoyens/reglementation-urbanisme.aspx'}]:[]),
+          ...(isGatineau?[{label:'Règl. Gatineau',url:'https://gatineau.ca/reglements'}]:[]),
+        ],
+        limits:{riserMin:125,riserMax:200,runMin:230,nosingMin:15,nosingMax:50,widthMin:900,headMin:1950,guardMin:900}}
+    }
+
+    if(isBC(l)){
+      const isVancouver = city.includes('vancouver')
       return{code:'BCBC',label:'BCBC 2024',ref:'9.8.4',reason:'BC Building Code',
+        links:[
+          {label:'BCBC 2024',url:'https://www.bccodes.ca/building-code.html'},
+          ...(isVancouver?[{label:'Vancouver Building Bylaw',url:'https://bylaws.vancouver.ca/2016c/vb2014.pdf'}]:[]),
+        ],
+        limits:{riserMin:125,riserMax:200,runMin:235,nosingMin:15,nosingMax:25,widthMin:860,headMin:1950,guardMin:900}}
+    }
+
+    if(isAlberta(l)){
+      const isCalgary  = city.includes('calgary')
+      const isEdmonton = city.includes('edmonton')
+      return{code:'NBC',label:'ABC 2019 (Alberta)',ref:'9.8.4',reason:'Alberta Building Code',
+        links:[
+          {label:'ABC 2019',url:'https://www.alberta.ca/alberta-building-code.aspx'},
+          ...(isCalgary?[{label:'Calgary Bylaw',url:'https://www.calgary.ca/pda/pd/land-use-planning-and-policy/land-use-bylaw-1p2007.html'}]:[]),
+          ...(isEdmonton?[{label:'Edmonton Zoning Bylaw',url:'https://webdocs.edmonton.ca/InfraPlan/zoningbylaw/ZoningBylaw.htm'}]:[]),
+        ],
         limits:{riserMin:125,riserMax:200,runMin:235,widthMin:860,headMin:1950,guardMin:900}}
+    }
+
     // All other Canadian provinces — NBC
     return{code:'NBC',label:'NBC 2020',ref:'9.8.4',reason:'National Building Code of Canada',
       links:[{label:'NBC 2020',url:'https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html'}],
@@ -100,7 +159,6 @@ function detectCode(l:Loc):Code{
 
   // ── United States ────────────────────────────────────────────────────────
   if(cc==='US'){
-    // NY, CA, TX, FL + most states use IBC for commercial, IRC for residential
     return{code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',
       links:[{label:'IBC 2021',url:'https://codes.iccsafe.org/content/IBC2021'}],
       limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
@@ -358,32 +416,115 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
-// ── Trial access helper ────────────────────────────────────────────────────
-// Returns true if the user has active trial OR paid subscription.
-// A trial is active if sc_beta_access='1' AND sc_trial_end is in the future
-// (or sc_trial_end was never set, for legacy users).
+// ── Trial access system ────────────────────────────────────────────────────
+// Source of truth is Supabase (via /api/trial/start and /api/trial/status).
+// localStorage is a cache — always overwritten by server response.
+// This means the trial cannot be reset by clearing localStorage.
+const TRIAL_DAYS = 7
+
+function getTrialStart(): Date | null {
+  try {
+    const s = localStorage.getItem('sc_trial_start')
+    if (!s) return null
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? null : d
+  } catch { return null }
+}
+
+function getTrialEnd(): Date | null {
+  try {
+    const s = localStorage.getItem('sc_trial_end')
+    if (!s) return null
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? null : d
+  } catch { return null }
+}
+
+/**
+ * Call on every sign-in AND on app load. Hits the server to start or confirm
+ * the trial. The server is the source of truth — it returns the authoritative
+ * trial_end and an 'expired' flag that localStorage cannot override.
+ *
+ * Writes a tamper-evident 'sc_trial_expired' flag when the server says expired,
+ * so clearing sc_trial_start alone cannot grant a fresh trial.
+ */
+async function ensureTrialStarted(email: string): Promise<{ expired: boolean; daysLeft: number } | null> {
+  try {
+    const res = await fetch('/api/trial/start', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data.ok) {
+      // Sync authoritative server values to localStorage cache
+      localStorage.setItem('sc_trial_start', data.trialStart)
+      localStorage.setItem('sc_trial_end',   data.trialEnd)
+      localStorage.setItem('sc_trial_email', email)
+      // Hard expiry flag — server-authoritative, blocks access regardless of other cache
+      if (data.expired) localStorage.setItem('sc_trial_expired', '1')
+      else              localStorage.removeItem('sc_trial_expired')
+      return { expired: !!data.expired, daysLeft: data.daysLeft ?? 0 }
+    }
+  } catch {
+    // Network error — keep existing cache; only seed a NEW trial if none exists
+    // AND the user was never marked expired (prevents reset-by-clearing abuse)
+    const expired = localStorage.getItem('sc_trial_expired') === '1'
+    if (!localStorage.getItem('sc_trial_start') && !expired) {
+      const now = new Date().toISOString()
+      const end = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString()
+      localStorage.setItem('sc_trial_start', now)
+      localStorage.setItem('sc_trial_end',   end)
+      localStorage.setItem('sc_trial_email', email)
+    }
+  }
+  return null
+}
+
+/**
+ * Returns true only if the user has an active (non-expired) trial.
+ * Checks the hard expiry flag first, then the trial_end date.
+ */
 function checkTrialAccess(): boolean {
   try {
-    const hasBeta = localStorage.getItem('sc_beta_access') === '1'
-    if (!hasBeta) return false
-    const trialEnd = localStorage.getItem('sc_trial_end')
-    if (!trialEnd) return true  // Legacy users without expiry date — grant access
-    return new Date() < new Date(trialEnd)
+    // Server-authoritative hard block
+    if (localStorage.getItem('sc_trial_expired') === '1') return false
+    const end = getTrialEnd()
+    if (end) return Date.now() < end.getTime()
+    // Fall back to start + TRIAL_DAYS if end missing
+    const start = getTrialStart()
+    if (!start) return false
+    return Date.now() - start.getTime() < TRIAL_DAYS * 24 * 60 * 60 * 1000
+  } catch { return false }
+}
+
+/** True if the user ever started a trial (so we know to show the expired screen). */
+function hasStartedTrial(): boolean {
+  try {
+    return !!localStorage.getItem('sc_trial_start') || localStorage.getItem('sc_trial_expired') === '1'
   } catch { return false }
 }
 
 function getTrialDaysLeft(): number {
   try {
-    const trialEnd = localStorage.getItem('sc_trial_end')
-    if (!trialEnd) return 7
-    const ms = new Date(trialEnd).getTime() - Date.now()
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)))
+    if (localStorage.getItem('sc_trial_expired') === '1') return 0
+    const end = getTrialEnd()
+    if (!end) {
+      const start = getTrialStart()
+      if (!start) return TRIAL_DAYS
+      const ms = start.getTime() + TRIAL_DAYS * 86400000 - Date.now()
+      return Math.max(0, Math.ceil(ms / 86400000))
+    }
+    const ms = end.getTime() - Date.now()
+    return Math.max(0, Math.ceil(ms / 86400000))
   } catch { return 0 }
 }
-// ────────────────────────────────────────────────────────────────────────────
 
 export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
+  // Bumped whenever the server trial status is refreshed — forces the gate to re-evaluate
+  const [trialTick, setTrialTick] = useState(0)
   // Splash screen — shows the AR image on first load, fades into auth
   const [splashDone, setSplashDone] = useState(false)
   // Legal disclaimer agreement — must be declared here (before any early returns)
@@ -410,16 +551,19 @@ export default function Home(){
 
     // ── Session restoration ──────────────────────────────────────────────────
     // Rule: a live Supabase session is required to be authenticated.
-    // localStorage caches profile data (name, membership tier) for instant restore.
-    // Supabase handles token refresh automatically — we just trust its session validity.
-    const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+    // localStorage is used only to cache profile data (name, membership tier)
+    // within a valid session — never as a standalone auth bypass.
+    //
+    // Sessions expire after SESSION_TTL_MS regardless of Supabase token validity,
+    // requiring the user to sign in again.
+    const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
     function isSessionExpired(): boolean {
       try {
         const stored = localStorage.getItem('sc_user')
         if (!stored) return true
         const u = JSON.parse(stored)
-        if (!u?.signedInAt) return false // no timestamp = legacy user, don't expire them
+        if (!u?.signedInAt) return true // no timestamp = old session, treat as expired
         return Date.now() - u.signedInAt > SESSION_TTL_MS
       } catch { return true }
     }
@@ -453,6 +597,9 @@ export default function Home(){
           }
           setUser(u)
           try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
+          // Refresh trial status from server — overwrites any stale localStorage cache
+          // and forces the gate to re-evaluate once the server responds
+          ensureTrialStarted(email).then(() => setTrialTick(t => t + 1))
           maybeSendWelcome(u.email, u.name)
         } else {
           // No valid session or session expired — clear any stale cache and require sign-in
@@ -513,14 +660,28 @@ export default function Home(){
       try { const s=localStorage.getItem('sc_user'); if(s) setUser(JSON.parse(s)) } catch {}
     }
   },[])
+
+  // Periodically re-check trial expiry while the app is open, so a session that
+  // crosses the 7-day boundary gets gated without needing a manual reload.
+  React.useEffect(() => {
+    if (!user) return
+    const paid = user.membership === 'subscription' || user.membership === 'pro'
+    if (paid) return
+    const iv = setInterval(() => {
+      // Re-confirm with the server, then bump tick to re-render the gate
+      ensureTrialStarted(user.email).then(() => setTrialTick(t => t + 1))
+    }, 5 * 60 * 1000) // every 5 minutes
+    return () => clearInterval(iv)
+  }, [user])
+
   function handleAuth(u:AppUser, fromMemberLogin = false){
     const authedUser = { ...u, signedInAt: Date.now() }
     setUser(authedUser)
     try{localStorage.setItem('sc_user',JSON.stringify(authedUser))}catch{}
+    // Auto-start 7-day trial on first sign-in (idempotent — server is source of truth)
+    ensureTrialStarted(authedUser.email).then(() => setTrialTick(t => t + 1))
     identifyUser(authedUser.email, { provider: authedUser.provider, membership: authedUser.membership })
     Analytics.userSignedIn(authedUser.provider === 'otp' ? 'otp' : authedUser.provider)
-    // Every sign-in lands on My Projects — no conditions.
-    // The demo screen is never the landing page for an authenticated user.
     setGotoProjects(true)
   }
 
@@ -543,10 +704,7 @@ export default function Home(){
     // ?module= launches a specific AI scan after auth — set module and go to scan_ready
     if(scanModule === 'accessibility' || scanModule === 'foundation'){
       // Store in localStorage so the app reads it after auth completes
-      try {
-        localStorage.setItem('sc_launch_module', scanModule)
-        localStorage.setItem('sc_launch_module_ts', String(Date.now()))
-      } catch {}
+      try { localStorage.setItem('sc_launch_module', scanModule) } catch {}
       window.history.replaceState({}, '', '/?signin=1')
     }
 
@@ -662,20 +820,17 @@ export default function Home(){
     try{localStorage.setItem(legalKey,'1')}catch{}
     setLegalAgreed(true)
   }}/>
-  // ── Trial expiry check — show expired screen if trial has run out ──────────
+  // ── Trial expiry check ─────────────────────────────────────────────────────
+  // trialTick is read so this re-evaluates when the server trial status resolves
+  void trialTick
   if (user) {
-    const trialBeta = (()=>{ try { return localStorage.getItem('sc_beta_access') === '1' } catch { return false }})()
-    const paid      = user.membership === 'subscription' || user.membership === 'pro'
-    if (trialBeta && !paid) {
-      // User has trial access (no paid sub) — check if it has expired
-      const trialExpired = !checkTrialAccess()
-      if (trialExpired) {
-        return <TrialExpiredScreen
-          userEmail={user.email}
-          onSubscribe={() => {/* Stripe opens in TrialExpiredScreen */}}
-          onSignOut={handleLogout}
-        />
-      }
+    const paid = user.membership === 'subscription' || user.membership === 'pro'
+    if (!paid && hasStartedTrial() && !checkTrialAccess()) {
+      return <TrialExpiredScreen
+        userEmail={user.email}
+        onSubscribe={() => {}}
+        onSignOut={handleLogout}
+      />
     }
   }
 
@@ -777,8 +932,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>(() => {
     if (initialScreen) return initialScreen
-    // Every authenticated user who reaches AppShell goes straight to My Projects.
-    // The demo 'home' screen is only reachable by explicit user action, never as a landing.
+    // The projects list IS the home screen now — always land there
     return 'inspection_projects'
   })
 
@@ -788,6 +942,18 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   }, [navigateToProjects])
 
   const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
+
+  // First-login welcome modal — show once, gated by localStorage
+  const [showWelcome, setShowWelcome] = useState(false)
+  React.useEffect(() => {
+    try {
+      if (!localStorage.getItem('sc_welcome_seen')) {
+        // Small delay so the projects list paints first
+        const t = setTimeout(() => setShowWelcome(true), 600)
+        return () => clearTimeout(t)
+      }
+    } catch {}
+  }, [])
 
   // Auto-load specific project if opened via magic link (?project=JOB_ID)
   React.useEffect(() => {
@@ -810,21 +976,11 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   const [activeModule, setActiveModule] = useState<'stair'|'foundation'|'accessibility'>('stair')
 
   // Launch specific scan if coming from /?module=accessibility or /?module=foundation
-  // Guard: only fire if the key was set within the last 60 seconds (prevents stale triggers)
   React.useEffect(() => {
     try {
       const pending = localStorage.getItem('sc_launch_module')
-      const setAt   = parseInt(localStorage.getItem('sc_launch_module_ts') ?? '0', 10)
-      const age     = Date.now() - setAt
-      // Clear any stale key regardless
-      if (age > 60000 || !pending) {
-        localStorage.removeItem('sc_launch_module')
-        localStorage.removeItem('sc_launch_module_ts')
-        return
-      }
       if (pending === 'accessibility' || pending === 'foundation') {
         localStorage.removeItem('sc_launch_module')
-        localStorage.removeItem('sc_launch_module_ts')
         setActiveModule(pending as 'accessibility'|'foundation')
         setScreen('scan_ready')
       }
@@ -989,7 +1145,6 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
       userEmail={user.email??''}
       onBack={()=>setScreen('home')}
       onAccess={()=>setScreen('inspection_projects')}
-      onSignIn={()=>{ window.location.href = '/?member=1' }}
     />
   }
   if(screen==='inspection_type')
@@ -1024,21 +1179,30 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
       setScreen('inspection_setup')
     }} onBack={()=>setScreen('inspection_projects')}/>
   if(screen==='inspection_projects')
-    return <InspectionProjectList
-      userEmail={user.email??''}
-      onBack={()=>setScreen('home')}
-      onStartNew={()=>{
-        // Always allow new projects — pre-screening doesn't require membership
-        setScreen('inspection_type')
-      }}
-      onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
-      loc={loc}
-      locLoading={locLoading}
-      code={code}
-      onGoSettings={()=>{setTab('settings');setScreen('home')}}
-      onGoHelp={()=>{setTab('help');setScreen('home')}}
-      onGoDemo={()=>{setActiveModule('stair');Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:'stair'});setScreen('scan_ready')}}
-    />
+    return (
+      <>
+        <InspectionProjectList
+          userEmail={user.email??''}
+          onBack={()=>{}}
+          onSettings={()=>{ setTab('settings'); setScreen('home') }}
+          onStartNew={()=>{
+            // Always allow new projects — pre-screening doesn't require membership
+            setScreen('inspection_type')
+          }}
+          onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
+        />
+        {/* First-login welcome modal */}
+        {showWelcome && (
+          <WelcomeModal
+            onClose={()=>setShowWelcome(false)}
+            onTryDemo={()=>{ setActiveModule('stair'); setScreen('scan_ready') }}
+            onCreateProject={()=>setScreen('inspection_type')}
+          />
+        )}
+        {/* Global code assistant — available here */}
+        <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+      </>
+    )
   if(screen==='inspection_setup')
     return <InspectionSetupScreen
       projectType={projectType}
@@ -1092,19 +1256,22 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
     const fFields = checkFoundation(foundationMeasurements, activeCode2.label)
     return <FoundationReportScreen measurements={foundationMeasurements} fields={fFields} codeLabel={activeCode2.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  onRetake={()=>{setFoundationMeasurements(null);setScreen('scan_ready')}} onStartOver={()=>{setFoundationMeasurements(null);setActiveModule('stair');setScreen('home')}}/>
   }
-  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('inspection_projects')}/>
+  if(screen==='scan_ready')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('home')}/>
   if(screen==='scan_review')return <ScanReadyScreen userRole={user.role} onSuccess={handleScanSuccess as (m:Record<string,number|string>)=>void} onBack={()=>setScreen('report')} startAtReview={true}/>
   // Use IBC as fallback if code not yet detected (location loading)
   const activeCode = code ?? {code:'IBC',label:'IBC 2021',ref:'§1011',reason:'International Building Code',limits:{riserMin:100,riserMax:178,runMin:279,widthMin:914,headMin:2032,guardMin:914}}
-  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={()=>{setMeasurements(null);setScreen('inspection_projects')}}/>
+  if(screen==='report'&&measurements)return <ReportScreen measurements={measurements} fields={check(measurements,activeCode)} codeLabel={activeCode.label} codeRef={activeCode.ref} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:''}  userLatLng={latLng} isOntario={loc?isOntario(loc):false} userRole={user?.role} onRetake={handleRetakeToReview} onStartOver={handleStartOver}/>
 
   return(
-    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}><div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>{tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setTab('home');setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>{ if(hasInspectionAccess()) setScreen('inspection_projects'); else setScreen('inspection_paywall') }} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
+    <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto',fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+      <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
         {tab==='help'&&<HelpScreen/>}
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
+        {tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>{ setScreen('inspection_projects') }} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
       </div>
-      <BottomNav active={tab} onChange={t=>{setTab(t);if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
-      <CodeHelper />
+      <BottomNav active={tab} onChange={t=>{setTab(t);if(t==='home')setScreen('inspection_projects');if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
+      {/* Global code assistant on settings/help screens too */}
+      <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
     </div>
   )
 }
@@ -1141,6 +1308,21 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         <div style={{display:'flex',justifyContent:'center'}}><Logo size="md" onDark /></div>
         <h1 style={{fontSize:'1.35rem',fontWeight:700,lineHeight:1.2,textAlign:'center',margin:'0.25rem 0 0',color:'#fff'}}>Building Compliance Scanner</h1>
         <p style={{fontSize:'0.72rem',color:'rgba(255,255,255,0.45)',textAlign:'center',margin:0}}>Welcome back, {user.name.split(' ')[0]}</p>
+        {(() => {
+          const paid = user.membership === 'subscription' || user.membership === 'pro'
+          if (paid) return null
+          const daysLeft = getTrialDaysLeft()
+          if (daysLeft <= 0) return null
+          const urgent = daysLeft <= 2
+          return (
+            <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', background: urgent ? 'rgba(242,147,55,0.15)' : 'rgba(39,169,107,0.15)', border: `1px solid ${urgent ? 'rgba(242,147,55,0.35)' : 'rgba(39,169,107,0.3)'}`, borderRadius:20, padding:'0.2rem 0.75rem', marginTop:'0.25rem' }}>
+              <div style={{ width:6, height:6, borderRadius:'50%', background: urgent ? '#F29337' : '#27A96B' }}/>
+              <span style={{ fontSize:'0.6rem', fontWeight:700, color: urgent ? '#F29337' : '#27A96B', letterSpacing:'0.04em' }}>
+                {daysLeft === 1 ? 'TRIAL ENDS TODAY' : `${daysLeft} DAYS LEFT IN FREE TRIAL`}
+              </span>
+            </div>
+          )
+        })()}
       </div>
 
       <div style={{flex:1,padding:'1.25rem',display:'flex',flexDirection:'column',gap:'0.75rem',background:'#EBF3FA'}}>
@@ -1153,12 +1335,19 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
           </div>
           {!locLoading&&code&&(
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
-                {code.code==='OBC' && <>Building Codes: <a href="https://www.ontario.ca/laws/statute/92b23" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>OBC</a> · <a href="https://www.toronto.ca/city-government/planning-development/official-plan-guidelines/zoning-by-law/" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>Toronto Bylaw</a> · <a href="https://www.ontario.ca/laws/statute/05a11" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>AODA</a></>}
-                {code.code==='NBC' && <>Building Codes: <a href="https://www.nrc-cnrc.gc.ca/eng/publications/codes_centre/2020_national_building_code.html" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>NBC 2020</a></>}
-                {code.code==='IBC' && <>Building Codes: <a href="https://codes.iccsafe.org/content/IBC2021" target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>IBC 2021</a></>}
-                {code.code!=='OBC'&&code.code!=='NBC'&&code.code!=='IBC' && <span>{code.ref}</span>}
-              </span>
+              {code.links?.length ? (
+                <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>
+                  Building Codes:{' '}
+                  {code.links.map((l, i) => (
+                    <span key={l.label}>
+                      {i > 0 && ' · '}
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" style={{color:'#417CA4',fontWeight:600}}>{l.label}</a>
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span style={{fontSize:'0.68rem',color:'#2C4A6E',fontWeight:500}}>{code.reason} · {code.ref}</span>
+              )}
               <span style={{fontSize:'0.65rem',fontWeight:600,letterSpacing:'0.08em',color:confirmed?'#0D7A5F':'#2C5A7A',background:confirmed?'#E6F5F1':'#EBF2FF',padding:'0.22rem 0.65rem',borderRadius:8,border:`1px solid ${confirmed?'rgba(13,122,95,0.3)':'rgba(44,90,122,0.25)'}`}}>{code.label}</span>
             </div>
           )}
@@ -1167,99 +1356,48 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
         {/* ── Primary action buttons ── */}
         {(() => {
           const hasAccess = isPro || user.membership === 'subscription' || user.membership === 'pro' || checkTrialAccess()
-          // "Full Building Inspection" only shown on very first sign-in (before any project exists)
-          let isFirstLogin = false
-          try { isFirstLogin = localStorage.getItem('sc_first_login_done') !== '1' } catch {}
-
-          // scansUsed is null while loading — never fire scan until we know the count
-          const scanReady = scansUsed !== null || isPro
-
           return (
-            <div style={{display:'flex',flexDirection:'column',gap:'0.75rem',alignItems:'center'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.65rem'}}>
 
-              {/* My Projects — shown to users with any access */}
-              {hasAccess && (
-                <button onClick={()=>{
-                  try{localStorage.setItem('sc_first_login_done','1')}catch{}
-                  onStartInspection()
-                }}
-                  style={{width:'100%',maxWidth:320,padding:'1rem 1.25rem',background:`linear-gradient(135deg,#0A1C2E,#1A3A58)`,border:'none',borderRadius:14,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 4px 18px rgba(10,28,46,0.25)'}}>
-                  <div style={{width:40,height:40,borderRadius:10,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <rect x="2" y="2" width="16" height="16" rx="2" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5"/>
-                      <line x1="2" y1="7" x2="18" y2="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
-                      <line x1="6" y1="11" x2="14" y2="11" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
-                      <line x1="6" y1="14" x2="10" y2="14" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
-                    </svg>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:'1rem',fontWeight:700,color:'#fff',lineHeight:1.25}}>My Projects</div>
-                    <div style={{fontSize:'0.7rem',color:'rgba(255,255,255,0.5)',marginTop:'0.1rem'}}>Building analysis · AI guidance · PDF report</div>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
-                    <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
-
-              {/* Full Building Analysis — for first-timers without access */}
-              {!hasAccess && isFirstLogin && (
-                <button onClick={()=>{
-                  try{localStorage.setItem('sc_first_login_done','1')}catch{}
-                  onStartInspection()
-                }}
-                  style={{width:'100%',maxWidth:320,padding:'1rem 1.25rem',background:`linear-gradient(135deg,#0A1C2E,#1A3A58)`,border:'none',borderRadius:14,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 4px 18px rgba(10,28,46,0.25)'}}>
-                  <div style={{width:40,height:40,borderRadius:10,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <rect x="2" y="2" width="16" height="16" rx="2" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5"/>
-                      <path d="M7 6v8M10 8v6M13 4v10" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:'1rem',fontWeight:700,color:'#fff',lineHeight:1.25}}>Full Building Analysis</div>
-                    <div style={{fontSize:'0.7rem',color:'rgba(255,255,255,0.5)',marginTop:'0.1rem'}}>Members only · Request access</div>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
-                    <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
-
-              {/* Demo — only shown to users WITHOUT active access, as a secondary option.
-                  Hidden entirely for trial/subscription users — they have My Projects above.
-                  Guard: only fires when scansUsed has loaded (not null) to prevent accidental launch. */}
-              {!hasAccess && (
-                <div style={{width:'100%',maxWidth:320}}>
-                  <button
-                    onClick={()=>{
-                      // Hard guard: must know scan count before allowing
-                      if (!scanReady) return
-                      if (atLimit) return
-                      onStartScan('stair')
-                    }}
-                    disabled={!scanReady || atLimit}
-                    style={{width:'100%',padding:'0.9rem 1rem',background: atLimit ? 'rgba(147,180,197,0.1)' : '#fff',border:`1.5px solid ${atLimit ? 'rgba(147,180,197,0.25)' : 'rgba(39,169,107,0.4)'}`,borderRadius:14,display:'flex',alignItems:'center',gap:'0.75rem',cursor: !scanReady || atLimit ? 'not-allowed':'pointer',opacity: !scanReady ? 0.6 : 1,transition:'all 0.1s'}}>
-                    <div style={{width:40,height:40,borderRadius:10,background: atLimit ? 'rgba(147,180,197,0.1)' : 'rgba(39,169,107,0.1)',border:`1px solid ${atLimit ? 'rgba(147,180,197,0.2)' : 'rgba(39,169,107,0.25)'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
-                        <rect x="1" y="12" width="5" height="7" rx="0.5" stroke={atLimit ? '#9DB4C5' : '#27A96B'} strokeWidth="1.5"/>
-                        <rect x="6" y="7" width="5" height="12" rx="0.5" stroke={atLimit ? '#9DB4C5' : '#27A96B'} strokeWidth="1.5"/>
-                        <rect x="11" y="1" width="8" height="18" rx="0.5" stroke={atLimit ? '#9DB4C5' : '#27A96B'} strokeWidth="1.5"/>
-                      </svg>
-                    </div>
-                    <div style={{flex:1,textAlign:'left' as const}}>
-                      <div style={{fontSize:'0.9rem',fontWeight:700,color: atLimit ? '#9DB4C5' : '#0D1E2E',lineHeight:1.2}}>
-                        {atLimit ? 'Demo scans used up' : 'Try Stair Demo'}
-                      </div>
-                      <div style={{fontSize:'0.68rem',color:'#5E7D9B',marginTop:'0.15rem'}}>
-                        {atLimit ? 'Sign up for full access' : 'Free stair compliance scan — no account needed'}
-                      </div>
-                    </div>
-                    {!atLimit && (
-                      <span style={{fontSize:'0.6rem',fontWeight:700,color:'#27A96B',padding:'0.18rem 0.55rem',borderRadius:5,border:'1px solid rgba(39,169,107,0.35)',flexShrink:0,background:'rgba(39,169,107,0.07)'}}>Free</span>
-                    )}
-                  </button>
+              {/* Demo — thumbnail card */}
+              <button
+                onClick={()=>{ if(!atLimit) onStartScan('stair') }}
+                style={{width:'100%',padding:0,background:'#fff',border:'1.5px solid rgba(39,169,107,0.3)',borderRadius:13,display:'flex',alignItems:'stretch',cursor:'pointer',textAlign:'left',boxShadow:'0 2px 10px rgba(39,169,107,0.08)',overflow:'hidden',transition:'all 0.12s'}}>
+                {/* Stair measurement thumbnail */}
+                <div style={{width:90,flexShrink:0,overflow:'hidden',background:'#0A1C2E'}}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/02__Measure_Riser_front.png" alt="stair riser measurement" style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center',display:'block'}}/>
                 </div>
-              )}
+                <div style={{flex:1,padding:'0.85rem 1rem',display:'flex',flexDirection:'column',justifyContent:'center',gap:'0.2rem'}}>
+                  <div style={{fontSize:'0.82rem',fontWeight:800,color:'#0D1E2E',lineHeight:1.25}}>Try a quick stair analysis — right now</div>
+                  <div style={{fontSize:'0.63rem',color:'#5E7D9B',lineHeight:1.5}}>No full report needed. Get familiar with the AI vision in under 2 minutes.</div>
+                  <div style={{fontSize:'0.6rem',fontWeight:700,color:'#27A96B',marginTop:'0.2rem',letterSpacing:'0.02em'}}>FREE · No sign-up required →</div>
+                </div>
+              </button>
+
+              {/* My Inspections / Full Inspection */}
+              <button onClick={()=>onStartInspection()}
+                style={{width:'100%',padding:'1.1rem 1.25rem',background:`linear-gradient(135deg,#0A1C2E,#1A3A58)`,border:'none',borderRadius:13,display:'flex',alignItems:'center',gap:'0.85rem',cursor:'pointer',textAlign:'left',boxShadow:'0 4px 18px rgba(10,28,46,0.25)'}}>
+                <div style={{width:42,height:42,borderRadius:10,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                    <rect x="2" y="2" width="16" height="16" rx="2" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5"/>
+                    <line x1="2" y1="7" x2="18" y2="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
+                    <line x1="6" y1="11" x2="14" y2="11" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
+                    <line x1="6" y1="14" x2="10" y2="14" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/>
+                  </svg>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:'1rem',fontWeight:700,color:'#fff',lineHeight:1.25}}>
+                    {hasAccess ? 'My Inspections' : 'Full Building Inspection'}
+                  </div>
+                  <div style={{fontSize:'0.72rem',color:'rgba(255,255,255,0.5)',marginTop:'0.15rem'}}>
+                    {hasAccess ? '6 OBC phases · AI guidance · PDF report' : 'Members only · Request access'}
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
+                  <path d="M6 3l5 5-5 5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
 
             </div>
           )
@@ -1329,7 +1467,7 @@ function BottomNav({active,onChange}:{active:Tab;onChange:(t:Tab)=>void}){
   return(
     <div style={{borderTop:'1.5px solid rgba(147,186,212,0.18)',background:'#FFFFFF',paddingBottom:'env(safe-area-inset-bottom,0px)',display:'flex'}}>
       {([
-        {id:'home'     as Tab, label:'Home'},
+        {id:'home'     as Tab, label:'Welcome'},
         {id:'help'     as Tab, label:'AR / AI'},
         {id:'settings' as Tab, label:'Settings'},
       ] as {id:Tab;label:string}[]).map(t=>{

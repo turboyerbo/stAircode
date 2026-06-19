@@ -48,8 +48,3 @@
 
 [functions]
   node_bundler = "esbuild"
-
-# Raise body size limit for the drawings-chat route (PDF uploads)
-# Netlify Pro: up to 6MB per function request body
-[functions."___netlify-handler"]
-  included_files = ["**"]

@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     updated_at:       now,
   }
 
-  console.log(`[save] Upserting ${job.id} for user ${resolvedUserId} (key: ${SUPA_KEY ? 'service_role' : 'anon'})`)
+  console.log(`[save] Upserting ${job.id} for user ${resolvedUserId}`)
 
   // First attempt: with inspector_email
   let { error } = await sb.from('inspection_jobs').upsert(row, { onConflict: 'id' })

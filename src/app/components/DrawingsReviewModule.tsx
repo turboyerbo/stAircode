@@ -17,14 +17,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import type { InspectionJob, InspectionModule, DrawingsFields } from '@/lib/inspection-types'
 
-// ── Utility: await a ms delay (used to pace progress animations) ─────────────
-const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
-
-// ── Trigger the floating CodeHelper with a pre-written message ─────────────────
-function openHelperWithMessage(msg: string) {
-  window.dispatchEvent(new CustomEvent('sc:helper:open', { detail: { message: msg } }))
-}
-
 const NAVY   = '#0A1C2E'
 const BLUE   = '#417CA4'
 const GREEN  = '#27A96B'
@@ -135,17 +127,15 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
   const [pages,      setPages]      = useState<string[]>(job.drawingsData?.pages ?? [])
   const [fileNames,  setFileNames]  = useState<string[]>(job.drawingsData?.fileNames ?? [])
   const [uploading,  setUploading]  = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)  // 0-100
-  const [uploadStage,    setUploadStage]    = useState('')  // human-readable stage label
   const [uploadErr,  setUploadErr]  = useState<string|null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const dropRef   = useRef<HTMLDivElement>(null)
   const fileRef   = useRef<HTMLInputElement>(null)
 
   // ── Extraction state ─────────────────────────────────────────────────────
-  const [extracting,   setExtracting]   = useState(false)
-  const [extractDone,  setExtractDone]  = useState(!!job.drawingsData?.fields)
-  const [helperShown,  setHelperShown]  = useState(false)  // true once helper has been triggered for this session
+  const [extracting,  setExtracting]  = useState(false)
+  const [extractDone, setExtractDone] = useState(!!job.drawingsData?.fields)
+  const [extractErr,  setExtractErr]  = useState<string|null>(null)
 
   // ── Fields state (editable) ───────────────────────────────────────────────
   const [f, setF] = useState<DrawingsFields>(job.drawingsData?.fields ?? {})
@@ -175,8 +165,12 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
     setUploadErr(null)
     const arr = Array.from(files)
 
-    // Validate file types only — size limit raised, just warn in helper
+    // Validate
     for (const file of arr) {
+      if (file.size > MAX_FILE_BYTES) {
+        setUploadErr(`"${file.name}" exceeds ${MAX_FILE_MB}MB limit. For larger drawings, reduce PDF quality or split into smaller files.`)
+        return
+      }
       const ok = file.type.startsWith('image/') || file.type === 'application/pdf'
       if (!ok) {
         setUploadErr(`"${file.name}" is not a supported format. Upload PDF or image files (JPG, PNG).`)
@@ -184,48 +178,23 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
       }
     }
 
-    // ── Phase 1: Reading file (0 → 35%) ──────────────────────────────────
     setUploading(true)
-    setUploadProgress(3)
-    setUploadStage('Reading file…')
     const newPages: string[] = []
     const newNames: string[] = []
 
-    for (let i = 0; i < arr.length; i++) {
-      const file = arr[i]
-      setUploadStage(`Reading ${file.name}…`)
-      // Animate smoothly across the reading phase
-      const startPct = 5 + Math.round((i / arr.length) * 28)
-      setUploadProgress(startPct)
+    for (const file of arr) {
       try {
         const filePagesB64 = await fileToBase64Pages(file)
         newPages.push(...filePagesB64)
         newNames.push(file.name)
-        setUploadProgress(5 + Math.round(((i + 1) / arr.length) * 28))
       } catch {
-        // File read failed — trigger helper, stay in uploading state briefly, then reset
-        setUploadProgress(35)
-        setUploadStage('Preparing…')
-        await delay(800)
-        setUploading(false); setUploadProgress(0); setUploadStage('')
-        if (!helperShown) {
-          setHelperShown(true)
-          openHelperWithMessage(`I noticed the file upload hit a snag — sometimes this happens with larger PDFs. Here are a few things to try:\n\n• Make sure the PDF is under 10MB\n• Try uploading individual pages as JPG or PNG images instead\n• If your plans are larger, take a photo of each sheet with your phone camera\n\nWant me to help interpret the drawings once you upload them? I can answer questions about setbacks, energy codes, permits, and anything else in your plans.\n\nIf you keep running into trouble, email Jordan directly at yerbury@staircode.app and he'll sort it out.`)
-        }
-        return
+        setUploadErr(`Could not read "${file.name}". Please try again.`)
       }
     }
 
-    // ── Phase 2: Preparing (35 → 55%) ────────────────────────────────────
-    setUploadProgress(38)
-    setUploadStage('Preparing for AI analysis…')
-    await delay(400)
-    setUploadProgress(48)
-    await delay(300)
-    setUploadProgress(55)
-    await delay(200)
-
     setUploading(false)
+    if (!newPages.length) return
+
     const allPages = [...pages, ...newPages]
     const allNames = [...fileNames, ...newNames]
     setPages(allPages)
@@ -233,7 +202,7 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
     setExtractDone(false)
     setExtracting(false)
 
-    // Auto-extract — progress continues from 55
+    // Auto-extract after upload
     await runExtraction(allPages, allNames)
   }
 
@@ -247,125 +216,42 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
     if (e.dataTransfer.files?.length) processFiles(e.dataTransfer.files)
   }
 
-  // ── AI Extraction — calls Anthropic directly from the browser ────────────
-  // Reason: Netlify serverless functions have a 4.5MB body limit. A 4MB PDF
-  // becomes ~5.3MB of base64 JSON — it gets killed with a 502 before the
-  // function even starts. Calling Anthropic directly bypasses this entirely.
+  // ── AI Extraction ────────────────────────────────────────────────────────
   async function runExtraction(pagesToUse = pages, namesToUse = fileNames) {
     if (!pagesToUse.length) return
-    setExtracting(true)
-
-    // ── Phase 3: Sending (55 → 75%) ───────────────────────────────────────
-    setUploadProgress(58); setUploadStage('Sending to AI…')
-    await delay(500)
-    setUploadProgress(65)
-    await delay(400)
-    setUploadProgress(72)
-
-    let succeeded = false
+    setExtracting(true); setExtractErr(null)
     try {
-      // API key: set NEXT_PUBLIC_ANTHROPIC_API_KEY in Netlify env vars
-      const apiKey = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
-      if (!apiKey) throw new Error('API key not configured')
-
-      const province   = job.address.province ?? ''
-      const codeLabel  = province === 'Ontario'          ? 'Ontario Building Code 2024'
-                       : province === 'British Columbia' ? 'BC Building Code 2024'
-                       : province === 'Quebec'           ? 'Quebec Construction Code 2020'
-                       : province ? `${province} Building Code`
-                       : 'applicable building code'
-
-      const systemPrompt = `You are an expert building inspector and code compliance consultant analysing approved architectural drawings.\n\nPROPERTY: ${job.address.street}, ${job.address.city}, ${job.address.province}\nAPPLICABLE CODE: ${codeLabel}\n\nExtract all available data from the drawings. Be precise — quote dimension callouts and note titles directly from the drawings.`
-
-      const EXTRACTION_PROMPT = `Analyse these architectural drawings and extract all available information from:\n- Title block (permit number, date, applicant, architect, engineer, address)\n- Site plan (setbacks, lot coverage, lot area, building area, parking)\n- Elevations and sections (building height, stories)\n- Occupancy and construction type notes\n- Code compliance tables\n\nReply ONLY with valid JSON, no markdown fences:\n{"permitNumber":null,"permitDate":null,"applicant":null,"architect":null,"engineer":null,"projectAddress":null,"zoneClass":null,"lotArea":null,"buildingArea":null,"grossFloorArea":null,"lotCoverage":null,"frontSetback":null,"rearSetback":null,"sideSetbackLeft":null,"sideSetbackRight":null,"buildingHeight":null,"stories":null,"parkingSpaces":null,"fireSeparation":null,"occupancyClass":null,"constructionType":null,"drawingSheets":[],"revisionDate":null,"codeNotes":[],"summary":"2-3 sentence description"}`
-
-      // Build content blocks — PDFs need type:'document', images need type:'image'
-      // fileNames[i] tells us the original filename to detect type
-      const contentBlocks: any[] = pagesToUse.slice(0, 8).map((b64: string, i: number) => {
-        const fname = (namesToUse ?? fileNames)[i] ?? ''
-        const isPDF = fname.toLowerCase().endsWith('.pdf')
-        if (isPDF) {
-          return {
-            type:   'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: b64 },
-          }
-        }
-        // Image — detect JPEG vs PNG from base64 prefix
-        const mediaType = b64.startsWith('/9j/') ? 'image/jpeg'
-                        : b64.startsWith('iVBOR') ? 'image/png'
-                        : 'image/jpeg'
-        return {
-          type:   'image',
-          source: { type: 'base64', media_type: mediaType, data: b64 },
-        }
-      })
-
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res  = await fetch('/api/drawings-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type':      'application/json',
-          'x-api-key':         apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model:      'claude-sonnet-4-6',
-          max_tokens: 2048,
-          system:     systemPrompt,
-          messages: [{
-            role:    'user',
-            content: [...contentBlocks, { type: 'text', text: EXTRACTION_PROMPT }],
-          }],
+          mode:       'extract',
+          pages:      pagesToUse.slice(0, 8), // API limit
+          jobContext: {
+            address:      `${job.address.street}, ${job.address.city}, ${job.address.province}`,
+            buildingType: job.buildingType,
+            province:     job.address.province,
+          },
         }),
       })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Extraction failed')
 
-      // ── Phase 4: AI Reading (75 → 95%) ─────────────────────────────────
-      setUploadProgress(78); setUploadStage('AI reading drawings…')
-      await delay(600)
-      setUploadProgress(86)
-      await delay(500)
-      setUploadProgress(93)
-
-      let fields: any = null
-      if (res.ok) {
-        const data = await res.json()
-        const raw  = data.content?.[0]?.text ?? ''
-        try {
-          const m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/)
-          if (m) fields = JSON.parse(m[0])
-        } catch { /* partial parse — use what we got */ }
-      }
-
-      if (fields) {
-        // ── Phase 5: Complete ──────────────────────────────────────────
-        setUploadProgress(100); setUploadStage('Analysis complete!')
-        setF(fields)
+      if (data.fields) {
+        setF(data.fields)
         setExtractDone(true)
-        succeeded = true
-        await delay(900)
-        setUploadProgress(0); setUploadStage('')
 
-        const welcome = fields.summary
-          ? `I've analysed the uploaded drawings. ${fields.summary}\n\nI found ${fields.drawingSheets?.length ?? 0} sheets. Ask me anything about the approved design, dimensions, setbacks, or code compliance requirements.`
+        // Auto-send welcome message to chat
+        const welcome = data.fields.summary
+          ? `I've analysed the uploaded drawings. ${data.fields.summary}\n\nI found ${data.fields.drawingSheets?.length ?? 0} sheets. Ask me anything about the approved design, dimensions, setbacks, or code compliance requirements.`
           : `I've reviewed the uploaded drawings. I can answer questions about the approved design, setbacks, occupancy, construction type, and any other information shown in the documents. What would you like to know?`
+
         setMsgs([{ role:'assistant', content: welcome }])
         setTab('fields')
       }
-    } catch { /* network or auth error — fall through to helper */ }
-
-    if (!succeeded) {
-      // Always complete the bar gracefully — never show red, never say "failed"
-      setUploadProgress(100); setUploadStage('Analysis complete!')
-      await delay(700)
-      setUploadProgress(0); setUploadStage('')
-      setExtractDone(false)
-
-      if (!helperShown) {
-        setHelperShown(true)
-        openHelperWithMessage(`The drawings were received, but the AI analysis didn't return data this time — this occasionally happens with larger or complex PDFs.\n\nA couple of things that usually help:\n• Try uploading individual pages as images (JPG or PNG) instead of the full PDF\n• If the PDF is over 5MB, try reducing the quality in your PDF viewer first\n• Make sure NEXT_PUBLIC_ANTHROPIC_API_KEY is set in your Netlify environment variables\n\nYou can still fill in the data fields manually using the Data Fields tab, and once you re-upload I'll extract everything automatically.\n\nIf you're still having trouble, email Jordan directly at yerbury@staircode.app — he responds quickly!`)
-      }
+    } catch (err: any) {
+      setExtractErr(err.message ?? 'Could not analyse drawings')
     }
-
     setExtracting(false)
   }
 
@@ -532,22 +418,13 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
                 transition: 'all 0.15s',
               }}>
               {uploading || extracting ? (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.75rem', padding:'0.5rem 0' }}>
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.75rem' }}>
                   <div style={{ width:32, height:32, borderRadius:'50%', border:`3px solid rgba(65,124,164,0.2)`, borderTopColor:BLUE, animation:'spin 0.8s linear infinite' }}/>
                   <div style={{ fontSize:'0.85rem', color:BLUE, fontWeight:600 }}>
-                    {uploadStage || (uploading ? 'Reading file…' : 'AI analysing drawings…')}
+                    {uploading ? 'Reading files…' : 'AI analysing drawings…'}
                   </div>
-                  {/* Progress bar */}
-                  {uploadProgress > 0 && (
-                    <div style={{ width:'80%', maxWidth:240 }}>
-                      <div style={{ height:5, background:'rgba(65,124,164,0.12)', borderRadius:10, overflow:'hidden' }}>
-                        <div style={{ height:'100%', width:`${uploadProgress}%`, background:`linear-gradient(90deg,${BLUE},#2C7AAF)`, borderRadius:10, transition:'width 0.4s ease' }}/>
-                      </div>
-                      <div style={{ fontSize:'0.62rem', color:'#9DB4C5', textAlign:'center', marginTop:'0.3rem' }}>{uploadProgress}%</div>
-                    </div>
-                  )}
-                  <div style={{ fontSize:'0.72rem', color:'#5E7D9B', textAlign:'center' as const, lineHeight:1.5 }}>
-                    {extracting ? 'Extracting permit data, setbacks, and compliance information…' : 'Large files may take a moment — please keep this screen open'}
+                  <div style={{ fontSize:'0.72rem', color:'#5E7D9B' }}>
+                    {extracting ? 'Extracting permit data, setbacks, and compliance information' : ''}
                   </div>
                   <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
                 </div>
@@ -576,13 +453,10 @@ export default function DrawingsReviewModule({ job, module, onSave, onBack }: Pr
             </div>
             <input ref={fileRef} type="file" accept=".pdf,image/*" multiple onChange={handleFileInput} style={{ display:'none' }}/>
 
-            {/* File format error only — no AI errors shown here */}
-            {uploadErr && (
-              <div style={{ background:'rgba(242,147,55,0.07)', border:'1px solid rgba(242,147,55,0.3)', borderRadius:9, padding:'0.75rem 1rem', fontSize:'0.78rem', color:'#C4720E', lineHeight:1.55, display:'flex', gap:'0.65rem', alignItems:'flex-start' }}>
-                <span style={{ flexShrink:0 }}>⚠</span>
-                <div style={{ flex:1 }}>{uploadErr}</div>
-                <button onClick={() => setUploadErr(null)}
-                  style={{ background:'none', border:'none', color:'#C4720E', cursor:'pointer', fontSize:'1rem', lineHeight:1, flexShrink:0, padding:0, opacity:0.7 }}>×</button>
+            {/* Errors */}
+            {(uploadErr || extractErr) && (
+              <div style={{ background:'rgba(232,69,69,0.07)', border:'1px solid rgba(232,69,69,0.25)', borderRadius:9, padding:'0.75rem 1rem', fontSize:'0.78rem', color:RED, lineHeight:1.55 }}>
+                {uploadErr || extractErr}
               </div>
             )}
 

@@ -342,6 +342,12 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   const [saveStatus,   setSaveStatus]   = useState<'idle'|'saving'|'saved_cloud'|'saved_local'|'error'>('idle')
   const [saveError,    setSaveError]    = useState<string>('')
   const [showReport,   setShowReport]    = useState(false)
+  const [showTeam,     setShowTeam]      = useState(false)
+  const [teamEmail,    setTeamEmail]     = useState('')
+  const [teamRole,     setTeamRole]      = useState<'co-inspector'|'viewer'|'client'>('co-inspector')
+  const [teamSending,  setTeamSending]   = useState(false)
+  const [teamMsg,      setTeamMsg]       = useState<string|null>(null)
+  const [teamError,    setTeamError]     = useState<string|null>(null)
   const [reportStatus, setReportStatus] = useState<'idle'|'generating'|'done'|'error'>('idle')
   const [reportB64,    setReportB64]    = useState<string|null>(null)
   const [reportMsg,    setReportMsg]    = useState<string>('')
@@ -493,7 +499,16 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
             onBack()
           }} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', cursor:'pointer', padding:0 }}>← Exit</button>
           <div style={{ flex:1, display:'flex', justifyContent:'center' }}><NavLogo height={22} /></div>
-          <div style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.35)' }}>{job.inspectionDate}</div>
+          {/* Team button */}
+          <button onClick={() => { setShowTeam(true); setTeamMsg(null); setTeamError(null) }}
+            style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:7, padding:'5px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:600 }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
+              <path d="M1.5 13c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              <path d="M12 8v4M10 10h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+            Team{(job.collaborators?.length ?? 0) > 0 ? ` (${job.collaborators!.length})` : ''}
+          </button>
         </div>
 
         {/* Property summary */}
@@ -648,6 +663,155 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
           onUpdate={onUpdate}
           onClose={() => setChatOpen(false)}
         />
+      )}
+
+      {/* ══ TEAM SHEET ══════════════════════════════════════════════════════ */}
+      {showTeam && (
+        <>
+          {/* Backdrop */}
+          <div onClick={() => setShowTeam(false)}
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200 }}/>
+
+          {/* Sheet */}
+          <div style={{
+            position:'fixed', bottom:0, left:0, right:0, zIndex:201,
+            background:'#fff', borderRadius:'18px 18px 0 0',
+            boxShadow:'0 -8px 40px rgba(0,0,0,0.18)',
+            maxHeight:'80dvh', display:'flex', flexDirection:'column',
+            fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+          }}>
+            {/* Handle */}
+            <div style={{ display:'flex', justifyContent:'center', padding:'0.65rem 0 0' }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:'rgba(44,90,122,0.18)' }}/>
+            </div>
+
+            {/* Header */}
+            <div style={{ padding:'0.75rem 1.25rem 0.5rem', borderBottom:'1px solid rgba(44,90,122,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:'1rem', fontWeight:700, color:NAVY }}>Project Team</div>
+                <div style={{ fontSize:'0.68rem', color:'#5E7D9B', marginTop:'0.1rem' }}>
+                  {job.address.street}, {job.address.city}
+                </div>
+              </div>
+              <button onClick={() => setShowTeam(false)}
+                style={{ background:'none', border:'none', fontSize:'1.3rem', color:'#9DB4C5', cursor:'pointer', padding:'0.25rem' }}>×</button>
+            </div>
+
+            {/* Body */}
+            <div style={{ flex:1, overflowY:'auto', padding:'1rem 1.25rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
+
+              {/* Current team */}
+              <div>
+                <div style={{ fontSize:'0.68rem', fontWeight:700, color:'#5E7D9B', letterSpacing:'0.06em', textTransform:'uppercase' as const, marginBottom:'0.5rem' }}>Members</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
+                  {/* Owner */}
+                  <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.65rem 0.85rem', background:'rgba(65,124,164,0.05)', borderRadius:9, border:'1px solid rgba(65,124,164,0.12)' }}>
+                    <div style={{ width:32, height:32, borderRadius:'50%', background:BLUE, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <span style={{ fontSize:'0.7rem', fontWeight:800, color:'#fff' }}>{(userEmail[0] ?? '?').toUpperCase()}</span>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:'0.78rem', fontWeight:600, color:NAVY, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{userEmail}</div>
+                      <div style={{ fontSize:'0.62rem', color:'#9DB4C5' }}>Owner</div>
+                    </div>
+                  </div>
+
+                  {/* Collaborators */}
+                  {(job.collaborators ?? []).map((c, i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:'0.75rem', padding:'0.65rem 0.85rem', background:'#F7FAFC', borderRadius:9, border:'1px solid rgba(44,90,122,0.1)' }}>
+                      <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(44,90,122,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <span style={{ fontSize:'0.7rem', fontWeight:800, color:BLUE }}>{(c.email[0] ?? '?').toUpperCase()}</span>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:'0.78rem', fontWeight:600, color:NAVY, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{c.email}</div>
+                        <div style={{ fontSize:'0.62rem', color:'#9DB4C5', textTransform:'capitalize' as const }}>{c.role.replace('-', ' ')}</div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          await fetch(`/api/inspection/invite?jobId=${job.id}&ownerEmail=${encodeURIComponent(userEmail)}&inviteeEmail=${encodeURIComponent(c.email)}`, { method: 'DELETE' })
+                          const updated = { ...job, collaborators: (job.collaborators ?? []).filter((_,j) => j !== i) }
+                          onUpdate(updated)
+                        }}
+                        style={{ background:'none', border:'none', color:'#E84545', fontSize:'0.72rem', cursor:'pointer', padding:'4px 8px', borderRadius:5, fontWeight:600 }}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  {(job.collaborators?.length ?? 0) === 0 && (
+                    <div style={{ fontSize:'0.75rem', color:'#9DB4C5', padding:'0.5rem 0' }}>No team members added yet.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Add new member */}
+              <div>
+                <div style={{ fontSize:'0.68rem', fontWeight:700, color:'#5E7D9B', letterSpacing:'0.06em', textTransform:'uppercase' as const, marginBottom:'0.5rem' }}>Add Team Member</div>
+
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                  <input
+                    type="email"
+                    value={teamEmail}
+                    onChange={e => { setTeamEmail(e.target.value); setTeamMsg(null); setTeamError(null) }}
+                    placeholder="colleague@firm.com"
+                    style={{ width:'100%', padding:'0.75rem 0.9rem', background:'#F7FAFC', border:'1.5px solid rgba(65,124,164,0.25)', borderRadius:9, fontSize:'0.88rem', color:NAVY, outline:'none', boxSizing:'border-box' as const, fontFamily:'inherit' }}
+                  />
+                  <div style={{ display:'flex', gap:'0.4rem' }}>
+                    {(['co-inspector','viewer','client'] as const).map(r => (
+                      <button key={r} onClick={() => setTeamRole(r)}
+                        style={{ flex:1, padding:'0.5rem 0', borderRadius:7, border:`1.5px solid ${teamRole===r ? BLUE : 'rgba(44,90,122,0.18)'}`, background: teamRole===r ? 'rgba(65,124,164,0.08)' : '#fff', color: teamRole===r ? BLUE : '#9DB4C5', fontSize:'0.65rem', fontWeight: teamRole===r ? 700 : 500, cursor:'pointer', textTransform:'capitalize' as const }}>
+                        {r.replace('-',' ')}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:'0.62rem', color:'#9DB4C5', lineHeight:1.5 }}>
+                    {teamRole==='co-inspector' && 'Can view and edit all phases and modules.'}
+                    {teamRole==='viewer' && 'Can view the project but cannot edit.'}
+                    {teamRole==='client' && 'Receives the final report — read-only access.'}
+                  </div>
+                </div>
+
+                {teamMsg && <div style={{ fontSize:'0.75rem', color:'#27A96B', marginTop:'0.4rem', fontWeight:600 }}>✓ {teamMsg}</div>}
+                {teamError && <div style={{ fontSize:'0.75rem', color:'#E84545', marginTop:'0.4rem' }}>{teamError}</div>}
+              </div>
+            </div>
+
+            {/* Send invite button */}
+            <div style={{ padding:'0.75rem 1.25rem', paddingBottom:'max(env(safe-area-inset-bottom,0px),0.75rem)', borderTop:'1px solid rgba(44,90,122,0.1)' }}>
+              <button
+                disabled={teamSending || !teamEmail.trim()}
+                onClick={async () => {
+                  setTeamSending(true); setTeamMsg(null); setTeamError(null)
+                  try {
+                    const res = await fetch('/api/inspection/invite', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        jobId: job.id,
+                        ownerEmail: userEmail,
+                        inviteeEmail: teamEmail.trim(),
+                        role: teamRole,
+                        jobAddress: `${job.address.street}, ${job.address.city}`,
+                      }),
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error ?? 'Invite failed')
+                    const updated = { ...job, collaborators: data.collaborators }
+                    onUpdate(updated)
+                    setTeamMsg(`Invite sent to ${teamEmail.trim()}`)
+                    setTeamEmail('')
+                  } catch (err: any) {
+                    setTeamError(err.message)
+                  }
+                  setTeamSending(false)
+                }}
+                style={{ width:'100%', padding:'0.9rem', background: teamSending || !teamEmail.trim() ? 'rgba(65,124,164,0.3)' : `linear-gradient(135deg,${BLUE},#2A5F8A)`, border:'none', borderRadius:10, fontSize:'0.88rem', fontWeight:800, color:'#fff', cursor: teamSending || !teamEmail.trim() ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow: teamEmail.trim() ? '0 3px 12px rgba(65,124,164,0.3)' : 'none' }}>
+                {teamSending
+                  ? <><div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/> Sending…</>
+                  : '📨 Send Invite'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

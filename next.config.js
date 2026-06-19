@@ -24,9 +24,6 @@ const nextConfig = {
   // serverExternalPackages is Next.js 15+; use experimental key for Next.js 14.x
   experimental: {
     serverComponentsExternalPackages: ['jspdf', 'html2canvas', 'pdf-lib'],
-    serverActions: {
-      bodySizeLimit: '20mb',
-    },
   },
 
   // Production domain — used by Next.js for absolute URL generation
@@ -96,12 +93,12 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com chrome-extension:",
-              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://fonts.googleapis.com https://fonts.gstatic.com https://ingesteer.services-prod.nsvcs.net https://*.nsvcs.net chrome-extension:",
+              "connect-src 'self' https://*.posthog.com https://us.i.posthog.com https://ingesteer.services-prod.nsvcs.net https://api.anthropic.com https://api.resend.com https://resend.com https://*.supabase.co https://*.stripe.com wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://fonts.googleapis.com https://fonts.gstatic.com chrome-extension:",
               "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "frame-src https://tally.so https://js.stripe.com https://*.stripe.com https://www.youtube.com https://youtube.com https://www.openstreetmap.org",
+              "frame-src https://tally.so https://js.stripe.com https://*.stripe.com https://www.youtube.com https://youtube.com",
               "worker-src 'self' blob:",
             ].join('; '),
           },

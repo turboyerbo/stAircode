@@ -17,7 +17,6 @@ import { NavLogo } from './Logo'
 interface Props {
   onAccess:  () => void   // called when access is granted
   onBack:    () => void
-  onSignIn:  () => void   // navigate to member login
   userEmail: string
 }
 
@@ -28,9 +27,8 @@ const GREEN  = '#27A96B'
 const RED    = '#E84545'
 const BORDER = 'rgba(44,90,122,0.14)'
 
-export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmail }: Props) {
-  const savedCode = (() => { try { return localStorage.getItem('sc_saved_promo') ?? '' } catch { return '' } })()
-  const [accessCode,    setAccessCode]    = useState(savedCode)
+export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props) {
+  const [accessCode,    setAccessCode]    = useState('')
   const [codeError,     setCodeError]     = useState<string | null>(null)
   const [loading,       setLoading]       = useState(false)
   const [stripeLoading, setStripeLoading] = useState(false)
@@ -51,7 +49,6 @@ export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmai
           localStorage.setItem('sc_trial_end',    trialEnd)
           localStorage.setItem('sc_beta_access',  '1')
           sessionStorage.setItem('sc_beta_access','1')
-          localStorage.removeItem('sc_saved_promo')
         } catch {}
         setTimeout(() => onAccess(), 300)
       } else {
@@ -104,7 +101,7 @@ export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmai
         </div>
 
         <div style={{ fontSize:'0.62rem', fontWeight:700, color:'rgba(255,255,255,0.4)', letterSpacing:'0.09em', textTransform:'uppercase', marginBottom:'0.4rem' }}>Full Inspection Platform</div>
-        <h1 style={{ fontSize:'1.35rem', fontWeight:700, color:'#fff', margin:'0 0 0.35rem', lineHeight:1.2 }}>Start your 30-day free trial</h1>
+        <h1 style={{ fontSize:'1.35rem', fontWeight:700, color:'#fff', margin:'0 0 0.35rem', lineHeight:1.2 }}>Start your 7-day free trial</h1>
         <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.5)', margin:0, lineHeight:1.65 }}>
           6-phase guided inspection, AI vision analysis, photo documentation, and a 30-page compliance report.
         </p>
@@ -151,7 +148,7 @@ export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmai
             )}
           </button>
           <p style={{ fontSize:'0.68rem', color:'#9DB4C5', textAlign:'center', margin:'0.5rem 0 0', lineHeight:1.5 }}>
-            Cancel anytime. Charged automatically every 30 days.
+            Cancel anytime. Billed monthly after your 7-day free trial.
           </p>
         </div>
 
@@ -171,7 +168,7 @@ export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmai
               name="beta-code"
               type="text"
               value={accessCode}
-              onChange={e => { setAccessCode(e.target.value); setCodeError(null); try { if (e.target.value) localStorage.setItem('sc_saved_promo', e.target.value); else localStorage.removeItem('sc_saved_promo') } catch {} }}
+              onChange={e => { setAccessCode(e.target.value); setCodeError(null) }}
               onKeyDown={e => { if (e.key === 'Enter') handleCodeSubmit() }}
               placeholder="Enter code"
               style={{ flex:1, padding:'0.75rem 0.9rem', background:'#fff', border:`1.5px solid ${codeError ? RED : accessCode ? BLUE : BORDER}`, borderRadius:10, fontSize:'0.9rem', color:'#0D1E2E', outline:'none', fontFamily:'inherit', transition:'border-color 0.12s' }}
@@ -189,13 +186,6 @@ export default function InspectionPaywall({ onAccess, onBack, onSignIn, userEmai
             </div>
           )}
         </div>
-
-        {/* Already a member */}
-        <button
-          onClick={onSignIn}
-          style={{ width:'100%', padding:'0.85rem', background:'none', border:'1.5px solid rgba(44,90,122,0.22)', borderRadius:12, color:BLUE, fontSize:'0.85rem', fontWeight:600, cursor:'pointer', transition:'all 0.15s', fontFamily:'inherit' }}>
-          Already a Member? Sign in
-        </button>
 
         {/* Free demo note */}
         <div style={{ background:'rgba(65,124,164,0.06)', border:`1px solid rgba(65,124,164,0.2)`, borderRadius:10, padding:'0.8rem 1rem' }}>

@@ -10,7 +10,7 @@ import Image from 'next/image'
 import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
 import PhoneMockup from "./PhoneMockup"
-import CodeHelper from '@/app/components/CodeHelper'
+import LocationDemo from "./LocationDemo"
 
 
 export default function MarketingPage() {
@@ -88,7 +88,7 @@ export default function MarketingPage() {
       const data = await res.json()
       if (data.valid) {
         // Store trial expiry date before redirecting
-        const trialEnd = data.trialEnd ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        const trialEnd = data.trialEnd ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         try { localStorage.setItem('sc_trial_end', trialEnd) } catch {}
         window.location.href = `/?signin=1&beta=1&token=${encodeURIComponent(data.unlockToken ?? 'trial-unlock')}`
       } else {
@@ -151,7 +151,7 @@ export default function MarketingPage() {
     },
     {
       q: 'Which building codes does stAIrcode check against?',
-      a: 'stAIrcode automatically detects your location and loads the applicable code. In BC, this means BCBC 2024 — including Energy Step Code tiers (RS-1 through RS-4), mandatory radon gas rough-in piping, solar-ready water heater rough-in, and zoning-specific requirements updated in the 2024 cycle. For Ontario: OBC 2024. For Quebec: QBC 2020. For other Canadian provinces: NBC 2020. For US jurisdictions: IBC 2021. The code version and jurisdiction are displayed on every report.',
+      a: 'stAIrcode automatically detects your location and applies the appropriate code: OBC 2024 (Ontario), NBC 2020 (other Canadian provinces), QBC 2020 (Quebec), BCBC 2024 (BC), IBC 2021 (United States), and others. The code used is shown on every report.',
     },
     {
       q: 'How accurate are the measurements?',
@@ -238,20 +238,11 @@ export default function MarketingPage() {
             <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
               stAIrcode layers AI-vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Check for possible code issues in minutes, not weeks.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
-              <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = '#0A1C2E' }}>
-                Member Sign In →
-              </a>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B' }}>
-                Don&apos;t have an account?{' '}
-                <a href="#pricing" onClick={e => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }) }}
-                  style={{ color: '#F29337', fontWeight: 700, textDecoration: 'none' }}>
-                  Sign Up →
-                </a>
-              </div>
-            </div>
+            <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = '#0A1C2E' }}>
+              Member Sign In →
+            </a>
           </div>
 
           {/* ── Right: animated phone mockup ── */}
@@ -261,18 +252,18 @@ export default function MarketingPage() {
         </div>
       </section>
 
+      {/* trust bar removed — redundant with hero copy */}
+
       {/* ══════════════════════════════════════════════
-          AS SEEN IN / TRUST BAR
+          HERO PHOTO — woman using stAIrcode on stairs
       ══════════════════════════════════════════════ */}
-      <div style={{ borderTop: '1px solid #E2EAF0', borderBottom: '1px solid #E2EAF0', padding: '1rem 1.25rem', background: '#F7FAFC' }}>
-        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-          {['OBC 2024 · BCBC 2024 · QBC 2020 · IBC 2021', 'BC Energy Step Codes RS-1 to RS-4', 'Radon & Solar Rough-in (BC 2024)', 'Field-Generated PDF Reports', 'Direct Email Delivery'].map(label => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 600, color: '#5E7D9B', whiteSpace: 'nowrap' }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#27A96B', flexShrink: 0, display: 'inline-block' }} />
-              {label}
-            </span>
-          ))}
-        </div>
+      <div style={{ width: '100%', maxHeight: 600, overflow: 'hidden', lineHeight: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/Staircode_Lady_Measure_at_Home.png"
+          alt="Building inspector using stAIrcode AI vision on stairs — live code compliance measurement"
+          style={{ width: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block', maxHeight: 600 }}
+        />
       </div>
 
       {/* ══════════════════════════════════════════════
@@ -392,40 +383,30 @@ export default function MarketingPage() {
       <section id="how-it-works" style={{ padding: '5rem 1.25rem', background: '#F7FAFC' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-          {/* Image first */}
-          <div style={{ marginBottom: '3rem' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero_app_scan.jpg"
-              alt="stAIrcode app scanning building — live building code compliance measurement in progress"
-              style={{ width: '100%', borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 32px rgba(44,74,110,0.18)', border: '1px solid rgba(44,90,122,0.15)', display: 'block' }}
-            />
-          </div>
+          {/* Animated phone demo — location → codes → start scan */}
+          <LocationDemo />
 
-          {/* Heading below image */}
-          <div className={styles.sectionLabel}>Why It Matters</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '0.75rem' }}>The requirements that get missed aren&apos;t the obvious ones</h2>
-          <p style={{ fontSize: '0.95rem', color: '#5E7D9B', lineHeight: 1.75, marginBottom: '2.5rem', maxWidth: 680 }}>
-            Modern building codes — especially in BC, Ontario, and Quebec — have grown significantly more complex. Energy step codes, mandatory rough-ins, radon mitigation, and zoning-specific requirements change frequently and vary by jurisdiction. stAIrcode is built to surface exactly those details while you&apos;re still on site.
-          </p>
+          {/* Heading below phone */}
+          <div className={styles.sectionLabel}>How It Works</div>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Three steps to Building Code Compliance</h2>
 
           {/* Steps stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {[
               {
                 n: '1',
-                title: 'Jurisdiction-specific code requirements, loaded automatically',
-                body: 'stAIrcode detects your location and loads the applicable code — BCBC 2024 for BC (including Energy Step Code tiers RS-1 through RS-4), OBC 2024 for Ontario, QBC 2020 for Quebec, and IBC 2021 for US jurisdictions. BC\'s 2024 updates — mandatory radon gas rough-in, solar-ready water heater piping, and energy performance tier requirements — are built in.',
+                title: 'AI-Vision guides you step by step',
+                body: 'Point your phone camera and follow the prompts. No tape measure, no technical knowledge required.',
               },
               {
                 n: '2',
-                title: 'AI catches what\'s easy to overlook under time pressure on site',
-                body: 'Inspecting a building while managing trades, schedules, and documentation is where code requirements get missed — not from lack of knowledge but from the volume of detail. stAIrcode\'s AI vision reads your photos, extracts measurements, and cross-references them against every applicable clause in your jurisdiction\'s code, flagging non-compliance with the specific section cited.',
+                title: 'Every dimension checked against your local building code in real time',
+                body: 'Instant pass/fail on site — cross-referenced against your location-specific code.',
               },
               {
                 n: '3',
-                title: 'A cited report you can hand to a client, contractor, or authority',
-                body: 'Your report documents each finding with measurement photos, the applicable code section, and a clear pass/fail result. It\'s structured for use in permit submissions, contractor briefings, or pre-sale disclosure — ready to email directly from the field.',
+                title: 'Instant PDF report — photos, code citations, full pass/fail analysis',
+                body: 'Ready to share with your client, architect, or contractor.',
               },
             ].map(s => (
               <div key={s.n} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start' }}>
@@ -571,12 +552,12 @@ export default function MarketingPage() {
               <div>
                 <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.5rem' }}>Full Residential Inspection</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#27A96B', background: 'rgba(39,169,107,0.15)', padding: '0.2rem 0.6rem', borderRadius: 4, marginBottom: '0.4rem', display: 'inline-block' }}>1 MONTH FREE</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#27A96B', background: 'rgba(39,169,107,0.15)', padding: '0.2rem 0.6rem', borderRadius: 4, marginBottom: '0.4rem', display: 'inline-block' }}>1 WEEK FREE</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textDecoration: 'line-through', lineHeight: 1 }}>$38.99</div>
                   <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#fff', lineHeight: 1 }}>Free</div>
-                  <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)' }}>for 30 days</div>
+                  <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)' }}>for 7 days</div>
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)', marginTop: '0.25rem' }}>Then $38.99/month · Cancel anytime</div>
               </div>
@@ -642,6 +623,18 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
+
+      {/* ══════════════════════════════════════════════
+          STAIRS ANALYSIS PHOTO
+      ══════════════════════════════════════════════ */}
+      <div style={{ width: '100%', maxHeight: 520, overflow: 'hidden', lineHeight: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero_app_scan.jpg"
+          alt="stAIrcode AI vision — live stair measurement with building code compliance overlay"
+          style={{ width: '100%', objectFit: 'cover', objectPosition: 'center 20%', display: 'block', maxHeight: 520 }}
+        />
+      </div>
 
       {/* ══════════════════════════════════════════════
           FINAL CTA
@@ -969,7 +962,7 @@ export default function MarketingPage() {
           <div style={{ background: '#0A1C2E', padding: '1.5rem', position: 'relative' }}>
             
             <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.4rem' }}>Full Residential Inspection</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Start your 30-day free trial</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Start your 7-day free trial</div>
             <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>Full access · No credit card required · Cancel anytime</div>
           </div>
 
@@ -980,7 +973,7 @@ export default function MarketingPage() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.75rem', borderRadius: 20, border: '1px solid rgba(39,169,107,0.3)' }}>FREE for 30 days</div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#27A96B', background: 'rgba(39,169,107,0.1)', padding: '0.2rem 0.75rem', borderRadius: 20, border: '1px solid rgba(39,169,107,0.3)' }}>FREE for 7 days</div>
                   <div style={{ fontSize: '0.8rem', color: '#5E7D9B', textDecoration: 'line-through' }}>$38.99/mo</div>
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#5E7D9B', marginTop: '0.25rem' }}>After your trial, plans start at $38.99/month. No credit card required to start.</div>
@@ -1034,7 +1027,6 @@ export default function MarketingPage() {
         </div>
       </>
     )}
-    <CodeHelper />
     </>
   )
 }

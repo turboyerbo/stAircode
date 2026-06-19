@@ -68,43 +68,6 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
   const [showMembership, setShowMembership] = useState(false)
   const [showLegal,      setShowLegal]      = useState(false)
   const [logoutConfirm,  setLogoutConfirm]  = useState(false)
-  const [deleteStep,     setDeleteStep]     = useState<'idle'|'confirm'|'typing'|'deleting'|'done'>('idle')
-  const [deleteInput,    setDeleteInput]    = useState('')
-  const [deleteError,    setDeleteError]    = useState('')
-
-  async function handleDeleteAccount() {
-    if (deleteInput.trim().toLowerCase() !== 'delete my account') {
-      setDeleteError('Type exactly: delete my account')
-      return
-    }
-    setDeleteStep('deleting')
-    setDeleteError('')
-    try {
-      const { getSupabase } = await import('@/lib/supabase-client')
-      const sb = getSupabase()
-      if (!sb) throw new Error('Not connected')
-      const { data: { session } } = await sb.auth.getSession()
-      const accessToken = session?.access_token
-      if (!accessToken) throw new Error('No session — please sign in again')
-
-      const res = await fetch('/api/account/delete', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: user.email, accessToken }),
-      })
-      const data = await res.json()
-      if (!data.ok) throw new Error(data.error ?? 'Delete failed')
-
-      // Clear all local storage and sign out
-      try { localStorage.clear() } catch {}
-      try { sessionStorage.clear() } catch {}
-      setDeleteStep('done')
-      setTimeout(() => onLogout(), 1500)
-    } catch (err: any) {
-      setDeleteError(err.message ?? 'Could not delete account. Email yerbury@staircode.app for help.')
-      setDeleteStep('typing')
-    }
-  }
 
   return (
     <div style={{
@@ -296,75 +259,6 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
                 fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
               }}>Log Out</button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── DANGER ZONE: Delete Account ── */}
-      <div style={{ padding: '0 1.25rem', marginTop: '0.5rem', marginBottom: '2rem' }}>
-        {deleteStep === 'idle' && (
-          <button
-            onClick={() => setDeleteStep('confirm')}
-            style={{ width:'100%', padding:'0.7rem', background:'none', border:'1px solid rgba(232,85,85,0.25)', borderRadius:10, color:'rgba(232,85,85,0.6)', fontSize:'0.78rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.01em' }}>
-            Delete Account
-          </button>
-        )}
-
-        {deleteStep === 'confirm' && (
-          <div style={{ background:'rgba(232,85,85,0.06)', border:'1px solid rgba(232,85,85,0.25)', borderRadius:12, padding:'1rem' }}>
-            <div style={{ fontSize:'0.82rem', fontWeight:700, color:T.fail, marginBottom:'0.4rem' }}>⚠ Delete account permanently?</div>
-            <div style={{ fontSize:'0.75rem', color:T.text2, lineHeight:1.65, marginBottom:'0.85rem' }}>
-              This will permanently delete your account, all your projects, inspection data, and reports. <strong style={{ color:T.text }}>This cannot be undone.</strong>
-            </div>
-            <div style={{ display:'flex', gap:'0.5rem' }}>
-              <button onClick={() => setDeleteStep('idle')}
-                style={{ flex:1, padding:'0.7rem', background:T.cardHi, border:`1px solid ${T.border}`, borderRadius:9, color:T.text, fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                Cancel
-              </button>
-              <button onClick={() => setDeleteStep('typing')}
-                style={{ flex:1, padding:'0.7rem', background:'rgba(232,85,85,0.15)', border:'1px solid rgba(232,85,85,0.4)', borderRadius:9, color:T.fail, fontSize:'0.82rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
-                Yes, continue →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {(deleteStep === 'typing' || deleteStep === 'deleting') && (
-          <div style={{ background:'rgba(232,85,85,0.06)', border:'1px solid rgba(232,85,85,0.3)', borderRadius:12, padding:'1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
-            <div style={{ fontSize:'0.82rem', fontWeight:700, color:T.fail }}>Final confirmation</div>
-            <div style={{ fontSize:'0.75rem', color:T.text2, lineHeight:1.6 }}>
-              Type <strong style={{ color:T.text, fontFamily:'monospace' }}>delete my account</strong> to confirm permanent deletion of <strong style={{ color:T.text }}>{user.email}</strong>.
-            </div>
-            <input
-              type="text"
-              value={deleteInput}
-              onChange={e => { setDeleteInput(e.target.value); setDeleteError('') }}
-              placeholder="delete my account"
-              disabled={deleteStep === 'deleting'}
-              style={{ width:'100%', padding:'0.7rem 0.9rem', background:'rgba(10,28,46,0.6)', border:`1px solid ${deleteInput.trim().toLowerCase() === 'delete my account' ? 'rgba(232,85,85,0.6)' : 'rgba(65,124,164,0.3)'}`, borderRadius:9, color:T.text, fontSize:'0.85rem', outline:'none', fontFamily:'inherit', boxSizing:'border-box' as const }}
-            />
-            {deleteError && (
-              <div style={{ fontSize:'0.72rem', color:T.fail, background:'rgba(232,85,85,0.08)', padding:'0.4rem 0.65rem', borderRadius:6 }}>{deleteError}</div>
-            )}
-            <div style={{ display:'flex', gap:'0.5rem' }}>
-              <button onClick={() => { setDeleteStep('idle'); setDeleteInput(''); setDeleteError('') }}
-                disabled={deleteStep === 'deleting'}
-                style={{ flex:1, padding:'0.7rem', background:T.cardHi, border:`1px solid ${T.border}`, borderRadius:9, color:T.text, fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                Cancel
-              </button>
-              <button onClick={handleDeleteAccount}
-                disabled={deleteStep === 'deleting' || deleteInput.trim().toLowerCase() !== 'delete my account'}
-                style={{ flex:1, padding:'0.7rem', background: deleteStep === 'deleting' ? 'rgba(232,85,85,0.15)' : deleteInput.trim().toLowerCase() === 'delete my account' ? '#E84545' : 'rgba(232,85,85,0.1)', border:'none', borderRadius:9, color: deleteInput.trim().toLowerCase() === 'delete my account' ? '#fff' : 'rgba(232,85,85,0.4)', fontSize:'0.82rem', fontWeight:700, cursor: deleteStep === 'deleting' || deleteInput.trim().toLowerCase() !== 'delete my account' ? 'not-allowed':'pointer', fontFamily:'inherit' }}>
-                {deleteStep === 'deleting' ? 'Deleting…' : 'Delete Forever'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {deleteStep === 'done' && (
-          <div style={{ background:'rgba(39,169,107,0.08)', border:'1px solid rgba(39,169,107,0.3)', borderRadius:12, padding:'1rem', textAlign:'center' }}>
-            <div style={{ fontSize:'0.88rem', fontWeight:700, color:'#27A96B', marginBottom:'0.25rem' }}>Account deleted</div>
-            <div style={{ fontSize:'0.75rem', color:T.text2 }}>Signing you out…</div>
           </div>
         )}
       </div>
