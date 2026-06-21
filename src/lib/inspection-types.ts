@@ -95,6 +95,16 @@ export type WeatherCondition =
 
 export type ProjectType = 'new_construction' | 'renovation'
 
+// For renovation projects — which part of the building is in scope.
+// Drives which inspection modules appear in the project (irrelevant ones hidden).
+export type RenovationScope =
+  | 'interior_only'
+  | 'exterior_only'
+  | 'foundations'
+  | 'roof'
+  | 'exterior_deck'
+  | 'full_building'
+
 export type InspectionJobStatus =
   | 'active'        // in progress
   | 'on_hold'       // awaiting inspector or materials
@@ -109,6 +119,8 @@ export interface InspectionJob {
 
   // Project classification
   projectType: ProjectType     // 'new_construction' | 'renovation'
+  renovationScope?: RenovationScope  // only for renovations — drives module visibility
+  hasPermit?: boolean          // false for DIY renos — hides permit/drawings modules
 
   // Client & inspector
   clientName:     string
@@ -550,33 +562,210 @@ export const MODULE_META: Partial<Record<ModuleId, {
   appliances_laundry:          { label: 'Laundry Appliances',    description: 'Washer and dryer — test basic cycle. PHOTOGRAPH THE DATA PLATE on each. Note dryer venting (should exhaust to exterior). Note any staining or evidence of past leaks.', required: false, isBuiltIn: false },
 }
 
+// ─── Renovation scope → module filtering ─────────────────────────────────────
+//
+// Every module is tagged with the building areas it belongs to. When a user
+// picks a renovation funnel (Interior Only, Roof, etc.), only modules tagged
+// for that area are included. Modules not relevant are hidden entirely — the
+// user never has to scroll past foundations on an interior job.
+
+type ModuleArea =
+  | 'interior'
+  | 'exterior'
+  | 'foundation'
+  | 'roof'
+  | 'deck'
+  | 'site'
+  | 'permit'      // permit/drawings — only relevant when a permit exists
+  | 'universal'   // always shown (e.g. property details)
+
+// A module can belong to more than one area.
+const MODULE_AREAS: Partial<Record<ModuleId, ModuleArea[]>> = {
+  // Setup — always shown
+  property_details:            ['universal'],
+
+  // Permit / pre-construction — only when the job has a permit
+  drawings_review:             ['permit'],
+  permit_issuance:             ['permit'],
+  site_plan_review:            ['permit', 'site'],
+
+  // Foundation / below-grade
+  footing_depth:               ['foundation'],
+  footing_width:               ['foundation'],
+  bearing_soil:                ['foundation'],
+  drain_tile:                  ['foundation'],
+  foundation_inspection:       ['foundation'],
+  damp_proofing:               ['foundation'],
+  foundation_drainage:         ['foundation'],
+  window_wells:                ['foundation'],
+
+  // Roof system
+  roof_covering:               ['roof'],
+  roof_flat:                   ['roof'],
+  roof_flashings:              ['roof'],
+  roof_drainage:               ['roof', 'exterior'],
+  chimneys:                    ['roof', 'exterior'],
+  skylights:                   ['roof', 'interior'],
+  attic_access:                ['roof', 'interior'],
+  roof_framing_rough:          ['roof'],
+
+  // Exterior envelope
+  exterior_walls:              ['exterior'],
+  exterior_cracks:             ['exterior'],
+  eaves_fascia_soffit:         ['exterior', 'roof'],
+  porches_decks:               ['exterior', 'deck'],
+  windows_final:               ['exterior'],
+  doors_final:                 ['exterior'],
+  decks_balconies:             ['deck', 'exterior'],
+  garage_final:                ['exterior'],
+
+  // Site
+  site_grading:                ['site', 'exterior'],
+  site_drainage:               ['site', 'exterior'],
+  driveway_paths:              ['site', 'exterior'],
+  swimming_pool:               ['site', 'exterior'],
+
+  // Structure (interior-side framing)
+  structural_framing:          ['interior'],
+  floor_systems:               ['interior'],
+  rough_plumbing:              ['interior'],
+  rough_electrical:            ['interior'],
+  rough_hvac:                  ['interior'],
+  fire_blocking:               ['interior'],
+  stair_rough:                 ['interior'],
+
+  // Insulation (interior-side)
+  insulation_walls:            ['interior'],
+  insulation_ceiling:          ['interior', 'roof'],
+  vapour_barrier:              ['interior'],
+  window_door_rough_openings:  ['interior', 'exterior'],
+
+  // Interior finishes
+  interior_finishes:           ['interior'],
+  ceilings:                    ['interior'],
+  internal_walls:              ['interior'],
+  floors_final:                ['interior'],
+  stairs:                      ['interior'],
+  stair_compliance:            ['interior'],
+  guardrails_handrails:        ['interior'],
+  wet_areas_kitchen:           ['interior'],
+  wet_areas_bathrooms:         ['interior'],
+  wet_areas_laundry:           ['interior'],
+  accessibility:               ['interior'],
+  fireplace_wett:              ['interior'],
+  appliances_kitchen:          ['interior'],
+  appliances_laundry:          ['interior'],
+  egress_windows:              ['interior'],
+  smoke_co_detectors:          ['interior'],
+
+  // Building systems
+  electrical_service_entrance: ['exterior', 'interior'],
+  electrical_panel:            ['interior'],
+  electrical_branch_wiring:    ['interior'],
+  electrical_gfci_afci:        ['interior'],
+  electrical_smoke_co:         ['interior'],
+  plumbing_water_main:         ['interior', 'foundation'],
+  plumbing_distribution:       ['interior'],
+  plumbing_dwv:                ['interior'],
+  plumbing_fixtures:           ['interior'],
+  hot_water_system:            ['interior'],
+  hvac_thermostat:             ['interior'],
+  hvac_furnace:                ['interior'],
+  hvac_ac:                     ['exterior', 'interior'],
+  hvac_venting_combustion:     ['interior'],
+
+  // Legacy
+  services_electrical:         ['interior'],
+  services_plumbing:           ['interior'],
+  services_gas:                ['interior'],
+  hvac_final:                  ['interior'],
+}
+
+// Which areas each renovation funnel includes.
+const SCOPE_AREAS: Record<RenovationScope, ModuleArea[]> = {
+  interior_only:  ['interior', 'universal'],
+  exterior_only:  ['exterior', 'site', 'universal'],
+  foundations:    ['foundation', 'universal'],
+  roof:           ['roof', 'universal'],
+  exterior_deck:  ['deck', 'universal'],
+  full_building:  ['interior', 'exterior', 'foundation', 'roof', 'deck', 'site', 'universal'],
+}
+
+export const RENOVATION_SCOPE_META: Record<RenovationScope, { label: string; description: string; icon: string }> = {
+  interior_only:  { label: 'Interior Only',   description: 'Finishes, kitchens, baths, stairs, interior systems', icon: 'interior' },
+  exterior_only:  { label: 'Exterior Only',   description: 'Walls, windows, doors, cladding, site', icon: 'exterior' },
+  foundations:    { label: 'Foundations',     description: 'Footings, foundation walls, damp-proofing, drainage', icon: 'foundation' },
+  roof:           { label: 'Roof',            description: 'Covering, flashings, chimneys, drainage, attic', icon: 'roof' },
+  exterior_deck:  { label: 'Exterior Deck',   description: 'Deck structure, guards, ledger, footings', icon: 'deck' },
+  full_building:  { label: 'Whole Building',  description: 'Every system — a complete inspection', icon: 'full' },
+}
+
+/**
+ * Returns the modules from a phase that are relevant to the given scope and
+ * permit status. New-construction jobs are never filtered.
+ */
+export function filterModulesForScope(
+  moduleIds: ModuleId[],
+  projectType: ProjectType,
+  scope?: RenovationScope,
+  hasPermit?: boolean,
+): ModuleId[] {
+  return moduleIds.filter(id => {
+    const areas = MODULE_AREAS[id] ?? ['universal']
+    // Permit/drawings modules only show when the job has a permit
+    if (areas.includes('permit') && !hasPermit) return false
+    // New construction shows everything else
+    if (projectType !== 'renovation' || !scope) return true
+    // Renovation: keep only modules whose areas intersect the scope's areas
+    const allowed = SCOPE_AREAS[scope]
+    return areas.some(a => allowed.includes(a))
+  })
+}
+
 // ─── Factory helpers ──────────────────────────────────────────────────────────
 
 export function createNewJob(partial: Partial<InspectionJob> = {}): InspectionJob {
   const id  = `insp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   const now = new Date().toISOString()
 
-  const phases: InspectionPhase[] = (Object.keys(PHASE_META) as PhaseId[]).map(phaseId => ({
-    id:        phaseId,
-    status:    phaseId === 'property_setup' ? 'in_progress' : 'pending',
-    holdPoint: PHASE_META[phaseId].holdPoint,
-    modules:   PHASE_META[phaseId].modules.map(modId => ({
-      id:        modId,
-      status:    'pending',
-      findings:  [],
-      photos:    [],
-      notes:     '',
-      isBuiltIn: MODULE_META[modId]?.isBuiltIn ?? false,
-    })),
-    phaseNotes: '',
-  }))
+  const projectType     = partial.projectType ?? 'new_construction'
+  const renovationScope = partial.renovationScope
+  const hasPermit       = partial.hasPermit ?? (projectType === 'new_construction')
+
+  const phases: InspectionPhase[] = (Object.keys(PHASE_META) as PhaseId[])
+    .map(phaseId => {
+      const scopedIds = filterModulesForScope(
+        PHASE_META[phaseId].modules,
+        projectType,
+        renovationScope,
+        hasPermit,
+      )
+      return {
+        id:        phaseId,
+        status:    (phaseId === 'property_setup' ? 'in_progress' : 'pending') as PhaseStatus,
+        holdPoint: PHASE_META[phaseId].holdPoint,
+        modules:   scopedIds.map(modId => ({
+          id:        modId,
+          status:    'pending' as ModuleStatus,
+          findings:  [],
+          photos:    [],
+          notes:     '',
+          isBuiltIn: MODULE_META[modId]?.isBuiltIn ?? false,
+        })),
+        phaseNotes: '',
+      }
+    })
+    // Drop phases left with no modules after filtering (always keep property_setup)
+    .filter(p => p.id === 'property_setup' || p.modules.length > 0)
 
   return {
     id,
     createdAt:  now,
     updatedAt:  now,
     status:     'active',
-    projectType: 'new_construction',
+    projectType,
+    renovationScope,
+    hasPermit,
     clientName:      '',
     inspectorName:   '',
     address: { street: '', city: '', province: 'Ontario', postalCode: '', country: 'Canada' },

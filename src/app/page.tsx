@@ -13,6 +13,7 @@ import HelpScreen                            from './components/HelpScreen'
 import SettingsScreen                        from './components/SettingsScreen'
 import WelcomeModal                          from './components/WelcomeModal'
 import GlobalCodeAssistant                   from './components/GlobalCodeAssistant'
+import HomeHub                               from './components/HomeHub'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ReportScreen                          from './components/ReportScreen'
 import PaymentSuccessScreen                  from './components/PaymentSuccessScreen'
@@ -39,7 +40,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
+type Screen = 'home'|'settings'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -932,13 +933,13 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   const [tab,setTab]=useState<Tab>('home')
   const [screen,setScreen]=useState<Screen>(() => {
     if (initialScreen) return initialScreen
-    // The projects list IS the home screen now — always land there
-    return 'inspection_projects'
+    // The home hub is the landing screen — 3 actions: new inspection, quick scan, projects
+    return 'home'
   })
 
-  // Navigate to projects when parent signals it (e.g. after sign-in from MemberLoginScreen)
+  // Navigate to the home hub when parent signals post-sign-in
   React.useEffect(() => {
-    if (navigateToProjects) setScreen('inspection_projects')
+    if (navigateToProjects) setScreen('home')
   }, [navigateToProjects])
 
   const [inspectionJob,setInspectionJob]=useState<InspectionJob|null>(null)
@@ -1138,6 +1139,43 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
     }
   }, [screen]) // eslint-disable-line
 
+  if(screen==='home')
+    return (
+      <>
+        <HomeHub
+          user={user}
+          loc={loc}
+          locLoading={locLoading}
+          code={code}
+          trialDaysLeft={(user.membership==='subscription'||user.membership==='pro') ? null : getTrialDaysLeft()}
+          onStartInspection={()=>setScreen('inspection_type')}
+          onQuickScan={()=>{ setActiveModule('stair'); Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:'stair'}); setScreen('scan_ready') }}
+          onMyProjects={()=>setScreen('inspection_projects')}
+        />
+        {showWelcome && (
+          <WelcomeModal
+            onClose={()=>setShowWelcome(false)}
+            onTryDemo={()=>{ setActiveModule('stair'); setScreen('scan_ready') }}
+            onCreateProject={()=>setScreen('inspection_type')}
+          />
+        )}
+        <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+      </>
+    )
+
+  if(screen==='settings')
+    return (
+      <div style={{minHeight:'100dvh',background:C.dark,color:'#fff',display:'flex',flexDirection:'column',maxWidth:430,margin:'0 auto'}}>
+        <div style={{display:'flex',alignItems:'center',padding:'max(env(safe-area-inset-top,0px),0.9rem) 1rem 0.7rem',background:'#0A1C2E',borderBottom:'1px solid rgba(147,186,212,0.15)'}}>
+          <button onClick={()=>setScreen('home')} style={{background:'none',border:'none',color:'rgba(255,255,255,0.6)',fontSize:'0.85rem',cursor:'pointer',padding:0}}>← Home</button>
+        </div>
+        <div style={{flex:1,overflowY:'auto'}}>
+          <SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>
+        </div>
+        <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+      </div>
+    )
+
   if(screen==='inspection_paywall'){
     // hasInspectionAccess redirects via useEffect above; show nothing while it fires
     if(hasInspectionAccess()) return null
@@ -1148,11 +1186,16 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
     />
   }
   if(screen==='inspection_type')
-    return <ProjectTypeScreen onSelect={async t=>{
-      setProjectType(t)
+    return <ProjectTypeScreen onSelect={async result=>{
+      setProjectType(result.type)
       // Create a stub job immediately and save to Supabase so it appears in My Inspections right away
       const { createNewJob } = await import('@/lib/inspection-types')
-      const stubJob = createNewJob({ projectType: t, status: 'active' })
+      const stubJob = createNewJob({
+        projectType:     result.type,
+        renovationScope: result.renovationScope,
+        hasPermit:       result.hasPermit,
+        status:          'active',
+      })
       setInspectionJob(stubJob)
       try { sessionStorage.setItem(`insp_${stubJob.id}`, JSON.stringify(stubJob)) } catch {}
       try { localStorage.setItem(`insp_${stubJob.id}`, JSON.stringify(stubJob)) } catch {}
@@ -1183,22 +1226,15 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
       <>
         <InspectionProjectList
           userEmail={user.email??''}
-          onBack={()=>{}}
-          onSettings={()=>{ setTab('settings'); setScreen('home') }}
+          onBack={()=>setScreen('home')}
+          onSettings={()=>{ setTab('settings'); setScreen('settings') }}
+          onQuickScan={()=>{ setActiveModule('stair'); Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:'stair'}); setScreen('scan_ready') }}
           onStartNew={()=>{
             // Always allow new projects — pre-screening doesn't require membership
             setScreen('inspection_type')
           }}
           onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
         />
-        {/* First-login welcome modal */}
-        {showWelcome && (
-          <WelcomeModal
-            onClose={()=>setShowWelcome(false)}
-            onTryDemo={()=>{ setActiveModule('stair'); setScreen('scan_ready') }}
-            onCreateProject={()=>setScreen('inspection_type')}
-          />
-        )}
         {/* Global code assistant — available here */}
         <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
       </>
@@ -1269,7 +1305,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
         {tab==='settings'&&<SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>}
         {tab==='home'&&<HomeTab user={user} loc={loc} locLoading={locLoading} code={code} onStartScan={(mod)=>{setActiveModule(mod);Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:mod});setScreen('scan_ready')}} onStartInspection={()=>{ setScreen('inspection_projects') }} onLogout={onLogout} activeModule={activeModule} onModuleChange={m=>{setActiveModule(m)}}/>}
       </div>
-      <BottomNav active={tab} onChange={t=>{setTab(t);if(t==='home')setScreen('inspection_projects');if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
+      <BottomNav active={tab} onChange={t=>{setTab(t);if(t==='home')setScreen('home');if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
       {/* Global code assistant on settings/help screens too */}
       <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
     </div>

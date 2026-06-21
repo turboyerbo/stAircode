@@ -17,6 +17,7 @@ interface Props {
   onResumeJob:  (job: InspectionJob) => void
   onBack:       () => void
   onSettings?:  () => void
+  onQuickScan?: () => void
 }
 
 const NAVY   = '#0A1C2E'
@@ -84,7 +85,7 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days/30)} months ago`
 }
 
-export default function InspectionProjectList({ userEmail, onStartNew, onResumeJob, onBack, onSettings }: Props) {
+export default function InspectionProjectList({ userEmail, onStartNew, onResumeJob, onBack, onSettings, onQuickScan }: Props) {
   const [jobs,       setJobs]       = useState<SummaryRow[]>([])
   const [loading,    setLoading]    = useState(true)
   const [resuming,   setResuming]   = useState<string | null>(null)
@@ -278,9 +279,12 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
       {/* ── Header ── */}
       <div style={{ background: NAVY, paddingTop: 'max(env(safe-area-inset-top,0px),1rem)', paddingBottom: '1.25rem', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
-          <div style={{ width: 40 }} />
+          <button onClick={onBack} aria-label="Home" style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: 0, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', width: 56 }}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v8a1 1 0 0 1-1 1h-4v-5H8v5H4a1 1 0 0 1-1-1V9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+            Home
+          </button>
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}><NavLogo height={22} /></div>
-          <button onClick={()=>onSettings?.()} aria-label="Settings" style={{ width: 40, background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', padding: 0, display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={()=>onSettings?.()} aria-label="Settings" style={{ width: 56, background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', padding: 0, display: 'flex', justifyContent: 'flex-end' }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="3" stroke="currentColor" strokeWidth="1.4"/>
               <path d="M10 1v2M10 17v2M1 10h2M17 10h2M3.5 3.5l1.5 1.5M15 15l1.5 1.5M16.5 3.5L15 5M5 15l-1.5 1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
@@ -305,6 +309,17 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
           Start New Inspection
         </button>
 
+        {/* Quick Scan button */}
+        {onQuickScan && (
+          <button onClick={onQuickScan}
+            style={{ width: '100%', padding: '0.85rem', background: '#fff', border: `1.5px solid ${GREEN}55`, borderRadius: 12, color: NAVY, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" stroke={GREEN} strokeWidth="1.6" strokeLinecap="round"/>
+              <circle cx="12" cy="12" r="3.5" stroke={GREEN} strokeWidth="1.6"/>
+            </svg>
+            Quick Scan — instant AI code check
+          </button>
+        )}
         {/* Error */}
         {error && (
           <div style={{ background: 'rgba(232,69,69,0.08)', border: '1px solid rgba(232,69,69,0.25)', borderRadius: 9, padding: '0.75rem 1rem', fontSize: '0.78rem', color: '#E84545', marginBottom: '1rem' }}>{error}</div>

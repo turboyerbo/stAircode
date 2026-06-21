@@ -168,8 +168,12 @@ const FAQ = [
     a: 'Any modern smartphone with a rear camera. Best results on iPhone 12+ or Android 2019+. AR plane detection (higher accuracy) requires ARCore on Android or ARKit on iOS Safari.',
   },
   {
+    q: 'Does stAIrcode only check stairs?',
+    a: "No — stairs are the quick demo. stAIrcode runs full residential building inspections across every system: roofing, exterior envelope, foundation, structure, electrical, plumbing, HVAC, insulation, fireplaces, appliances, interior finishes, accessibility, and site. Each is guided phase by phase with AI-assisted analysis, photo documentation, and code citations. The stair scan is simply the fastest way to learn the AR + AI workflow you'll use everywhere else.",
+  },
+  {
     q: 'What does the Full Report include?',
-    a: 'A detailed AI-generated compliance report including: full stair description, compliance analysis per dimension with code citations, occupancy classification, applicable bylaw notes, and a pre-inspection summary for a building official. The report is emailed to you instantly.',
+    a: 'A detailed AI-generated compliance report covering every inspected module — not just stairs. It includes per-element condition and compliance analysis with code citations, occupancy classification, applicable bylaw notes, photo documentation per module, and a pre-inspection summary for a building official. The report is emailed to you instantly.',
   },
 ]
 
@@ -185,10 +189,19 @@ export default function HelpScreen() {
     <div style={{ flex:1, overflowY:'auto', background:BG, backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)', color:TEXT, fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", paddingBottom:'2rem' }}>{/* HEADER */}
       <div style={{ padding:'1.4rem 1.25rem 1.1rem', backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(65,124,164,0.07) 27px,rgba(65,124,164,0.07) 28px)' }}><div style={{ marginBottom:'0.5rem' }}><BetaLogo size="sm" onDark /></div>
         <h1 style={{ fontSize:'1.5rem', fontWeight: 700, color:TEXT, letterSpacing:'-0.02em', margin:0 }}>AR / AI Guide</h1>
-        <p style={{ fontSize:'0.78rem', color:TEXT2, margin:'0.4rem 0 0', lineHeight:1.55 }}>Your phone&apos;s AR sensor and Claude AI Vision work together to measure your staircase — no tape measure needed.
+        <p style={{ fontSize:'0.78rem', color:TEXT2, margin:'0.4rem 0 0', lineHeight:1.55 }}>This guide walks through a <strong style={{ color:TEXT }}>stair scan</strong> as a hands-on example. It&apos;s the quickest way to see how your phone&apos;s AR sensor and Claude AI Vision work together — but stairs are just one module of a complete building inspection.
         </p>
       </div>
       <div style={{ height:5, background:'repeating-linear-gradient(-45deg,#F29337 0px,#F29337 5px,#0A1C2E 5px,#0A1C2E 12px)', backgroundSize:'20px 20px' }} />
+
+      {/* ══ FULL-INSPECTION SCOPE BANNER ══ */}
+      <div style={{ margin:'1rem 1rem 0', borderRadius:16, overflow:'hidden', border:'1.5px solid rgba(242,147,55,0.3)', background:'rgba(242,147,55,0.08)' }}>
+        <div style={{ padding:'1rem 1.1rem' }}>
+          <div style={{ fontSize:'0.7rem', fontWeight:800, color:ORANGE, letterSpacing:'0.06em', marginBottom:'0.4rem' }}>STAIRS ARE JUST THE DEMO</div>
+          <div style={{ fontSize:'0.82rem', color:TEXT, lineHeight:1.6, fontWeight:600, marginBottom:'0.5rem' }}>stAIrcode performs full residential building inspections — not just stairs.</div>
+          <div style={{ fontSize:'0.74rem', color:TEXT2, lineHeight:1.65 }}>A complete inspection covers the roof, exterior envelope, foundation, structure, electrical, plumbing, HVAC, insulation, fireplaces, appliances, interior finishes, accessibility, and site — guided phase by phase, each with AI-assisted analysis and a professional report. The stair scan below shows the core AR + AI workflow you&apos;ll use across every one of those modules.</div>
+        </div>
+      </div>
 
       {/* ══ AR + AI INTERACTION EXPLAINER IMAGE ══ */}
       <div style={{ margin:'1rem 1rem 0.5rem', borderRadius:16, overflow:'hidden', border:'1.5px solid rgba(147,186,212,0.12)', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>{/* eslint-disable-next-line @next/next/no-img-element */}
@@ -199,13 +212,13 @@ export default function HelpScreen() {
         />
         <div style={{ background:BG2, padding:'0.75rem 1rem', borderTop:'1px solid rgba(147,186,212,0.12)' }}><div style={{ fontSize:'0.72rem', fontWeight:700, color:ORANGE, marginBottom:'0.25rem', letterSpacing:'0.04em' }}>How AR + AI work together
           </div>
-          <div style={{ fontSize:'0.72rem', color:TEXT2, lineHeight:1.6 }}>The phone fires an AR ray at the stair (red line). The AI Vision layer (orange atom) checks your camera angle before confirming the reading. When both agree, the measurement locks in blue. This dual-layer approach catches angle errors that either system would miss alone.
+          <div style={{ fontSize:'0.72rem', color:TEXT2, lineHeight:1.6 }}>The phone fires an AR ray at the surface (red line). The AI Vision layer (orange atom) checks your camera angle before confirming the reading. When both agree, the measurement locks in blue. This same dual-layer approach powers every inspection module — stairs, foundations, electrical, and the rest — not just the stair demo shown here.
           </div>
         </div>
       </div>
 
       {/* ══ HOW YOUR PHONE MEASURES ══ */}
-      <SectionHeader label="How Your Phone Measures" />
+      <SectionHeader label="How Your Phone Measures — Worked Example: Stairs" />
 
       {/* Pill tabs — no scrollbar */}
       <div style={{ display:'flex', gap:'0.4rem', padding:'0 1rem 0.75rem', overflowX:'auto', WebkitOverflowScrolling:'touch' as any, scrollbarWidth:'none', msOverflowStyle:'none' } as any}>

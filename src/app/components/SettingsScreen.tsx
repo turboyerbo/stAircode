@@ -52,20 +52,10 @@ const ROLE_COLORS: Record<string, string> = {
   realestate:       '#F59E0B',
 }
 
-const MEMBERSHIP_COLORS: Record<string, string> = {
-  free:       T.text2,
-  pro:        T.blue,
-  enterprise: T.orange,
-}
-const MEMBERSHIP_LABELS: Record<string, string> = {
-  free: 'Free', pro: 'Pro', enterprise: 'Enterprise',
-}
-
 export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) {
   const [showUnits,      setShowUnits]      = useState(false)
   const [showRole,       setShowRole]       = useState(false)
   const [showPayment,    setShowPayment]    = useState(false)
-  const [showMembership, setShowMembership] = useState(false)
   const [showLegal,      setShowLegal]      = useState(false)
   const [logoutConfirm,  setLogoutConfirm]  = useState(false)
 
@@ -123,65 +113,70 @@ export default function SettingsScreen({ user, onLogout, onUpdateUser }: Props) 
 
       <SettingsRow icon="—" label="Account" value={user.email} sub={`Signed in with ${user.provider}`} />
 
-      {/* Payment Method — hidden until Pro subscription launches */}
-
-      <SettingsRow
-        icon="—" label="Membership"
-        value={MEMBERSHIP_LABELS[user.membership]}
-        valueColor={MEMBERSHIP_COLORS[user.membership]}
-        onTap={() => setShowMembership(v => !v)}
-      />
-      {showMembership && (
-        <div style={{ margin: '0 1rem 0.5rem', background: T.card, border: `1px solid ${T.borderHi}`, borderRadius: 14, overflow: 'hidden' }}>{([
-            { id: 'free',       label: 'Free',       desc: 'Basic scanning, limited reports',       price: '$0/mo'  },
-            { id: 'pro',        label: 'Pro',         desc: '20 scans/month, PDF exports',          price: '$199/mo' },
-            { id: 'enterprise', label: 'Enterprise',  desc: 'Team access, API, priority support',    price: '$79/mo' },
-          ] as const).map(({ id, label, desc, price }) => (
-            <button key={id}
-              onClick={() => { onUpdateUser({ ...user, membership: id }); setShowMembership(false) }}
-              style={{
-                width: '100%', padding: '0.9rem 1rem',
-                background: user.membership === id ? T.cardHi : 'transparent',
-                border: 'none', borderBottom: `1px solid ${T.border}`,
-                cursor: 'pointer', textAlign: 'left',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}><div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: MEMBERSHIP_COLORS[id] }}>{label}</div>
-                <div style={{ fontSize: '0.7rem', color: T.text2, marginTop: '0.15rem' }}>{desc}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span style={{ fontSize: '0.82rem', color: T.text, fontWeight: 700 }}>{price}</span>
-                {user.membership === id && <span style={{fontSize:'0.75rem',color:'#27A96B',fontWeight:700}}>&#10003;</span>}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── MANAGE SUBSCRIPTION (Pro/Enterprise only) ── */}
-      {(user.membership === 'pro' || user.membership === 'enterprise') && (
-        <>
-          <SectionHeader label="Subscription" />
-          <SettingsRow
-            icon="" label="Manage Subscription"
-            value={user.membership === 'pro' ? '$199/mo · Active' : 'Enterprise — Contact us'}
-            valueColor={T.pass}
-            onTap={async () => {
-              try {
-                const res = await fetch('/api/stripe/portal', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userEmail: user.email }),
-                })
-                const data = await res.json()
-                if (data.url) window.location.href = data.url
-                else alert('Could not open billing portal. Contact info@staircode.app.')
-              } catch {
-                alert('Could not open billing portal. Contact info@staircode.app.')
-              }
-            }}
-          />
-        </>
-      )}
+      {/* ── PLAN — single model: 7-day free trial, then $38.99/mo ── */}
+      {(() => {
+        const isSubscribed = user.membership === 'subscription' || user.membership === 'pro'
+        if (isSubscribed) {
+          return (
+            <>
+              <SectionHeader label="Plan" />
+              <SettingsRow
+                icon="—" label="stAIrcode Membership"
+                value="Active · $38.99/mo"
+                valueColor={T.pass}
+              />
+              <SettingsRow
+                icon="" label="Manage Subscription"
+                value="Update or cancel"
+                onTap={async () => {
+                  try {
+                    const res = await fetch('/api/stripe/portal', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userEmail: user.email }),
+                    })
+                    const data = await res.json()
+                    if (data.url) window.location.href = data.url
+                    else alert('Could not open billing portal. Contact info@staircode.app.')
+                  } catch {
+                    alert('Could not open billing portal. Contact info@staircode.app.')
+                  }
+                }}
+              />
+            </>
+          )
+        }
+        // Trial user — show trial status and an upgrade prompt
+        return (
+          <>
+            <SectionHeader label="Plan" />
+            <SettingsRow
+              icon="—" label="stAIrcode Membership"
+              value="Free trial"
+              valueColor="#27A96B"
+            />
+            <SettingsRow
+              icon="" label="Upgrade — keep full access"
+              value="$38.99/mo"
+              valueColor={T.pass}
+              onTap={async () => {
+                try {
+                  const res = await fetch('/api/stripe/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product: 'subscription', email: user.email }),
+                  })
+                  const data = await res.json()
+                  if (data.url) window.location.href = data.url
+                  else alert('Could not start checkout. Contact info@staircode.app.')
+                } catch {
+                  alert('Could not start checkout. Contact info@staircode.app.')
+                }
+              }}
+            />
+          </>
+        )
+      })()}
 
       {/* ── BETA FEEDBACK ── */}
       <SectionHeader label="Feedback" />
