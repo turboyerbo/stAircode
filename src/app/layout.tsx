@@ -6,10 +6,10 @@ import './globals.css'
 // ── PWA + SEO Metadata ─────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'stAIrcode — AI Building Inspection Reports | OBC 2024',
-  description: 'AI-guided OBC 2024 compliance reports for residential inspectors. Generated in the field, not at the desk. New construction & pre-purchase inspections.',
+  title: 'stAIrcode — AI Building Code Compliance from Your Phone',
+  description: 'Check any building code, anywhere, with AI. stAIrcode uses your phone camera to measure building geometry and verify compliance against your local code — OBC, NBC, CCQ, IBC, IRC, UK Part K and more, detected automatically. Generated in the field, not at the desk.',
   applicationName: 'stAIrcode',
-  keywords: ['building inspection', 'OBC 2024', 'residential inspection', 'new construction inspection', 'pre-purchase inspection', 'stair compliance', 'AI inspection', 'Ontario building code', 'compliance report'],
+  keywords: ['building code compliance', 'AI building inspection', 'building code checker', 'residential inspection', 'stair compliance', 'AI inspection app', 'building code AR', 'IBC', 'IRC', 'OBC 2024', 'NBC 2020', 'UK Part K', 'compliance report', 'home inspection software'],
   authors: [{ name: 'Just Open Technologies Inc.' }],
   creator: 'Just Open Technologies Inc.',
   publisher: 'Just Open Technologies Inc.',
@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://staircode.app'),
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'stAIrcode — AI Building Inspection Reports | OBC 2024',
-    description: 'Measure and check your staircase against local building codes using your phone camera.',
+    title: 'stAIrcode — Check Any Building Code, Anywhere, with AI',
+    description: 'Measure building geometry with your phone camera and check it against your local building code — anywhere in the world, detected automatically.',
     url: 'https://staircode.app',
     siteName: 'stAIrcode',
     type: 'website',
@@ -26,8 +26,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'stAIrcode — AI Building Inspection Reports | OBC 2024',
-    description: 'AR stair measurements checked against OBC, NBC, IRC, IBC and more.',
+    title: 'stAIrcode — Check Any Building Code, Anywhere, with AI',
+    description: 'AI vision measurements checked against your local building code — OBC, NBC, CCQ, IBC, IRC, UK Part K and more, detected automatically.',
     images: ['/screenshots/feature-graphic.png'],
   },
   appleWebApp: {

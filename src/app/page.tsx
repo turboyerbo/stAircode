@@ -448,12 +448,12 @@ function getTrialEnd(): Date | null {
  * Writes a tamper-evident 'sc_trial_expired' flag when the server says expired,
  * so clearing sc_trial_start alone cannot grant a fresh trial.
  */
-async function ensureTrialStarted(email: string): Promise<{ expired: boolean; daysLeft: number } | null> {
+async function ensureTrialStarted(email: string, name?: string): Promise<{ expired: boolean; daysLeft: number } | null> {
   try {
     const res = await fetch('/api/trial/start', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email }),
+      body:    JSON.stringify({ email, name }),
     })
     if (!res.ok) return null
     const data = await res.json()
@@ -679,7 +679,7 @@ export default function Home(){
     setUser(authedUser)
     try{localStorage.setItem('sc_user',JSON.stringify(authedUser))}catch{}
     // Auto-start 7-day trial on first sign-in (idempotent — server is source of truth)
-    ensureTrialStarted(authedUser.email).then(() => setTrialTick(t => t + 1))
+    ensureTrialStarted(authedUser.email, authedUser.name).then(() => setTrialTick(t => t + 1))
     identifyUser(authedUser.email, { provider: authedUser.provider, membership: authedUser.membership })
     Analytics.userSignedIn(authedUser.provider === 'otp' ? 'otp' : authedUser.provider)
     setGotoProjects(true)

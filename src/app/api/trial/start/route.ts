@@ -12,10 +12,11 @@ import { getServiceClient, isValidEmail } from '@/lib/api-auth'
 const TRIAL_DAYS = 7
 
 export async function POST(req: NextRequest) {
-  let body: { email?: string }
+  let body: { email?: string; name?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Bad request' }, { status: 400 }) }
 
   const email = body.email?.trim().toLowerCase()
+  const name  = body.name?.trim() || email?.split('@')[0] || null
   if (!email || !isValidEmail(email)) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
   }
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await sb.from('trials').insert({
       email,
+      name,
       trial_start: now.toISOString(),
       trial_end:   trialEnd.toISOString(),
       active:      true,

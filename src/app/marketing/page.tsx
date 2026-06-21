@@ -151,7 +151,7 @@ export default function MarketingPage() {
     },
     {
       q: 'Which building codes does stAIrcode check against?',
-      a: 'stAIrcode automatically detects your location and applies the appropriate code: OBC 2024 (Ontario), NBC 2020 (other Canadian provinces), QBC 2020 (Quebec), BCBC 2024 (BC), IBC 2021 (United States), and others. The code used is shown on every report.',
+      a: 'Any of them. stAIrcode automatically detects your location anywhere in the world and applies the appropriate building code: OBC 2024 (Ontario), NBC 2020 (other Canadian provinces), CCQ/RBQ (Quebec), ABC 2019 (Alberta), BCBC 2024 (BC), IBC 2021 / IRC (United States), UK Building Regulations Part K, and more. The exact code used is shown on every report. If your jurisdiction isn\'t yet specifically mapped, stAIrcode falls back to the closest applicable national or international standard.',
     },
     {
       q: 'How accurate are the measurements?',
@@ -231,12 +231,12 @@ export default function MarketingPage() {
           <div style={{ flex: '1 1 320px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(10,28,46,0.06)', color: '#3A5A78', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.5rem', border: '1px solid rgba(44,90,122,0.15)' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#27A96B', display: 'inline-block' }} />
-              OBC · NBC · IBC · BCBC — Jurisdiction detected automatically
+              OBC · NBC · IBC · IRC · BCBC · CCQ · UK Part K — any code, anywhere
             </div>
-            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Building Code Compliance for Homes. Measured, analyzed, and reported on site.
+            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Check Any Building Code, Anywhere — with AI. Measured, analyzed, and reported on site.
             </h1>
             <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
-              stAIrcode layers AI-vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against location-specific building codes — delivering real-time feedback and a professional PDF report you can email directly from the field. Check for possible code issues in minutes, not weeks.
+              stAIrcode layers AI-vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against the building code for your exact location — automatically detected, anywhere in the world. From Toronto to Tokyo, get instant pass/fail feedback and a professional PDF report you can email directly from the field. Check for possible code issues in minutes, not weeks.
             </p>
             <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
@@ -306,7 +306,7 @@ export default function MarketingPage() {
           <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.6rem' }}>Full Residential Inspection</div>
           <h2 style={{ fontSize: 'clamp(1.5rem,4vw,2.2rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#0A1C2E', marginBottom: '0.75rem' }}>9 inspection phases. Every element of the building.</h2>
           <p style={{ fontSize: '0.95rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 640, marginBottom: '2.5rem' }}>
-            stAIrcode guides inspectors through every phase of a residential building inspection — from roof to site — with AI vision measurements, live code analysis, photo documentation, and a comprehensive report matching AS 4349.1 / OBC inspection standards.
+            stAIrcode guides inspectors through every phase of a residential building inspection — from roof to site — with AI vision measurements, live code analysis, photo documentation, and a comprehensive report that applies the building code for your jurisdiction, automatically detected.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
@@ -475,9 +475,9 @@ export default function MarketingPage() {
               <tbody>
                 {[
                   ['AI measures dimensions from your phone camera',                   true,  false],
-                  ['Live OBC 2024 compliance check — on the spot',                    true,  false],
+                  ['Live building-code compliance check — on the spot',               true,  false],
                   ['Generates a professional PDF report in the field',                true,  false],
-                  ['6-phase OBC hold-point inspection workflow',                      true,  false],
+                  ['Multi-phase hold-point inspection workflow',                      true,  false],
                   ['Works without LTE — offline capable',                             true,  '~'],
                   ['Scheduling, crew management, project portfolio tools',             '—',   true],
                   ['Requires hours of onboarding and training',                        false, true],
@@ -531,7 +531,7 @@ export default function MarketingPage() {
                 {[
                   'Stair Compliance Scan only',
                   'AI vision measurement',
-                  'Pass/fail vs OBC, NBC, IBC',
+                  'Pass/fail vs your local code, anywhere',
                   'Instant results on screen',
                   'No account required',
                 ].map(f => (
@@ -610,7 +610,7 @@ export default function MarketingPage() {
             <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Built for inspectors and compliance professionals</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
                 { title: 'AI Vision Analysis', body: "Claude Vision reads your photos, extracts measurements, and cross-references every dimension against your jurisdiction's building code — no tape measure, no manual calculations." },
-                { title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction and checks every measurement against OBC, NBC, IBC, and more. Pass/fail shown per dimension with the exact code clause cited.' },
+                { title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction — anywhere in the world — and checks every measurement against the building code that governs your site: OBC, NBC, CCQ, IBC, IRC, UK Part K, and more. Pass/fail shown per dimension with the exact code clause cited.' },
                 { title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes — ready for building inspection documentation, code enforcement records, or contractor briefings.' },
                 { title: 'Guided Module Workflow', body: 'Each inspection category is its own guided module. Select what you need to check, follow the on-screen steps, and receive a report scoped to that category.' },
               ].map(f => (

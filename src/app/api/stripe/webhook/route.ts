@@ -182,6 +182,11 @@ export async function POST(req: NextRequest) {
           }
           // Unlock unlimited scans
           await unlockProScans(email)
+          // Stop the trial email sequence — user has converted
+          if (sb) {
+            await sb.from('trials').update({ subscribed: true }).eq('email', email.toLowerCase())
+              .then(({ error }) => { if (error) console.error('[webhook] trial mark-subscribed failed:', error.message) })
+          }
           // Send welcome email
           await sendReportEmail(email, '', 'subscription')
         }
