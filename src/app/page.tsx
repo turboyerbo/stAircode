@@ -14,6 +14,7 @@ import SettingsScreen                        from './components/SettingsScreen'
 import WelcomeModal                          from './components/WelcomeModal'
 import GlobalCodeAssistant                   from './components/GlobalCodeAssistant'
 import HomeHub                               from './components/HomeHub'
+import QuickScanScreen                        from './components/QuickScanScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ReportScreen                          from './components/ReportScreen'
 import PaymentSuccessScreen                  from './components/PaymentSuccessScreen'
@@ -40,7 +41,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'settings'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
+type Screen = 'home'|'settings'|'quick_scan'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -1149,7 +1150,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
           code={code}
           trialDaysLeft={(user.membership==='subscription'||user.membership==='pro') ? null : getTrialDaysLeft()}
           onStartInspection={()=>setScreen('inspection_type')}
-          onQuickScan={()=>{ setActiveModule('stair'); Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:'stair'}); setScreen('scan_ready') }}
+          onQuickScan={()=>setScreen('quick_scan')}
           onMyProjects={()=>setScreen('inspection_projects')}
         />
         {showWelcome && (
@@ -1175,6 +1176,46 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
         <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
       </div>
     )
+
+  if(screen==='quick_scan')
+    return <QuickScanScreen
+      user={user}
+      codeLabel={code?.label}
+      location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}
+      onBack={()=>setScreen('home')}
+      onSaveAsProject={async (photoB64, description, analysis)=>{
+        // Seed a full inspection project with this Quick Scan as the first finding,
+        // then drop the user into the dashboard to continue if they wish.
+        const { createNewJob } = await import('@/lib/inspection-types')
+        const job = createNewJob({ projectType:'renovation', renovationScope:'full_building', hasPermit:false, status:'active' })
+        // Attach the scan as a finding on the property_details module (always present)
+        const photo = photoB64 ? [photoB64] : []
+        const setupPhase = job.phases.find(p=>p.id==='property_setup')
+        if (setupPhase && setupPhase.modules[0]) {
+          setupPhase.modules[0].status = 'in_progress'
+          setupPhase.modules[0].photos = photo
+          setupPhase.modules[0].notes  = `Quick Scan — ${analysis.identification}`
+          setupPhase.modules[0].findings = [{
+            id:`find-${Date.now()}`,
+            label: analysis.identification,
+            condition: (analysis.severity==='none'?'good':analysis.severity==='minor'?'fair':'poor') as any,
+            severity: analysis.severity as any,
+            notes: `${analysis.observations}${description?`\n\nUser note: ${description}`:''}`,
+            recommendation: analysis.codeNotes,
+            photos: photo,
+          }]
+        }
+        job.purposeNote = `Quick Scan: ${analysis.identification}`
+        setInspectionJob(job)
+        try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
+        try { localStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
+        fetch('/api/inspection/save', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({job, userId:user.email}),
+        }).catch(()=>{})
+        setScreen('inspection_dashboard')
+      }}
+    />
 
   if(screen==='inspection_paywall'){
     // hasInspectionAccess redirects via useEffect above; show nothing while it fires
@@ -1228,7 +1269,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
           userEmail={user.email??''}
           onBack={()=>setScreen('home')}
           onSettings={()=>{ setTab('settings'); setScreen('settings') }}
-          onQuickScan={()=>{ setActiveModule('stair'); Analytics.scanStarted({role:user.role,codeLabel:code?.label,location:loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined,scanMode:'stair'}); setScreen('scan_ready') }}
+          onQuickScan={()=>setScreen('quick_scan')}
           onStartNew={()=>{
             // Always allow new projects — pre-screening doesn't require membership
             setScreen('inspection_type')

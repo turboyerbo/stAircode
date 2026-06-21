@@ -138,6 +138,53 @@ One clear recommendation: whether a formal inspection is needed, what to address
 Keep the total report under 600 words. Be direct and professional. No placeholder text of any kind.`
 }
 
+// ── Quick Scan report prompt — general building component, not stair-specific ──
+function buildQuickScanPrompt(
+  identification: string,
+  observations: string,
+  codeNotes: string,
+  codeLabel: string,
+  location: string,
+  today: string,
+): string {
+  return `You are a professional building code compliance consultant. Write a concise pre-inspection assessment report for a single building component that was assessed by AI vision from a field photo.
+
+DATE: ${today}
+LOCATION: ${location || 'Not specified'}
+CODE: ${codeLabel}
+
+COMPONENT IDENTIFIED: ${identification}
+
+FIELD OBSERVATIONS: ${observations}
+
+CODE COMMENTARY (preliminary): ${codeNotes}
+
+Write a professional report with exactly these 5 sections. Plain text only — no markdown, no asterisks, no bullet symbols. Use proper grammar and complete sentences.
+
+STRICT RULES:
+- Never write [Insert Date], [Address], [Consultant Name], or any bracketed placeholder.
+- The date of this assessment is ${today}. Use it directly if you mention a date.
+- Do not include a "Prepared By" line.
+- This was a preliminary AI-vision assessment from a single photo. Clearly state that a formal on-site inspection by a qualified professional is required to confirm any findings.
+
+1. COMPONENT DESCRIPTION
+Describe the component identified and its visible context in 2-3 sentences.
+
+2. CONDITION ASSESSMENT
+Summarize the visible condition, materials, and any defects or concerns noted in the observations.
+
+3. APPLICABLE CODE SECTIONS
+The specific ${codeLabel} sections that apply to this component, with a plain-language summary of each requirement and how the observed condition relates to it.
+
+4. RISK AND PRIORITY
+The key compliance or safety risks in order of severity, based on what was observed.
+
+5. RECOMMENDATION
+One clear recommendation: whether a formal inspection is needed, what to address first, and next steps.
+
+Keep the total report under 600 words. Be direct and professional. No placeholder text of any kind.`
+}
+
 // ── Send email via Resend ──────────────────────────────────────────────────────
 async function sendEmail(to: string, reportText: string, codeLabel: string, location: string, surveyUrl: string, frames: Record<string,string> = {}, fields: any[] = []) {
   const resendKey = process.env.RESEND_API_KEY
@@ -393,7 +440,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const prompt = buildPrompt(fields, codeLabel || 'Building Code', codeRef || '', location || '', isOntario || false)
+  const todayStr = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const prompt = body.quickScan
+    ? buildQuickScanPrompt(
+        body.identification || (fields[0]?.label ?? 'Building component'),
+        body.observations   || (fields[0]?.observations ?? ''),
+        body.codeNotes      || (fields[0]?.recommendation ?? ''),
+        codeLabel || 'Building Code',
+        location || '',
+        todayStr,
+      )
+    : buildPrompt(fields, codeLabel || 'Building Code', codeRef || '', location || '', isOntario || false)
 
   // ── Call Claude ──────────────────────────────────────────────────────────────
   let reportText = ''
