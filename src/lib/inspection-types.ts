@@ -570,13 +570,16 @@ export const MODULE_META: Partial<Record<ModuleId, {
 // user never has to scroll past foundations on an interior job.
 
 type ModuleArea =
-  | 'interior'
+  | 'interior'        // core interior-renovation modules (the focused ~dozen)
+  | 'interior_extra' // secondary interior modules (appliances, systems) — full scope
   | 'exterior'
   | 'foundation'
   | 'roof'
   | 'deck'
   | 'site'
+  | 'rough'       // construction-phase rough-ins — only when a permit exists (active build)
   | 'permit'      // permit/drawings — only relevant when a permit exists
+  | 'legacy'      // deprecated duplicate modules — full scope / new construction only
   | 'universal'   // always shown (e.g. property details)
 
 // A module can belong to more than one area.
@@ -605,9 +608,7 @@ const MODULE_AREAS: Partial<Record<ModuleId, ModuleArea[]>> = {
   roof_flashings:              ['roof'],
   roof_drainage:               ['roof', 'exterior'],
   chimneys:                    ['roof', 'exterior'],
-  skylights:                   ['roof', 'interior'],
-  attic_access:                ['roof', 'interior'],
-  roof_framing_rough:          ['roof'],
+  roof_framing_rough:          ['roof', 'rough'],
 
   // Exterior envelope
   exterior_walls:              ['exterior'],
@@ -625,22 +626,21 @@ const MODULE_AREAS: Partial<Record<ModuleId, ModuleArea[]>> = {
   driveway_paths:              ['site', 'exterior'],
   swimming_pool:               ['site', 'exterior'],
 
-  // Structure (interior-side framing)
-  structural_framing:          ['interior'],
-  floor_systems:               ['interior'],
-  rough_plumbing:              ['interior'],
-  rough_electrical:            ['interior'],
-  rough_hvac:                  ['interior'],
-  fire_blocking:               ['interior'],
-  stair_rough:                 ['interior'],
+  // Construction-phase rough-ins — ONLY shown when there's a permit (active build).
+  // A finished interior renovation does NOT inspect these, so they're 'rough', not 'interior'.
+  structural_framing:          ['rough'],
+  floor_systems:               ['rough'],
+  rough_plumbing:              ['rough'],
+  rough_electrical:            ['rough'],
+  rough_hvac:                  ['rough'],
+  fire_blocking:               ['rough'],
+  stair_rough:                 ['rough'],
+  insulation_walls:            ['rough'],
+  insulation_ceiling:          ['rough'],
+  vapour_barrier:              ['rough'],
+  window_door_rough_openings:  ['rough'],
 
-  // Insulation (interior-side)
-  insulation_walls:            ['interior'],
-  insulation_ceiling:          ['interior', 'roof'],
-  vapour_barrier:              ['interior'],
-  window_door_rough_openings:  ['interior', 'exterior'],
-
-  // Interior finishes
+  // Interior finishes — the core of an interior renovation (the ~dozen)
   interior_finishes:           ['interior'],
   ceilings:                    ['interior'],
   internal_walls:              ['interior'],
@@ -650,45 +650,53 @@ const MODULE_AREAS: Partial<Record<ModuleId, ModuleArea[]>> = {
   guardrails_handrails:        ['interior'],
   wet_areas_kitchen:           ['interior'],
   wet_areas_bathrooms:         ['interior'],
-  wet_areas_laundry:           ['interior'],
   accessibility:               ['interior'],
-  fireplace_wett:              ['interior'],
-  appliances_kitchen:          ['interior'],
-  appliances_laundry:          ['interior'],
   egress_windows:              ['interior'],
   smoke_co_detectors:          ['interior'],
 
-  // Building systems
-  electrical_service_entrance: ['exterior', 'interior'],
-  electrical_panel:            ['interior'],
-  electrical_branch_wiring:    ['interior'],
-  electrical_gfci_afci:        ['interior'],
-  electrical_smoke_co:         ['interior'],
-  plumbing_water_main:         ['interior', 'foundation'],
-  plumbing_distribution:       ['interior'],
-  plumbing_dwv:                ['interior'],
-  plumbing_fixtures:           ['interior'],
-  hot_water_system:            ['interior'],
-  hvac_thermostat:             ['interior'],
-  hvac_furnace:                ['interior'],
-  hvac_ac:                     ['exterior', 'interior'],
-  hvac_venting_combustion:     ['interior'],
+  // Interior — secondary (shown for interior, but not the headline dozen)
+  wet_areas_laundry:           ['interior_extra'],
+  fireplace_wett:              ['interior_extra'],
+  appliances_kitchen:          ['interior_extra'],
+  appliances_laundry:          ['interior_extra'],
+  skylights:                   ['roof'],
+  attic_access:                ['roof'],
 
-  // Legacy
-  services_electrical:         ['interior'],
-  services_plumbing:           ['interior'],
-  services_gas:                ['interior'],
-  hvac_final:                  ['interior'],
+  // Building systems — finish-level, secondary (full scope only, not the core list)
+  electrical_panel:            ['interior_extra'],
+  electrical_gfci_afci:        ['interior_extra'],
+  electrical_smoke_co:         ['interior_extra'],
+  plumbing_fixtures:           ['interior_extra'],
+  hot_water_system:            ['interior_extra'],
+  hvac_thermostat:             ['interior_extra'],
+  hvac_furnace:                ['interior_extra'],
+  hvac_venting_combustion:     ['interior_extra'],
+
+  // Systems that belong to permitted/full scopes, not a finish renovation
+  electrical_service_entrance: ['exterior'],
+  electrical_branch_wiring:    ['rough'],
+  plumbing_water_main:         ['foundation'],
+  plumbing_distribution:       ['rough'],
+  plumbing_dwv:                ['rough'],
+  hvac_ac:                     ['exterior'],
+
+  // Legacy duplicates — full scope only, kept out of focused funnels
+  services_electrical:         ['legacy'],
+  services_plumbing:           ['legacy'],
+  services_gas:                ['legacy'],
+  hvac_final:                  ['legacy'],
 }
 
 // Which areas each renovation funnel includes.
+// 'rough' (construction-phase inspections) is added per-scope only when the job
+// has a permit — handled in filterModulesForScope, not listed here.
 const SCOPE_AREAS: Record<RenovationScope, ModuleArea[]> = {
   interior_only:  ['interior', 'universal'],
   exterior_only:  ['exterior', 'site', 'universal'],
   foundations:    ['foundation', 'universal'],
   roof:           ['roof', 'universal'],
   exterior_deck:  ['deck', 'universal'],
-  full_building:  ['interior', 'exterior', 'foundation', 'roof', 'deck', 'site', 'universal'],
+  full_building:  ['interior', 'interior_extra', 'exterior', 'foundation', 'roof', 'deck', 'site', 'legacy', 'universal'],
 }
 
 export const RENOVATION_SCOPE_META: Record<RenovationScope, { label: string; description: string; icon: string }> = {
@@ -714,10 +722,14 @@ export function filterModulesForScope(
     const areas = MODULE_AREAS[id] ?? ['universal']
     // Permit/drawings modules only show when the job has a permit
     if (areas.includes('permit') && !hasPermit) return false
-    // New construction shows everything else
+    // New construction shows everything
     if (projectType !== 'renovation' || !scope) return true
-    // Renovation: keep only modules whose areas intersect the scope's areas
-    const allowed = SCOPE_AREAS[scope]
+    // Construction-phase rough-ins only appear on a permitted renovation
+    const allowed = [...SCOPE_AREAS[scope]]
+    if (hasPermit) allowed.push('rough')
+    // A rough-only module on a DIY (no-permit) renovation is hidden
+    if (areas.every(a => a === 'rough') && !hasPermit) return false
+    // Keep modules whose areas intersect the allowed set
     return areas.some(a => allowed.includes(a))
   })
 }

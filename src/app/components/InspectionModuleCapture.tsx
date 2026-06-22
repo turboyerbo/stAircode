@@ -1,13 +1,16 @@
 'use client'
 
-// Detect image mime type from base64 string
+// Build a usable image src from either a raw base64 string OR a full data URL.
 function imgSrc(b64: string) {
-  const head = b64.slice(0, 8)
+  if (!b64) return ''
+  if (b64.startsWith('data:') || b64.startsWith('http')) return b64
+  const raw = b64.includes('base64,') ? b64.split('base64,')[1] : b64
+  const head = raw.slice(0, 8)
   const mime = head.startsWith('iVBOR') ? 'image/png'
              : head.startsWith('/9j/')  ? 'image/jpeg'
              : head.startsWith('R0lGO') ? 'image/gif'
              : 'image/jpeg'
-  return `data:${mime};base64,${b64}`
+  return `data:${mime};base64,${raw}`
 }
 
 /**

@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createNewJob, BuildingType, WeatherCondition } from '@/lib/inspection-types'
+import { createNewJob, BuildingType, WeatherCondition, RenovationScope } from '@/lib/inspection-types'
 import type { InspectionJob, PropertyAddress, ProjectType } from '@/lib/inspection-types'
 import { NavLogo } from './Logo'
 import PropertySiteScanScreen from './PropertySiteScanScreen'
@@ -26,6 +26,8 @@ interface Props {
   onJobCreated:  (job: InspectionJob) => void
   onBack:        () => void
   projectType?:  ProjectType
+  renovationScope?: RenovationScope   // carried from ProjectTypeScreen — drives module filtering
+  hasPermit?:    boolean              // carried from ProjectTypeScreen
   existingJobId?: string   // if set, update this job rather than creating a new one
 }
 
@@ -85,7 +87,7 @@ interface Suggestion {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function InspectionSetupScreen({ onJobCreated, onBack, projectType = 'new_construction', existingJobId }: Props) {
+export default function InspectionSetupScreen({ onJobCreated, onBack, projectType = 'new_construction', renovationScope, hasPermit, existingJobId }: Props) {
   // Step
   const [step, setStep] = useState<1|2|3>(1)
 
@@ -249,6 +251,8 @@ export default function InspectionSetupScreen({ onJobCreated, onBack, projectTyp
     }
     const job = createNewJob({
       projectType,
+      renovationScope,   // ← carries the funnel through so only relevant modules are created
+      hasPermit,
       ...(existingJobId ? { id: existingJobId } : {}),
       clientName:    clientName.trim() || (isPrescreen ? 'Homeowner' : ''),
       clientEmail:   clientEmail.trim() || undefined,

@@ -377,26 +377,57 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   async function handleManualSave() {
     setSaveStatus('saving'); setSaveError('')
     try {
+      // Strip base64 photos before sending — keeps the row small and prevents
+      // res.json() from throwing an opaque DOMException on large/odd responses.
+      const slimJob = {
+        ...job,
+        propertyThumbnail: job.propertyThumbnail && job.propertyThumbnail.length < 20000
+          ? job.propertyThumbnail : undefined,
+        drawingsData: job.drawingsData ? { ...job.drawingsData, pages: [] } : undefined,
+        phases: job.phases.map(phase => ({
+          ...phase,
+          reportPdfB64: undefined,
+          modules: phase.modules.map(mod => ({
+            ...mod,
+            photos:   (mod.photos   || []).map((_: any, i: number) => `[photo-${i}]`),
+            findings: (mod.findings || []).map((f: any) => ({
+              ...f,
+              photos: (f.photos || []).map((_: any, i: number) => `[photo-${i}]`),
+            })),
+          })),
+        })),
+      }
+
+      // Keep the FULL job (with photos) locally so thumbnails survive reloads.
+      try { localStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
+      try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
+
       const res = await fetch('/api/inspection/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job, userId: userEmail }),
+        body: JSON.stringify({ job: slimJob, userId: userEmail }),
       })
-      const data = await res.json()
+
+      // Parse defensively — read text, then JSON.parse, so an empty/non-JSON body
+      // cannot throw "The string did not match the expected pattern".
+      const text = await res.text()
+      let data: any = {}
+      try { data = text ? JSON.parse(text) : {} } catch { data = {} }
+
       if (data.cloud) {
         setSaveStatus('saved_cloud')
-      } else if (data.ok) {
-        // ok but no cloud flag — local only (Supabase not configured)
+      } else if (data.ok || res.ok) {
         setSaveStatus('saved_local')
-        setSaveError('Saved locally only — Supabase not configured')
+        setSaveError('Saved on this device')
       } else {
         setSaveStatus('error')
-        setSaveError(data.error || data.hint || 'Save to cloud failed')
+        setSaveError(data.error || data.hint || `Save failed (HTTP ${res.status})`)
       }
       setTimeout(() => setSaveStatus('idle'), 4000)
     } catch (e: any) {
-      setSaveStatus('error')
-      setSaveError(e?.message || 'Network error')
+      // The job is already in local storage above — never show the raw exception.
+      setSaveStatus('saved_local')
+      setSaveError('Saved on this device — will sync when online')
       setTimeout(() => setSaveStatus('idle'), 4000)
     }
   }

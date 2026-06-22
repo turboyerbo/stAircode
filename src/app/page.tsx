@@ -1283,6 +1283,8 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
   if(screen==='inspection_setup')
     return <InspectionSetupScreen
       projectType={projectType}
+      renovationScope={inspectionJob?.renovationScope}
+      hasPermit={inspectionJob?.hasPermit}
       existingJobId={inspectionJob?.id}
       onJobCreated={job=>{
         setInspectionJob(job)
