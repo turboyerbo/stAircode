@@ -34,6 +34,7 @@ import type {
   ModuleFinding, DefectSeverity, ModuleId,
 } from '@/lib/inspection-types'
 import { MODULE_META } from '@/lib/inspection-types'
+import { normalizeImageToJpegB64 } from '@/lib/image-utils'
 import ScanReadyScreen from './ScanReadyScreen'
 import type { UserRole } from './AuthScreen'
 
@@ -1141,33 +1142,24 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
     runAI(b64)
   }
 
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      const result = ev.target?.result as string
-      const b64 = result.includes(',') ? result.split(',')[1] : result
-      setCapturedB64(b64)
-      setPhotos([b64])
-      runAI(b64)
-    }
-    reader.readAsDataURL(file)
+    // Downscale + re-encode to JPEG (handles HEIC/PNG and large phone photos)
+    const b64 = await normalizeImageToJpegB64(file)
+    setCapturedB64(b64)
+    setPhotos([b64])
+    runAI(b64)
   }
 
-  function handleAdditionalPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAdditionalPhotos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = ev => {
-        const result = ev.target?.result as string
-        const b64 = result.includes(',') ? result.split(',')[1] : result
-        setAdditionalPhotos(prev => [...prev, b64])
-        // Run supplemental AI on each additional photo — APPENDS to existing findings
-        runSupplementalAI(b64)
-      }
-      reader.readAsDataURL(file)
-    })
+    for (const file of files) {
+      const b64 = await normalizeImageToJpegB64(file)
+      setAdditionalPhotos(prev => [...prev, b64])
+      // Run supplemental AI on each additional photo — APPENDS to existing findings
+      runSupplementalAI(b64)
+    }
   }
 
   // ── Supplemental AI — adds detail to existing analysis without overwriting ──

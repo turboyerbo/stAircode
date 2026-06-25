@@ -14,6 +14,7 @@ import SettingsScreen                        from './components/SettingsScreen'
 import WelcomeModal                          from './components/WelcomeModal'
 import GlobalCodeAssistant                   from './components/GlobalCodeAssistant'
 import HomeHub                               from './components/HomeHub'
+import QuickStartScreen                       from './components/QuickStartScreen'
 import QuickScanScreen                        from './components/QuickScanScreen'
 import ScanReadyScreen                       from './components/ScanReadyScreen'
 import ReportScreen                          from './components/ReportScreen'
@@ -41,7 +42,7 @@ const C = {
 }
 
 type Tab    = 'home'|'help'|'settings'
-type Screen = 'home'|'settings'|'quick_scan'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
+type Screen = 'home'|'settings'|'quick_scan'|'quick_start'|'scan_ready'|'scan_review'|'detect'|'capture'|'report'|'inspection_paywall'|'inspection_type'|'inspection_setup'|'inspection_dashboard'|'inspection_projects'
 interface StairMeasurements {
   rise: number|null; run: number|null; width: number|null
   nosing: number|null; headroom: number|null|'clear'; guard: number|null
@@ -1149,7 +1150,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
           locLoading={locLoading}
           code={code}
           trialDaysLeft={(user.membership==='subscription'||user.membership==='pro') ? null : getTrialDaysLeft()}
-          onStartInspection={()=>setScreen('inspection_type')}
+          onStartInspection={()=>setScreen('quick_start')}
           onQuickScan={()=>setScreen('quick_scan')}
           onMyProjects={()=>setScreen('inspection_projects')}
         />
@@ -1213,6 +1214,28 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
           method:'POST', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({job, userId:user.email}),
         }).catch(()=>{})
+        setScreen('inspection_dashboard')
+      }}
+    />
+
+  if(screen==='quick_start')
+    return <QuickStartScreen
+      onBack={()=>setScreen('home')}
+      onStart={job=>{
+        setInspectionJob(job)
+        try { sessionStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
+        try { localStorage.setItem(`insp_${job.id}`, JSON.stringify(job)) } catch {}
+        // Persist + send magic link in the background — don't block entry into the dashboard
+        fetch('/api/inspection/save', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({job, userId:user.email}),
+        }).catch(()=>{})
+        if (user.email && job.address?.street) {
+          fetch('/api/inspection/magic-link', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, jobId: job.id, address: job.address.street }),
+          }).catch(()=>{})
+        }
         setScreen('inspection_dashboard')
       }}
     />

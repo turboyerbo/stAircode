@@ -68,6 +68,14 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
   const [finalPdfB64,  setFinalPdfB64]  = useState<string | null>(null)
   const [finalMsg,     setFinalMsg]     = useState('')
   const [emailsSent,   setEmailsSent]   = useState<string[]>([])
+
+  // Property details — collected HERE (deferred from the low-friction start flow)
+  const [pdClientName,   setPdClientName]   = useState(job.clientName === 'Homeowner' ? '' : (job.clientName || ''))
+  const [pdBuildingType, setPdBuildingType] = useState(job.buildingType || 'single_storey_residential')
+  const [pdAge,          setPdAge]          = useState(job.estimatedAge || '')
+  const [pdStreet,       setPdStreet]       = useState(job.address?.street || '')
+  const [pdCity,         setPdCity]         = useState(job.address?.city || '')
+  const detailsIncomplete = !pdStreet.trim() || !pdClientName.trim()
   // Edit-before-send modal
   const [showEditModal, setShowEditModal] = useState(false)
   const [editSubject,   setEditSubject]   = useState('')
@@ -120,6 +128,18 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
 
   // ── Generate all phases at once ────────────────────────────────────────────
   async function generateAll() {
+    // Commit the property details collected on this screen into the job first,
+    // so the generated report reflects the real building info (these were
+    // deferred from the low-friction start flow).
+    const withDetails: InspectionJob = {
+      ...job,
+      clientName:    pdClientName.trim() || job.clientName,
+      buildingType:  pdBuildingType,
+      estimatedAge:  pdAge.trim(),
+      address: { ...job.address, street: pdStreet.trim() || job.address?.street, city: pdCity.trim() || job.address?.city },
+      updatedAt:     new Date().toISOString(),
+    }
+    onUpdate(withDetails)
     for (const phase of relevantPhases) {
       if (!phase.reportPdfB64) await generatePhase(phase.id as PhaseId)
     }
@@ -327,6 +347,57 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
               )
             })}
           </div>
+        </div>
+
+        {/* ── Property details (collected at report time) ── */}
+        <div style={{ background:'#fff', border:`1px solid ${detailsIncomplete ? 'rgba(242,147,55,0.4)' : BORDER}`, borderRadius:11, padding:'1rem' }}>
+          <div style={{ fontSize:'0.7rem', fontWeight:700, color:BLUE, letterSpacing:'0.04em', textTransform:'uppercase' as const, marginBottom:'0.2rem' }}>Property details</div>
+          <div style={{ fontSize:'0.68rem', color:'#5E7D9B', marginBottom:'0.85rem', lineHeight:1.5 }}>Complete these for the report header. You can edit anything captured at the start.</div>
+
+          <div style={{ display:'grid', gap:'0.6rem' }}>
+            <div>
+              <div style={{ fontSize:'0.66rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.25rem' }}>Client / owner name</div>
+              <input value={pdClientName} onChange={e => setPdClientName(e.target.value)} placeholder="e.g. Jane Smith"
+                style={{ width:'100%', padding:'0.6rem 0.8rem', background:'#F7FAFC', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.82rem', color:'#0D1E2E', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}/>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
+              <div>
+                <div style={{ fontSize:'0.66rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.25rem' }}>Street address</div>
+                <input value={pdStreet} onChange={e => setPdStreet(e.target.value)} placeholder="123 Main St"
+                  style={{ width:'100%', padding:'0.6rem 0.8rem', background:'#F7FAFC', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.82rem', color:'#0D1E2E', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}/>
+              </div>
+              <div>
+                <div style={{ fontSize:'0.66rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.25rem' }}>City</div>
+                <input value={pdCity} onChange={e => setPdCity(e.target.value)} placeholder="Toronto"
+                  style={{ width:'100%', padding:'0.6rem 0.8rem', background:'#F7FAFC', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.82rem', color:'#0D1E2E', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}/>
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
+              <div>
+                <div style={{ fontSize:'0.66rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.25rem' }}>Building type</div>
+                <select value={pdBuildingType} onChange={e => setPdBuildingType(e.target.value as any)}
+                  style={{ width:'100%', padding:'0.6rem 0.8rem', background:'#F7FAFC', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.82rem', color:'#0D1E2E', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}>
+                  <option value="single_storey_residential">Single-storey home</option>
+                  <option value="two_storey_residential">Two-storey home</option>
+                  <option value="semi_detached">Semi-detached</option>
+                  <option value="townhouse">Townhouse</option>
+                  <option value="multi_unit_residential">Multi-unit residential</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="industrial">Industrial</option>
+                  <option value="mixed_use">Mixed use</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize:'0.66rem', fontWeight:600, color:'#5E7D9B', marginBottom:'0.25rem' }}>Approx. age / year built</div>
+                <input value={pdAge} onChange={e => setPdAge(e.target.value)} placeholder="e.g. 1985 or ~40 yrs"
+                  style={{ width:'100%', padding:'0.6rem 0.8rem', background:'#F7FAFC', border:`1px solid ${BORDER}`, borderRadius:8, fontSize:'0.82rem', color:'#0D1E2E', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}/>
+              </div>
+            </div>
+          </div>
+          {detailsIncomplete && (
+            <div style={{ fontSize:'0.66rem', color:'#C4721E', marginTop:'0.6rem' }}>Add at least the client name and street address for a complete report header.</div>
+          )}
         </div>
 
         {/* ── Cover / inspector notes ── */}

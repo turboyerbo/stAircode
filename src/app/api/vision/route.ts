@@ -55,8 +55,19 @@ export async function POST(req: NextRequest) {
 
   // ── Size guard: Anthropic allows up to 5MB base64 (~3.75MB image) ─────────
   if (imageB64.length > 5_000_000) {
-    return NextResponse.json({ error: 'Image too large — max 5MB' }, { status: 413 })
+    return NextResponse.json({ error: 'Image too large — please retake; the photo will be compressed automatically.' }, { status: 413 })
   }
+
+  // Strip any accidental data: prefix and detect the real media type from the
+  // base64 magic bytes — declaring the wrong type makes Anthropic reject it.
+  const cleanB64 = imageB64.includes('base64,') ? imageB64.split('base64,')[1] : imageB64
+  const head = cleanB64.slice(0, 12)
+  const mediaType =
+    head.startsWith('/9j/')        ? 'image/jpeg' :
+    head.startsWith('iVBOR')       ? 'image/png'  :
+    head.startsWith('R0lGO')       ? 'image/gif'  :
+    head.startsWith('UklGR')       ? 'image/webp' :
+    'image/jpeg'
 
   // ── Call Anthropic ─────────────────────────────────────────────────────────
   try {
@@ -76,7 +87,7 @@ export async function POST(req: NextRequest) {
             content: [
               {
                 type:   'image',
-                source: { type: 'base64', media_type: 'image/jpeg', data: imageB64 },
+                source: { type: 'base64', media_type: mediaType, data: cleanB64 },
               },
               { type: 'text', text: prompt },
             ],

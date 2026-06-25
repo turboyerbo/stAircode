@@ -21,6 +21,7 @@
 import { useState, useRef } from 'react'
 import { AppUser } from './AuthScreen'
 import { NavLogo } from './Logo'
+import { normalizeImageToJpegB64 } from '@/lib/image-utils'
 
 const NAVY   = '#0A1C2E'
 const BLUE   = '#417CA4'
@@ -60,16 +61,13 @@ export default function QuickScanScreen({ user, codeLabel, location, onSaveAsPro
     const inp = document.createElement('input')
     inp.type = 'file'; inp.accept = 'image/*'
     if (capture) inp.setAttribute('capture', 'environment')
-    inp.onchange = (e: any) => {
+    inp.onchange = async (e: any) => {
       const file = e.target.files?.[0]
       if (!file) return
-      const reader = new FileReader()
-      reader.onload = () => {
-        const dataUrl = reader.result as string
-        setPreview(dataUrl)
-        setPhoto(dataUrl.split(',')[1] ?? null) // strip data: prefix
-      }
-      reader.readAsDataURL(file)
+      // Downscale + re-encode to JPEG (handles HEIC/PNG and large phone photos)
+      const b64 = await normalizeImageToJpegB64(file)
+      setPreview(`data:image/jpeg;base64,${b64}`)
+      setPhoto(b64)
     }
     inp.click()
   }
