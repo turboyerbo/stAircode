@@ -529,6 +529,49 @@ export default function Home(){
   const [user,setUser]=useState<AppUser|null>(null)
   // Bumped whenever the server trial status is refreshed — forces the gate to re-evaluate
   const [trialTick, setTrialTick] = useState(0)
+
+  // ── ADMIN / TESTER BYPASS ──────────────────────────────────────────────────
+  // Visit staircode.app/?admin=YOUR_CODE to enter as a synthetic pro user with
+  // no trial gate — lets you (the owner) test the live app without a login or an
+  // active trial. The code is checked against NEXT_PUBLIC_ADMIN_ACCESS_CODE.
+  // Once entered, an 'sc_admin' flag persists so you stay in until you sign out.
+  const [adminChecked, setAdminChecked] = useState(false)
+  useEffect(() => {
+    try {
+      const params    = new URLSearchParams(window.location.search)
+      const codeParam  = params.get('admin')
+      const expected   = process.env.NEXT_PUBLIC_ADMIN_ACCESS_CODE
+      const alreadyAdmin = localStorage.getItem('sc_admin') === '1'
+
+      // 'admin=logout' clears admin mode
+      if (codeParam === 'logout') {
+        localStorage.removeItem('sc_admin')
+        window.location.href = '/'
+        return
+      }
+
+      const enteringAdmin = expected && codeParam && codeParam === expected
+      if (enteringAdmin || alreadyAdmin) {
+        localStorage.setItem('sc_admin', '1')
+        // Clear any trial-expired hard block so the gate can't lock the tester out
+        localStorage.removeItem('sc_trial_expired')
+        const adminUser: AppUser = {
+          email:      'admin@staircode.app',
+          name:       'Admin (Tester)',
+          provider:   'otp',
+          role:       'contractor' as UserRole,
+          membership: 'pro',
+          units:      'mm',
+          signedInAt: Date.now(),
+        }
+        setUser(adminUser)
+        // Strip the ?admin= param from the URL so the code isn't left visible
+        if (enteringAdmin) window.history.replaceState({}, '', '/')
+      }
+    } catch {}
+    setAdminChecked(true)
+  }, [])
+  const isAdmin = (() => { try { return localStorage.getItem('sc_admin') === '1' } catch { return false } })()
   // Splash screen — shows the AR image on first load, fades into auth
   const [splashDone, setSplashDone] = useState(false)
   // Legal disclaimer agreement — must be declared here (before any early returns)
@@ -734,6 +777,7 @@ export default function Home(){
     setUser(null)
     try{localStorage.removeItem('sc_user')}catch{}
     try{localStorage.removeItem('sc_beta_access')}catch{}
+    try{localStorage.removeItem('sc_admin')}catch{}   // exit admin/tester mode on sign out
     setIsSignoutFlow(true)   // show member login, not marketing or splash
     setSplashDone(true)      // skip splash for returning users signing out
   }
@@ -767,6 +811,9 @@ export default function Home(){
 
     // Check localStorage synchronously — React state hasn't hydrated yet
     if (!signin && !isPaymentReturn && !member) {
+      const adminParam = params.get('admin')                    // ?admin=CODE (or =logout)
+      let isAdminMode = !!adminParam
+      try { if (localStorage.getItem('sc_admin') === '1') isAdminMode = true } catch {}
       let hasSession = false
       try {
         const stored = localStorage.getItem('sc_user')
@@ -775,16 +822,19 @@ export default function Home(){
           if (u?.email) hasSession = true
         }
       } catch {}
-      if (!hasSession) {
+      // Admin/tester mode never redirects to marketing
+      if (!hasSession && !isAdminMode) {
         window.location.replace('/marketing')
       }
     }
   }, []) // eslint-disable-line
 
   // While redirect check runs, render nothing to avoid flash
-  if (!redirectChecked) return null
+  if (!redirectChecked || !adminChecked) return null
+  // Admin/tester mode always passes through (never redirected to marketing)
+  const _adminActive = (() => { try { return localStorage.getItem('sc_admin') === '1' } catch { return false } })()
   // Allow through if: signin flow, member flow, signout flow, or has localStorage session
-  if (!user && !isSigninFlow && !isSignoutFlow) {
+  if (!user && !isSigninFlow && !isSignoutFlow && !_adminActive) {
     try {
       const stored = localStorage.getItem('sc_user')
       if (!stored || !JSON.parse(stored)?.email) return null
@@ -829,7 +879,8 @@ export default function Home(){
   void trialTick
   if (user) {
     const paid = user.membership === 'subscription' || user.membership === 'pro'
-    if (!paid && hasStartedTrial() && !checkTrialAccess()) {
+    // Admin/tester bypass: never gate the owner testing the live app
+    if (!isAdmin && !paid && hasStartedTrial() && !checkTrialAccess()) {
       return <TrialExpiredScreen
         userEmail={user.email}
         onSubscribe={() => {}}
@@ -838,7 +889,20 @@ export default function Home(){
     }
   }
 
-  return <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined} initialProjectId={gotoProjectId} navigateToProjects={gotoProjects}/>
+  return (
+    <>
+      {isAdmin && (
+        <div style={{ position:'fixed', bottom:'max(env(safe-area-inset-bottom,0px),0.5rem)', left:'50%', transform:'translateX(-50%)', zIndex:9999, display:'flex', alignItems:'center', gap:'0.5rem', background:'rgba(242,147,55,0.95)', color:'#0A1C2E', padding:'0.35rem 0.4rem 0.35rem 0.85rem', borderRadius:20, boxShadow:'0 4px 16px rgba(0,0,0,0.25)', fontSize:'0.72rem', fontWeight:800 }}>
+          TESTER MODE
+          <button onClick={()=>{ try{localStorage.removeItem('sc_admin')}catch{}; window.location.href='/marketing' }}
+            style={{ background:'#0A1C2E', color:'#fff', border:'none', borderRadius:16, padding:'0.25rem 0.7rem', fontSize:'0.68rem', fontWeight:700, cursor:'pointer' }}>
+            Exit
+          </button>
+        </div>
+      )}
+      <AppShell user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} initialScreen={gotoProjects ? 'inspection_projects' : undefined} initialProjectId={gotoProjectId} navigateToProjects={gotoProjects}/>
+    </>
+  )
 }
 
 // ── Legal Disclaimer Screen ───────────────────────────────────────────────────
