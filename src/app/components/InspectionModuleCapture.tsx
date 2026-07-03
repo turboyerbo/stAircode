@@ -77,11 +77,14 @@ function getModulePrompt(moduleId: ModuleId, job: InspectionJob): string {
   const code = (() => {
     const p = province?.toLowerCase() ?? ''
     const c = (job?.address?.city ?? '').toLowerCase()
+    const cc = (job?.address?.country ?? '').toLowerCase()
     if(p.includes('ontario')||p==='on'||['toronto','ottawa','hamilton','mississauga','brampton'].some(x=>c.includes(x))) return 'OBC 2024'
     if(p.includes('quebec')||p.includes('québec')||p==='qc'||c.includes('montreal')||c.includes('montréal')) return 'CCQ / RBQ'
-    if(p.includes('british columbia')||p==='bc'||c.includes('vancouver')) return 'BCBC 2024'
+    if(p.includes('british columbia')||p==='bc'||c.includes('vancouver')) return 'BCBC 2024 / BC Energy Step Code'
     if(p.includes('alberta')||p==='ab') return 'ABC 2019'
-    return 'NBC 2020'
+    // Canada (other provinces) → NBC; anywhere clearly outside Canada → IBC
+    const isCanada = cc.includes('canada') || cc === 'ca' || cc === ''
+    return isCanada ? 'NBC 2020' : 'International Building Code (IBC 2021)'
   })()
   const age      = job.estimatedAge || 'unknown age'
 
@@ -116,7 +119,7 @@ Reply ONLY with valid JSON (no markdown):
   }
 }`,
 
-    footing_width: base + `Assess footing width against OBC 9.15.3 minimums.
+    footing_width: base + `Assess footing width against ${code} minimum footing requirements.
 Scale refs: standard concrete block=200mm, standard brick=90mm wide, lumber 2x6=140mm thick.
 {
   "condition": "above_average|good|typical|fair|average|below_average|poor",

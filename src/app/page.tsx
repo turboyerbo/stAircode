@@ -34,6 +34,7 @@ import ProjectTypeScreen                    from './components/ProjectTypeScreen
 import InspectionPaywall                    from './components/InspectionPaywall'
 import TrialExpiredScreen                   from './components/TrialExpiredScreen'
 import type { ProjectType }                 from '@/lib/inspection-types'
+import { codeKeyToJurisdictionId }           from '@/lib/jurisdiction'
 import type { InspectionJob }               from '@/lib/inspection-types'
 
 const C = {
@@ -1161,7 +1162,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
             onCreateProject={()=>setScreen('inspection_type')}
           />
         )}
-        <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+        <GlobalCodeAssistant codeLabel={code?.label} jurisdictionId={code?codeKeyToJurisdictionId(code.code,loc?.countryCode):undefined} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
       </>
     )
 
@@ -1174,7 +1175,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
         <div style={{flex:1,overflowY:'auto'}}>
           <SettingsScreen user={user} onLogout={onLogout} onUpdateUser={onUpdateUser}/>
         </div>
-        <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+        <GlobalCodeAssistant codeLabel={code?.label} jurisdictionId={code?codeKeyToJurisdictionId(code.code,loc?.countryCode):undefined} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
       </div>
     )
 
@@ -1300,7 +1301,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
           onResumeJob={job=>{setInspectionJob(job);setScreen('inspection_dashboard')}}
         />
         {/* Global code assistant — available here */}
-        <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+        <GlobalCodeAssistant codeLabel={code?.label} jurisdictionId={code?codeKeyToJurisdictionId(code.code,loc?.countryCode):undefined} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
       </>
     )
   if(screen==='inspection_setup')
@@ -1373,7 +1374,7 @@ function AppShell({user,onLogout,onUpdateUser,initialScreen,initialProjectId,nav
       </div>
       <BottomNav active={tab} onChange={t=>{setTab(t);if(t==='home')setScreen('home');if(t==='help')Analytics.helpViewed();if(t==='settings')Analytics.settingsViewed()}}/>
       {/* Global code assistant on settings/help screens too */}
-      <GlobalCodeAssistant codeLabel={code?.label} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
+      <GlobalCodeAssistant codeLabel={code?.label} jurisdictionId={code?codeKeyToJurisdictionId(code.code,loc?.countryCode):undefined} location={loc?`${loc.city}${loc.province?', '+loc.province:''}`:undefined}/>
     </div>
   )
 }

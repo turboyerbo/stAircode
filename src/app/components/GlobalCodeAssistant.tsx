@@ -18,9 +18,10 @@ interface Msg { role: 'user' | 'assistant'; content: string }
 interface Props {
   codeLabel?: string   // e.g. 'OBC 2024' — current jurisdiction for context
   location?:  string   // e.g. 'Toronto, Ontario'
+  jurisdictionId?: string  // resolved jurisdiction id, drives the AI's code citations
 }
 
-export default function GlobalCodeAssistant({ codeLabel, location }: Props) {
+export default function GlobalCodeAssistant({ codeLabel, location, jurisdictionId }: Props) {
   const [open,    setOpen]    = useState(false)
   const [msgs,    setMsgs]    = useState<Msg[]>([])
   const [input,   setInput]   = useState('')
@@ -44,7 +45,7 @@ export default function GlobalCodeAssistant({ codeLabel, location }: Props) {
       const res = await fetch('/api/inspection/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next, systemPrompt }),
+        body: JSON.stringify({ messages: next, systemPrompt, jurisdictionId }),
       })
       const data = await res.json()
       const reply = data?.content?.[0]?.text ?? data?.reply ?? data?.text
