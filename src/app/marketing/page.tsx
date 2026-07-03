@@ -238,11 +238,20 @@ export default function MarketingPage() {
             <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
               stAIrcode layers AI-vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against the building code for your exact location — automatically detected, anywhere in the world. From Toronto to Tokyo, get instant pass/fail feedback and a professional PDF report you can email directly from the field. Check for possible code issues in minutes, not weeks.
             </p>
-            <a onClick={handleSignIn} href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#0A1C2E', textDecoration: 'none', padding: '11px 26px', border: '1.5px solid #0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', transition: 'background 0.15s, color 0.15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#0A1C2E'; (e.currentTarget as HTMLAnchorElement).style.color = '#fff' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = '#0A1C2E' }}>
-              Member Sign In →
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+              <a href="/try" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 800, color: '#fff', textDecoration: 'none', padding: '13px 26px', background: '#0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', boxShadow: '0 4px 18px rgba(10,28,46,0.25)' }}>
+                Try a Stair Scan — free, no sign-up
+              </a>
+              <a href="/try" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#27A96B', textDecoration: 'none', padding: '13px 26px', background: '#fff', border: '1.5px solid #27A96B', borderRadius: 8, letterSpacing: '-0.01em' }}>
+                Try a Quick Scan
+              </a>
+            </div>
+            <a onClick={handleSignIn} href="#" style={{ display: 'inline-block', marginTop: '0.9rem', fontSize: '0.85rem', fontWeight: 600, color: '#5E7D9B', textDecoration: 'none' }}>
+              Already a member? Sign in →
             </a>
+            <p style={{ fontSize: '0.78rem', color: '#5E7D9B', marginTop: '0.75rem', lineHeight: 1.5 }}>
+              Runs a real AI scan checked against the building code for your city. No account needed to try it.
+            </p>
           </div>
 
           {/* ── Right: animated phone mockup ── */}
