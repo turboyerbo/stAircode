@@ -66,7 +66,7 @@ export default function TrialExpiredScreen({ onSubscribe, onSignOut, userEmail }
       </h1>
       <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, maxWidth: 360, marginBottom: '2.5rem' }}>
         Your inspections, reports, and data are all saved. Subscribe to continue generating
-        OBC 2024 compliance reports and using all inspection features.
+        building code compliance reports and using all inspection features.
       </p>
 
       {/* Pricing */}
@@ -88,10 +88,10 @@ export default function TrialExpiredScreen({ onSubscribe, onSignOut, userEmail }
 
         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
           {[
-            '6-phase OBC 2024 hold-point workflow',
+            '6-phase code hold-point workflow',
             'AI vision measurements from your phone',
             'Professional PDF compliance reports',
-            'AI inspection assistant — OBC knowledge',
+            'AI inspection assistant — any building code',
             'Cross-device sync — desktop and mobile',
             'Unlimited projects and inspections',
           ].map(f => (

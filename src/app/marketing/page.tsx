@@ -858,7 +858,7 @@ export default function MarketingPage() {
                   <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>App Store</div>
                 </div>
               </a>
-              <div style={{ fontSize: '0.68rem', color: '#9BB5C8', marginTop: '0.4rem' }}>iOS — Launching May 2025</div>
+              <div style={{ fontSize: '0.68rem', color: '#9BB5C8', marginTop: '0.4rem' }}>iOS — Coming Soon</div>
             </div>
 
           </div>

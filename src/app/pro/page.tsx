@@ -36,7 +36,7 @@ export default function ProPage() {
           boxShadow: '0 6px 32px rgba(0,127,255,0.4)',
         }}>Start Pro Trial →
         </a>
-        <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', marginTop: '0.75rem' }}>In-app payments launching with Google Play (April 2026) and App Store (May 2026).<br />
+        <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', marginTop: '0.75rem' }}>Available now on the web, with Google Play and App Store versions rolling out.<br />
           Email us to subscribe now.
         </p>
       </section>

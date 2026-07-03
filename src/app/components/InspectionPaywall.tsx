@@ -115,14 +115,14 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
           <div style={{ fontSize:'0.68rem', fontWeight:700, color:BLUE, letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'0.6rem' }}>Included with subscription</div>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.45rem' }}>
             {[
-              '6 OBC inspection phases with hold-point guidance',
+              '6 inspection phases with hold-point guidance',
               'AI vision analysis for every module',
               'Live camera or photo upload per module',
               'Drawings review with AI field extraction',
               'AI inspection assistant chat',
               '30-page PDF compliance report',
               'Projects saved and resumable across sessions',
-              'All building codes: OBC, NBC, IBC, IRC',
+              'Works with your local building code, anywhere',
             ].map(item => (
               <div key={item} style={{ display:'flex', alignItems:'flex-start', gap:'0.55rem', fontSize:'0.8rem', color:'#3A5A78', lineHeight:1.5 }}>
                 <div style={{ width:14, height:14, borderRadius:'50%', background:'rgba(39,169,107,0.15)', border:'1px solid rgba(39,169,107,0.4)', flexShrink:0, marginTop:1 }}/>
@@ -190,7 +190,7 @@ export default function InspectionPaywall({ onAccess, onBack, userEmail }: Props
         {/* Free demo note */}
         <div style={{ background:'rgba(65,124,164,0.06)', border:`1px solid rgba(65,124,164,0.2)`, borderRadius:10, padding:'0.8rem 1rem' }}>
           <div style={{ fontSize:'0.75rem', color:'#3A5A78', lineHeight:1.65 }}>
-            <strong>Stair Compliance Demo is free</strong> — no subscription required. The demo lets you scan and measure a staircase against OBC, NBC, IBC and more.
+            <strong>Stair Compliance Demo is free</strong> — no subscription required. The demo lets you scan and measure a staircase against the building code for your location, anywhere.
           </div>
         </div>
 

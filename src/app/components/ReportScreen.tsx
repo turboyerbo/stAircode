@@ -4,7 +4,7 @@
  *
  * Three purchase options:
  *   Included with subscription  — Full professional report (one-time, this inspection)
- *   $199/mo — Pro (20 scans/month + reports, AR mode)
+ *   $38.99/mo — Full Inspection Access (unlimited scans + reports, AR mode)
  *   Enterprise — Contact Sales
  *
  * Plus: Find Architect (free), Retake, Start Over.
@@ -451,7 +451,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
     setEmailSending(false)
   }
 
-  // ── $199/mo Pro: redirect to Stripe subscription checkout ──────────────────
+  // ── $38.99/mo subscription: redirect to Stripe subscription checkout ────────
   // ── Discount code: validate server-side → free report ──────────────────────
   async function handleApplyDiscount() {
     if (!discountCode.trim()) return
@@ -1190,12 +1190,11 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                     <div style={{ fontWeight: 800, fontSize: '1.05rem', color: profile.text }}>Full Report</div>
                     <div style={{ fontSize: '0.65rem', color: profile.text2 }}>This inspection only · Instant PDF</div>
                   </div>
-                  <div style={{ display:'flex', alignItems:'baseline', gap:'0.5rem' }}><div style={{ display:'flex', alignItems:'baseline', gap:'0.4rem' }}><div style={{ fontWeight: 400, fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', textDecoration:'line-through' }}>$199</div>
-                      <div style={{ fontWeight: 700, fontSize: '1.5rem', color: GOLD }}>Included with subscription</div>
+                  <div style={{ display:'flex', alignItems:'baseline', gap:'0.5rem' }}><div style={{ display:'flex', alignItems:'baseline', gap:'0.4rem' }}><div style={{ fontWeight: 700, fontSize: '1.5rem', color: GOLD }}>Included with subscription</div>
                     </div>
-                    <div style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>BETA PRICE</div>
+                    <div style={{ fontSize:'0.65rem', color:'#27A96B', fontWeight:700 }}>$38.99/mo</div>
                   </div>
-                  <div style={{ fontSize:'0.62rem', color: profile.text3, marginTop:'0.15rem', textDecoration:'line-through' }}>instant download</div>
+                  <div style={{ fontSize:'0.62rem', color: profile.text3, marginTop:'0.15rem' }}>instant download</div>
                 </div>
                 {[
                   '  Full stair description & dimensions',
@@ -1232,39 +1231,40 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                       onClick={() => { Analytics.purchaseInitiated('report'); setSheet('report-ready') }}
                       style={{ width: '100%', marginTop: '0.85rem', padding: '0.95rem', background: 'linear-gradient(135deg, #27A96B, #1A7A50)', border: 'none', borderRadius: 12, cursor: 'pointer', color: '#fff', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.08em', boxShadow: '0 4px 20px rgba(39,169,107,0.45)' }}>Email Me My Report →
                     </button>
-                    <div style={{ fontSize:'0.6rem', color: profile.text3, textAlign:'center', marginTop:'0.3rem' }}>Free until June 2026 · Normally Included with subscription
+                    <div style={{ fontSize:'0.6rem', color: profile.text3, textAlign:'center', marginTop:'0.3rem' }}>Included with subscription
                     </div>
                   </div>
                 )}
                 <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: '0.5rem' }}>Secure payment · Cancel anytime</div>
               </div>
 
-              {/* ── PRO ── */}
+              {/* ── SUBSCRIPTION ── */}
               <div style={{ border: `2px solid ${profile.accent}`, borderRadius: 16, padding: '1rem 1.1rem', background: 'rgba(65,124,164,0.08)', position: 'relative' }}><div style={{ position: 'absolute', top: -11, left: 14, background: profile.accent, borderRadius: 20, padding: '0.15rem 0.7rem', fontSize: '0.56rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>AVAILABLE NOW</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.5rem' }}><div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.text }}>Pro</div>
-                    <div style={{ fontSize: '0.63rem', color: profile.text2 }}>Real Estate Companies · Construction · Building Management</div>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.text }}>Full Inspection Access</div>
+                    <div style={{ fontSize: '0.63rem', color: profile.text2 }}>Inspectors · Builders · Real Estate · Building Management</div>
                   </div>
-                  <div style={{ color: profile.accent, fontWeight: 700, fontSize: '1.2rem' }}>$199<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
+                  <div style={{ color: profile.accent, fontWeight: 700, fontSize: '1.2rem' }}>$38.99<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
                 </div>
                 {[
-                  '20 scans/month · Full PDF reports included',
+                  'Unlimited scans & full PDF reports',
                   'AI Vision measurement on all devices',
-                  'Covers entire buildings with dozens of flights',
-                  'OBC 2024, NBC, BCBC, IBC, IRC + more',
-                  'Save thousands vs. per-report pricing',
+                  'Full multi-phase building inspections',
+                  'Any building code, anywhere — auto-detected',
+                  'Cancel anytime · no long-term commitment',
                 ].map(f => (
                   <div key={f} style={{ fontSize: '0.72rem', color: profile.text2, padding: '0.18rem 0', display: 'flex', gap: '0.45rem' }}>{f}
                   </div>
                 ))}
                 <button
                   onClick={() => { Analytics.purchaseInitiated('pro'); handleProCheckout() }}
-                  style={{ width: '100%', marginTop: '0.85rem', padding: '0.95rem', background: `linear-gradient(135deg, ${profile.accent}, #2C6FBF)`, border: 'none', borderRadius: 13, cursor: 'pointer', color: '#fff', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.06em', boxShadow: `0 4px 18px rgba(65,124,164,0.45)` }}>Coming Soon
+                  disabled={proLoading}
+                  style={{ width: '100%', marginTop: '0.85rem', padding: '0.95rem', background: `linear-gradient(135deg, ${profile.accent}, #2C6FBF)`, border: 'none', borderRadius: 13, cursor: proLoading ? 'default' : 'pointer', color: '#fff', fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.06em', boxShadow: `0 4px 18px rgba(65,124,164,0.45)` }}>{proLoading ? 'Opening checkout…' : 'Subscribe — $38.99/month →'}
                 </button>
               </div>
 
-              {/* ── LiDAR PRO (Coming May 2026) ── */}
-              <div style={{ border: `1.5px solid rgba(167,139,250,0.35)`, borderRadius: 16, padding: '0.9rem 1.1rem', background: 'rgba(167,139,250,0.04)', position: 'relative', opacity: 0.85 }}><div style={{ position: 'absolute', top: -11, left: 14, background: 'rgba(167,139,250,0.85)', borderRadius: 20, padding: '0.15rem 0.7rem', fontSize: '0.56rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>LAUNCHING MAY 2026</div>
+              {/* ── LiDAR PRO (Coming Soon) ── */}
+              <div style={{ border: `1.5px solid rgba(167,139,250,0.35)`, borderRadius: 16, padding: '0.9rem 1.1rem', background: 'rgba(167,139,250,0.04)', position: 'relative', opacity: 0.85 }}><div style={{ position: 'absolute', top: -11, left: 14, background: 'rgba(167,139,250,0.85)', borderRadius: 20, padding: '0.15rem 0.7rem', fontSize: '0.56rem', fontWeight: 800, letterSpacing: '0.1em', color: '#fff' }}>COMING SOON</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.5rem' }}><div>
                     <div style={{ fontWeight: 800, fontSize: '1rem', color: profile.text, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>LiDAR Pro
                       <span style={{ fontSize: '0.58rem', background: 'rgba(167,139,250,0.2)', color: '#A78BFA', borderRadius: 6, padding: '0.1rem 0.45rem', fontWeight: 700 }}>iPhone 12 Pro+</span>
@@ -1274,7 +1274,7 @@ export default function ReportScreen({ measurements, fields, codeLabel, codeRef,
                   <div style={{ color: '#A78BFA', fontWeight: 700, fontSize: '1.2rem' }}>$59.99<span style={{ fontSize: '0.62rem', color: profile.text3, fontWeight: 400 }}>/mo</span></div>
                 </div>
                 {[
-                  'Everything in Pro',
+                  'Everything in Full Inspection Access',
                   'LiDAR depth scanning — ±1mm accuracy',
                   'Point cloud export (LAS / E57)',
                   'BIM-ready measurement data',

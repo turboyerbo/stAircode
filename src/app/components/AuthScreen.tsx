@@ -483,7 +483,7 @@ export default function AuthScreen({ onAuth }: Props) {
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', lineHeight: 1.25, letterSpacing: '-0.01em' }}>App Store</div>
               </div>
             </a>
-            <div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.6)', textAlign: 'center', lineHeight: 1.4 }}>iOS — launching June 2025
+            <div style={{ fontSize: '0.58rem', color: 'rgba(44,90,122,0.6)', textAlign: 'center', lineHeight: 1.4 }}>iOS — coming soon
             </div>
           </div>
 

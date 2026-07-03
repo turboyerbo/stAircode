@@ -150,7 +150,7 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:'0.85rem', fontWeight:600, color:'#fff' }}>AI Inspection Assistant</div>
-            <div style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.45)' }}>OBC 2024 · Residential construction · Defect analysis</div>
+            <div style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.45)' }}>Building code · Residential construction · Defect analysis</div>
           </div>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', fontSize:'1.2rem', cursor:'pointer', lineHeight:1 }}>×</button>
         </div>
@@ -166,7 +166,7 @@ export default function InspectionAIChat({ job, onUpdate, onClose }: Props) {
               <div style={{ display:'flex', flexDirection:'column', gap:'0.35rem' }}>
                 {[
                   { q: 'What does horizontal cracking in a foundation wall indicate?', cat: 'Structural' },
-                  { q: 'Minimum footing depth in Ontario and why?', cat: 'OBC Code' },
+                  { q: 'Minimum footing depth for my area and why?', cat: 'Foundations' },
                   { q: 'Is missing filter fabric on weeping tile a major defect?', cat: 'Drainage' },
                   { q: 'What fire blocking is required at floor lines?', cat: 'Fire Safety' },
                   { q: 'When is a structural engineer required vs my recommendation?', cat: 'Escalation' },
