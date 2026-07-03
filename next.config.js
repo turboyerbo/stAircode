@@ -98,7 +98,7 @@ const nextConfig = {
               "media-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "frame-src https://tally.so https://js.stripe.com https://*.stripe.com https://www.youtube.com https://youtube.com",
+              "frame-src https://tally.so https://js.stripe.com https://*.stripe.com https://www.youtube.com https://youtube.com https://maps.google.com https://www.google.com https://maps.googleapis.com",
               "worker-src 'self' blob:",
             ].join('; '),
           },
