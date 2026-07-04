@@ -46,18 +46,19 @@ function day1(name: string) {
     html: shell(`
       <h1 style="font-size:1.4rem;font-weight:800;color:#0A1C2E;margin:0 0 0.75rem;letter-spacing:-0.02em;">Welcome aboard, ${name} 👋</h1>
       <p style="font-size:0.92rem;color:#3A5A78;line-height:1.7;margin:0 0 1rem;">
-        Your 7-day free trial is live. The fastest way to see what stAIrcode does is to run a quick stair scan — point your phone, and the AI measures rise, run, headroom, nosing, and handrail, then checks each one against your local building code in seconds.
+        Your 7-day free trial is live. The fastest way to see what stAIrcode does is a quick stair scan — point your phone and the AI measures rise, run, headroom, nosing, and handrail, then checks each against your local building code in seconds.
       </p>
       <p style="font-size:0.92rem;color:#3A5A78;line-height:1.7;margin:0 0 1.25rem;">
-        No tape measure. No setup. Just see it work.
+        But stairs are just the demo. stAIrcode runs full building inspections across every system — and its real value is catching the code and construction issues that get missed on site, before they become costly rework.
       </p>
       <div style="text-align:center;margin:1.5rem 0;">
         ${button('Run your first scan →', `${APP_URL}/?scan=stair`)}
       </div>
-      <div style="background:#F7FAFC;border-radius:10px;padding:1rem 1.25rem;margin-top:1rem;">
-        <p style="font-size:0.85rem;color:#5E7D9B;line-height:1.6;margin:0;">
-          <strong style="color:#0A1C2E;">Ready for a real project?</strong> Start a full inspection with as much or as little detail as you need — from a quick address-only pre-screen to a complete multi-phase report. stAIrcode scales to any project, anywhere in the world.
-        </p>
+      <div style="background:#F7FAFC;border-radius:10px;padding:1.1rem 1.25rem;margin-top:1rem;">
+        <p style="font-size:0.82rem;color:#3A5A78;line-height:1.6;margin:0 0 0.55rem;"><strong style="color:#0A1C2E;">Catch issues early</strong> — flag defects during the build, when they're cheap to fix.</p>
+        <p style="font-size:0.82rem;color:#3A5A78;line-height:1.6;margin:0 0 0.55rem;"><strong style="color:#0A1C2E;">Pre-screen as you go</strong> — check each stage before it's covered up or formally inspected.</p>
+        <p style="font-size:0.82rem;color:#3A5A78;line-height:1.6;margin:0 0 0.55rem;"><strong style="color:#0A1C2E;">Ask the AI assistant</strong> — a code-and-construction expert answering in plain language, on site.</p>
+        <p style="font-size:0.82rem;color:#3A5A78;line-height:1.6;margin:0;"><strong style="color:#0A1C2E;">Keep everything</strong> — photos, findings, and reports saved to your project, on any device.</p>
       </div>
     `),
   }
@@ -88,14 +89,14 @@ function day5(name: string, daysLeft: number, counts?: { projects: number; repor
         Your free trial ends soon. If stAIrcode has been useful, now's the moment to lock in continued access — every project, report, and photo you've created stays exactly where it is.
       </p>
       <p style="font-size:0.92rem;color:#3A5A78;line-height:1.7;margin:0 0 1.25rem;">
-        With a membership you keep:
+        With a membership you keep the tools that catch problems before they cost you:
       </p>
       <ul style="font-size:0.9rem;color:#3A5A78;line-height:1.9;margin:0 0 1.25rem;padding-left:1.1rem;">
-        <li>Unlimited AI-vision scans and compliance checks</li>
-        <li>Full multi-phase inspection workflows</li>
-        <li>Professional PDF reports, emailed from the field</li>
-        <li>Cloud-stored projects, retrievable anytime</li>
-        <li>The in-field AI code assistant</li>
+        <li>Unlimited AI-vision scans that flag code and construction issues</li>
+        <li>Full multi-phase inspections and stage-by-stage pre-screening</li>
+        <li>Professional PDF compliance reports, emailed from the field</li>
+        <li>The live AI assistant — building-code answers on site, in real time</li>
+        <li>Your project database — every photo, finding, and report, on any device</li>
       </ul>
       <div style="text-align:center;margin:1.5rem 0;">
         ${button('Keep my access →', `${APP_URL}/?subscribe=1`)}
