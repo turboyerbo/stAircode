@@ -917,9 +917,9 @@ function LegalDisclaimerScreen({onAgree}:{onAgree:()=>void}){
           </div>
         </div>
         {/* Body */}
-        <div style={{padding:'1.25rem',maxHeight:'55dvh',overflowY:'auto'}}><p style={{fontSize:'0.75rem',color:'#E8F4FF',lineHeight:1.75,margin:'0 0 0.85rem'}}><strong style={{color:'#F29337'}}>stAIrcode is a visual aid only</strong> — it is not a building inspection tool and does not determine whether any staircase is legally compliant with any building code.
+        <div style={{padding:'1.25rem',maxHeight:'55dvh',overflowY:'auto'}}><p style={{fontSize:'0.75rem',color:'#E8F4FF',lineHeight:1.75,margin:'0 0 0.85rem'}}><strong style={{color:'#F29337'}}>stAIrcode is a visual aid only.</strong> It is not a substitute for a professional building inspection and does not determine whether any building element is legally compliant with any building code.
           </p>
-          <p style={{fontSize:'0.75rem',color:'#93BAD4',lineHeight:1.75,margin:'0 0 0.85rem'}}>All measurements are AI estimates from camera images. Accuracy is limited by lighting, angle, and image quality — typical error is <strong style={{color:'#E8F4FF'}}>±10–25mm or greater</strong>. Results must not be used for construction, permit applications, safety certification, or legal proceedings.
+          <p style={{fontSize:'0.75rem',color:'#93BAD4',lineHeight:1.75,margin:'0 0 0.85rem'}}>All measurements are AI estimates from camera images. Accuracy is limited by lighting, angle, and image quality, with typical error of <strong style={{color:'#E8F4FF'}}>±10–25mm or greater</strong>. Results must not be used for construction, permit applications, safety certification, or legal proceedings.
           </p>
           <p style={{fontSize:'0.75rem',color:'#93BAD4',lineHeight:1.75,margin:'0 0 0.85rem'}}>Only a <strong style={{color:'#E8F4FF'}}>licensed building inspector, professional engineer, or registered architect</strong> using calibrated equipment can produce legally valid measurements. Always consult a qualified professional before making compliance decisions.
           </p>

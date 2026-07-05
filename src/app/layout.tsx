@@ -7,7 +7,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'stAIrcode — AI Building Code Compliance from Your Phone',
-  description: 'Check any building code, anywhere, with AI. stAIrcode uses your phone camera to measure building geometry and verify compliance against your local code — OBC, NBC, CCQ, IBC, IRC, UK Part K and more, detected automatically. Generated in the field, not at the desk.',
+  description: 'Check any building code, anywhere, with AI. stAIrcode uses your phone camera to measure building geometry and verify compliance against the local code (OBC, NBC, CCQ, IBC, IRC, UK Part K and more), detected automatically. Generated in the field, not at the desk.',
   applicationName: 'stAIrcode',
   keywords: ['building code compliance', 'AI building inspection', 'building code checker', 'residential inspection', 'stair compliance', 'AI inspection app', 'building code AR', 'IBC', 'IRC', 'OBC 2024', 'NBC 2020', 'UK Part K', 'compliance report', 'home inspection software'],
   authors: [{ name: 'Just Open Technologies Inc.' }],
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: {
     title: 'stAIrcode — Check Any Building Code, Anywhere, with AI',
-    description: 'Measure building geometry with your phone camera and check it against your local building code — anywhere in the world, detected automatically.',
+    description: 'Measure building geometry with your phone camera and check it against the applicable building code, detected automatically.',
     url: 'https://staircode.app',
     siteName: 'stAIrcode',
     type: 'website',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'stAIrcode — Check Any Building Code, Anywhere, with AI',
-    description: 'AI vision measurements checked against your local building code — OBC, NBC, CCQ, IBC, IRC, UK Part K and more, detected automatically.',
+    description: 'AI vision measurements checked against the applicable building code, detected automatically.',
     images: ['/screenshots/feature-graphic.png'],
   },
   appleWebApp: {

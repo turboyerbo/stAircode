@@ -18,13 +18,13 @@ export default function WhatIsStaircodeePage() {
         <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: '1.25rem', color: '#E8F4FF' }}>What is st<span style={{ color: '#F29337' }}>AI</span>rcode?
         </h1>
 
-        <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.78)', lineHeight: 1.8, marginBottom: '2.5rem', maxWidth: 620 }}>stAIrcode is an AI-powered stair compliance tool that lets anyone — from homeowners to building managers — check whether a staircase meets local building code requirements using nothing but a smartphone. No tape measure. No technical knowledge. No site visit required from an engineer.
+        <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.78)', lineHeight: 1.8, marginBottom: '2.5rem', maxWidth: 620 }}>stAIrcode is an AI building code compliance tool for residential inspections. It uses your phone camera and AI to check building elements against the code for the project location, flag issues, and generate a cited report. Built for building and home inspectors, builders, and anyone responsible for code compliance. No tape measure. No specialized equipment.
         </p>
 
         {/* YouTube video */}
         <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(65,124,164,0.25)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)', marginBottom: '3rem', maxWidth: 420, margin: '0 auto 3rem' }}><div style={{ position: 'relative', paddingTop: '177.78%' }}><iframe
               src="https://www.youtube.com/embed/3L6c9sbGpmI?rel=0&modestbranding=1&color=white"
-              title="stAIrcode Introduction — AI-guided stair compliance scan"
+              title="stAIrcode Introduction"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               loading="lazy"
@@ -37,18 +37,18 @@ export default function WhatIsStaircodeePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '3rem' }}>{[
             {
               icon: '',
-              title: 'AI-Vision measurement',
-              body: 'The app uses your phone camera combined with an AI vision model to estimate stair dimensions — riser height, tread depth, stair width, handrail height, nosing, and headroom — from photographs alone. A reference object (like a standard credit card) placed in frame improves accuracy to within ±9.5–25mm.',
+              title: 'AI-vision measurement',
+              body: 'The app uses your phone camera and an AI vision model to assess building elements across the inspection, from foundations and framing to electrical, plumbing, and stairs. It estimates dimensions and identifies conditions from photographs. A reference object placed in frame improves measurement accuracy.',
             },
             {
               icon: '',
               title: 'Building code compliance check',
-              body: 'Every measurement is automatically checked against the applicable building code for your location — including OBC 2024, NBC, IBC, BCBC, and AODA. You get an instant pass/fail result per dimension, with the specific code section cited.',
+              body: 'Each measurement and observation is checked against the applicable building code for the project location, including OBC, NBC, IBC, IRC, BCBC, and CCQ. You get a pass/fail result with the specific code section cited.',
             },
             {
               icon: '',
               title: 'Professional PDF report',
-              body: 'After scanning, you can access the full platform with a subscription — a professionally formatted PDF including measurement photos, code citations, pass/fail analysis, and a pre-inspection summary ready to share with your architect, contractor, or building inspector.',
+              body: 'A subscription unlocks the full platform and a professionally formatted PDF report with photos, code citations, pass/fail analysis, and a summary ready to share with an architect, contractor, or building inspector.',
             },
           ].map(item => (
             <div key={item.title} style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-start', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(65,124,164,0.15)', borderRadius: 14, padding: '1.25rem' }}><span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{item.icon}</span>
@@ -61,7 +61,7 @@ export default function WhatIsStaircodeePage() {
         </div>
 
         {/* CTA */}
-        <div style={{ textAlign: 'center' }}><a href="/?signin=1" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', fontWeight: 800, fontSize: '1rem', textDecoration: 'none', padding: '0.9rem 2.5rem', borderRadius: 14, letterSpacing: '0.04em', boxShadow: '0 4px 20px rgba(242,147,55,0.4)' }}>Try stAIrcode Free →
+        <div style={{ textAlign: 'center' }}><a href="/?signin=1" style={{ display: 'inline-block', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', fontWeight: 800, fontSize: '1rem', textDecoration: 'none', padding: '0.9rem 2.5rem', borderRadius: 14, letterSpacing: '0.04em', boxShadow: '0 4px 20px rgba(242,147,55,0.4)' }}>Try stAIrcode free
           </a>
         </div>
 

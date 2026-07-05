@@ -39,7 +39,7 @@ export default function EnterprisePage() {
       <section style={{ maxWidth: 520, margin: '0 auto', padding: '2rem 1.5rem' }}>{[
           { icon: '', title: 'Team Seats (up to 10)', desc: 'Every team member gets full Pro access. Centralised billing, shared scan history.' },
           { icon: '', title: 'REST API Access', desc: 'Integrate Staircode measurements directly into your BIM workflow, Revit plugins, or project management tools.' },
-          { icon: '', title: 'BIM / IFC Export', desc: 'Export stair compliance data as IFC-compatible JSON for import into Revit, ArchiCAD, and Vectorworks.' },
+          { icon: '', title: 'BIM / IFC Export', desc: 'Export compliance data as IFC-compatible JSON for import into Revit, ArchiCAD, and Vectorworks.' },
           { icon: '', title: 'Custom Code Library', desc: 'Add your own local amendments, house styles, or client-specific tolerances.' },
           { icon: '', title: 'Dedicated Support', desc: 'Priority email support with a 4-hour response SLA during business hours.' },
           { icon: '', title: 'White-Label Reports', desc: 'PDF reports branded with your firm logo and contact details.' },

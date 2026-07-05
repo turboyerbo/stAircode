@@ -5,8 +5,8 @@ import { NavLogo } from '@/app/components/Logo'
 const SCREENS = [
   {
     src: '/screen_tread.jpg',
-    title: 'Guided scan sequence — every dimension covered',
-    body: 'The app walks you through measurements in sequence: riser height, tread depth, stair width, handrail height, nosing projection, headroom, and riser consistency. On-screen instructions tell you exactly where to point the camera. No experience needed.',
+    title: 'Guided scan sequence',
+    body: 'Each inspection module walks you through its measurements in sequence with on-screen instructions telling you where to point the camera. For a stair scan, that covers riser height, tread depth, stair width, handrail height, nosing, headroom, and riser consistency. Other modules cover their own elements. No experience needed.',
   },
   {
     src: '/screen_review.jpg',
@@ -113,7 +113,7 @@ export default function PlatformOverviewPage() {
         {/* Developer contact */}
         <div style={{ marginTop: '4rem', padding: '2rem', background: C.bg2, borderRadius: 16 }}><div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', color: C.orange, textTransform: 'uppercase' as const, marginBottom: '0.6rem' }}>Developer</div>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: C.navy, marginBottom: '0.75rem' }}>About the developer</h2>
-          <p style={{ fontSize: '0.88rem', color: C.navy2, lineHeight: 1.8, margin: '0 0 0.75rem' }}>stAIrcode is an independent software product built to make stair compliance accessible to anyone with a smartphone. It was designed with input from building professionals, architects, and contractors across Canada and the United States.
+          <p style={{ fontSize: '0.88rem', color: C.navy2, lineHeight: 1.8, margin: '0 0 0.75rem' }}>stAIrcode is an independent software product built to make building code compliance accessible from a smartphone. It was designed with input from building professionals, architects, and contractors across Canada and the United States.
           </p>
           <p style={{ fontSize: '0.88rem', color: C.navy2, lineHeight: 1.8, margin: '0 0 1.25rem' }}>The product is in active Beta. Feedback directly shapes future versions — for suggestions, bug reports, partnership enquiries, or testimonial removal requests, email the developer directly.
           </p>

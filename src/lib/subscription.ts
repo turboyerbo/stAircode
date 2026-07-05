@@ -4,9 +4,9 @@
  * Utilities for checking whether a user has an active subscription.
  *
  * All paid features (full building inspection, foundation reports,
- * accessibility reports, full stair reports) require an active subscription.
+ * accessibility reports, full inspection reports) require an active subscription.
  *
- * The stair compliance DEMO scan is always free and bypasses this check.
+ * The stair compliance DEMO scan (the free sample) is always free and bypasses this check.
  *
  * Subscription state is stored in Supabase profiles table:
  *   email                  text

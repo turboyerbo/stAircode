@@ -134,7 +134,7 @@ export default function PaymentSuccessScreen() {
           <p style={{
             fontSize: '0.9rem', color: C.text2,
             lineHeight: 1.7, marginBottom: '1.75rem',
-          }}>Your stair compliance report is ready. Click the button below to
+          }}>Your compliance report is ready. Click the button below to
             download your PDF. A copy has also been sent to your email.
           </p>
 
