@@ -18,6 +18,7 @@ import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB, PDFName, PDFArr
 import type { InspectionJob, InspectionPhase, InspectionModule, ModuleFinding } from './inspection-types'
 import { PHASE_META, MODULE_META } from './inspection-types'
 import { getModuleStandard } from './inspection-standards'
+import { enrichPhaseFindings, type EnrichedFinding } from './enrich-phase-findings'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
@@ -470,7 +471,11 @@ export async function generatePhaseSection(job: InspectionJob, phaseId: string):
     obl:  await pdfDoc.embedFont(StandardFonts.HelveticaOblique),
   }
 
-  await buildPhaseSection(pdfDoc, job, phase, fonts)
+  // Stage 2: deepen the analysis for this phase (one AI call per phase, chunked).
+  // Fails safe — returns {} on any error, and the section renders from raw data.
+  const enriched = await enrichPhaseFindings(job, phase)
+
+  await buildPhaseSection(pdfDoc, job, phase, fonts, enriched)
   stampPageNumbers(pdfDoc, fonts.reg, fonts.bold, pdfDoc.getPageCount() + 1, job)
   return Buffer.from(await pdfDoc.save())
 }
@@ -503,9 +508,14 @@ export async function collatePhasePdfs(job: InspectionJob, coverNotes?: string):
         const secDoc = await PDFDocument.load(Buffer.from(phase.reportPdfB64, 'base64'))
         const pages  = await final.copyPages(secDoc, secDoc.getPageIndices())
         pages.forEach(p => final.addPage(p))
-      } catch { await buildPhaseSection(final, job, phase, fonts) }
+      } catch {
+        const enriched = await enrichPhaseFindings(job, phase)
+        await buildPhaseSection(final, job, phase, fonts, enriched)
+      }
     } else {
-      await buildPhaseSection(final, job, phase, fonts)
+      // No pre-generated section — enrich on the fly (one call per phase)
+      const enriched = await enrichPhaseFindings(job, phase)
+      await buildPhaseSection(final, job, phase, fonts, enriched)
     }
   }
 
@@ -763,7 +773,8 @@ async function buildSummaryPage(
 // ── Phase section ─────────────────────────────────────────────────────────────
 async function buildPhaseSection(
   pdfDoc: PDFDocument, job: InspectionJob,
-  phase: InspectionPhase, fonts: Record<string, PDFFont>
+  phase: InspectionPhase, fonts: Record<string, PDFFont>,
+  enriched: Record<string, EnrichedFinding> = {}
 ) {
   const meta = PHASE_META[phase.id]
   if (!meta) return
@@ -820,46 +831,74 @@ async function buildPhaseSection(
         s.page.drawText(sanitise(fmtCond(finding.condition as string)), { x:ML+14+cW, y:s.y, font:reg, size:9, color:dot })
         s = { ...s, y: s.y - 13 }
 
+        // ── Analysis: use enriched AI content when available, else raw ──
+        const en = enriched[finding.id]
+
         // Observations
-        if (finding.notes) {
+        const observationText = en?.observation || finding.notes
+        if (observationText) {
           s = need(s, 13)
-          s = drawWrappedText(s, finding.notes, ML+14, reg, 9, C.text, TW-14, 12.5)
+          const oL = 'Observation:  '
+          s.page.drawText(sanitise(oL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s = { ...s, y: s.y - 12 }
+          s = drawWrappedText(s, observationText, ML+20, reg, 9, C.text, TW-20, 12.5)
         }
 
         // Implication
-        if (finding.recommendation) {
+        const implicationText = en?.implications || finding.recommendation
+        if (implicationText) {
           s = need(s, 14)
           const iL = 'Implication(s):  '
           s.page.drawText(sanitise(iL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
           s = { ...s, y: s.y - 12 }
-          s = drawWrappedText(s, finding.recommendation, ML+20, reg, 9, C.text, TW-20, 12.5)
+          s = drawWrappedText(s, implicationText, ML+20, reg, 9, C.text, TW-20, 12.5)
         }
 
         // Code reference
-        const cr = finding.codeRef || modMeta.codeRef
+        const cr = en?.codeReference || finding.codeRef || modMeta.codeRef
         if (cr) {
           s = need(s, 12)
           const crL = 'Code reference:  '
           const crW = bold.widthOfTextAtSize(crL, 9)
           s.page.drawText(sanitise(crL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
-          s.page.drawText(sanitise(cr),  { x:ML+14+crW, y:s.y, font:obl, size:9, color:C.blue })
-          s = { ...s, y: s.y - 12 }
+          s = drawWrappedText(s, cr, ML+14+crW, obl, 9, C.blue, TW-14-crW, 12)
         }
 
-        // Task (severity)
-        if (finding.severity && finding.severity !== 'none') {
+        // Task + timeframe
+        const taskStr = en?.task || (
+          finding.severity === 'critical' ? 'Correct'
+          : finding.severity === 'major'  ? 'Repair or replace'
+          : finding.severity === 'moderate' ? 'Monitor and repair'
+          : finding.severity && finding.severity !== 'none' ? 'Improve' : ''
+        )
+        if (taskStr) {
           s = need(s, 13)
-          const sev    = finding.severity
-          const sevC   = sevColor(sev)
-          const taskStr = sev === 'critical' ? 'URGENT — Address immediately'
-                        : sev === 'major'    ? 'Repair or replace'
-                        : sev === 'moderate' ? 'Monitor and repair when possible'
-                        : 'Improve'
+          const sevC = sevColor(finding.severity || 'moderate')
           const tL = 'Task:  '
           const tW = bold.widthOfTextAtSize(tL, 9)
           s.page.drawText(sanitise(tL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
           s.page.drawText(sanitise(taskStr), { x:ML+14+tW, y:s.y, font:bold, size:9, color:sevC })
-          s = { ...s, y: s.y - 14 }
+          s = { ...s, y: s.y - 13 }
+        }
+
+        // Timeframe
+        if (en?.timeframe) {
+          s = need(s, 12)
+          const tfL = 'Timeframe:  '
+          const tfW = bold.widthOfTextAtSize(tfL, 9)
+          const urgent = /immediate/i.test(en.timeframe)
+          s.page.drawText(sanitise(tfL), { x:ML+14, y:s.y, font:bold, size:9, color:C.text })
+          s.page.drawText(sanitise(en.timeframe), { x:ML+14+tfW, y:s.y, font:bold, size:9, color: urgent ? C.red : C.text2 })
+          s = { ...s, y: s.y - 13 }
+        }
+
+        // Recommendation (enriched only — specific actionable next step)
+        if (en?.recommendation) {
+          s = need(s, 14)
+          const rL = 'Recommendation:  '
+          s.page.drawText(sanitise(rL), { x:ML+14, y:s.y, font:bold, size:9, color:C.green })
+          s = { ...s, y: s.y - 12 }
+          s = drawWrappedText(s, en.recommendation, ML+20, reg, 9, C.text, TW-20, 12.5)
         }
 
         // Reference diagram (if applicable module)

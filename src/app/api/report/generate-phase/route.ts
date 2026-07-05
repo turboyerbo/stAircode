@@ -15,7 +15,7 @@ import type { InspectionJob }        from '@/lib/inspection-types'
 import { rateLimit, getClientIp }    from '@/lib/rate-limit'
 import { isValidJobId }              from '@/lib/api-auth'
 
-export const maxDuration = 30
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req)
