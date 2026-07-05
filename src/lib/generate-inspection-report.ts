@@ -14,7 +14,7 @@
  *   Last: Site Information
  */
 
-import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, RGB, PDFName, PDFArray, PDFString, PDFNumber } from 'pdf-lib'
 import type { InspectionJob, InspectionPhase, InspectionModule, ModuleFinding } from './inspection-types'
 import { PHASE_META, MODULE_META } from './inspection-types'
 import { getModuleStandard } from './inspection-standards'
@@ -65,16 +65,25 @@ interface PW_State {
 
 function newPage(state: PW_State): PW_State {
   const page = state.doc.addPage([PW, PH])
-  // Section header
-  page.drawRectangle({ x: ML - 5, y: PH - MT - 22, width: TW + 10, height: 26, color: state.sectionColor })
-  page.drawText(state.sectionTitle.toUpperCase(), { x: ML, y: PH - MT - 16, font: state.fonts.bold, size: 11, color: C.white })
+  const sc = state.sectionColor
+  const scDark = rgb(sc.red * 0.7, sc.green * 0.7, sc.blue * 0.7)
+  // Section header — layered for depth: darker inset tab + section band + thin navy top rule
+  page.drawRectangle({ x: ML - 5, y: PH - MT - 22, width: TW + 10, height: 26, color: sc })
+  page.drawRectangle({ x: ML - 5, y: PH - MT - 22, width: 5, height: 26, color: scDark })            // left accent tab
+  page.drawRectangle({ x: ML - 5, y: PH - MT + 4,  width: TW + 10, height: 2, color: C.navy })         // top rule for depth
+  page.drawText(state.sectionTitle.toUpperCase(), { x: ML + 4, y: PH - MT - 16, font: state.fonts.bold, size: 11, color: C.white })
+  // Report label on the right of the band
+  const rl = 'INSPECTION REPORT'
+  const rlw = state.fonts.reg.widthOfTextAtSize(rl, 7.5)
+  page.drawText(rl, { x: PW - MR - rlw, y: PH - MT - 15, font: state.fonts.reg, size: 7.5, color: rgb(1,1,1) })
   // Address / date sub-line
   const addr = `${state.job.address.street}, ${state.job.address.city}, ${state.job.address.province}`
   page.drawText(sanitise(addr), { x: ML, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
   const dt = fmtDate(state.job.inspectionDate)
   const dtW = state.fonts.reg.widthOfTextAtSize(dt, 8.5)
   page.drawText(sanitise(dt), { x: PW - MR - dtW, y: PH - MT - 38, font: state.fonts.reg, size: 8.5, color: C.midgrey })
-  return { ...state, page, y: PH - MT - 52 }
+  page.drawRectangle({ x: ML, y: PH - MT - 43, width: TW, height: 0.4, color: C.lightgrey })
+  return { ...state, page, y: PH - MT - 54 }
 }
 
 function startSection(doc: PDFDocument, title: string, color: RGB, fonts: Record<string, PDFFont>, job: InspectionJob): PW_State {
@@ -348,15 +357,57 @@ function collectFindings(job: InspectionJob): FindingRow[] {
   return rows
 }
 
-// ── Page numbers ──────────────────────────────────────────────────────────────
-function stampPageNumbers(pdfDoc: PDFDocument, reg: PDFFont, totalPages: number) {
+// ── Clickable link annotation helper ───────────────────────────────────────────
+function addLinkAnnotation(pdfDoc: PDFDocument, page: PDFPage, url: string, x: number, y: number, w: number, h: number) {
+  const annot = pdfDoc.context.obj({
+    Type: 'Annot',
+    Subtype: 'Link',
+    Rect: [x, y, x + w, y + h],
+    Border: [0, 0, 0],
+    A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
+  })
+  const ref = pdfDoc.context.register(annot)
+  let annots = page.node.lookup(PDFName.of('Annots'), PDFArray)
+  if (!annots) { annots = pdfDoc.context.obj([]) as PDFArray; page.node.set(PDFName.of('Annots'), annots) }
+  annots.push(ref)
+}
+
+// ── Page numbers + footer links ─────────────────────────────────────────────────
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://staircode.app').replace(/\/$/, '')
+const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL ?? 'info@staircode.app'
+
+function stampPageNumbers(pdfDoc: PDFDocument, reg: PDFFont, bold: PDFFont, totalPages: number, job?: InspectionJob) {
+  const projectUrl  = job?.id ? `${APP_URL}/?project=${encodeURIComponent(job.id)}` : APP_URL
+  const feedbackUrl = `${APP_URL}/?feedback=1${job?.id ? `&project=${encodeURIComponent(job.id)}` : ''}`
+  const contactUrl  = `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('stAIrcode report' + (job?.address?.street ? ` — ${job.address.street}` : ''))}`
+
   pdfDoc.getPages().forEach((page, i) => {
     if (i === 0) return // skip cover
-    const txt = `Page ${i} of ${totalPages - 1}`
-    const tw  = reg.widthOfTextAtSize(txt, 7.5)
-    page.drawText(txt, { x: PW/2 - tw/2, y: 22, font: reg, size: 7.5, color: C.midgrey })
-    page.drawText('stAIrcode · Just Open Technologies Inc.', { x: ML, y: 22, font: reg, size: 7, color: C.midgrey })
-    page.drawRectangle({ x: ML, y: 36, width: TW, height: 0.3, color: C.lightgrey })
+    // Divider
+    page.drawRectangle({ x: ML, y: 40, width: TW, height: 0.3, color: C.lightgrey })
+
+    // Left: brand.  Center: page number.
+    page.drawText('stAIrcode', { x: ML, y: 27, font: bold, size: 7.5, color: C.navy })
+    page.drawText('· Just Open Technologies Inc.', { x: ML + 42, y: 27, font: reg, size: 7, color: C.midgrey })
+    const pn = `Page ${i} of ${totalPages - 1}`
+    const pnw = reg.widthOfTextAtSize(pn, 7.5)
+    page.drawText(pn, { x: PW/2 - pnw/2, y: 27, font: reg, size: 7.5, color: C.midgrey })
+
+    // Right: three clickable links, right-aligned
+    const links: Array<{ label: string; url: string }> = [
+      { label: 'Open project', url: projectUrl },
+      { label: 'Leave feedback', url: feedbackUrl },
+      { label: 'Contact us', url: contactUrl },
+    ]
+    let lx = PW - MR
+    for (let k = links.length - 1; k >= 0; k--) {
+      const { label, url } = links[k]
+      const lw = reg.widthOfTextAtSize(label, 7)
+      lx -= lw
+      page.drawText(label, { x: lx, y: 27, font: reg, size: 7, color: C.orange })
+      addLinkAnnotation(pdfDoc, page, url, lx, 24, lw, 12)
+      if (k > 0) { lx -= 6; page.drawText('·', { x: lx, y: 27, font: reg, size: 7, color: C.midgrey }); lx -= 6 }
+    }
   })
 }
 
@@ -420,7 +471,7 @@ export async function generatePhaseSection(job: InspectionJob, phaseId: string):
   }
 
   await buildPhaseSection(pdfDoc, job, phase, fonts)
-  stampPageNumbers(pdfDoc, fonts.reg, pdfDoc.getPageCount() + 1)
+  stampPageNumbers(pdfDoc, fonts.reg, fonts.bold, pdfDoc.getPageCount() + 1, job)
   return Buffer.from(await pdfDoc.save())
 }
 
@@ -459,7 +510,7 @@ export async function collatePhasePdfs(job: InspectionJob, coverNotes?: string):
   }
 
   await buildSiteInfoPage(final, job, fonts)
-  stampPageNumbers(final, fonts.reg, final.getPageCount())
+  stampPageNumbers(final, fonts.reg, fonts.bold, final.getPageCount(), job)
   return Buffer.from(await final.save())
 }
 
@@ -476,6 +527,31 @@ async function buildCoverPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Re
   const page = pdfDoc.addPage([PW, PH])
   const { bold, reg, obl } = fonts
 
+  // Find the best available property photo: explicit thumbnail, else first real module/finding photo
+  function findCoverPhoto(): string | null {
+    if (job.propertyThumbnail && !job.propertyThumbnail.startsWith('[')) return job.propertyThumbnail
+    for (const phase of job.phases) {
+      for (const mod of phase.modules) {
+        const p = (mod.photos ?? []).find(x => x && !x.startsWith('['))
+        if (p) return p
+        for (const f of mod.findings ?? []) {
+          const fp = (f.photos ?? []).find(x => x && !x.startsWith('['))
+          if (fp) return fp
+        }
+      }
+    }
+    return null
+  }
+
+  async function embedSafe(b64: string) {
+    try {
+      const raw = b64.includes('base64,') ? b64.split('base64,')[1] : b64
+      const bytes = Buffer.from(raw, 'base64')
+      const isPng = bytes[0] === 0x89 && bytes[1] === 0x50
+      return isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes)
+    } catch { return null }
+  }
+
   // Navy header band
   page.drawRectangle({ x:0, y:PH-210, width:PW, height:210, color:C.navy })
   // Orange accent
@@ -483,31 +559,57 @@ async function buildCoverPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Re
   // Brand
   page.drawText('YOUR INSPECTION', { x:ML+8, y:PH-80,  font:bold, size:30, color:C.white })
   page.drawText('REPORT',          { x:ML+8, y:PH-118, font:bold, size:30, color:C.orange })
+  page.drawText('AI-verified building code compliance', { x:ML+8, y:PH-150, font:reg, size:10, color:rgb(0.7,0.8,0.88) })
 
-  // Address
+  // ── Property photo (cover hero) — the defining element of a pro report ──
+  const coverPhoto = findCoverPhoto()
+  const photoX = ML, photoY = PH - 470, photoW = TW, photoH = 210
+  if (coverPhoto) {
+    const img = await embedSafe(coverPhoto)
+    if (img) {
+      // Cover-fit (center-crop) the image into the photo box
+      const scale = Math.max(photoW / img.width, photoH / img.height)
+      const w2 = img.width * scale, h2 = img.height * scale
+      const ox = photoX + (photoW - w2) / 2, oy = photoY + (photoH - h2) / 2
+      page.drawRectangle({ x:photoX, y:photoY, width:photoW, height:photoH, color:C.light })
+      page.drawImage(img, { x:ox, y:oy, width:w2, height:h2 })
+      page.drawRectangle({ x:photoX, y:photoY, width:photoW, height:photoH, borderColor:C.navy, borderWidth:1.5 })
+    }
+  } else {
+    page.drawRectangle({ x:photoX, y:photoY, width:photoW, height:photoH, color:C.light, borderColor:C.border, borderWidth:1 })
+    page.drawText('No property photo captured', { x:photoX+photoW/2-70, y:photoY+photoH/2, font:obl, size:10, color:C.text2 })
+  }
+
+  // Address block (below photo)
   const addr1 = job.address.street + (job.address.unit ? ` #${job.address.unit}` : '')
   const addr2 = `${job.address.city}, ${job.address.province}`
-  page.drawText(sanitise(addr1), { x:ML, y:PH-290, font:bold, size:20, color:C.navy })
-  page.drawText(sanitise(addr2), { x:ML, y:PH-316, font:bold, size:16, color:C.navy })
-  page.drawRectangle({ x:ML, y:PH-330, width:TW, height:1, color:C.border })
+  page.drawText('FOR THE PROPERTY AT', { x:ML, y:photoY-24, font:obl, size:8, color:C.orange })
+  page.drawText(sanitise(addr1 || 'Address not recorded'), { x:ML, y:photoY-43, font:bold, size:18, color:C.navy })
+  if (job.address.city) page.drawText(sanitise(addr2), { x:ML, y:photoY-63, font:bold, size:13, color:C.navy })
 
-  // Info grid
+  // ── Map placeholder (Stage 3 fills this with a Google Static Map) ──
+  const mapW = 150, mapH = 70, mapX = PW - MR - mapW, mapY = photoY - 92
+  page.drawRectangle({ x:mapX, y:mapY, width:mapW, height:mapH, color:rgb(0.90,0.93,0.96), borderColor:C.border, borderWidth:1 })
+  page.drawText('MAP', { x:mapX+mapW/2-9, y:mapY+mapH/2+2, font:bold, size:8, color:C.text2 })
+  page.drawText('Location map', { x:mapX+mapW/2-24, y:mapY+mapH/2-10, font:obl, size:6, color:C.text2 })
+
+  // Info grid (compact, two-column)
   const rows = [
     { label:'PREPARED FOR',    value:job.clientName || 'Not specified' },
     { label:'INSPECTION DATE', value:fmtDate(job.inspectionDate) },
     { label:'INSPECTED BY',    value:job.inspectorName || 'Not specified' },
-    { label:'COMPANY',         value:job.company || 'Just Open Technologies Inc.' },
-    { label:'LICENCE NO.',     value:job.licenceNumber || '' },
-    { label:'PURPOSE',         value:job.purposeNote || 'Building Inspection' },
     { label:'BUILDING TYPE',   value:fmtBuildingType(job.buildingType) },
     { label:'ESTIMATED AGE',   value:job.estimatedAge || 'Not recorded' },
+    { label:'PURPOSE',         value:job.purposeNote || 'Building Inspection' },
   ]
-  let y = PH - 375
+  let gy = photoY - 130, col = 0
   for (const row of rows) {
     if (!row.value) continue
-    page.drawText(sanitise(row.label), { x:ML, y, font:obl, size:8, color:C.orange })
-    page.drawText(sanitise(row.value), { x:ML, y:y-14, font:bold, size:11, color:C.navy })
-    y -= 40
+    const gx = ML + col * (TW / 2)
+    page.drawText(sanitise(row.label), { x:gx, y:gy, font:obl, size:7.5, color:C.orange })
+    page.drawText(sanitise(row.value), { x:gx, y:gy-13, font:bold, size:10.5, color:C.navy })
+    col++
+    if (col > 1) { col = 0; gy -= 40 }
   }
 
   // Footer
