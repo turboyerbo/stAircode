@@ -147,7 +147,7 @@ export default function MarketingPage() {
   const faqs = [
     {
       q: 'Is stAIrcode a replacement for a building inspector?',
-      a: 'No. stAIrcode is a compliance aid tool. It helps building inspectors and professionals quickly document and assess stair compliance against local codes — flagging issues and generating cited reports. Always confirm findings with the appropriate authority having jurisdiction.',
+      a: 'No. stAIrcode is a compliance aid tool. It helps building inspectors and professionals quickly document and assess stair compliance against local codes, flagging issues and generating cited reports. Always confirm findings with the appropriate authority having jurisdiction.',
     },
     {
       q: 'Which building codes does stAIrcode check against?',
@@ -159,11 +159,11 @@ export default function MarketingPage() {
     },
     {
       q: 'What does the free scan include?',
-      a: 'The free scan checks all key stair dimensions — riser height, tread depth, stair width, headroom, nosing, and guardrail height — and shows pass/fail against your local code. The full PDF compliance report with cited measurements requires a one-time purchase.',
+      a: 'The free scan checks the key stair dimensions (riser height, tread depth, stair width, headroom, nosing, and guardrail height) and shows pass/fail against your local code. The full PDF compliance report with cited measurements requires a one-time purchase.',
     },
     {
       q: 'Does it work on Android and iOS?',
-      a: 'Yes. stAIrcode is a Progressive Web App (PWA) that runs directly in your mobile browser — no app store download required. An Android TWA and iOS Capacitor build are also in development.',
+      a: 'Yes. stAIrcode is a Progressive Web App (PWA) that runs in your mobile browser with no app store download required. An Android TWA and iOS Capacitor build are also in development.',
     },
   ]
 
@@ -231,26 +231,26 @@ export default function MarketingPage() {
           <div style={{ flex: '1 1 320px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(10,28,46,0.06)', color: '#3A5A78', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '0.35rem 0.85rem', borderRadius: 4, marginBottom: '1.5rem', border: '1px solid rgba(44,90,122,0.15)' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#27A96B', display: 'inline-block' }} />
-              OBC · NBC · IBC · IRC · BCBC · CCQ · UK Part K — any code, anywhere
+              Building code compliance, any jurisdiction
             </div>
-            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Check Any Building Code, Anywhere — with AI. Measured, analyzed, and reported on site.
+            <h1 style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 640, marginBottom: '1.25rem', color: '#0A1C2E' }}>Building code compliance software for inspections.
             </h1>
             <p style={{ fontSize: '1rem', lineHeight: 1.8, color: '#3A5A78', maxWidth: 500, marginBottom: '1.75rem' }}>
-              stAIrcode layers AI-vision with your smartphone camera to capture building geometry, extract measurements, and evaluate compliance against the building code for your exact location — automatically detected, anywhere in the world. From Toronto to Tokyo, get instant pass/fail feedback and a professional PDF report you can email directly from the field. Check for possible code issues in minutes, not weeks.
+              stAIrcode uses your phone camera and AI to measure building elements, check them against the applicable code for the project location, and generate a cited PDF report. Detects the jurisdiction automatically. Works on any device.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
               <a href="/try" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 800, color: '#fff', textDecoration: 'none', padding: '13px 26px', background: '#0A1C2E', borderRadius: 8, letterSpacing: '-0.01em', boxShadow: '0 4px 18px rgba(10,28,46,0.25)' }}>
-                Try a Stair Scan — free, no sign-up
+                Try a stair scan
               </a>
               <a href="/try" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: 700, color: '#27A96B', textDecoration: 'none', padding: '13px 26px', background: '#fff', border: '1.5px solid #27A96B', borderRadius: 8, letterSpacing: '-0.01em' }}>
-                Try a Quick Scan
+                Try a quick scan
               </a>
             </div>
             <a onClick={handleSignIn} href="#" style={{ display: 'inline-block', marginTop: '0.9rem', fontSize: '0.85rem', fontWeight: 600, color: '#5E7D9B', textDecoration: 'none' }}>
-              Already a member? Sign in →
+              Already a member? Sign in
             </a>
             <p style={{ fontSize: '0.78rem', color: '#5E7D9B', marginTop: '0.75rem', lineHeight: 1.5 }}>
-              Runs a real AI scan checked against the building code for your city. No account needed to try it.
+              No account required to try. Checks against the building code for your location.
             </p>
           </div>
 
@@ -287,9 +287,9 @@ export default function MarketingPage() {
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem', marginBottom: '3.5rem' }}>
             {[
-              { n: '01', label: 'AI Vision', desc: 'Photogrammetric measurements from your phone camera — no tape measure required.' },
+              { n: '01', label: 'AI Vision', desc: 'Measurements from your phone camera. No tape measure required.' },
               { n: '02', label: 'Live Code Analysis', desc: 'Every finding cross-referenced against the applicable building code in real time.' },
-              { n: '03', label: 'Photo Records', desc: 'Inspection photos stored per phase and module — fully timestamped and retrievable.' },
+              { n: '03', label: 'Photo Records', desc: 'Photos stored per phase and module, timestamped and retrievable.' },
               { n: '04', label: 'Comprehensive Report', desc: 'A structured 30-page PDF covering all 9 inspection phases, code citations, and recommendations.' },
             ].map(item => (
               <div key={item.n} style={{ borderLeft: '2px solid rgba(242,147,55,0.4)', paddingLeft: '1.25rem' }}>
@@ -313,19 +313,19 @@ export default function MarketingPage() {
       <section style={{ padding: '5rem 1.25rem', background: '#fff', borderTop: '1px solid #E5EBF2' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#F29337', marginBottom: '0.6rem' }}>Full Residential Inspection</div>
-          <h2 style={{ fontSize: 'clamp(1.5rem,4vw,2.2rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#0A1C2E', marginBottom: '0.75rem' }}>9 inspection phases. Every element of the building.</h2>
+          <h2 style={{ fontSize: 'clamp(1.5rem,4vw,2.2rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#0A1C2E', marginBottom: '0.75rem' }}>9 inspection phases covering the full building.</h2>
           <p style={{ fontSize: '0.95rem', color: '#5E7D9B', lineHeight: 1.7, maxWidth: 640, marginBottom: '2.5rem' }}>
-            stAIrcode guides inspectors through every phase of a residential building inspection — from roof to site — with AI vision measurements, live code analysis, photo documentation, and a comprehensive report that applies the building code for your jurisdiction, automatically detected.
+            stAIrcode covers each phase of a residential inspection, from roof to site. Every phase includes AI vision measurements, code analysis, photo documentation, and a report that applies the jurisdiction detected for the project.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
             {[
               {
-                n: '01', phase: 'Roof — External',
+                n: '01', phase: 'Roof (External)',
                 modules: ['Roof covering & condition', 'Flashings & sealants', 'Gutters & downpipes', 'Eaves, fascias & barge boards', 'Ridge & hip condition'],
               },
               {
-                n: '02', phase: 'Roof — Internal',
+                n: '02', phase: 'Roof (Internal)',
                 modules: ['Roof framing & trusses', 'Insulation coverage', 'Sarking & membrane'],
               },
               {
@@ -379,7 +379,7 @@ export default function MarketingPage() {
           <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#F7FAFC', borderRadius: 14, border: '1px solid #E5EBF2', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0A1C2E', marginBottom: '0.25rem' }}>Free Demo: Stair Compliance Scan</div>
-              <div style={{ fontSize: '0.82rem', color: '#5E7D9B' }}>Try AI-vision stair measurement free — no account required. Includes pass/fail vs local building code.</div>
+              <div style={{ fontSize: '0.82rem', color: '#5E7D9B' }}>Free stair measurement, no account required. Includes pass/fail against your local code.</div>
             </div>
             <a onClick={handleTryDemo} href="#" style={{ padding: '0.75rem 1.5rem', background: '#0A1C2E', color: '#fff', borderRadius: 9, textDecoration: 'none', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>Try Free Demo →</a>
           </div>
@@ -397,7 +397,7 @@ export default function MarketingPage() {
 
           {/* Heading below phone */}
           <div className={styles.sectionLabel}>How It Works</div>
-          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Three steps to Building Code Compliance</h2>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>How it works</h2>
 
           {/* Steps stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -410,11 +410,11 @@ export default function MarketingPage() {
               {
                 n: '2',
                 title: 'Every dimension checked against your local building code in real time',
-                body: 'Instant pass/fail on site — cross-referenced against your location-specific code.',
+                body: 'Pass/fail on site, checked against the code for the project location.',
               },
               {
                 n: '3',
-                title: 'Instant PDF report — photos, code citations, full pass/fail analysis',
+                title: 'PDF report with photos, code citations, and pass/fail analysis',
                 body: 'Ready to share with your client, architect, or contractor.',
               },
             ].map(s => (
@@ -465,10 +465,10 @@ export default function MarketingPage() {
         <div style={{ maxWidth: 1080, margin: '0 auto' }}>
           <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', color: '#F29337', textTransform: 'uppercase', marginBottom: '0.75rem', textAlign: 'center' }}>Why stAIrcode</div>
           <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, color: '#fff', textAlign: 'center', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '1rem', maxWidth: 700, marginLeft: 'auto', marginRight: 'auto' }}>
-            Other companies built scheduling apps.<br/>We built a measurement engine.
+            Focused on measurement and compliance.
           </h2>
           <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)', textAlign: 'center', maxWidth: 600, margin: '0 auto 3.5rem', lineHeight: 1.7 }}>
-            Competitors charge you hundreds per month for confusing dashboards overloaded with features that have nothing to do with what happens on-site. Their large development teams are burning investor capital to rebuild what a clipboard already does — just digitally.
+            Most inspection platforms are built around scheduling, crew management, and project portfolios. stAIrcode does one thing: measure building elements on site and check them against the applicable code.
           </p>
 
           {/* Comparison table */}
@@ -484,10 +484,10 @@ export default function MarketingPage() {
               <tbody>
                 {[
                   ['AI measures dimensions from your phone camera',                   true,  false],
-                  ['Live building-code compliance check — on the spot',               true,  false],
+                  ['On-site building code compliance check',               true,  false],
                   ['Generates a professional PDF report in the field',                true,  false],
                   ['Multi-phase hold-point inspection workflow',                      true,  false],
-                  ['Works without LTE — offline capable',                             true,  '~'],
+                  ['Offline capable, works without LTE',                             true,  '~'],
                   ['Scheduling, crew management, project portfolio tools',             '—',   true],
                   ['Requires hours of onboarding and training',                        false, true],
                   ['Price per month',                                                  '$38.99', '$150–300+'],
@@ -618,9 +618,9 @@ export default function MarketingPage() {
       <section style={{ background: '#F7FAFC', padding: '5rem 1.25rem' }}><div className={styles.section} style={{ padding: 0 }}><div style={{ maxWidth: 1080, margin: '0 auto' }}><div className={styles.sectionLabel}>Why stAIrcode</div>
             <h2 className={styles.sectionTitle} style={{ marginBottom: '2.5rem' }}>Built for inspectors and compliance professionals</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>{[
-                { title: 'AI Vision Analysis', body: "Claude Vision reads your photos, extracts measurements, and cross-references every dimension against your jurisdiction's building code — no tape measure, no manual calculations." },
-                { title: 'Code-Accurate Results', body: 'Automatically detects your jurisdiction — anywhere in the world — and checks every measurement against the building code that governs your site: OBC, NBC, CCQ, IBC, IRC, UK Part K, and more. Pass/fail shown per dimension with the exact code clause cited.' },
-                { title: 'PDF Compliance Report', body: 'Generate a shareable, cited compliance report in minutes — ready for building inspection documentation, code enforcement records, or contractor briefings.' },
+                { title: 'AI Vision Analysis', body: "AI reads your photos, extracts measurements, and checks each dimension against the applicable building code. No tape measure or manual calculation required." },
+                { title: 'Code-Accurate Results', body: 'Detects the jurisdiction for the project and checks each measurement against the governing code: OBC, NBC, CCQ, IBC, IRC, UK Part K, and others. Pass/fail is shown per dimension with the code clause cited.' },
+                { title: 'PDF Compliance Report', body: 'Generate a cited compliance report for inspection documentation, code enforcement records, or contractor briefings.' },
                 { title: 'Guided Module Workflow', body: 'Each inspection category is its own guided module. Select what you need to check, follow the on-screen steps, and receive a report scoped to that category.' },
               ].map(f => (
                 <div key={f.title} className={styles.featureCard}>
@@ -781,7 +781,7 @@ export default function MarketingPage() {
                 <img src="/staircode_logo.png" alt="stAIrcode" style={{ height: 32, display: 'block' }} />
                 <div style={{ fontSize: 8, fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif', fontWeight: 400, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(27,58,107,0.48)', marginTop: 4, lineHeight: 1, whiteSpace: 'nowrap' }}>Next Step in Building Information</div>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by giving inspectors and compliance professionals instant, AI-powered code analysis — from any phone, on any job site.
+              <p style={{ fontSize: '0.82rem', color: '#5E7D9B', lineHeight: 1.7, marginBottom: '1rem' }}>stAIrcode is committed to improving building safety by giving inspectors and compliance professionals AI code analysis from any phone, on any job site.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem' }}>{[
                   { href: 'https://www.instagram.com/staircode/', label: 'IG', title: 'Instagram' },
@@ -858,7 +858,7 @@ export default function MarketingPage() {
                   <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', lineHeight: 1.3, letterSpacing: '-0.01em' }}>App Store</div>
                 </div>
               </a>
-              <div style={{ fontSize: '0.68rem', color: '#9BB5C8', marginTop: '0.4rem' }}>iOS — Coming Soon</div>
+              <div style={{ fontSize: '0.68rem', color: '#9BB5C8', marginTop: '0.4rem' }}>iOS coming soon</div>
             </div>
 
           </div>
@@ -999,7 +999,7 @@ export default function MarketingPage() {
                 } catch { alert('Could not start checkout. Please try again.') }
               }}
               style={{ display: 'block', width: '100%', textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg,#F29337,#C4721E)', color: '#fff', borderRadius: 12, fontWeight: 800, fontSize: '1rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(242,147,55,0.4)' }}>
-              Start Free Trial — No Card Required →
+              Start free trial. No card required.
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

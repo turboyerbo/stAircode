@@ -802,8 +802,8 @@ export default function Home(){
     const scanParam = params.get('module')         // e.g. ?module=accessibility or ?module=foundation
     const isPaymentReturn = payment === 'success' || payment === 'cancelled'
 
-    // ?module= always implies signin flow — prevents redirect to marketing
-    setIsSigninFlow(signin || isPaymentReturn || !!scanParam)
+    // ?module= and ?project= always imply an app flow — prevents redirect to marketing
+    setIsSigninFlow(signin || isPaymentReturn || !!scanParam || !!project)
     if (member) setIsSignoutFlow(true)  // treat ?member=1 same as post-signout flow
     if (goto === 'projects') setGotoProjects(true)
     if (project) setGotoProjectId(project)
