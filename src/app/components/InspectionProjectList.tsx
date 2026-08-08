@@ -358,15 +358,15 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
               <div key={job.id} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(44,74,110,0.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                   {/* Thumbnail */}
-                  {job.thumbnail && (
+                  {job.thumbnail && !job.thumbnail.startsWith('[') && job.thumbnail.length > 100 && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={`data:image/jpeg;base64,${job.thumbnail}`}
+                      src={job.thumbnail.startsWith('data:') ? job.thumbnail : `data:image/jpeg;base64,${job.thumbnail.includes('base64,') ? job.thumbnail.split('base64,')[1] : job.thumbnail}`}
                       alt="property"
                       style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: `1px solid ${BORDER}` }}
                     />
                   )}
-                  {!job.thumbnail && (
+                  {(!job.thumbnail || job.thumbnail.startsWith('[') || job.thumbnail.length <= 100) && (
                     <div style={{ width: 56, height: 56, borderRadius: 8, background: 'rgba(65,124,164,0.08)', border: `1px solid ${BORDER}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                         <rect x="2" y="4" width="18" height="14" rx="2" stroke={BLUE} strokeWidth="1.3" fill="none"/>

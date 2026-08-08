@@ -39,6 +39,23 @@ const RED    = '#E84545'
 const BORDER = 'rgba(44,90,122,0.14)'
 const BG     = '#F4F7FB'
 
+// Turn a stored photo value into a usable <img src>. Handles data URIs, http
+// URLs, and raw base64 (detecting PNG/JPEG/GIF/webp). Returns '' for [photo-N]
+// placeholders that the save step substitutes for stripped full images.
+function imgSrc(v: string): string {
+  if (!v) return ''
+  if (v.startsWith('data:') || v.startsWith('http')) return v
+  if (v.startsWith('[') || v.startsWith('photo-') || v.length < 100) return ''
+  const raw  = v.includes('base64,') ? v.split('base64,')[1] : v
+  const head = raw.slice(0, 8)
+  const mime = head.startsWith('iVBOR') ? 'image/png'
+             : head.startsWith('/9j/')  ? 'image/jpeg'
+             : head.startsWith('R0lGO') ? 'image/gif'
+             : head.startsWith('UklGR') ? 'image/webp'
+             : 'image/jpeg'
+  return `data:${mime};base64,${raw}`
+}
+
 const CONDITION_COLORS: Record<string, string> = {
   above_average: '#1A7A50', good: '#27A96B', typical: '#417CA4',
   fair: '#C4780A', average: '#C4720A', below_average: '#C44000', poor: '#E84545', na: '#9DB4C5',
@@ -77,6 +94,25 @@ export default function PhaseCompleteSummary({ job, phase, onUpdate, onBack, onE
   const [generatingReport, setGeneratingReport] = useState(false)
   const [reportDone, setReportDone] = useState(false)
   const [reportB64, setReportB64] = useState<string|null>(null)
+
+  // Photos are stripped to [photo-N] placeholders when a job is saved, but the
+  // full base64 survives in session/local storage under insp_<id>. Recover the
+  // real photos per module so thumbnails render instead of broken tiles.
+  const recoveredPhotos: Record<string, string[]> = (() => {
+    const map: Record<string, string[]> = {}
+    try {
+      const raw = sessionStorage.getItem(`insp_${job.id}`) || localStorage.getItem(`insp_${job.id}`)
+      if (!raw) return map
+      const full = JSON.parse(raw)
+      const fullPhase = full?.phases?.find((p: any) => p.id === phase.id)
+      for (const m of fullPhase?.modules ?? []) {
+        const real = [...(m.photos || []), ...(m.findings || []).flatMap((f: any) => f.photos || [])]
+          .filter((p: string) => imgSrc(p))
+        if (real.length) map[m.id] = real
+      }
+    } catch {}
+    return map
+  })()
 
   const completedModules = phase.modules.filter(m =>
     m.status === 'complete' && (m.findings.length > 0 || m.notes || m.photos.length > 0)
@@ -177,7 +213,8 @@ export default function PhaseCompleteSummary({ job, phase, onUpdate, onBack, onE
         {completedModules.map(mod => {
           const modMeta = MODULE_META[mod.id]
           const mainFinding = mod.findings[0]
-          const allPhotos = [...(mod.photos || []), ...mod.findings.flatMap(f => f.photos || [])].filter(Boolean).slice(0, 4)
+          const livePhotos = [...(mod.photos || []), ...mod.findings.flatMap(f => f.photos || [])].filter(p => imgSrc(p))
+          const allPhotos = (livePhotos.length > 0 ? livePhotos : (recoveredPhotos[mod.id] || [])).slice(0, 4)
 
           return (
             <div key={mod.id} style={{ background:'#fff', border:`1px solid ${mainFinding?.severity && mainFinding.severity !== 'none' ? `${SEVERITY_COLORS[mainFinding.severity]}33` : BORDER}`, borderRadius:12, overflow:'hidden' }}>
@@ -234,7 +271,7 @@ export default function PhaseCompleteSummary({ job, phase, onUpdate, onBack, onE
                 <div style={{ padding:'0.65rem 1rem', borderTop:`1px solid ${BORDER}`, display:'flex', gap:'0.4rem', overflowX:'auto' }}>
                   {allPhotos.map((p, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={`data:image/jpeg;base64,${p}`} alt={`Photo ${i+1}`}
+                    <img key={i} src={imgSrc(p)} alt={`Photo ${i+1}`}
                       style={{ width:72, height:72, borderRadius:7, objectFit:'cover', flexShrink:0, border:`1px solid ${BORDER}` }}/>
                   ))}
                   <button
