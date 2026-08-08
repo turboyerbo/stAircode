@@ -113,6 +113,26 @@ export default function MemberLoginScreen({ onAuth, onNotAMember }: Props) {
       return
     }
     const u = buildUser(data.user)
+
+    // Reconcile membership against Stripe (source of truth). Login used to trust
+    // localStorage only, so a paid user on a new device was wrongly 'free' and
+    // got locked out. Check for a live subscription and upgrade if found.
+    if (u.membership !== 'subscription' && u.membership !== 'pro') {
+      try {
+        const res = await fetch('/api/subscription/status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: u.email }),
+        })
+        if (res.ok) {
+          const s = await res.json()
+          if (s.active) {
+            u.membership = 'subscription'
+            try { localStorage.removeItem('sc_trial_expired') } catch {}
+          }
+        }
+      } catch { /* non-fatal — fall through with existing membership */ }
+    }
+
     try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
     onAuth(u)
   }

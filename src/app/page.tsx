@@ -644,6 +644,22 @@ export default function Home(){
           }
           setUser(u)
           try { localStorage.setItem('sc_user', JSON.stringify(u)) } catch {}
+          // Reconcile membership against Stripe (source of truth) so a paid user
+          // is never gated as 'free' just because localStorage lacked the flag.
+          if (membership !== 'subscription' && membership !== 'pro') {
+            fetch('/api/subscription/status', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            }).then(r => r.ok ? r.json() : null).then(s => {
+              if (s?.active) {
+                const upgraded = { ...u, membership: 'subscription' as AppUser['membership'] }
+                try { localStorage.setItem('sc_user', JSON.stringify(upgraded)) } catch {}
+                try { localStorage.removeItem('sc_trial_expired') } catch {}
+                setUser(upgraded)
+                setTrialTick(t => t + 1)
+              }
+            }).catch(() => {})
+          }
           // Refresh trial status from server — overwrites any stale localStorage cache
           // and forces the gate to re-evaluate once the server responds
           ensureTrialStarted(email).then(() => setTrialTick(t => t + 1))
@@ -1558,7 +1574,7 @@ function HomeTab({user,loc,locLoading,code,onStartScan,onStartInspection,onLogou
                     {hasAccess ? 'My Inspections' : 'Full Building Inspection'}
                   </div>
                   <div style={{fontSize:'0.72rem',color:'rgba(255,255,255,0.5)',marginTop:'0.15rem'}}>
-                    {hasAccess ? '6 OBC phases · AI guidance · PDF report' : 'Members only · Request access'}
+                    {hasAccess ? 'All inspection phases · AI guidance · PDF report' : 'Members only · Request access'}
                   </div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>

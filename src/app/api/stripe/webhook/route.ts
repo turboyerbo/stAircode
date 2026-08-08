@@ -88,7 +88,7 @@ async function sendReportEmail(to: string, reportText: string, product: string) 
       <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:2rem;color:#1a2b3c">
         <img src="https://staircode.app/logo_dark_blue.png" alt="stAIrcode" style="height:36px;object-fit:contain;display:block;margin:0 auto 1rem;" />
         <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 0.5rem">Welcome to stAIrcode</h1>
-        <p style="color:#555;line-height:1.6">Your subscription is active at $38.99/month. You now have full access to the complete building inspection platform — all 6 OBC phases, AI vision scans, photo documentation, and comprehensive compliance reports.</p>
+        <p style="color:#555;line-height:1.6">Your subscription is active at $38.99/month. You now have full access to the complete building inspection platform — all inspection phases, AI vision scans, photo documentation, and comprehensive compliance reports.</p>
         <a href="https://staircode.app" style="display:inline-block;margin-top:1.5rem;padding:0.85rem 2rem;background:#0A1C2E;color:#fff;border-radius:12px;text-decoration:none;font-weight:700">Start Your Inspection →</a>
         <p style="margin-top:2rem;font-size:0.8rem;color:#999">Manage or cancel at staircode.app/settings · Cancel anytime.</p>
       </div>
