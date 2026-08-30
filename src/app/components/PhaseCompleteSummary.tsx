@@ -22,6 +22,7 @@
 import { useState } from 'react'
 import type { InspectionJob, InspectionPhase, InspectionModule, PhaseId, ModuleId } from '@/lib/inspection-types'
 import { PHASE_META, MODULE_META } from '@/lib/inspection-types'
+import { photoSrc, modulePhotos, isRenderable, dedupePhotos } from '@/lib/photo-refs'
 
 interface Props {
   job:          InspectionJob
@@ -43,17 +44,8 @@ const BG     = '#F4F7FB'
 // URLs, and raw base64 (detecting PNG/JPEG/GIF/webp). Returns '' for [photo-N]
 // placeholders that the save step substitutes for stripped full images.
 function imgSrc(v: string): string {
-  if (!v) return ''
-  if (v.startsWith('data:') || v.startsWith('http')) return v
-  if (v.startsWith('[') || v.startsWith('photo-') || v.length < 100) return ''
-  const raw  = v.includes('base64,') ? v.split('base64,')[1] : v
-  const head = raw.slice(0, 8)
-  const mime = head.startsWith('iVBOR') ? 'image/png'
-             : head.startsWith('/9j/')  ? 'image/jpeg'
-             : head.startsWith('R0lGO') ? 'image/gif'
-             : head.startsWith('UklGR') ? 'image/webp'
-             : 'image/jpeg'
-  return `data:${mime};base64,${raw}`
+  // Shared resolver: handles Storage refs (sb:), data URLs, http and raw base64.
+  return photoSrc(v)
 }
 
 const CONDITION_COLORS: Record<string, string> = {
@@ -106,8 +98,8 @@ export default function PhaseCompleteSummary({ job, phase, onUpdate, onBack, onE
       const full = JSON.parse(raw)
       const fullPhase = full?.phases?.find((p: any) => p.id === phase.id)
       for (const m of fullPhase?.modules ?? []) {
-        const real = [...(m.photos || []), ...(m.findings || []).flatMap((f: any) => f.photos || [])]
-          .filter((p: string) => imgSrc(p))
+        const fp = (m.findings || []).flatMap((f: any) => f.photos || [])
+        const real = dedupePhotos((fp.length ? fp : (m.photos || [])).filter(isRenderable))
         if (real.length) map[m.id] = real
       }
     } catch {}
@@ -213,7 +205,7 @@ export default function PhaseCompleteSummary({ job, phase, onUpdate, onBack, onE
         {completedModules.map(mod => {
           const modMeta = MODULE_META[mod.id]
           const mainFinding = mod.findings[0]
-          const livePhotos = [...(mod.photos || []), ...mod.findings.flatMap(f => f.photos || [])].filter(p => imgSrc(p))
+          const livePhotos = modulePhotos(mod)
           const allPhotos = (livePhotos.length > 0 ? livePhotos : (recoveredPhotos[mod.id] || [])).slice(0, 4)
 
           return (

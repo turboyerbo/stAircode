@@ -19,6 +19,34 @@ import type { InspectionJob, InspectionPhase, InspectionModule, ModuleFinding } 
 import { PHASE_META, MODULE_META } from './inspection-types'
 import { getModuleStandard } from './inspection-standards'
 import { enrichPhaseFindings, type EnrichedFinding } from './enrich-phase-findings'
+import { createClient } from '@supabase/supabase-js'
+
+const PHOTO_BUCKET = 'inspection-photos'
+
+/**
+ * Resolve a stored photo value to raw bytes for embedding.
+ * Handles durable Supabase Storage refs (sb:…), data URLs and raw base64.
+ * Returns null for [photo-N] placeholders, whose bytes were never uploaded.
+ */
+async function resolvePhotoBytes(value: string): Promise<Buffer | null> {
+  if (!value) return null
+  if (value.startsWith('sb:')) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return null
+    try {
+      const sb = createClient(url, key, { auth: { persistSession: false } })
+      const { data, error } = await sb.storage.from(PHOTO_BUCKET).download(value.slice(3))
+      if (error || !data) return null
+      return Buffer.from(await data.arrayBuffer())
+    } catch { return null }
+  }
+  if (value.startsWith('[') || value.length < 100) return null   // placeholder
+  try {
+    const raw = value.includes('base64,') ? value.split('base64,')[1] : value
+    return Buffer.from(raw, 'base64')
+  } catch { return null }
+}
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
@@ -116,36 +144,41 @@ function wrap(text: string, font: PDFFont, size: number, maxW: number): string[]
  * cannot encode. AI-generated text frequently contains these.
  * Must be called on ALL strings before passing to page.drawText().
  */
+const WINANSI_EXTRA = '\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178'
+
+function winAnsiEncodable(ch: string): boolean {
+  const c = ch.codePointAt(0) ?? 0
+  if (c >= 0x20 && c <= 0x7e) return true   // ASCII printable
+  if (c >= 0xa0 && c <= 0xff) return true   // Latin-1 (deg, +/-, x, 1/2, GBP, ...)
+  return WINANSI_EXTRA.includes(ch)
+}
+
+const UNENCODABLE_MAP: Record<string, string> = {
+  '\u2265': '>=', '\u2264': '<=', '\u2260': '!=', '\u2248': '~=',
+  '\u2192': '->', '\u2190': '<-', '\u2191': '^', '\u2193': 'v',
+  '\u21D2': '=>', '\u21D0': '<=', '\u2194': '<->',
+  '\u221E': ' inf ', '\u221A': ' sqrt ', '\u2211': ' sum ',
+  '\u2206': ' delta ', '\u0394': ' delta ', '\u03C0': ' pi ',
+  '\u2713': 'OK', '\u2714': 'OK', '\u2717': 'X', '\u2718': 'X',
+  '\u2605': '*', '\u2606': '*', '\u25E6': 'o', '\u25AA': '-', '\u25CF': '-',
+  '\u2153': '1/3', '\u2154': '2/3', '\u215B': '1/8',
+}
+
+/**
+ * sanitise - make text safe for pdf-lib StandardFonts (WinAnsi) WITHOUT
+ * destroying legitimate typography. The old version replaced characters WinAnsi
+ * supports, which mangled text and glued words together (GBP200-EUR250, 21 degC)
+ * and turned curly quotes / em dashes into '?'.
+ */
 function sanitise(text: string): string {
   if (!text) return ''
-  return text
-    // Math / comparison
-    .replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/±/g, '+/-')
-    .replace(/×/g, 'x').replace(/÷/g, '/').replace(/≠/g, '!=')
-    .replace(/∞/g, 'inf').replace(/√/g, 'sqrt').replace(/∑/g, 'sum')
-    .replace(/∆/g, 'delta').replace(/π/g, 'pi').replace(/°/g, ' deg')
-    // Arrows
-    .replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '^').replace(/↓/g, 'v')
-    .replace(/⇒/g, '=>').replace(/⇐/g, '<=').replace(/↔/g, '<->')
-    // Quotes / dashes
-    .replace(/[""]/g, '"').replace(/['']/g, "'")
-    .replace(/[–—]/g, '-').replace(/…/g, '...')
-    // Bullets / symbols
-    .replace(/•/g, '-').replace(/·/g, '.').replace(/◦/g, 'o')
-    .replace(/✓/g, 'OK').replace(/✗/g, 'X').replace(/✘/g, 'X')
-    .replace(/★/g, '*').replace(/☆/g, '*')
-    // Fractions
-    .replace(/½/g, '1/2').replace(/¼/g, '1/4').replace(/¾/g, '3/4')
-    .replace(/⅓/g, '1/3').replace(/⅔/g, '2/3')
-    // Units / super/subscript
-    .replace(/²/g, '2').replace(/³/g, '3').replace(/¹/g, '1')
-    .replace(/™/g, 'TM').replace(/®/g, 'R').replace(/©/g, 'C')
-    .replace(/£/g, 'GBP').replace(/€/g, 'EUR').replace(/¥/g, 'JPY')
-    // Remove any remaining non-ASCII characters that would crash WinAnsi
-    // eslint-disable-next-line no-control-regex
-    .replace(/[^\x00-\xFF]/g, '?')
-    // Clean up multiple spaces/newlines
-    .replace(/\s+/g, ' ').trim()
+  let out = ''
+  for (const ch of text) {
+    if (winAnsiEncodable(ch)) { out += ch; continue }
+    const rep = UNENCODABLE_MAP[ch]
+    out += rep !== undefined ? rep : ' '
+  }
+  return out.replace(/\s+/g, ' ').trim()
 }
 
 function drawWrappedText(s: PW_State, text: string, x: number, font: PDFFont, size: number, color: RGB, maxW: number, lineH: number): PW_State {
@@ -323,15 +356,16 @@ function fmtDate(d: string): string {
   if (!d) return new Date().toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
   try { return new Date(d).toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) } catch { return d }
 }
-function fmtBuildingType(t: string) {
+function fmtBuildingType(t?: string | null) {
+  if (!t) return 'Not recorded'
   const m: Record<string,string> = { single_storey_residential:'Single Storey Detached Residential', two_storey_residential:'Two Storey Detached Residential', semi_detached:'Semi-Detached Residential', townhouse:'Townhouse', multi_unit_residential:'Multi-Unit Residential', commercial:'Commercial', industrial:'Industrial', mixed_use:'Mixed Use' }
   return m[t] ?? t.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
 }
-function fmtConstruction(t: string) { const m: Record<string,string> = { brick_veneer:'Brick Veneer',double_brick:'Double Brick',timber_frame:'Wood Frame',concrete_block:'Concrete Block (CMU)',icf:'ICF',steel_frame:'Steel Frame' }; return m[t]??t.replace(/_/g,' ') }
-function fmtRoof(t: string) { const m: Record<string,string> = { concrete_tiles:'Concrete Tiles',clay_tiles:'Clay Tiles',metal_deck:'Metal Deck',asphalt_shingles:'Asphalt Shingles',flat_membrane:'Flat/Membrane' }; return m[t]??t.replace(/_/g,' ') }
-function fmtFooting(t: string) { const m: Record<string,string> = { concrete_slab:'Concrete Footings & Slab',piers_stumps:'Piers / Stumps',strip_footing:'Strip Footing' }; return m[t]??t.replace(/_/g,' ') }
-function fmtCond(c: string) { const m: Record<string,string> = { above_average:'Above Average',good:'Good',typical:'Typical',fair:'Fair',average:'Average',below_average:'Below Average',poor:'Poor',na:'Not Applicable' }; return m[c]??c }
-function fmtWeather(w: string) { const m: Record<string,string>={fine:'Fine',overcast:'Overcast',light_rain:'Light Rain',heavy_rain:'Heavy Rain',windy:'Windy'}; return m[w]??w }
+function fmtConstruction(t?: string | null) { if (!t) return 'Not recorded'; const m: Record<string,string> = { brick_veneer:'Brick Veneer',double_brick:'Double Brick',timber_frame:'Wood Frame',concrete_block:'Concrete Block (CMU)',icf:'ICF',steel_frame:'Steel Frame' }; return m[t]??t.replace(/_/g,' ') }
+function fmtRoof(t?: string | null) { if (!t) return 'Not recorded'; const m: Record<string,string> = { concrete_tiles:'Concrete Tiles',clay_tiles:'Clay Tiles',metal_deck:'Metal Deck',asphalt_shingles:'Asphalt Shingles',flat_membrane:'Flat/Membrane' }; return m[t]??t.replace(/_/g,' ') }
+function fmtFooting(t?: string | null) { if (!t) return 'Not recorded'; const m: Record<string,string> = { concrete_slab:'Concrete Footings & Slab',piers_stumps:'Piers / Stumps',strip_footing:'Strip Footing' }; return m[t]??t.replace(/_/g,' ') }
+function fmtCond(c?: string | null) { if (!c) return 'Not recorded'; const m: Record<string,string> = { above_average:'Above Average',good:'Good',typical:'Typical',fair:'Fair',average:'Average',below_average:'Below Average',poor:'Poor',na:'Not Applicable' }; return m[c]??c }
+function fmtWeather(w?: string | null) { if (!w) return 'Not recorded'; const m: Record<string,string>={fine:'Fine',overcast:'Overcast',light_rain:'Light Rain',heavy_rain:'Heavy Rain',windy:'Windy'}; return m[w]??w }
 
 // ── Collect findings across all phases ────────────────────────────────────────
 type FindingRow = { phase: string; phaseId: string; module: string; moduleId: string; finding: ModuleFinding }
@@ -553,10 +587,10 @@ async function buildCoverPage(pdfDoc: PDFDocument, job: InspectionJob, fonts: Re
     return null
   }
 
-  async function embedSafe(b64: string) {
+  async function embedSafe(value: string) {
     try {
-      const raw = b64.includes('base64,') ? b64.split('base64,')[1] : b64
-      const bytes = Buffer.from(raw, 'base64')
+      const bytes = await resolvePhotoBytes(value)
+      if (!bytes) return null
       const isPng = bytes[0] === 0x89 && bytes[1] === 0x50
       return isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes)
     } catch { return null }
@@ -924,7 +958,8 @@ async function buildPhaseSection(
 
           for (let pi = 0; pi < photos.length; pi++) {
             try {
-              const bytes = Buffer.from(photos[pi], 'base64')
+              const bytes = await resolvePhotoBytes(photos[pi])
+              if (!bytes) continue
               // Detect image type from magic bytes: PNG starts with 0x89 0x50, JPEG with 0xFF 0xD8
               const isPng = bytes[0] === 0x89 && bytes[1] === 0x50
               const img   = isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes)

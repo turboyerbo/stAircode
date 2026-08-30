@@ -49,10 +49,10 @@ function useAutoSave(job: InspectionJob, userEmail: string) {
         reportPdfB64: undefined,
         modules: phase.modules.map(mod => ({
           ...mod,
-          photos:   (mod.photos   || []).map((_: any, i: number) => `[photo-${i}]`),
+          photos:   keepRefs(mod.photos),
           findings: (mod.findings || []).map((f: any) => ({
             ...f,
-            photos: (f.photos || []).map((_: any, i: number) => `[photo-${i}]`),
+            photos: keepRefs(f.photos),
           })),
         })),
       })),
@@ -336,6 +336,19 @@ function PhaseCard({
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
+
+/**
+ * Photos saved to the server must stay small. Durable Supabase Storage
+ * references (sb:…) ARE small and must be preserved so photos load on any
+ * device and embed in reports. Only legacy inline base64 is replaced with a
+ * placeholder, since it is far too large to send.
+ */
+function keepRefs(list?: string[]): string[] {
+  return (list || []).map((p, i) =>
+    typeof p === 'string' && (p.startsWith('sb:') || p.startsWith('http')) ? p : `[photo-${i}]`
+  )
+}
+
 export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, userRole = 'diy' }: Props) {
   useAutoSave(job, userEmail)
   const [activePhase,  setActivePhase]  = useState<PhaseId | null>(null)
@@ -389,10 +402,10 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
           reportPdfB64: undefined,
           modules: phase.modules.map(mod => ({
             ...mod,
-            photos:   (mod.photos   || []).map((_: any, i: number) => `[photo-${i}]`),
+            photos:   keepRefs(mod.photos),
             findings: (mod.findings || []).map((f: any) => ({
               ...f,
-              photos: (f.photos || []).map((_: any, i: number) => `[photo-${i}]`),
+              photos: keepRefs(f.photos),
             })),
           })),
         })),

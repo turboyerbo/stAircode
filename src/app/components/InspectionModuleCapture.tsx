@@ -2,15 +2,9 @@
 
 // Build a usable image src from either a raw base64 string OR a full data URL.
 function imgSrc(b64: string) {
-  if (!b64) return ''
-  if (b64.startsWith('data:') || b64.startsWith('http')) return b64
-  const raw = b64.includes('base64,') ? b64.split('base64,')[1] : b64
-  const head = raw.slice(0, 8)
-  const mime = head.startsWith('iVBOR') ? 'image/png'
-             : head.startsWith('/9j/')  ? 'image/jpeg'
-             : head.startsWith('R0lGO') ? 'image/gif'
-             : 'image/jpeg'
-  return `data:${mime};base64,${raw}`
+  // Delegates to the shared resolver so Storage refs (sb:…), data URLs, http
+  // URLs and raw base64 are all handled identically across the app.
+  return photoSrc(b64)
 }
 
 /**
@@ -35,6 +29,7 @@ import type {
 } from '@/lib/inspection-types'
 import { MODULE_META } from '@/lib/inspection-types'
 import { normalizeImageToJpegB64 } from '@/lib/image-utils'
+import { uploadPhoto, photoSrc } from '@/lib/photo-refs'
 import ScanReadyScreen from './ScanReadyScreen'
 import type { UserRole } from './AuthScreen'
 
@@ -1092,6 +1087,7 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
   // Seeded from module.photos so existing photos survive re-open without duplication.
   const [photos,          setPhotos]          = useState<string[]>(allExistingPhotos.slice(0, 1))
   const [additionalPhotos, setAdditionalPhotos] = useState<string[]>(allExistingPhotos.slice(1))
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
 
   // Editable review fields
   const [condition,  setCondition]  = useState(module.findings[0]?.condition ?? '')
@@ -1218,11 +1214,16 @@ Return ONLY valid JSON.`
   const runAI = useCallback(async (b64: string) => {
     setStage('analysing'); setAiError(null); setAiFields(null)
     const prompt = getModulePrompt(module.id as ModuleId, job)
+    // Send every real photo of this element (primary + any added) so the AI can
+    // combine multiple angles into one assessment instead of judging from one shot.
+    const images = [b64, ...additionalPhotos]
+      .filter(p => p && !p.startsWith('[') && p.length > 100)
+      .slice(0, 4)
     try {
       const res  = await fetch('/api/vision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageB64: b64, prompt }),
+        body: JSON.stringify({ images, prompt }),
       })
       if (!res.ok) throw new Error('Vision API error')
       const data = await res.json()
@@ -1240,19 +1241,32 @@ Return ONLY valid JSON.`
       setAiError(err.message ?? 'AI analysis failed')
       setStage('review')
     }
-  }, [job, module.id])
+  }, [job, module.id, additionalPhotos])
 
   // ── Save ────────────────────────────────────────────────────────────────────
-  function handleSave(status: 'complete'|'skipped'|'in_progress' = 'complete') {
+  async function handleSave(status: 'complete'|'skipped'|'in_progress' = 'complete') {
     // Deduplicate: use first 100 chars of base64 as a fingerprint
     const seen = new Set<string>()
-    const allPhotos = [...photos, ...additionalPhotos].filter(p => {
+    const localPhotos = [...photos, ...additionalPhotos].filter(p => {
       if (!p || p.length < 50) return false
       const key = p.slice(0, 100)
       if (seen.has(key)) return false
       seen.add(key)
       return true
     })
+
+    // Upload to private Supabase Storage and keep durable `sb:` references
+    // instead of raw base64. This is what makes photos survive the save step,
+    // appear on other devices, and embed in emailed reports. If an upload fails
+    // the original value is returned, so saving never blocks on storage.
+    setUploadingPhotos(localPhotos.length > 0)
+    let allPhotos = localPhotos
+    try {
+      allPhotos = await Promise.all(
+        localPhotos.map(p => uploadPhoto(p, job.id, module.id))
+      )
+    } catch { /* keep local values */ }
+    setUploadingPhotos(false)
 
     const finding: ModuleFinding = {
       id:             `find-${Date.now()}`,
