@@ -11,7 +11,7 @@
  *   6. Shows final PDF preview info + Download + Send buttons
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { InspectionJob, PhaseId } from '@/lib/inspection-types'
 import { PHASE_META, getPhaseProgress } from '@/lib/inspection-types'
 
@@ -54,7 +54,7 @@ const BORDER = 'rgba(44,90,122,0.14)'
 const BG     = '#F4F7FB'
 
 type PhaseGenStatus = 'idle' | 'generating' | 'done' | 'error'
-type FinalStatus    = 'idle' | 'assembling' | 'done' | 'error'
+type FinalStatus    = 'idle' | 'assembling' | 'queued' | 'building' | 'done' | 'error'
 
 export default function InspectionReportScreen({ job, onUpdate, onBack }: Props) {
   const [phaseStatus,  setPhaseStatus]  = useState<Partial<Record<PhaseId, PhaseGenStatus>>>({})
@@ -65,6 +65,7 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
   const [sendAhj,      setSendAhj]      = useState(false)
   const [extraEmails,  setExtraEmails]  = useState('')
   const [finalStatus,  setFinalStatus]  = useState<FinalStatus>('idle')
+  const [requestId,    setRequestId]    = useState<string|null>(null)
   const [finalPdfB64,  setFinalPdfB64]  = useState<string | null>(null)
   const [finalMsg,     setFinalMsg]     = useState('')
   const [emailsSent,   setEmailsSent]   = useState<string[]>([])
@@ -145,7 +146,47 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
     }
   }
 
-  // ── Assemble final report (no send yet — opens edit modal) ───────────────
+  // ── Poll the queued build ─────────────────────────────────────────────────
+  // The user is told the report will be emailed, so polling is only to show
+  // honest progress and to surface a link the moment it is ready. If polling
+  // fails we leave the reassuring message in place, because the background
+  // worker (and its retry sweeper) will still deliver.
+  useEffect(() => {
+    if (!requestId || (finalStatus !== 'queued' && finalStatus !== 'building')) return
+    let stop = false
+    const tick = async () => {
+      try {
+        const r = await fetch(`/api/report/build-status?id=${encodeURIComponent(requestId)}`)
+        if (!r.ok) return
+        const d = await r.json()
+        if (stop) return
+        if (d.status === 'processing') setFinalStatus('building')
+        if (d.status === 'done') {
+          setFinalStatus('done')
+          setEmailsSent(d.emailsSent ?? [])
+          setFinalMsg(d.emailsSent?.length
+            ? `Report emailed to: ${d.emailsSent.join(', ')}`
+            : 'Report ready.')
+          if (d.reportUrl) onUpdate({ ...job, reportGenerated: true, reportUrl: d.reportUrl, updatedAt: new Date().toISOString() })
+        }
+        if (d.status === 'failed') {
+          setFinalStatus('error')
+          setFinalMsg('We hit a problem building this report. It has been logged and we will retry it automatically.')
+        }
+      } catch { /* keep waiting */ }
+    }
+    tick()
+    const iv = setInterval(tick, 5000)
+    return () => { stop = true; clearInterval(iv) }
+  }, [requestId, finalStatus]) // eslint-disable-line
+
+  // ── Assemble final report ─────────────────────────────────────────────────
+  // Queues the build instead of doing it in the request. Assembling (merge
+  // sections, upload, email with attachment) exceeds the platform's function
+  // timeout, which is why this used to fail with an opaque service-worker
+  // error. Now the button always succeeds, a background worker does the work,
+  // and a failure is a queued row we can re-run without the user seeing a dead
+  // end.
   async function handleAssemble() {
     setFinalStatus('assembling'); setFinalMsg(''); setFinalPdfB64(null); setEmailsSent([])
     try {
@@ -153,61 +194,37 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
       for (const phase of job.phases) {
         if (phase.reportPdfB64) phasePdfs[phase.id] = phase.reportPdfB64
       }
+      const extras = extraEmails.split(',').map(e => e.trim()).filter(Boolean)
       const slimJob = {
         ...stripJobForTransport(job),
         ahjEmail:       ahjEmail.trim() || undefined,
         inspectorEmail: inspEmail.trim() || undefined,
         purposeNote:    coverNotes,
       }
-      // Assemble PDF only — no send yet
-      const res = await fetch('/api/report/collate', {
+      const res = await fetch('/api/report/request', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job: slimJob, phasePdfs,
           coverNotes: coverNotes.trim() || undefined,
-          sendTo: { client: false, ahj: false, extras: [] }, // send separately after edit
+          sendTo: { client: sendClient, ahj: sendAhj, extras },
         }),
       })
       const rawText = await res.text()
       let data: any = {}
       try { data = JSON.parse(rawText) } catch {
-        throw new Error(
-          res.status === 504 ? 'Report assembly timed out — try generating each phase section first, then assemble.' :
-          res.status === 413 ? 'Payload too large — reduce photos per phase and try again.' :
-          `Server error (${res.status}) — ${rawText.slice(0, 120)}`
-        )
+        throw new Error(`Could not queue the report (${res.status}). Please try again.`)
       }
-      if (!res.ok || !data.ok) throw new Error(data.error ?? 'Assembly failed')
-      setFinalPdfB64(data.pdfB64)
-      setFinalStatus('done')
-      onUpdate({ ...job, reportGenerated: true, reportUrl: data.reportUrl || job.reportUrl, updatedAt: new Date().toISOString() })
+      if (!res.ok || !data.ok) throw new Error(data.error ?? 'Could not queue the report')
 
-      // Pre-fill edit modal
-      const extras = extraEmails.split(',').map(e => e.trim()).filter(Boolean)
-      const recipients = [
-        ...(sendClient && job.clientEmail ? [job.clientEmail] : []),
-        ...(sendAhj && ahjEmail.trim()   ? [ahjEmail.trim()]  : []),
-        ...extras,
-      ]
-      setEditRecipients(recipients.join(', '))
-      setEditSubject(`Building Inspection Report — ${job.address.street}, ${job.address.city}`)
-      setEditBody(
-        [
-          coverNotes.trim() ? `Inspector's Note: ${coverNotes.trim()}\n` : '',
-          `Property: ${job.address.street}, ${job.address.city}, ${job.address.province}`,
-          `Inspection date: ${new Date(job.inspectionDate).toLocaleDateString('en-CA', { year:'numeric', month:'long', day:'numeric' })}`,
-          `Inspected by: ${job.inspectorName || 'Inspector'}`,
-          `Phases completed: ${job.phases.filter(p => p.status === 'complete').length} of ${job.phases.length}`,
-          '',
-          'The full compliance report PDF is attached to this email.',
-          '',
-          'This report is a visual inspection aid generated by stAIrcode. All findings should be verified by qualified tradespeople before action is taken.',
-        ].filter(l => l !== null).join('\n')
-      )
-      setShowEditModal(true)
+      setRequestId(data.requestId)
+      setFinalStatus('queued')
+      setFinalMsg('')
+      onUpdate({ ...job, updatedAt: new Date().toISOString() })
+      return
+
     } catch (err: any) {
-      setFinalMsg(err.message ?? 'Assembly failed')
+      setFinalMsg(err.message ?? 'Could not queue the report')
       setFinalStatus('error')
     }
   }
@@ -448,21 +465,39 @@ export default function InspectionReportScreen({ job, onUpdate, onBack }: Props)
 
         {/* ── Assemble button ── */}
         <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+          {(finalStatus === 'queued' || finalStatus === 'building') ? null : (
           <button onClick={handleAssemble} disabled={!readyToAssemble || finalStatus === 'assembling'}
             style={{ width:'100%', padding:'1.05rem', background: finalStatus==='assembling' ? 'rgba(242,147,55,0.5)' : `linear-gradient(135deg,${ORANGE},#C4721E)`, border:'none', borderRadius:12, color:'#fff', fontSize:'0.95rem', fontWeight:800, cursor: finalStatus==='assembling' ? 'default':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.6rem', boxShadow:'0 4px 18px rgba(242,147,55,0.4)' }}>
             {finalStatus === 'assembling' ? (
               <>
                 <div style={{ width:16, height:16, borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }}/>
-                Assembling final report…
+                Sending to the report builder…
               </>
-            ) : finalStatus === 'done' ? 'Regenerate & Send' : 'Assemble Final Report →'}
+            ) : finalStatus === 'done' ? 'Rebuild & Send' : 'Assemble Final Report →'}
           </button>
+          )}
+
+          {/* Queued: the work is happening on the server, so say so plainly and
+              let the user leave. This is the screen that replaces the old
+              in-request failure. */}
+          {(finalStatus === 'queued' || finalStatus === 'building') && (
+            <div style={{ background:'rgba(65,124,164,0.07)', border:`1px solid rgba(65,124,164,0.3)`, borderRadius:12, padding:'1.25rem 1.15rem', textAlign:'center' as const }}>
+              <div style={{ width:34, height:34, margin:'0 auto 0.7rem', borderRadius:'50%', border:'3px solid rgba(65,124,164,0.25)', borderTopColor:BLUE, animation:'spin 0.9s linear infinite' }}/>
+              <div style={{ fontSize:'0.95rem', fontWeight:800, color:NAVY, marginBottom:'0.35rem' }}>
+                Your report is being prepared
+              </div>
+              <div style={{ fontSize:'0.8rem', color:'#5E7D9B', lineHeight:1.6 }}>
+                We will email it to you when it is ready, usually within a few minutes.
+                You can leave this screen and keep working.
+              </div>
+            </div>
+          )}
 
           {finalStatus === 'done' && (
             <div style={{ background:'rgba(39,169,107,0.07)', border:'1px solid rgba(39,169,107,0.3)', borderRadius:11, padding:'0.85rem 1rem', display:'flex', flexDirection:'column', gap:'0.65rem' }}>
               <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap' as const }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:'0.82rem', fontWeight:700, color:GREEN, marginBottom:'0.15rem' }}>✓ Report assembled</div>
+                  <div style={{ fontSize:'0.82rem', fontWeight:700, color:GREEN, marginBottom:'0.15rem' }}>✓ Report ready</div>
                   <div style={{ fontSize:'0.7rem', color:'#5E7D9B', lineHeight:1.5 }}>
                     {emailsSent.length > 0 ? `Sent to: ${emailsSent.join(', ')}` : 'Ready to review and send.'}
                   </div>

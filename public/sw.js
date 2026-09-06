@@ -63,11 +63,14 @@ self.addEventListener('fetch', (event) => {
   //     Only cache/intercept requests to our own origin
   if (url.origin !== self.location.origin) return
 
-  // 1. Never cache API calls
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(fetch(request))
-    return
-  }
+  // 1. Never touch API calls at all.
+  //    Previously this did event.respondWith(fetch(request)). When the network
+  //    call failed (a slow function timing out, for example) the rejected
+  //    promise surfaced as the opaque "FetchEvent.respondWith received an error:
+  //    TypeError: Load failed" instead of the real error, so the app could not
+  //    show a useful message. Returning without responding lets the browser
+  //    handle the request natively and the app's own catch block see the truth.
+  if (url.pathname.startsWith('/api/')) return
 
   // 2. Never cache non-GET
   if (request.method !== 'GET') return

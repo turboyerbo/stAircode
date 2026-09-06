@@ -514,7 +514,16 @@ export async function generatePhaseSection(job: InspectionJob, phaseId: string):
   return Buffer.from(await pdfDoc.save())
 }
 
-export async function collatePhasePdfs(job: InspectionJob, coverNotes?: string): Promise<Buffer> {
+/**
+ * Merge the per-phase sections into one report.
+ *
+ * `enrichDuringCollate` controls whether a phase that has no pre-generated
+ * section may make an AI call while assembling. That call is what pushed
+ * assembly past the platform's ~10s function timeout, so only the background
+ * worker (which has minutes) turns it on. In-request callers leave it off and
+ * render from the findings already stored.
+ */
+export async function collatePhasePdfs(job: InspectionJob, coverNotes?: string, enrichDuringCollate = false): Promise<Buffer> {
   const final = await PDFDocument.create()
   final.setTitle(`Building Inspection Report — ${job.address.street}, ${job.address.city}`)
   final.setAuthor(job.inspectorName || 'stAIrcode Inspector')
@@ -543,12 +552,16 @@ export async function collatePhasePdfs(job: InspectionJob, coverNotes?: string):
         const pages  = await final.copyPages(secDoc, secDoc.getPageIndices())
         pages.forEach(p => final.addPage(p))
       } catch {
-        const enriched = await enrichPhaseFindings(job, phase)
+        // Stored section is unreadable — rebuild it from the findings we have.
+        const enriched = enrichDuringCollate ? await enrichPhaseFindings(job, phase) : {}
         await buildPhaseSection(final, job, phase, fonts, enriched)
       }
     } else {
-      // No pre-generated section — enrich on the fly (one call per phase)
-      const enriched = await enrichPhaseFindings(job, phase)
+      // No pre-generated section. Enriching here means an extra AI call per
+      // phase, which is what pushed assembly past the platform's function
+      // timeout. The background worker enables it (it has minutes, not seconds);
+      // any in-request path leaves it off and renders from stored findings.
+      const enriched = enrichDuringCollate ? await enrichPhaseFindings(job, phase) : {}
       await buildPhaseSection(final, job, phase, fonts, enriched)
     }
   }
