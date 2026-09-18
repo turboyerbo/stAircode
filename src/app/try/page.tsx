@@ -14,6 +14,7 @@ import ScanReadyScreen from '@/app/components/ScanReadyScreen'
 import QuickScanScreen from '@/app/components/QuickScanScreen'
 import GlobalCodeAssistant from '@/app/components/GlobalCodeAssistant'
 import { NavLogo } from '@/app/components/Logo'
+import { Analytics, initAnalytics } from '@/lib/analytics'
 import { resolveJurisdiction, getActiveJurisdiction, codeKeyToJurisdictionId, JURISDICTIONS, JURISDICTION_PICKER_ORDER, type JurisdictionId } from '@/lib/jurisdiction'
 import type { AppUser } from '@/app/components/AuthScreen'
 
@@ -35,6 +36,11 @@ export default function TryPage() {
   const [locLoading, setLoad] = useState(true)
   const [manualOpen, setManualOpen] = useState(false)
   const [jurisdictionId, setJId] = useState<JurisdictionId>('INTL_IBC')
+
+  // Top of funnel: record that someone reached the /try entry point.
+  useEffect(() => {
+    try { initAnalytics(); Analytics.landingViewed('try') } catch {}
+  }, [])
 
   // Geolocate (IP first, GPS refines). Falls back gracefully.
   useEffect(() => {
@@ -150,7 +156,7 @@ export default function TryPage() {
         </div>
 
         {/* Stair Scan */}
-        <button onClick={() => setMode('stair')}
+        <button onClick={() => { try { Analytics.demoStarted('stair') } catch {}; setMode('stair') }}
           style={{ width: '100%', padding: '1.15rem 1.25rem', background: `linear-gradient(135deg,${NAVY},#1A3A58)`, border: 'none', borderRadius: 14, display: 'flex', alignItems: 'center', gap: '0.9rem', cursor: 'pointer', textAlign: 'left', boxShadow: '0 4px 18px rgba(10,28,46,0.22)' }}>
           <div style={{ width: 46, height: 46, borderRadius: 11, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 20h4v-4h4v-4h4v-4h4V4" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -163,7 +169,7 @@ export default function TryPage() {
         </button>
 
         {/* Quick Scan */}
-        <button onClick={() => setMode('quick')}
+        <button onClick={() => { try { Analytics.demoStarted('quick') } catch {}; setMode('quick') }}
           style={{ width: '100%', padding: '1.15rem 1.25rem', background: '#fff', border: `1.5px solid ${GREEN}44`, borderRadius: 14, display: 'flex', alignItems: 'center', gap: '0.9rem', cursor: 'pointer', textAlign: 'left', boxShadow: '0 2px 12px rgba(39,169,107,0.1)' }}>
           <div style={{ width: 46, height: 46, borderRadius: 11, background: 'rgba(39,169,107,0.1)', border: '1px solid rgba(39,169,107,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" stroke={GREEN} strokeWidth="1.7" strokeLinecap="round"/><circle cx="12" cy="12" r="3.5" stroke={GREEN} strokeWidth="1.7"/></svg>

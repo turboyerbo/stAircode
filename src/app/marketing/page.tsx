@@ -11,6 +11,7 @@ import styles from './marketing.module.css'
 import { NavLogo } from '@/app/components/Logo'
 import PhoneMockup from "./PhoneMockup"
 import LocationDemo from "./LocationDemo"
+import { Analytics, initAnalytics } from '@/lib/analytics'
 
 
 export default function MarketingPage() {
@@ -99,6 +100,11 @@ export default function MarketingPage() {
     }
     setBetaChecking(false)
   }
+
+  // Top of funnel: record that someone landed here at all.
+  useEffect(() => {
+    try { initAnalytics(); Analytics.landingViewed('marketing') } catch {}
+  }, [])
 
   // Show cookie banner only if not yet answered
   useEffect(() => {

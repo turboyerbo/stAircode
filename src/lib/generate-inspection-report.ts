@@ -1147,4 +1147,50 @@ async function buildSiteInfoPage(pdfDoc: PDFDocument, job: InspectionJob, fonts:
   s = drawWrappedText(s,
     'This report was prepared using stAIrcode by Just Open Technologies Inc. It is a visual inspection aid only and does not replace a formal inspection by a licensed professional. All findings should be verified by qualified tradespeople before action is taken.',
     ML, reg, 7.5, C.midgrey, TW, 11)
+
+  // ── Find a professional near the property ─────────────────────────────────
+  // The disclaimer above tells the reader to have findings verified by a
+  // qualified professional, so give them a way to actually do that. The links
+  // are location-aware searches built from the property address, which work
+  // anywhere rather than assuming a particular country's registry.
+  s = need(s, 108)
+  s = { ...s, y: s.y - 24 }
+
+  const locality = [job.address?.city, job.address?.province].filter(Boolean).join(', ')
+  const near     = locality || 'me'
+
+  const panelH = 96
+  const panelY = s.y - panelH + 14
+  s.page.drawRectangle({ x: ML, y: panelY, width: TW, height: panelH, color: C.light })
+  s.page.drawRectangle({ x: ML, y: panelY, width: 4, height: panelH, color: C.orange })
+
+  s.page.drawText(sanitise('NEXT STEPS'), { x: ML + 14, y: panelY + panelH - 20, font: fonts.bold, size: 7.5, color: C.orange })
+  s.page.drawText(sanitise(`Find a professional near ${locality || 'the property'}`), {
+    x: ML + 14, y: panelY + panelH - 36, font: fonts.bold, size: 11, color: C.navy,
+  })
+  s.page.drawText(sanitise('Tap a link to search for licensed professionals in this area:'), {
+    x: ML + 14, y: panelY + panelH - 50, font: reg, size: 8, color: C.text2,
+  })
+
+  const proLinks = [
+    { label: 'Building inspector', query: `building inspector near ${near}` },
+    { label: 'Contractor',         query: `licensed general contractor near ${near}` },
+    { label: 'Architect',          query: `architect near ${near}` },
+  ]
+
+  let plx = ML + 14
+  const plY = panelY + panelH - 70
+  for (const { label, query } of proLinks) {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    const lw  = fonts.bold.widthOfTextAtSize(label, 9)
+    s.page.drawRectangle({ x: plx - 6, y: plY - 5, width: lw + 12, height: 18, color: C.white, borderColor: C.border, borderWidth: 0.6 })
+    s.page.drawText(sanitise(label), { x: plx, y: plY, font: fonts.bold, size: 9, color: C.blue })
+    addLinkAnnotation(pdfDoc, s.page, url, plx - 6, plY - 5, lw + 12, 18)
+    plx += lw + 26
+  }
+
+  s = { ...s, y: panelY - 12 }
+  s = drawWrappedText(s,
+    'stAIrcode is not affiliated with and does not endorse any professional found through these searches. Always confirm licensing, insurance, and references before hiring.',
+    ML, reg, 7, C.midgrey, TW, 10)
 }

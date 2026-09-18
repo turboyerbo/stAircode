@@ -38,7 +38,15 @@ export function initAnalytics() {
     api_host:    host,
     defaults:    '2026-01-30',  // PostHog recommended defaults snapshot
     persistence: 'localStorage',
-    autocapture: false,         // manual events only — no noise
+    autocapture: false,            // no element autocapture — keeps event noise down
+    capture_pageview:  true,       // TOP OF FUNNEL: records everyone who lands, incl. bounces
+    capture_pageleave: true,       // needed for accurate bounce + session length
+    // Session replay. Also has to be switched on in PostHog:
+    // Project settings -> Session replay -> Record user sessions.
+    disable_session_recording: false,
+    session_recording: {
+      maskAllInputs: true,         // never record what people type (emails, addresses)
+    },
     loaded: (ph) => {
       if (process.env.NODE_ENV === 'development') {
         ph.opt_out_capturing()
@@ -88,6 +96,21 @@ function track(event: string, props?: Record<string, unknown>) {
 
 // ── All events ────────────────────────────────────────────────────────────────
 export const Analytics = {
+
+  // ── Top of funnel (entry) ──────────────────────────────────────────────────
+
+  /** Someone lands on a public entry page. This is the denominator for the whole
+   *  funnel: without it you cannot see who leaves before starting anything. */
+  landingViewed: (page: 'marketing' | 'try' | 'what_is' | 'app_root' | string) =>
+    track('landing_viewed', { page }),
+
+  /** Visitor taps a Try button to begin the no-signin demo. */
+  demoStarted: (kind: 'stair' | 'quick' | string) =>
+    track('demo_started', { kind }),
+
+  /** Visitor reaches the sign-in / sign-up step. */
+  signupViewed: (source: string) =>
+    track('signup_viewed', { source }),
 
   // ── Auth ────────────────────────────────────────────────────────────────────
 
