@@ -18,6 +18,7 @@ import InspectionAIChat      from './InspectionAIChat'
 import InspectionReportScreen from './InspectionReportScreen'
 
 import type { UserRole } from './AuthScreen'
+import { uploadPhoto, isStorageRef } from '@/lib/photo-refs'
 
 interface Props {
   job:       InspectionJob
@@ -390,12 +391,21 @@ export default function InspectionDashboard({ job, onUpdate, onBack, userEmail, 
   async function handleManualSave() {
     setSaveStatus('saving'); setSaveError('')
     try {
+      // Upload the property thumbnail to Storage and keep the short `sb:`
+      // reference. Inline base64 over ~20KB used to be dropped here, which is
+      // why project thumbnails disappeared for most phone photos: a reference
+      // is tiny, so it survives the save.
+      let thumbRef = job.propertyThumbnail
+      if (thumbRef && !isStorageRef(thumbRef) && !thumbRef.startsWith('[')) {
+        try { thumbRef = await uploadPhoto(thumbRef, job.id, 'property') } catch {}
+      }
+
       // Strip base64 photos before sending — keeps the row small and prevents
       // res.json() from throwing an opaque DOMException on large/odd responses.
       const slimJob = {
         ...job,
-        propertyThumbnail: job.propertyThumbnail && job.propertyThumbnail.length < 20000
-          ? job.propertyThumbnail : undefined,
+        propertyThumbnail: isStorageRef(thumbRef) ? thumbRef
+          : (thumbRef && thumbRef.length < 20000 ? thumbRef : undefined),
         drawingsData: job.drawingsData ? { ...job.drawingsData, pages: [] } : undefined,
         phases: job.phases.map(phase => ({
           ...phase,

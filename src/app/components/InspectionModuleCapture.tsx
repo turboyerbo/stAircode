@@ -29,7 +29,7 @@ import type {
 } from '@/lib/inspection-types'
 import { MODULE_META } from '@/lib/inspection-types'
 import { normalizeImageToJpegB64 } from '@/lib/image-utils'
-import { uploadPhoto, photoSrc } from '@/lib/photo-refs'
+import { uploadPhoto, photoSrc, isRenderable, isStorageRef } from '@/lib/photo-refs'
 import ScanReadyScreen from './ScanReadyScreen'
 import type { UserRole } from './AuthScreen'
 
@@ -1078,7 +1078,9 @@ function CameraCapture({ job, phase, module, onSave, onBack }: Omit<Props, 'user
   const [camActive,  setCamActive] = useState(false)  // true = live camera mode
   // ── Photo state ─────────────────────────────────────────────────────────────
   // Load all real photos from module (filter out [photo-N] Supabase placeholders)
-  const allExistingPhotos = (module.photos ?? []).filter(p => p && !p.startsWith('[') && p.length > 50)
+  // isRenderable accepts durable Storage references (sb:…) as well as inline
+  // base64, so photos saved to Storage still show when a module is reopened.
+  const allExistingPhotos = (module.photos ?? []).filter(p => isRenderable(p))
   const firstRealPhoto = allExistingPhotos[0] ?? null
   const [capturedB64, setCapturedB64] = useState<string | null>(firstRealPhoto)
   const [aiFields,   setAiFields]  = useState<AIFields | null>(null)
@@ -1216,8 +1218,11 @@ Return ONLY valid JSON.`
     const prompt = getModulePrompt(module.id as ModuleId, job)
     // Send every real photo of this element (primary + any added) so the AI can
     // combine multiple angles into one assessment instead of judging from one shot.
+    // The vision API needs actual image data, so send inline base64 only. A
+    // photo already uploaded to Storage is referenced as `sb:…` and is skipped
+    // here rather than sent as a meaningless string.
     const images = [b64, ...additionalPhotos]
-      .filter(p => p && !p.startsWith('[') && p.length > 100)
+      .filter(p => isRenderable(p) && !isStorageRef(p))
       .slice(0, 4)
     try {
       const res  = await fetch('/api/vision', {

@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { InspectionJob }               from '@/lib/inspection-types'
 import { NavLogo }                          from './Logo'
+import { photoSrc, isRenderable }           from '@/lib/photo-refs'
 
 interface Props {
   userEmail:    string
@@ -59,17 +60,21 @@ function statusLabel(s: string): string {
 // Falls back to scanning module photos for legacy jobs
 function getJobThumbnail(job: any): string | undefined {
   // Use the dedicated thumbnail field first (set when property_details photo is captured)
-  if (job?.propertyThumbnail && !job.propertyThumbnail.startsWith('[')) {
-    return job.propertyThumbnail
-  }
-  // Fall back: scan module photos (only works for in-memory jobs, not loaded from Supabase)
+  if (isRenderable(job?.propertyThumbnail)) return job.propertyThumbnail
+
+  // Fall back: scan module photos. isRenderable accepts durable Supabase Storage
+  // references (sb:…) as well as inline base64, so thumbnails now appear for
+  // uploaded photos and for jobs loaded back from the server — not just for
+  // in-memory jobs that still hold raw base64.
   if (!job?.phases) return undefined
   for (const phase of job.phases) {
     for (const mod of phase.modules ?? []) {
-      const photo = mod.photos?.find((p: string) => p && !p.startsWith('['))
-        || mod.findings?.find((f: any) => f.photos?.some((p: string) => p && !p.startsWith('[')))
-            ?.photos?.find((p: string) => p && !p.startsWith('['))
-      if (photo) return photo
+      const direct = (mod.photos ?? []).find((p: string) => isRenderable(p))
+      if (direct) return direct
+      for (const f of mod.findings ?? []) {
+        const fp = (f.photos ?? []).find((p: string) => isRenderable(p))
+        if (fp) return fp
+      }
     }
   }
   return undefined
@@ -358,15 +363,15 @@ export default function InspectionProjectList({ userEmail, onStartNew, onResumeJ
               <div key={job.id} style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(44,74,110,0.06)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                   {/* Thumbnail */}
-                  {job.thumbnail && !job.thumbnail.startsWith('[') && job.thumbnail.length > 100 && (
+                  {isRenderable(job.thumbnail) && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={job.thumbnail.startsWith('data:') ? job.thumbnail : `data:image/jpeg;base64,${job.thumbnail.includes('base64,') ? job.thumbnail.split('base64,')[1] : job.thumbnail}`}
+                      src={photoSrc(job.thumbnail)}
                       alt="property"
                       style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: `1px solid ${BORDER}` }}
                     />
                   )}
-                  {(!job.thumbnail || job.thumbnail.startsWith('[') || job.thumbnail.length <= 100) && (
+                  {!isRenderable(job.thumbnail) && (
                     <div style={{ width: 56, height: 56, borderRadius: 8, background: 'rgba(65,124,164,0.08)', border: `1px solid ${BORDER}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                         <rect x="2" y="4" width="18" height="14" rx="2" stroke={BLUE} strokeWidth="1.3" fill="none"/>

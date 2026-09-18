@@ -78,10 +78,14 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Strip photos from job_json — keep only small thumbnail
-  const thumbnail = job.propertyThumbnail && job.propertyThumbnail.length <= THUMBNAIL_MAX_B64_LEN
+  // Strip photos from job_json — keep only a small thumbnail. A durable Storage
+  // reference (sb:…) is always kept: it is a short path, not image data, so the
+  // size cap does not apply to it.
+  const thumbnail = job.propertyThumbnail?.startsWith('sb:')
     ? job.propertyThumbnail
-    : undefined
+    : (job.propertyThumbnail && job.propertyThumbnail.length <= THUMBNAIL_MAX_B64_LEN
+        ? job.propertyThumbnail
+        : undefined)
 
   const jobForStorage = {
     ...job,
